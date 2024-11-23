@@ -1,6 +1,8 @@
 # AventusSharp
 
-AventusSharp est 
+AventusSharp is a versatile C# package designed to streamline the development of modern applications. By providing robust tools for data modeling, business logic management, API routing, and frontend integration, AventusSharp empowers developers to focus on building features rather than handling repetitive tasks.
+
+Whether you're working on a small project or a large-scale application, AventusSharp simplifies complex processes, ensuring consistency, efficiency, and flexibility across your application stack.
 
 ## Install
 
@@ -8,12 +10,6 @@ You can install this package with NuGet :
 
 ```shell
 dotnet add package AventusSharp
-```
-
-or inside your .csproj
-
-```xml
-<PackageReference Include="AventusSharp" Version="0.0.1" />
 ```
 
 ## Documentation

@@ -16,9 +16,9 @@
     <Company>ch.cobwebsite</Company>
     <Copyright>Copyright © 2024 Cobwebsite</Copyright>
     <PackageTags>C#, NuGet, AventusSharp, Cobwebsite</PackageTags>
-    <RepositoryUrl>https://github.com/max529/AventusSharp</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/max529/AventusSharp</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Cobwebsite/AventusSharp</PackageProjectUrl>
     <PackageIcon>logo_sharp.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

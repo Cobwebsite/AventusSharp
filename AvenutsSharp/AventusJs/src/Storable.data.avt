@@ -1,0 +1,38 @@
+namespace Data {
+    export abstract class Storable extends Aventus.Data implements Aventus.IData {
+        public Id: number = 0;
+        
+
+        /**
+         * @inerhit
+         */
+        public override toJSON() {
+            let toAvoid: string[] = ['className', 'namespace'];
+            return Aventus.Json.classToJson(this, {
+                isValidKey: (key) => !toAvoid.includes(key),
+                beforeEnd: (result) => {
+                    let resultTemp: { [key: string | number]: any; } = {};
+
+					if(result.$type) {
+						resultTemp.$type = result.$type;
+
+						for(let key in result) {
+							if(key != '$type') {
+								resultTemp[key] = result[key];
+							}
+						}
+						return resultTemp;
+					}
+
+					return result;
+                }
+            });
+        }
+    }
+
+    export abstract class StorableTimestamp extends Storable implements Aventus.IData {
+        public CreatedDate: Date = new Date();
+        public UpdatedDate: Date = new Date();
+    }
+
+}

@@ -1,0 +1,39 @@
+import { Connection } from "./Connection.lib.avt";
+import type { ConnectionOptions } from "./ISocket.lib.avt";
+
+namespace WebSocket {
+
+    export class EndPoint extends Connection {
+
+        /**
+		 * Create a singleton
+		 */
+		public static override getInstance(): EndPoint {
+			return Aventus.Instance.get(EndPoint);
+		}
+
+        protected constructor() {
+            super();
+            this.register();
+        }
+
+        protected register(): void {
+
+        }
+
+        /**
+         * @inheritdoc
+         */
+        protected override configure(options: ConnectionOptions): ConnectionOptions {
+            options.socketName = this.path;
+            options.sendPing = 5000;
+            return options;
+        }
+
+        protected get path(): string {
+            return "/ws";
+        };
+
+    }
+
+}

@@ -1,0 +1,69 @@
+import { VoidWithError, ResultWithError } from '../Tools/ResultWithError.lib.avt';
+import { SharpClass } from '../../Data/SharpClass.lib.avt';
+
+namespace Data {
+
+	export enum DataErrorCode {
+		DefaultDMGenericType,
+		DMOnlyForceInherit,
+		TypeNotStorable,
+		TypeTooMuchStorable,
+		GenericNotAbstract,
+		ParentNotAbstract,
+		InfiniteLoop,
+		InterfaceNotUnique,
+		SelfReferecingDependance,
+		DMNotExist,
+		DMAlreadyExist,
+		MethodNotFound,
+		StorageDisconnected,
+		StorageNotFound,
+		NoConnectionInsideStorage,
+		TypeNotExistInsideStorage,
+		UnknowError,
+		NoItemProvided,
+		NoTransactionInProgress,
+		WrongType,
+		NoTypeIdentifierFoundInsideQuery,
+		ItemNoExistInsideStorage,
+		ItemAlreadyExist,
+		ValidationError,
+		GetAllNotAllowed,
+		GetByIdNotAllowed,
+		GetByIdsNotAllowed,
+		WhereNotAllowed,
+		CreateNotAllowed,
+		UpdateNotAllowed,
+		DeleteNotAllowed,
+		NumberOfItemsNotMatching,
+		FieldTypeNotFound,
+		MemberNotFound,
+		TooMuchMemberFound,
+		TypeNotFound,
+		ReverseLinkNotExist,
+		ErrorCreatingReverseQuery,
+		LinkNotSet
+	}
+
+	@Convertible()
+	export class DataError extends Aventus.GenericError<typeof DataErrorCode>  {
+		public static get Fullname(): string { return "AventusSharp.Data.DataError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class VoidWithDataError extends VoidWithError<DataError>  {
+		public static override get Fullname(): string { return "AventusSharp.Data.VoidWithDataError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class ResultWithDataError<T> extends ResultWithError<T, DataError>  {
+		public static override get Fullname(): string { return "AventusSharp.Data.ResultWithDataError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class FieldErrorInfo extends SharpClass  {
+		public static get Fullname(): string { return "AventusSharp.Data.FieldErrorInfo, AventusSharp"; }
+		public Name!: string;
+	}
+
+}

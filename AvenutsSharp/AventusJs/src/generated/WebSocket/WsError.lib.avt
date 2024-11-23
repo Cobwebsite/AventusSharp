@@ -1,0 +1,31 @@
+import { VoidWithError, ResultWithError } from '../Tools/ResultWithError.lib.avt';
+
+namespace WebSocket {
+
+	export enum WsErrorCode {
+		UnknowError,
+		CantDefineAssembly,
+		ConfigError,
+		MultipleMainEndpoint,
+		CantGetValueFromBody,
+		NoConnection,
+		NoEndPoint,
+		NoPath
+	}
+
+	@Convertible()
+	export class WsError extends Aventus.GenericError<typeof WsErrorCode>  {
+		public static get Fullname(): string { return "AventusSharp.WebSocket.WsError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class VoidWithWsError extends VoidWithError<WsError>  {
+		public static override get Fullname(): string { return "AventusSharp.WebSocket.VoidWithWsError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class ResultWithWsError<T> extends ResultWithError<T, WsError>  {
+		public static override get Fullname(): string { return "AventusSharp.WebSocket.ResultWithWsError, AventusSharp"; }
+	}
+
+}

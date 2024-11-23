@@ -1,0 +1,257 @@
+import { Router, type WsRouteSendOptions, type ExtractResponse } from '../../WebSocket/Router.lib.avt';
+import { type SocketSendMessageOptions } from '../../WebSocket/ISocket.lib.avt';
+import { WsEvent } from '../../WebSocket/WsEvent.lib.avt';
+import { EndPoint } from '../../WebSocket/EndPoint.lib.avt';
+import { ResultWithError } from '../Tools/ResultWithError.lib.avt';
+
+namespace WebSocket {
+
+	export type StorableWsRoute__Routes<T extends Aventus.IData> = {
+		GetAll: StorableWsRoute_GetAll<T>,
+		Create: StorableWsRoute_Create<T>,
+		CreateMany: StorableWsRoute_CreateMany<T>,
+		GetById: StorableWsRoute_GetById<T>,
+		GetByIds: StorableWsRoute_GetByIds<T>,
+		Update: StorableWsRoute_Update<T>,
+		UpdateMany: StorableWsRoute_UpdateMany<T>,
+		Delete: StorableWsRoute_Delete<T>,
+		DeleteMany: StorableWsRoute_DeleteMany<T>,
+	};
+	export abstract class StorableWsRoute<T extends Aventus.IData, __Route extends StorableWsRoute__Routes<T> = StorableWsRoute__Routes<T>> extends Router <__Route>{
+		
+		 protected override defineEvents(): Partial<__Route> {
+			return {
+				...super.defineEvents(),
+				GetAll: new StorableWsRoute_GetAll<T>(this.endpoint, this.getPrefix, this.StorableName),
+				Create: new StorableWsRoute_Create<T>(this.endpoint, this.getPrefix, this.StorableName),
+				CreateMany: new StorableWsRoute_CreateMany<T>(this.endpoint, this.getPrefix, this.StorableName),
+				GetById: new StorableWsRoute_GetById<T>(this.endpoint, this.getPrefix, this.StorableName),
+				GetByIds: new StorableWsRoute_GetByIds<T>(this.endpoint, this.getPrefix, this.StorableName),
+				Update: new StorableWsRoute_Update<T>(this.endpoint, this.getPrefix, this.StorableName),
+				UpdateMany: new StorableWsRoute_UpdateMany<T>(this.endpoint, this.getPrefix, this.StorableName),
+				Delete: new StorableWsRoute_Delete<T>(this.endpoint, this.getPrefix, this.StorableName),
+				DeleteMany: new StorableWsRoute_DeleteMany<T>(this.endpoint, this.getPrefix, this.StorableName),
+			}
+		}
+		
+
+		public async GetAll(options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_GetAll<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}`,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_GetAll<T>>>(info);
+		}
+
+		public async Create(body: { item: T } | FormData, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_Create<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/Create`,
+				body: body,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_Create<T>>>(info);
+		}
+
+		public async CreateMany(body: { list: T[] } | FormData, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_CreateMany<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/CreateMany`,
+				body: body,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_CreateMany<T>>>(info);
+		}
+
+		public async GetById(id: number, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_GetById<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/${id}`,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_GetById<T>>>(info);
+		}
+
+		public async GetByIds(body: { ids: number[] } | FormData, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_GetByIds<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/getbyids`,
+				body: body,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_GetByIds<T>>>(info);
+		}
+
+		public async Update(id: number, body: { item: T } | FormData, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_Update<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/${id}/Update`,
+				body: body,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_Update<T>>>(info);
+		}
+
+		public async UpdateMany(body: { list: T[] } | FormData, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_UpdateMany<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/UpdateMany`,
+				body: body,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_UpdateMany<T>>>(info);
+		}
+
+		public async Delete(id: number, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_Delete<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/${id}/Delete`,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_Delete<T>>>(info);
+		}
+
+		public async DeleteMany(body: { ids: number[] } | FormData, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_DeleteMany<T>>> {
+			const info: SocketSendMessageOptions = {
+				channel: `${this.getPrefix()}/${this.StorableName()}/DeleteMany`,
+				body: body,
+				...options,
+			};
+			return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRoute_DeleteMany<T>>>(info);
+		}
+
+		public abstract StorableName(): string;
+	}
+	 
+	export class StorableWsRoute_GetAll<T> extends WsEvent<T[]> {
+		
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix: () => string, StorableName: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName;
+		}
+		
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}`;
+		}
+	}
+	 
+	export class StorableWsRoute_Create<T> extends WsEvent<T> {
+		
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix: () => string, StorableName: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName;
+		}
+		
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/Create`;
+		}
+	}
+	 
+	export class StorableWsRoute_GetById<T> extends WsEvent<T> {
+		
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix: () => string, StorableName: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName;
+		}
+		
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/{id:number}`;
+		}
+	}
+	 
+	export class StorableWsRoute_GetByIds<T> extends WsEvent<T[]> {
+		
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix: () => string, StorableName: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName;
+		}
+		
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/getbyids`;
+		}
+	}
+	 
+	export class StorableWsRoute_Update<T> extends WsEvent<T> {
+		
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix: () => string, StorableName: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName;
+		}
+		
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/{id:number}/Update`;
+		}
+	}
+	 
+	export class StorableWsRoute_Delete<T> extends WsEvent<T> {
+		
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix: () => string, StorableName: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName;
+		}
+		
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/{id:number}/Delete`;
+		}
+	}
+
+	export class StorableWsRoute_CreateMany<T extends Aventus.IData> extends WsEvent<ResultWithError<T[]>> {
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/CreateMany`;
+		}
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix?: () => string, StorableName?: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName ?? (() => "")
+		}
+	}
+
+	export class StorableWsRoute_UpdateMany<T extends Aventus.IData> extends WsEvent<ResultWithError<T[]>> {
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/UpdateMany`;
+		}
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix?: () => string, StorableName?: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName ?? (() => "")
+		}
+	}
+
+	export class StorableWsRoute_DeleteMany<T extends Aventus.IData> extends WsEvent<ResultWithError<T[]>> {
+		/**
+		 * @inheritdoc
+		 */
+		protected override path(): string {
+			return `${this.getPrefix()}/${this.StorableName()}/DeleteMany`;
+		}
+		public StorableName: () => string;
+		public constructor(endpoint: EndPoint, getPrefix?: () => string, StorableName?: () => string) {
+			super(endpoint, getPrefix);
+			this.StorableName = StorableName ?? (() => "")
+		}
+	}
+
+}

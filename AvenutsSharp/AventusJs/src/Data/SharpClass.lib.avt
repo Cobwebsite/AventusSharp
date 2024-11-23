@@ -1,0 +1,54 @@
+namespace Data {
+    export abstract class SharpClass {
+        /**
+         * The current namespace
+         */
+        public get namespace(): string {
+            return this.constructor['Namespace'];
+        }
+        /**
+         * Get the unique type for the data. Define it as the namespace + class name
+         */
+        public get $type(): string {
+            return this.constructor['Fullname'];
+        }
+        /**
+         * Get the name of the class
+         */
+        public get className(): string {
+            return this.constructor.name;
+        }
+
+        /**
+         * Clone the object by transforming a parsed JSON string back into the original type
+         */
+        public clone(): this {
+            return Aventus.Converter.transform<this>(JSON.parse(JSON.stringify(this)));
+        }
+        /**
+         * Get a JSON for the current object
+         */
+        public toJSON() {
+            let toAvoid: string[] = ['className', 'namespace'];
+            return Aventus.Json.classToJson(this, {
+                isValidKey: (key) => !toAvoid.includes(key),
+                beforeEnd: (result) => {
+                    let resultTemp: { [key: string | number]: any; } = {};
+
+                    if(result.$type) {
+                        resultTemp.$type = result.$type;
+
+                        for(let key in result) {
+                            if(key != '$type') {
+                                resultTemp[key] = result[key];
+                            }
+                        }
+                        return resultTemp;
+                    }
+
+                    return result;
+                }
+            });
+        }
+    }
+}

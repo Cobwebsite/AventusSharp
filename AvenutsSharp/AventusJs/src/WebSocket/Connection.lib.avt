@@ -1,0 +1,444 @@
+import { SocketError, SocketErrorCode } from "./SocketError.lib.avt";
+import { VoidWithError } from "../generated/Tools/ResultWithError.lib.avt";
+import type { ConnectionOptions, SocketMessage, SocketRoute, InternalSocketRoute, SocketSendMessageOptions } from './ISocket.lib.avt';
+import { Socket } from "./Socket.lib.avt";
+
+namespace WebSocket {
+
+    export abstract class Connection {
+
+        public static Debug: boolean = false;
+        protected options: Required<ConnectionOptions>;
+        protected waitingList: { [uuid: string]: (channel: string, data: any) => void; } = {};
+        protected memoryBeforeOpen: SocketSendMessageOptions[] = [];
+        protected socket?: Socket;
+        protected actionGuard: Aventus.ActionGuard = new Aventus.ActionGuard();
+
+        /**
+         * Create a singleton
+         */
+        public static getInstance(): Connection {
+            return Aventus.Instance.get(Connection);
+        }
+
+        protected constructor() {
+            this.options = this._configure(this.configure({}));
+            this._onOpen = this._onOpen.bind(this);
+            this._onClose = this._onClose.bind(this);
+            this._onError = this._onError.bind(this);
+            this.onMessage = this.onMessage.bind(this);
+
+            if(this.options.autoStart) {
+                this.open();
+            }
+        }
+
+        //#region events
+        public readonly onOpen: Aventus.Callback<() => void> = new Aventus.Callback();
+        public readonly onClose: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+        public readonly onError: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+        //#endregion
+
+        /**
+         * Define the configuration for your websocket
+         */
+        protected abstract configure(options: ConnectionOptions): ConnectionOptions;
+        /**
+         * Configure a new Websocket
+         */
+        protected _configure(options: ConnectionOptions = {}): Required<ConnectionOptions> {
+
+            if(!options.host) {
+                options.host = window.location.hostname;
+            }
+            if(!options.hasOwnProperty('useHttps')) {
+                options.useHttps = window.location.protocol == "https:";
+            }
+            if(!options.port) {
+                if(window.location.port) {
+                    options.port = parseInt(window.location.port);
+                }
+                else {
+                    options.port = options.useHttps ? 443 : 80;
+                }
+            }
+            if(!options.routes) {
+                options.routes = {};
+            }
+            if(!options.socketName) {
+                options.socketName = "";
+            }
+            if(options.log === undefined) {
+                options.log = Connection.Debug;
+            }
+
+            if(options.autoStart === undefined) {
+                options.autoStart = true;
+            }
+
+            if(options.sendPing !== undefined && options.sendPing <= 0) {
+                options.sendPing = undefined;
+            }
+
+            if(options.logPrefix === undefined) {
+                options.logPrefix = "";
+            }
+
+            return options as Required<ConnectionOptions>;
+        }
+
+        private getUrl() {
+            let protocol = "ws";
+            if(this.options.useHttps) {
+                protocol = "wss";
+            }
+            let url = protocol + "://" + this.options.host + ":" + this.options.port + this.options.socketName;
+            return url;
+        }
+
+
+        /**
+         * Add a new route to listen to the websocket
+         */
+        public addRoute(newRoute: SocketRoute) {
+            if(!this.options.routes.hasOwnProperty(newRoute.channel)) {
+                this.options.routes[newRoute.channel] = [];
+            }
+
+            // prevent double subscribe 
+            for(let info of this.options.routes[newRoute.channel]) {
+                if(info.callback == newRoute.callback) {
+                    return;
+                }
+            }
+
+            const { params, regex } = Aventus.Uri.prepare(newRoute.channel);
+            let prepared: InternalSocketRoute = {
+                callback: newRoute.callback,
+                channel: newRoute.channel,
+                regex,
+                params
+            };
+            this.options.routes[newRoute.channel].push(prepared);
+        }
+
+        /**
+         * The route to remove
+         * @param route - The route to remove
+         */
+        public removeRoute(route: SocketRoute) {
+            for(let i = 0; i < this.options.routes[route.channel].length; i++) {
+                let info = this.options.routes[route.channel][i];
+                if(info.callback == route.callback) {
+                    this.options.routes[route.channel].splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        protected openCallback: ((isOpen: boolean) => void) | undefined;
+        /**
+         * Try to open the websocket
+         */
+        public open(): Promise<boolean> {
+            return this.actionGuard.run(["open"], () => {
+                return new Promise<boolean>((resolve) => {
+                    try {
+                        let url = this.getUrl();
+                        this.log("Opening " + url);
+                        this.openCallback = (isOpen) => {
+                            resolve(isOpen);
+                        };
+                        this.socket = Socket.getInstance(url, this);
+                        this.socket.onOpen.add(this._onOpen);
+                        this.socket.onClose.add(this._onClose);
+                        this.socket.onError.add(this._onError);
+                        this.socket.onMessage.add(this.onMessage);
+                        if(this.socket.isReady()) {
+                            this._onOpen();
+                        }
+                    } catch(e) {
+                        console.log(e);
+                        resolve(false);
+                    }
+                });
+            });
+
+        }
+
+        protected jsonReplacer(key: string, value: any) {
+            if(this[key] instanceof Date) {
+                return Aventus.DateConverter.converter.toString(this[key]);
+            }
+            return value;
+        }
+
+        /**
+         * Send a message though the websocket
+         * @param channelName The channel on which the message is sent
+         * @param data The data to send
+         * @param options the options to add to the message (typically the uid)
+         */
+        public async sendMessage<T>(options: SocketSendMessageOptions): Promise<Aventus.VoidWithError> {
+            let result = new VoidWithError();
+            if(!this.socket || this.socket.readyState != 1) {
+                let isOpen = await this.open();
+                if(!isOpen) {
+                    result.errors.push(new SocketError(SocketErrorCode.socketClosed, "Socket not ready ! Please ensure that it is open and ready to send message"));
+                    this.log('Socket not ready ! Please ensure that it is open and ready to send message');
+                    if(this.options.allowSendBeforeOpen) {
+                        this.memoryBeforeOpen.push(options);
+                    }
+                    return result;
+                }
+            }
+            if(this.socket && this.socket.readyState == 1) {
+                try {
+                    let message: SocketMessage = {
+                        channel: options.channel,
+                    };
+                    if(options.uid) {
+                        message.uid = options.uid;
+                    }
+
+                    if(options.body) {
+                        message.data = options.body;
+                        this.log(message);
+                        if(typeof options.body != 'string') {
+                            message.data = JSON.stringify(options.body, this.jsonReplacer);
+                        }
+                    } else if(options.channel != "/ping") {
+                        this.log(message);
+                    }
+
+                    this.socket.send(JSON.stringify(message));
+                }
+                catch(e) {
+                    result.errors.push(new SocketError(SocketErrorCode.unknow, e));
+                }
+            } else {
+                result.errors.push(new SocketError(SocketErrorCode.socketClosed, "Socket not ready ! Please ensure that it is open and ready to send message"));
+                this.log('Socket not ready ! Please ensure that it is open and ready to send message');
+                if(this.options.allowSendBeforeOpen) {
+                    this.memoryBeforeOpen.push(options);
+                }
+            }
+
+            return result;
+        }
+
+        /**
+         * Send a message though the websocket and wait one answer give in parameters callbacks
+         * @param channelName The channel on which the message is sent
+         * @param body The data to send
+         * @param timeout The timeout before the request failed
+         */
+        public sendMessageAndWait<T>(options: SocketSendMessageOptions): Promise<Aventus.ResultWithError<Aventus.ExtractFromError<T>>> {
+            return new Promise<Aventus.ResultWithError<Aventus.ExtractFromError<T>>>(async (resolve) => {
+                let result = new Aventus.ResultWithError<Aventus.ExtractFromError<T>>();
+                try {
+                    let _uid = options.uid ? options.uid : Aventus.uuidv4();
+                    options.uid = _uid;
+                    // No need to have an event listening bc the waiting list is trigger event if no event is listening
+                    let timeoutInfo: number | undefined;
+                    this.waitingList[_uid] = (channel, data) => {
+                        clearTimeout(timeoutInfo);
+                        if(channel.toLowerCase() != options.channel.toLowerCase()) {
+                            result.errors.push(new SocketError(SocketErrorCode.differentChannel, `We sent a message on ${options.channel} but we receive on ${channel}`));
+                            resolve(result);
+                        }
+                        else {
+                            if(data instanceof Aventus.VoidWithError) {
+                                for(let error of data.errors) {
+                                    result.errors.push(error);
+                                }
+                                if(data instanceof Aventus.ResultWithError) {
+                                    result.result = data.result;
+                                }
+                            }
+                            else {
+                                result.result = data;
+                            }
+                            resolve(result);
+                        }
+                    };
+                    if(options.timeout !== undefined) {
+                        timeoutInfo = setTimeout(() => {
+                            delete this.waitingList[_uid];
+
+                            result.errors.push(new SocketError(SocketErrorCode.timeout, "No message received after " + options.timeout + "ms"));
+                            resolve(result);
+                        }, options.timeout);
+                    }
+
+                    let sendMessageResult = await this.sendMessage(options);
+
+                    if(!sendMessageResult.success) {
+                        for(let error of sendMessageResult.errors) {
+                            result.errors.push(error);
+                        }
+                        resolve(result);
+                    }
+                } catch(e) {
+                    result.errors.push(new SocketError(SocketErrorCode.unknow, e));
+                    resolve(result);
+                }
+            });
+
+        };
+
+        /**
+         * Check if socket is ready
+         */
+        public isReady(): boolean {
+            if(this.socket && this.socket.isReady()) {
+                return true;
+            }
+            return false;
+        }
+
+        protected sendPingTimeout: number = 0;
+        protected sendPing() {
+            this.sendMessage({
+                channel: "/ping",
+            });
+        }
+
+        protected startPing() {
+            clearInterval(this.sendPingTimeout);
+            this.sendPingTimeout = setInterval(() => {
+                this.sendPing();
+            }, 5000);
+        }
+        protected stopPing() {
+            clearInterval(this.sendPingTimeout);
+        }
+
+        protected _onOpen() {
+            if(this.socket?.isReady()) {
+                if(this.openCallback) {
+                    this.openCallback(true);
+                    this.openCallback = undefined;
+                }
+                let protocol = "ws";
+                if(this.options.useHttps) {
+                    protocol = "wss";
+                }
+                this.log(`Connection successfully established to ${this.getUrl()}!`);
+                this.onOpen.trigger([]);
+
+                for(let i = 0; i < this.memoryBeforeOpen.length; i++) {
+                    this.sendMessage(this.memoryBeforeOpen[i]);
+                }
+                this.memoryBeforeOpen = [];
+                if(this.options.sendPing) {
+                    this.startPing();
+                }
+            }
+            else {
+                if(this.openCallback) {
+                    this.openCallback(false);
+                    this.openCallback = undefined;
+                }
+            }
+        }
+
+        protected errorOccur: boolean = false;
+
+        protected _onError(event: Event) {
+            this.errorOccur = true;
+            if(this.openCallback) {
+                this.openCallback(false);
+                this.openCallback = undefined;
+                return;
+            }
+            this.log('An error has occured');
+            this.onError.trigger([event]);
+        }
+
+        protected _onClose(event: Event) {
+            this.stopPing();
+            if(this.errorOccur) {
+                this.errorOccur = false;
+                return;
+            }
+            this.log('Closing connection');
+            this.onClose.trigger([event]);
+        }
+
+        /**
+         * Close the current connection
+         */
+        public close() {
+            if(this.socket) {
+                this.socket.onOpen.remove(this._onOpen);
+                this.socket.onClose.remove(this._onClose);
+                this.socket.onError.remove(this._onError);
+                this.socket.onMessage.remove(this.onMessage);
+                this.socket.close(this);
+                delete this.socket;
+            }
+        }
+
+        protected onMessage(event: MessageEvent<any>) {
+            let response: {
+                channel: string,
+                data: string,
+                uid?: string;
+            } = JSON.parse(event.data);
+
+            this.log(response);
+            let data: any = {};
+            try {
+                data = Aventus.Converter.transform(JSON.parse(response.data));
+            } catch(e) {
+                console.error(e);
+            }
+            for(let channel in this.options.routes) {
+                let current = this.options.routes[channel];
+                for(let info of current) {
+                    let params = Aventus.Uri.getParams(info, response.channel);
+                    if(params) {
+                        let valueCb = data;
+                        if(data instanceof Aventus.ResultWithError) {
+                            valueCb = data.result;
+                        }
+                        else if(data instanceof Aventus.VoidWithError) {
+                            valueCb = undefined;
+                        }
+                        info.callback(valueCb, params, response.uid);
+                    }
+                }
+            }
+
+            if(response.uid) {
+                if(this.waitingList.hasOwnProperty(response.uid)) {
+                    this.waitingList[response.uid](response.channel, data);
+                    delete this.waitingList[response.uid];
+                }
+            }
+        }
+        /**
+         * Print a msg inside the console
+         */
+        protected log(message: {} | string) {
+            if(this.options.log) {
+                const now = new Date();
+                const hours = (now.getHours()).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+                const minutes = (now.getMinutes()).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+                const seconds = (now.getSeconds()).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+                const prefix = this.options.logPrefix ? `[${this.options.logPrefix}] ` : '';
+                if(message instanceof Object) {
+                    let cloneMessage = JSON.parse(JSON.stringify(message, this.jsonReplacer));
+                    if(cloneMessage.data && typeof cloneMessage.data == 'string') {
+                        cloneMessage.data = JSON.parse(cloneMessage.data);
+                    }
+                    console.log(`${prefix}[${hours}:${minutes}:${seconds}]: `, cloneMessage);
+                }
+                else {
+                    console.log(`${prefix}[${hours}:${minutes}:${seconds}]: `, message);
+                }
+            }
+        }
+    }
+}

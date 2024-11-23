@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "CSharpToTypescript": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\maxim\\Desktop\\Demo\\aventus.sharp.avt"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}

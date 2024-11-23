@@ -1,0 +1,159 @@
+import { Storable } from "../Storable.data.avt";
+import { StorableRoute } from "../generated/Routes/StorableRoute.lib.avt";
+
+namespace RAM {
+    export abstract class RamHttp<T extends Storable> extends Aventus.Ram<T> {
+        protected getAllDone: boolean = false;
+        protected routes: StorableRoute<T>;
+
+
+        public abstract defineRoutes(): StorableRoute<T>;
+
+        protected constructor() {
+            super();
+            this.routes = this.defineRoutes();
+        }
+
+        protected override async beforeGetAll(result: Aventus.ResultRamWithError<Map<number, Aventus.RamItem<T>>>): Promise<void> {
+            if(!this.getAllDone) {
+                let response = await this.routes.GetAll();
+                if(response.success && response.result) {
+                    for(let item of response.result) {
+                        let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
+                        await this.addOrUpdateData(item, resultTemp);
+                        if(!resultTemp.success) {
+                            result.errors = [...result.errors, ...resultTemp.errors];
+                        }
+                    }
+                    this.getAllDone = true;
+                }
+                else {
+                    result.errors = [...result.errors, ...response.errors];
+                }
+            }
+
+        }
+        protected override async beforeGetById(id: number, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): Promise<void> {
+            if(this.records.has(id)) {
+                return;
+            }
+            else {
+                let response = await this.routes.GetById(id);
+                if(response.success && response.result) {
+                    let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
+                    await this.addOrUpdateData(response.result, resultTemp);
+                    if(!resultTemp.success) {
+                        result.errors = [...result.errors, ...resultTemp.errors];
+                    }
+                    else {
+                        result.result = resultTemp.result;
+                    }
+                }
+                else {
+                    result.errors = [...result.errors, ...response.errors];
+                }
+            }
+        }
+        protected override async beforeGetByIds(ids: number[], result: Aventus.ResultRamWithError<Aventus.RamItem<T>[]>): Promise<void> {
+            let missingIds: number[] = [];
+            for(let id of ids) {
+                if(!this.records.has(id)) {
+                    missingIds.push(id);
+                }
+            }
+
+            if(missingIds.length > 0) {
+                result.result = [];
+                let response = await this.routes.GetByIds({ ids: missingIds });
+                if(response.success && response.result) {
+                    for(let item of response.result) {
+                        let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
+                        await this.addOrUpdateData(item, resultTemp);
+                        if(!resultTemp.success || !resultTemp.result) {
+                            result.errors = [...result.errors, ...resultTemp.errors];
+                        }
+                        else if(!result.result.includes(resultTemp.result)) {
+                            result.result.push(resultTemp.result);
+                        }
+                    }
+                }
+                else {
+                    result.errors = [...result.errors, ...response.errors];
+                }
+            }
+        }
+
+        //#region create
+        protected override async beforeCreateItem(item: T, fromList: boolean, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): Promise<void> {
+            if(fromList) {
+                return;
+            }
+            let response = await this.routes.Create({ item });
+            if(response.success && response.result) {
+                result.result = this.getObjectForRam(response.result);
+            }
+            else {
+                result.errors = [...result.errors, ...response.errors];
+            }
+        }
+        protected override async beforeCreateList(list: T[], result: Aventus.ResultRamWithError<Aventus.RamItem<T>[]>): Promise<void> {
+            let response = await this.routes.CreateMany({ list });
+            if(response.success && response.result) {
+                result.result = [];
+                for(let element of response.result) {
+                    result.result.push(this.getObjectForRam(element));
+                }
+            }
+            else {
+                result.errors = [...result.errors, ...response.errors];
+            }
+        }
+        //#endregion
+
+        //#region update
+        protected override async beforeUpdateItem(item: T, fromList: boolean, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): Promise<void> {
+            if(fromList) {
+                return;
+            }
+            let response = await this.routes.Update(item.Id, { item });
+            if(response.success && response.result) {
+                result.result = this.getObjectForRam(response.result);
+            }
+            else {
+                result.errors = [...result.errors, ...response.errors];
+            }
+        }
+        protected override async beforeUpdateList(list: T[], result: Aventus.ResultRamWithError<Aventus.RamItem<T>[]>): Promise<void> {
+            let response = await this.routes.UpdateMany({ list });
+            if(response.success && response.result) {
+                result.result = [];
+                for(let element of response.result) {
+                    result.result.push(this.getObjectForRam(element));
+                }
+            }
+            else {
+                result.errors = [...result.errors, ...response.errors];
+            }
+        }
+        //#endregion
+
+        //#region delete
+        protected override async beforeDeleteItem(item: T, fromList: boolean, result: Aventus.VoidWithError): Promise<void> {
+            if(fromList) {
+                return;
+            }
+            let response = await this.routes.Delete(item.Id);
+            if(!response.success) {
+                result.errors = [...result.errors, ...response.errors];
+            }
+        }
+        protected override async beforeDeleteList(list: T[], result: Aventus.VoidWithError): Promise<void> {
+            let response = await this.routes.DeleteMany({ ids: list.map(t => t.Id) });
+            if(!response.success) {
+                result.errors = [...result.errors, ...response.errors];
+            }
+        }
+        //#endregion
+
+    };
+}

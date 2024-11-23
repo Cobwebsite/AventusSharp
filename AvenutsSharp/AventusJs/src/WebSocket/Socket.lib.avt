@@ -1,0 +1,111 @@
+
+namespace WebSocket {
+    export class Socket {
+        public static Debug: boolean = false;
+        private static connections: { [url: string]: Socket; } = {};
+
+        public static getInstance(url: string, el: any): Socket {
+            if(!this.connections[url]) {
+                this.connections[url] = new Socket(url, el);
+            }
+            else {
+                this.connections[url].registerEl(el);
+            }
+            return this.connections[url];
+        }
+
+        private socket: WebSocket;
+        private url: string;
+        private elements: any[] = [];
+        private reopenInterval: number = 0;
+
+        public onOpen: Aventus.Callback<(ev: Event) => any> = new Aventus.Callback();
+        public onClose: Aventus.Callback<(ev: Event) => any> = new Aventus.Callback();
+        public onError: Aventus.Callback<(ev: Event) => any> = new Aventus.Callback();
+        public onMessage: Aventus.Callback<(ev: MessageEvent<any>) => any> = new Aventus.Callback();
+
+        public get readyState(): number {
+            return this.socket.readyState;
+        }
+
+        protected constructor(url: string, el: any) {
+            this.url = url;
+            this.elements = [el];
+            this.socket = this.createWebSocket();
+            this.reopen = this.reopen.bind(this);
+            this.onClose.add(this.reopen);
+        }
+
+        protected registerEl(el: any) {
+            if(!this.elements.includes(el)) {
+                this.elements.push(el);
+            }
+        }
+
+        private createWebSocket(): WebSocket {
+            this.removeSocket();
+            const socket = new window.WebSocket(this.url);
+            socket.onopen = (e) => {
+                clearInterval(this.reopenInterval);
+                this.onOpen.trigger([e]);
+            };
+            socket.onclose = (e) => {
+                this.onClose.trigger([e]);
+            };
+            socket.onerror = (e) => {
+                this.onError.trigger([e]);
+            };
+            socket.onmessage = (e) => {
+                this.onMessage.trigger([e]);
+            };
+            this.socket = socket;
+            return socket;
+        }
+
+        protected removeSocket() {
+            if(this.socket) {
+                this.socket.onopen = null;
+                this.socket.onclose = null;
+                this.socket.onerror = null;
+                this.socket.onmessage = null;
+                this.socket.close();
+            }
+        }
+
+        protected reopen() {
+            clearInterval(this.reopenInterval);
+            this.reopenInterval = setInterval(async () => {
+                console.warn("try reopen socket ");
+                await this.createWebSocket();
+                if(this.isReady()) {
+                    clearInterval(this.reopenInterval);
+                }
+            }, 5000);
+        }
+
+        public close(el: any, code?: number | undefined, reason?: string | undefined): void {
+            let index = this.elements.indexOf(el);
+            if(index != -1) {
+                this.elements.splice(0, 1);
+            }
+            if(this.elements.length == 0) {
+                this.removeSocket();
+                delete Socket.connections[this.url];
+            }
+        }
+
+
+        public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
+            this.socket.send(data);
+        }
+
+        /**
+        * Check if socket is ready
+        */
+        public isReady(): boolean {
+            return this.socket.readyState == 1;
+        }
+
+    }
+
+}

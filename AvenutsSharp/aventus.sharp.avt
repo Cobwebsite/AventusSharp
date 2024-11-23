@@ -1,0 +1,36 @@
+﻿{
+  "outputPath": "./AventusJs/src/generated",
+  "csProj": "./AventusSharp.csproj",
+  "replacer": {
+    "all": {
+      "type": {},
+      "result": {
+        "AventusSharp.WebSocket.EndPoint": {
+          "result": "EndPoint",
+          "file": "./AventusJs/src/WebSocket/EndPoint.lib.avt"
+        },
+        "AventusSharp.WebSocket.WsEvent": {
+          "result": "WsEvent",
+          "file": "./AventusJs/src/WebSocket/WsEvent.lib.avt"
+        },
+        "AventusSharp.WebSocket.Router": {
+          "result": "Router",
+          "file": "./AventusJs/src/WebSocket/Router.lib.avt"
+        },
+        "AventusSharp.Data.SharpClass": {
+          "result": "SharpClass",
+          "file": "./AventusJs/src/Data/SharpClass.lib.avt"
+
+        },
+        "AventusSharp.Tools.ResultWithError": {
+          "result": "ResultWithError",
+          "file": "./AventusJs/src/generated/Tools/ResultWithError.lib.avt"
+        },
+        "AventusSharp.Tools.VoidWithError": {
+          "result": "VoidWithError",
+          "file": "./AventusJs/src/generated/Tools/ResultWithError.lib.avt"
+        }
+      }
+    }
+  }
+}

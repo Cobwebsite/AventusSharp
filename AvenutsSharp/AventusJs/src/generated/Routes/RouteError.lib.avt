@@ -1,0 +1,29 @@
+import { VoidWithError, ResultWithError } from '../Tools/ResultWithError.lib.avt';
+
+namespace Routes {
+
+	export enum RouteErrorCode {
+		UnknowError,
+		FormContentTypeUnknown,
+		CantGetValueFromBody,
+		CantMoveFile,
+		CantCreateFolders,
+		RouteAlreadyExist
+	}
+
+	@Convertible()
+	export class RouteError extends Aventus.GenericError<typeof RouteErrorCode>  {
+		public static get Fullname(): string { return "AventusSharp.Routes.RouteError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class VoidWithRouteError extends VoidWithError<RouteError>  {
+		public static override get Fullname(): string { return "AventusSharp.Routes.VoidWithRouteError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class ResultWithRouteError<T> extends ResultWithError<T, RouteError>  {
+		public static override get Fullname(): string { return "AventusSharp.Routes.ResultWithRouteError, AventusSharp"; }
+	}
+
+}

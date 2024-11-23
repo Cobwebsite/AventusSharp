@@ -1,0 +1,18 @@
+import type { RealDate } from "./Alias.lib.avt";
+import { SharpClass } from "./SharpClass.lib.avt";
+
+namespace Data {
+
+    @Convertible()
+    export class Date extends SharpClass {
+        public static get Fullname(): string { return "AventusSharp.Data.Date, AventusSharp"; }
+        public DateTime!: RealDate;
+    }
+
+    @Convertible()
+    export class Datetime extends SharpClass {
+        public static get Fullname(): string { return "AventusSharp.Data.Datetime, AventusSharp"; }
+        public DateTime!: RealDate;
+    }
+
+}

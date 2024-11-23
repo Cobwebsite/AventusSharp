@@ -1,0 +1,23 @@
+{
+	"module": "AventusSharp",
+	"componentPrefix": "av",
+	"build": [
+		{
+			"name": "Main",
+			"version": "1.0.6",
+			"src": [
+				"./src/*"
+			],
+			"compile": [
+				{
+					"package": "D:\\Aventus\\Aventus\\lib\\Aventus@Sharp.package.avt",
+					"outputNpm": {
+						"npmName": "@aventusjs/sharp",
+						"path": "../../../npmPackage/AventusSharp_npm"
+					}
+				}
+			],
+			"hideWarnings": true
+		}
+	]
+}

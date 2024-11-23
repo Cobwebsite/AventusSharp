@@ -1,0 +1,78 @@
+import { ResultWithError, VoidWithError } from '../Tools/ResultWithError.lib.avt';
+
+namespace Routes {
+
+	export abstract class StorableRoute<T extends Aventus.IData> extends Aventus.HttpRoute {
+		@BindThis()
+		public async GetAll(): Promise<ResultWithError<T[]>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}`, Aventus.HttpMethod.GET);
+			type TypeResult = T[];
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async Create(body: { item: T } | FormData): Promise<ResultWithError<T>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}`, Aventus.HttpMethod.POST);
+			request.setBody(body);
+			type TypeResult = T;
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async CreateMany(body: { list: T[] } | FormData): Promise<ResultWithError<T[]>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}s`, Aventus.HttpMethod.POST);
+			request.setBody(body);
+			type TypeResult = T[];
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async GetById(id: number): Promise<ResultWithError<T>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}/${id}`, Aventus.HttpMethod.GET);
+			type TypeResult = T;
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async GetByIds(body: { ids: number[] } | FormData): Promise<ResultWithError<T[]>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}/getbyids`, Aventus.HttpMethod.POST);
+			request.setBody(body);
+			type TypeResult = T[];
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async Update(id: number, body: { item: T } | FormData): Promise<ResultWithError<T>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}/${id}`, Aventus.HttpMethod.PUT);
+			request.setBody(body);
+			type TypeResult = T;
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async UpdateMany(body: { list: T[] } | FormData): Promise<ResultWithError<T[]>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}s`, Aventus.HttpMethod.PUT);
+			request.setBody(body);
+			type TypeResult = T[];
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async Delete(id: number): Promise<ResultWithError<T>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}/${id}`, Aventus.HttpMethod.DELETE);
+			type TypeResult = T;
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		@BindThis()
+		public async DeleteMany(body: { ids: number[] } | FormData): Promise<ResultWithError<T[]>> {
+			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}s`, Aventus.HttpMethod.DELETE);
+			request.setBody(body);
+			type TypeResult = T[];
+			return await request.queryJSON<TypeResult>(this.router);
+		}
+
+		public abstract StorableName(): string;
+	}
+
+}

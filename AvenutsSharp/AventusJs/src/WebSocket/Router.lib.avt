@@ -1,0 +1,36 @@
+import type { WsEvent } from "./WsEvent.lib.avt";
+import { EndPoint } from "./EndPoint.lib.avt";
+
+namespace WebSocket {
+
+    export interface WsRouteSendOptions {
+        uid?: string,
+        timeout?: number;
+    }
+    export type RouterRoutes = { [name: string]: WsEvent; };
+    export class Router<T extends RouterRoutes> {
+        public readonly endpoint: EndPoint;
+        public events: T;
+        public constructor(endpoint?: EndPoint) {
+            this.endpoint = endpoint ?? EndPoint.getInstance();
+
+            this.events = this.defineEvents() as T;
+
+            for(let key in this.events) {
+                this.events[key].init();
+            }
+        }
+
+        public getPrefix(): string {
+            return "";
+        }
+
+        protected defineEvents(): Partial<T> {
+            return {};
+        }
+    }
+}
+
+export type ExtractResponse<T extends WsEvent<U>, U = any> = T extends WsEvent<infer U> ?
+    Aventus.ResultWithError<Aventus.ExtractFromError<U>>
+    : never;

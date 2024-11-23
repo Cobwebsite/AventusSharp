@@ -1,0 +1,11 @@
+
+namespace WebSocket {
+    export enum SocketErrorCode {
+        socketClosed,
+        timeout,
+        differentChannel,
+        unknow
+    }
+    export class SocketError extends Aventus.GenericError<SocketErrorCode>{ }
+
+}

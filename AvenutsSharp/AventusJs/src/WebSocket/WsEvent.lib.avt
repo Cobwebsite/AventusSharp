@@ -1,0 +1,82 @@
+import type { SocketRoute } from "./ISocket.lib.avt";
+import { EndPoint } from "./EndPoint.lib.avt";
+
+namespace WebSocket {
+
+    export type ExtractResultFrom<T extends WsEvent, U = any> = T extends WsEvent<infer U> ? U : never;
+    export abstract class WsEvent<T extends any = any> {
+        protected endpoint: EndPoint;
+
+        public onTrigger: Aventus.Callback<(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) => void> = new Aventus.Callback();
+
+        protected routeInfo!: SocketRoute<Aventus.ExtractFromError<T>>;
+
+        protected _listening: boolean = false;
+        public get listening(): boolean {
+            return this._listening;
+        }
+
+        public getPrefix: () => string;
+
+        public constructor(endpoint?: EndPoint, getPrefix?: () => string) {
+            this.endpoint = endpoint ?? EndPoint.getInstance();
+            this.getPrefix = getPrefix ?? (() => "");
+            this.onEvent = this.onEvent.bind(this);
+        }
+
+        public init() {
+            this.routeInfo = {
+                channel: this.path(),
+                callback: this.onEvent
+            };
+
+            if(this.listenOnBoot()) {
+                this.listen();
+            }
+        }
+
+        /**
+         * Define the websocket path
+         */
+        protected abstract path(): string;
+
+
+        /**
+         * Override this method to tell that the event must listen when created
+         */
+        protected listenOnBoot(): boolean {
+            return false;
+        }
+
+        /**
+         * Add the event to the endpoint. After that, the on trigger event can be triggered
+         */
+        public listen() {
+            if(!this._listening) {
+                this._listening = true;
+                if(!this.routeInfo) {
+                    this.routeInfo = {
+                        channel: this.path(),
+                        callback: this.onEvent
+                    };
+                }
+                this.endpoint.addRoute(this.routeInfo);
+            }
+        }
+
+        /**
+         * Remove the event from the endpoint. After that, the on trigger event won't be triggered
+         */
+        public stop() {
+            if(this._listening) {
+                this._listening = false;
+                this.endpoint.removeRoute(this.routeInfo);
+            }
+        }
+
+        protected onEvent(data: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
+            this.onTrigger.trigger([data, params, uid]);
+        }
+
+    }
+}

@@ -332,7 +332,7 @@ namespace AventusSharp.WebSocket
                 }
                 info.CustomFct = responseType.CustomFct;
             }
-            else if (attr is NoExport)
+            else if (attr is NoRoute)
             {
                 info.canUse = false;
             }

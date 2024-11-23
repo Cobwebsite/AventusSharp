@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -103,6 +104,7 @@ namespace CSharpToTypescript
             }
             return type.ContainingNamespace.ToString() + "." + type.Name;
         }
+        
         public static bool Is<X>(INamedTypeSymbol type, bool avoidInterface = false, bool avoidBaseAssembly = false)
         {
             bool result;

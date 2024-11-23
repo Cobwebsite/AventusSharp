@@ -1,13 +1,13 @@
 import { Storable } from "../Storable.data.avt";
-import { StorableRoute } from "../generated/Routes/StorableRoute.lib.avt";
+import { StorableRouter } from "../generated/Routes/StorableRouter.lib.avt";
 
 namespace RAM {
     export abstract class RamHttp<T extends Storable> extends Aventus.Ram<T> {
         protected getAllDone: boolean = false;
-        protected routes: StorableRoute<T>;
+        protected routes: StorableRouter<T>;
 
 
-        public abstract defineRoutes(): StorableRoute<T>;
+        public abstract defineRoutes(): StorableRouter<T>;
 
         protected constructor() {
             super();

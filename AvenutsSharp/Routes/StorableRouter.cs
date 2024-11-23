@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace AventusSharp.Routes
 {
-    public abstract class StorableRoute<T> : IRouter where T : IStorable
+    public abstract class StorableRouter<T> : IRouter where T : IStorable
     {
         protected virtual string StorableName()
         {

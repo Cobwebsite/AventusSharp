@@ -187,7 +187,7 @@ namespace CSharpToTypescript.Container
                         bool isValid = true;
                         foreach (Attribute attr in attrs)
                         {
-                            if (attr is NoExport)
+                            if (attr is NoExport || attr is NoRoute)
                             {
                                 isValid = false;
                                 break;
@@ -572,7 +572,7 @@ namespace CSharpToTypescript.Container
                 {
                     listenOnBoot = attrListenOnBoot.listen;
                 }
-                else if (attr is NoExport)
+                else if (attr is NoExport || attr is NoRoute)
                 {
                     canBeAdded = false;
                 }

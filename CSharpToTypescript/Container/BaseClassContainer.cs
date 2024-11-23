@@ -517,7 +517,28 @@ namespace CSharpToTypescript.Container
             };
             if (equalsSyntax is not null)
             {
-                result = equalsSyntax.Value.ToString();
+                if (equalsSyntax.Value is ObjectCreationExpressionSyntax newSyntax && newSyntax.Type is IdentifierNameSyntax nameSyntax)
+                {
+                    SymbolInfo temp = ProjectManager.Compilation.GetSemanticModel(nameSyntax.SyntaxTree).GetSymbolInfo(newSyntax);
+                    if(temp.Symbol is IMethodSymbol methodSymbol)
+                    {
+                        string typeName = this.GetTypeName(methodSymbol.ContainingType);
+                        result = "new " + typeName + "()";
+                        // TODO code it when example found
+                        //foreach (IParameterSymbol parameter in methodSymbol.Parameters)
+                        //{
+                            
+                        //}
+                    }
+                    else
+                    {
+                        result = equalsSyntax.Value.ToString();
+                    }
+                }
+                else
+                {
+                    result = equalsSyntax.Value.ToString();
+                }
             }
             if (result == "default")
             {

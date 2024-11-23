@@ -1,3 +1,4 @@
+using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using System;
 
 namespace AventusSharp.Routes.Attributes
@@ -13,7 +14,7 @@ namespace AventusSharp.Routes.Attributes
             {
                 txt = "/" + txt;
             }
-            if (txt.EndsWith("/"))
+            if (txt.EndsWith("/") && txt != "/")
             {
                 txt = txt.TrimEnd('/');
             }

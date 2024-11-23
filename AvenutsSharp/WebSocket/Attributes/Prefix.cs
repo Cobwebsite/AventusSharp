@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.FileSystemGlobbing.Internal;
+using System;
 
 namespace AventusSharp.WebSocket.Attributes
 {
@@ -12,7 +13,7 @@ namespace AventusSharp.WebSocket.Attributes
             {
                 txt = "/" + txt;
             }
-            if (txt.EndsWith("/"))
+            if (txt.EndsWith("/") && txt != "/")
             {
                 txt = txt.TrimEnd('/');
             }

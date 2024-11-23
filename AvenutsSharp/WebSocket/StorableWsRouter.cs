@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace AventusSharp.WebSocket
 {
-    public abstract class StorableWsRoute<T> : WsRouter where T : IStorable
+    public abstract class StorableWsRouter<T> : WsRouter where T : IStorable
     {
 
         protected IGenericDM<T>? DM;
         protected bool PreventEmitCreated { get; set; } = false;
         protected bool PreventEmitUpdated { get; set; } = false;
         protected bool PreventEmitDeleted { get; set; } = false;
-        public StorableWsRoute()
+        public StorableWsRouter()
         {
             this.DM = GetDM();
             BindEvents();

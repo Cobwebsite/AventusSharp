@@ -329,7 +329,7 @@ namespace CSharpToTypescript.Container
             _method = methodTemp;
             canBeAdded = true;
 
-            if (method.GetCustomAttribute(typeof(NoExport)) != null)
+            if (method.GetCustomAttribute(typeof(NoExport)) != null || method.GetCustomAttribute(typeof(NoRoute)) != null)
             {
                 canBeAdded = false;
                 return;

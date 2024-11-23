@@ -14,7 +14,7 @@ namespace AventusSharp.Routes.Attributes
             {
                 pattern = "/" + pattern;
             }
-            if (pattern.EndsWith("/"))
+            if (pattern.EndsWith("/") && pattern != "/")
             {
                 pattern = pattern.TrimEnd('/');
             }

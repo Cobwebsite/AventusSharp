@@ -1,4 +1,4 @@
-import { StorableWsRoute_CreateMany, type StorableWsRoute } from "../generated/WebSocket/StorableWsRoute.lib.avt";
+import { type StorableWsRouter } from "../generated/WebSocket/StorableWsRouter.lib.avt";
 import { Storable } from "../Storable.data.avt";
 
 namespace RAM {
@@ -14,7 +14,7 @@ namespace RAM {
     };
     export abstract class RamWebSocket<T extends Storable> extends Aventus.Ram<T> {
         protected getAllDone: boolean = false;
-        private routes: StorableWsRoute<T>;
+        private routes: StorableWsRouter<T>;
         protected otherGetAllLocked: { [uid: string]: true; } = {};
         protected otherGetByIdLocked: { [uid: string]: true; } = {};
         protected otherCreateItemLocked: { [uid: string]: true; } = {};
@@ -25,7 +25,7 @@ namespace RAM {
         protected otherDeleteListLocked: { [uid: string]: true; } = {};
 
 
-        public abstract defineRoutes(): StorableWsRoute<T>;
+        public abstract defineRoutes(): StorableWsRouter<T>;
 
         protected constructor() {
             super();

@@ -12,7 +12,7 @@ namespace AventusSharp.WebSocket.Attributes
             {
                 pattern = "/" + pattern;
             }
-            if (pattern.EndsWith("/"))
+            if (pattern.EndsWith("/") && pattern != "/")
             {
                 pattern = pattern.TrimEnd('/');
             }

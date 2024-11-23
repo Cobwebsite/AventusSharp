@@ -122,7 +122,7 @@ namespace AventusSharp.Routes
                             else if (methodAttribute is Put) { methodsToUse.Add(MethodType.Put); }
                             else if (methodAttribute is Options) { methodsToUse.Add(MethodType.Options); }
                             else if (methodAttribute is Delete) { methodsToUse.Add(MethodType.Delete); }
-                            else if (methodAttribute is NoExport)
+                            else if (methodAttribute is NoRoute)
                             {
                                 canUse = false;
                             }

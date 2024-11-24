@@ -4,9 +4,6 @@ namespace Routes {
 
 	export abstract class StorableRouter<T extends Aventus.IData> extends Aventus.HttpRoute {
 
-		public constructor(router?: Aventus.HttpRouter) {
-			super(router);
-		}
 
 		@BindThis()
 		public async GetAll(): Promise<ResultWithError<T[]>> {

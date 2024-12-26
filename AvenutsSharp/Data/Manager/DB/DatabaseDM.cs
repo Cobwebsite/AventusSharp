@@ -497,7 +497,7 @@ namespace AventusSharp.Data.Manager.DB
                         result.Errors.AddRange(resultTemp.Errors);
                     }
                 }
-
+                
                 return result;
             });
         }

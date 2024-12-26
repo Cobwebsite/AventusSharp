@@ -1268,10 +1268,7 @@ namespace AventusSharp.Data.Manager
                     {
                         result.Result = TransformList<U, X>(castedList);
                     }
-                    else
-                    {
-                        result.Errors = resultTemp.Errors;
-                    }
+                    result.Errors = resultTemp.Errors;
                 }
                 else
                 {
@@ -1368,10 +1365,7 @@ namespace AventusSharp.Data.Manager
                         {
                             result.Result = casted;
                         }
-                        else
-                        {
-                            result.Errors = resultTemp.Errors;
-                        }
+                        result.Errors = resultTemp.Errors;
                     }
                     else
                     {
@@ -1530,10 +1524,7 @@ namespace AventusSharp.Data.Manager
                     {
                         result.Result = TransformList<U, X>(castedList);
                     }
-                    else
-                    {
-                        result.Errors = resultTemp.Errors;
-                    }
+                    result.Errors = resultTemp.Errors;
                 }
                 else
                 {
@@ -1631,10 +1622,7 @@ namespace AventusSharp.Data.Manager
                         {
                             result.Result = castedItem;
                         }
-                        else
-                        {
-                            result.Errors = resultTemp.Errors;
-                        }
+                        result.Errors = resultTemp.Errors;
                     }
                     else
                     {
@@ -1790,10 +1778,7 @@ namespace AventusSharp.Data.Manager
                     {
                         result.Result = TransformList<U, X>(castedList);
                     }
-                    else
-                    {
-                        result.Errors = resultTemp.Errors;
-                    }
+                    result.Errors = resultTemp.Errors;
                 }
                 else
                 {
@@ -1888,10 +1873,7 @@ namespace AventusSharp.Data.Manager
                         {
                             result.Result = castedItem;
                         }
-                        else
-                        {
-                            result.Errors = resultTemp.Errors;
-                        }
+                        result.Errors = resultTemp.Errors;
                     }
                     else
                     {

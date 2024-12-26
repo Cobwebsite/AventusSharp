@@ -14,8 +14,11 @@ namespace AventusSharp.Data.Storage.Mysql
 {
     public class MySQLStorage : DefaultDBStorage<MySQLStorage>
     {
-        public MySQLStorage(StorageCredentials info) : base(info)
+        private bool useDatabase = true;
+        protected bool CreateDatabase { get; set; }
+        public MySQLStorage(StorageCredentials info, bool createDatabase = true) : base(info)
         {
+            CreateDatabase = createDatabase;
         }
 
         protected override DbConnection GetConnection()
@@ -25,8 +28,10 @@ namespace AventusSharp.Data.Storage.Mysql
                 Server = host,
                 UserID = username,
                 Password = password,
-                Database = database
             };
+            if (useDatabase)
+                builder.Database = database;
+
             if (port != null)
             {
                 builder.Port = (uint)port;
@@ -50,7 +55,7 @@ namespace AventusSharp.Data.Storage.Mysql
             {
                 if (e is MySqlException exception)
                 {
-                    if (exception.Number == 1049) // missing database
+                    if (exception.Number == 1049 && CreateDatabase) // missing database
                     {
                         try
                         {
@@ -59,12 +64,14 @@ namespace AventusSharp.Data.Storage.Mysql
                                 Server = host,
                                 UserID = username,
                                 Password = password,
-                                
+
                             };
                             using (DbConnection connection = new MySqlConnection(builder.ConnectionString))
                             {
+                                useDatabase = false;
                                 connection.Open();
-                                Execute("CREATE DATABASE " + database + ";");
+                                Execute("CREATE DATABASE " + database + ";").Print();
+                                useDatabase = true;
                             };
 
 
@@ -83,6 +90,7 @@ namespace AventusSharp.Data.Storage.Mysql
                         }
                         catch (Exception e2)
                         {
+                            useDatabase = true;
                             result.Errors.Add(new DataError(DataErrorCode.UnknowError, e2));
                         }
                     }

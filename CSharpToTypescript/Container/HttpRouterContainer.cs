@@ -4,6 +4,7 @@ using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Response;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
+using Microsoft.AspNetCore.Http;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -451,6 +452,7 @@ namespace CSharpToTypescript.Container
 
         private void LoadHttpMethod(MethodInfo methodSymbol)
         {
+            Dictionary<string, ParameterInfo> @params = method.GetParameters().ToDictionary(p => p.Name ?? "", p => p);
             List<object> attrs = methodSymbol.GetCustomAttributes(true).ToList();
             foreach (object attr in attrs)
             {
@@ -476,19 +478,37 @@ namespace CSharpToTypescript.Container
                 }
                 else if (attr is AventusSharp.Routes.Attributes.Path pathAttr)
                 {
-                    Dictionary<string, ParameterInfo> @params = method.GetParameters().ToDictionary(p => p.Name ?? "", p => p);
                     ParseRoute(pathAttr.pattern, @params);
                 }
-            }
-            if (httpMethods.Count == 0)
-            {
-                httpMethods.Add("get");
             }
             if (route == "")
             {
                 string defaultName = AventusSharp.Routes.Tools.GetDefaultMethodUrl(method);
-                ParseRoute(defaultName, new Dictionary<string, ParameterInfo>());
+                ParseRoute(defaultName, @params);
             }
+            bool hasBody = false;
+            foreach (var parameter in this.methodSymbol.Parameters)
+            {
+                if (parameter.Type.ToString()?.StartsWith("Microsoft") == true)
+                {
+                    continue;
+                }
+                if (Tools.HasAttribute<NoExport>(parameter))
+                {
+                    continue;
+                }
+                bool hasInParam = new Regex("{.*?}").IsMatch(route);
+                if (!hasInParam)
+                {
+                    hasBody = true;
+                }
+            }
+
+            if (httpMethods.Count == 0)
+            {
+                httpMethods.Add(hasBody ? "post" : "get");
+            }
+
         }
 
 
@@ -800,24 +820,24 @@ namespace CSharpToTypescript.Container
 
                     string typeReturn = string.Join(" | ", realTypes);
                     typeTxt = "type TypeResult = " + typeReturn + ";";
-                    fctDesc = fctDesc.Replace("$resultType", "Promise<"+ resultWithErrorType + "<" + typeReturn + ">>");
+                    fctDesc = fctDesc.Replace("$resultType", "Promise<" + resultWithErrorType + "<" + typeReturn + ">>");
                     returnTxt = "return await request.queryJSON<TypeResult>(this.router);";
                 }
 
             }
             else if (typeContainer == typeof(ByteResponse))
             {
-                fctDesc = fctDesc.Replace("$resultType", "Promise<"+ resultWithErrorType + "<Blob>>");
+                fctDesc = fctDesc.Replace("$resultType", "Promise<" + resultWithErrorType + "<Blob>>");
                 returnTxt = "return await request.queryBlob(this.router);";
             }
             else if (typeContainer == typeof(TextResponse))
             {
-                fctDesc = fctDesc.Replace("$resultType", "Promise<"+ resultWithErrorType + "<string>>");
+                fctDesc = fctDesc.Replace("$resultType", "Promise<" + resultWithErrorType + "<string>>");
                 returnTxt = "return await request.queryTxt(this.router);";
             }
             else
             {
-                fctDesc = fctDesc.Replace("$resultType", "Promise<"+ resultWithErrorType + "<string>>");
+                fctDesc = fctDesc.Replace("$resultType", "Promise<" + resultWithErrorType + "<string>>");
                 returnTxt = "return await request.queryTxt(this.router);";
             }
 

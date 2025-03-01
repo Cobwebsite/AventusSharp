@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using AventusSharp.Data.CustomTableMembers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
@@ -102,6 +103,21 @@ namespace AventusSharp.Tools
                     jo.WriteTo(writer);
                 }
                 else if (type.IsGenericType && type.GetInterfaces().Contains(typeof(IList)))
+                {
+                    IEnumerable values = (IEnumerable)value;
+                    IEnumerator valueEnumerator = values.GetEnumerator();
+                    JArray jo = new();
+                    while (valueEnumerator.MoveNext())
+                    {
+                        if (valueEnumerator.Current != null)
+                        {
+                            jo.Add(JToken.FromObject(valueEnumerator.Current, serializer));
+                        }
+
+                    }
+                    jo.WriteTo(writer);
+                }
+                else if (type.GetInterfaces().Contains(typeof(IStorableList)))
                 {
                     IEnumerable values = (IEnumerable)value;
                     IEnumerator valueEnumerator = values.GetEnumerator();

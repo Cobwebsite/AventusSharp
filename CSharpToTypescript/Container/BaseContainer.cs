@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data;
+using AventusSharp.Data.CustomTableMembers;
 using AventusSharp.Routes;
 using AventusSharp.Routes.Request;
 using AventusSharp.Tools;
@@ -336,6 +337,11 @@ namespace CSharpToTypescript.Container
             else if (fullName == typeof(WsRouter).FullName) result = "AventusSharp.WebSocket.Router";
             else if (fullName == typeof(WsEndPoint).FullName) result = "AventusSharp.WebSocket.EndPoint";
             else if (fullName == typeof(HttpFile).FullName) result = "File";
+            else if (fullName == typeof(StorableListInt).FullName) result = "number[]";
+            else if (fullName == typeof(StorableListFloat).FullName) result = "number[]";
+            else if (fullName == typeof(StorableListDouble).FullName) result = "number[]";
+            else if (fullName == typeof(StorableListBool).FullName) result = "boolean[]";
+            else if (fullName == typeof(StorableListString).FullName) result = "string[]";
             else if (fullName == typeof(List<>).FullName?.Split("`")[0] && type is INamedTypeSymbol namedType)
             {
                 isFull = true;

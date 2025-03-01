@@ -325,7 +325,7 @@ namespace WebSocket {
                     protocol = "wss";
                 }
                 this.log(`Connection successfully established to ${this.getUrl()}!`);
-                this.onOpen.trigger([]);
+                this.onOpen.trigger();
 
                 for(let i = 0; i < this.memoryBeforeOpen.length; i++) {
                     this.sendMessage(this.memoryBeforeOpen[i]);
@@ -353,7 +353,7 @@ namespace WebSocket {
                 return;
             }
             this.log('An error has occured');
-            this.onError.trigger([event]);
+            this.onError.trigger(event);
         }
 
         protected _onClose(event: Event) {
@@ -363,7 +363,7 @@ namespace WebSocket {
                 return;
             }
             this.log('Closing connection');
-            this.onClose.trigger([event]);
+            this.onClose.trigger(event);
         }
 
         /**

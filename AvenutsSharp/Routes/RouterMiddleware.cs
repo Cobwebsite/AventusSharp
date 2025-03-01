@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AventusSharp.Routes.Attributes;
-using AventusSharp.Routes.Form;
 using AventusSharp.Routes.Request;
 using AventusSharp.Routes.Response;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
-using Scriban.Syntax;
 
 namespace AventusSharp.Routes
 {
@@ -93,16 +89,7 @@ namespace AventusSharp.Routes
                         {
                             continue;
                         }
-                        List<RouterParameterInfo> fctParams = new List<RouterParameterInfo>();
-                        ParameterInfo[] parameters = method.GetParameters();
-                        foreach (ParameterInfo parameter in parameters)
-                        {
-                            fctParams.Add(new RouterParameterInfo(parameter.Name ?? "", parameter.ParameterType)
-                            {
-                                positionCSharp = parameter.Position,
-                            });
-                        }
-
+                        
                         List<string> routes = new List<string>();
                         List<Attribute> methodsAttribute = method.GetCustomAttributes().ToList();
                         List<MethodType> methodsToUse = new List<MethodType>();
@@ -128,15 +115,51 @@ namespace AventusSharp.Routes
                             }
                         }
                         if (!canUse) continue;
-                        if (methodsToUse.Count == 0)
-                        {
-                            methodsToUse.Add(MethodType.Get);
-                        }
+
+                        List<RouterParameterInfo> fctParams = new List<RouterParameterInfo>();
+                        ParameterInfo[] parameters = method.GetParameters();
+
                         if (routes.Count == 0)
                         {
                             string defaultName = prefix + Tools.GetDefaultMethodUrl(method);
                             routes.Add(defaultName);
                         }
+
+
+                        bool hasBody = false;
+                        foreach (ParameterInfo parameterInfo in parameters)
+                        {
+                            RouterParameterInfo parameter = new RouterParameterInfo(parameterInfo.Name ?? "", parameterInfo.ParameterType)
+                            {
+                                positionCSharp = parameterInfo.Position,
+                            };
+                            fctParams.Add(parameter);
+                            if (parameter.positionCSharp != -1)
+                            {
+                                bool hasInParam = false;
+                                foreach (string route in routes)
+                                {
+                                    if (ContainsParams(route, parameter))
+                                    {
+                                        hasInParam = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasInParam)
+                                {
+                                    if (parameter.type != typeof(HttpContext) && !injected.ContainsKey(parameter.type))
+                                    {
+                                        hasBody = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (methodsToUse.Count == 0)
+                        {
+                            methodsToUse.Add(hasBody ? MethodType.Post : MethodType.Get);
+                        }
+                        
                         foreach (string route in routes)
                         {
                             foreach (MethodType methodType in methodsToUse)
@@ -232,6 +255,10 @@ namespace AventusSharp.Routes
             }
             return urlPattern;
         }
+        public static bool ContainsParams(string urlPattern, RouterParameterInfo param)
+        {
+            return new Regex("{"+param.name+"}").IsMatch(urlPattern);
+        }
         public static string ReplaceParams(string urlPattern, Dictionary<string, RouterParameterInfo> @params)
         {
             MatchCollection matching = new Regex("{.*?}").Matches(urlPattern);
@@ -287,7 +314,7 @@ namespace AventusSharp.Routes
             }
         }
 
-        public static async Task OnRequest(HttpContext context, Func<Task> next)
+        public static async Task<RouterResolve?> Resolve(HttpContext context)
         {
             string url = context.Request.Path.ToString().ToLower();
 
@@ -300,8 +327,6 @@ namespace AventusSharp.Routes
                     Match match = routerInfo.pattern.Match(url);
                     if (match.Success)
                     {
-                        if (config.PrintTrigger)
-                            Console.WriteLine("trigger " + routerInfo.ToString());
                         RouterBody? body = null;
                         object?[] param = new object[routerInfo.nbParamsFunction];
                         foreach (RouterParameterInfo parameter in routerInfo.parameters.Values)
@@ -333,7 +358,7 @@ namespace AventusSharp.Routes
                                                 {
                                                     context.Response.StatusCode = 422;
                                                     await new Json(resultTemp).send(context, routerInfo.router);
-                                                    return;
+                                                    return null;
                                                 }
                                             }
                                             if (parameter.type == typeof(HttpFile))
@@ -351,7 +376,7 @@ namespace AventusSharp.Routes
                                                 {
                                                     context.Response.StatusCode = 422;
                                                     await new Json(bodyPart).send(context, routerInfo.router);
-                                                    return;
+                                                    return null;
                                                 }
                                                 value = bodyPart.Result;
                                             }
@@ -381,50 +406,66 @@ namespace AventusSharp.Routes
                                 }
                             }
                         }
-                        if (routerInfo.action.ReturnType == typeof(void))
-                        {
-                            routerInfo.action.Invoke(routerInfo.router, param);
-                            context.Response.StatusCode = 204;
-                        }
-                        else
-                        {
-                            object? o = routerInfo.action.Invoke(routerInfo.router, param);
-                            if (o is Task task)
-                            {
-                                task.Wait();
-                                if (!o.GetType().IsGenericType)
-                                {
-                                    context.Response.StatusCode = 204;
-                                    return;
-                                }
-                                o = o.GetType().GetProperty("Result")?.GetValue(o);
-                            }
-
-                            if (o is IResponse response)
-                            {
-                                await response.send(context, routerInfo.router);
-                            }
-                            else if (o is byte[] bytes)
-                            {
-                                await new ByteResponse(bytes).send(context, routerInfo.router);
-                            }
-                            else if (o is string txt)
-                            {
-                                await new TextResponse(txt).send(context, routerInfo.router);
-                            }
-                            else
-                            {
-                                await new Json(o).send(context, routerInfo.router);
-                            }
-                        }
-                        return;
+                        
+                        return new RouterResolve(routerInfo, param);
                     }
                 }
+            }
+            return null;
+        }
+        public static async Task OnRequest(HttpContext context, Func<Task> next)
+        {
+            RouterResolve? routerResolve = await Resolve(context);
+            if(routerResolve != null)
+            {
+                await OnRequest(context, routerResolve);
+                return;
             }
             await next();
         }
 
+        public static async Task OnRequest(HttpContext context, RouterResolve routerResolve)
+        {
+            RouteInfo routerInfo = routerResolve.RouteInfo;
+            object?[] param = routerResolve.Params;
+            if (routerInfo.action.ReturnType == typeof(void))
+            {
+                routerInfo.action.Invoke(routerInfo.router, param);
+                context.Response.StatusCode = 204;
+            }
+            else
+            {
+                object? o = routerInfo.action.Invoke(routerInfo.router, param);
+                if (o is Task task)
+                {
+                    task.Wait();
+                    if (!o.GetType().IsGenericType)
+                    {
+                        context.Response.StatusCode = 204;
+                        return;
+                    }
+                    o = o.GetType().GetProperty("Result")?.GetValue(o);
+                }
 
+                if (o is IResponse response)
+                {
+                    await response.send(context, routerInfo.router);
+                }
+                else if (o is byte[] bytes)
+                {
+                    await new ByteResponse(bytes).send(context, routerInfo.router);
+                }
+                else if (o is string txt)
+                {
+                    await new TextResponse(txt).send(context, routerInfo.router);
+                }
+                else
+                {
+                    await new Json(o).send(context, routerInfo.router);
+                }
+            }
+            return;
+        }
 
 
     }

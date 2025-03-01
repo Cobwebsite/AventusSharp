@@ -8,10 +8,8 @@ using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Routes;
 using AventusSharp.Routes.Request;
 using AventusSharp.Tools;
-using AventusSharp.Tools.Attributes;
-using MySqlX.XDevAPI.Common;
 
-namespace AventusSharp.Data
+namespace AventusSharp.Data.CustomTableMembers
 {
     internal class FileTableMember : CustomTableMember
     {
@@ -77,7 +75,8 @@ namespace AventusSharp.Data
         /// </summary>
         public HttpFile? Upload { get; set; }
 
-        public virtual void SetUriFromStorage(string uri) {
+        public virtual void SetUriFromStorage(string uri)
+        {
             Uri = uri;
         }
 

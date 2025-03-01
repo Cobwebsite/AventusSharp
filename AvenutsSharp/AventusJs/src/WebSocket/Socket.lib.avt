@@ -47,16 +47,16 @@ namespace WebSocket {
             const socket = new window.WebSocket(this.url);
             socket.onopen = (e) => {
                 clearInterval(this.reopenInterval);
-                this.onOpen.trigger([e]);
+                this.onOpen.trigger(e);
             };
             socket.onclose = (e) => {
-                this.onClose.trigger([e]);
+                this.onClose.trigger(e);
             };
             socket.onerror = (e) => {
-                this.onError.trigger([e]);
+                this.onError.trigger(e);
             };
             socket.onmessage = (e) => {
-                this.onMessage.trigger([e]);
+                this.onMessage.trigger(e);
             };
             this.socket = socket;
             return socket;

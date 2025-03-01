@@ -75,7 +75,7 @@ namespace WebSocket {
         }
 
         protected onEvent(data: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
-            this.onTrigger.trigger([data, params, uid]);
+            this.onTrigger.trigger(data, params, uid);
         }
 
     }

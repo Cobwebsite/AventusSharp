@@ -1,0 +1,2 @@
+dotnet publish CSharpToTypescript\CSharpToTypescript.csproj /p:PublishProfile=CSharpToTypescript\Properties\PublishProfiles\FolderProfile.pubxml
+dotnet publish CSharpToTypescript\CSharpToTypescript.csproj /p:PublishProfile=CSharpToTypescript\Properties\PublishProfiles\FolderProfile1.pubxml

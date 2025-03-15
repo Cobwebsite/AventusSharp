@@ -1,8 +1,5 @@
-﻿using AventusSharp.Data;
-using AventusSharp.Tools;
-using HttpMultipartParser;
+﻿using HttpMultipartParser;
 using Microsoft.AspNetCore.Http;
-using Mysqlx.Expr;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -121,7 +118,7 @@ namespace AventusSharp.Routes.Request
                             files.Add(realName, file);
                         }
                     }
-                    files[realName].stream.Write(buffer, 0, bytes);
+                    files[realName].stream?.Write(buffer, 0, bytes);
 
                 };
 
@@ -129,8 +126,8 @@ namespace AventusSharp.Routes.Request
                 await parser.RunAsync();
                 foreach (HttpFile file in files.Values)
                 {
-                    file.stream.Close();
-                    file.stream.Dispose();
+                    file.stream?.Close();
+                    file.stream?.Dispose();
                 }
             }
             catch (Exception e)
@@ -336,8 +333,15 @@ namespace AventusSharp.Routes.Request
         /// <summary>
         /// Only use during the upload process
         /// </summary>
-        internal FileStream stream;
-        public HttpFile(string formName, string filename, string filepath, string type, FileStream stream)
+        internal FileStream? stream;
+        public HttpFile(string formName, string filename, string filepath, string type)
+        {
+            FormName = formName;
+            FileName = filename;
+            FilePath = filepath;
+            Type = type;
+        }
+        internal HttpFile(string formName, string filename, string filepath, string type, FileStream stream)
         {
             FormName = formName;
             FileName = filename;

@@ -170,29 +170,29 @@ namespace CSharpToTypescript
 
         private string GetExtension()
         {
-            string result = ".lib.avt";
+            string result = "";
 
             foreach (var type in types)
             {
                 if (type is StorableContainer)
                 {
-                    if (result == ".lib.avt")
+                    if (result == "")
                     {
                         result = ".data.avt";
-                    }
-                    else if (result == ".data.avt")
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        result = ".lib.avt";
                     }
                 }
                 else if (type is EnumContainer)
                 {
                     continue;
                 }
+                else
+                {
+                    result = ".lib.avt";
+                }
+            }
+            if(result == "")
+            {
+                result = ".lib.avt";
             }
             return result;
         }

@@ -2,25 +2,17 @@
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Storage.Default.TableMember;
-using AventusSharp.Data.Storage.Mysql.Queries;
-using AventusSharp.Routes.Attributes;
 using AventusSharp.Tools;
-using MySql.Data.MySqlClient;
-using MySqlX.XDevAPI.Common;
-using Org.BouncyCastle.Asn1.Mozilla;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Transactions;
 
 namespace AventusSharp.Data.Storage.Default
 {
@@ -299,9 +291,9 @@ namespace AventusSharp.Data.Storage.Default
                                         {
                                             if (!temp.ContainsKey(reader.GetName(i)))
                                             {
-                                                if (reader[reader.GetName(i)] != null)
+                                                if (!reader.IsDBNull(i))
                                                 {
-                                                    string? valueString = reader[reader.GetName(i)].ToString();
+                                                    string? valueString = reader.GetValue(i).ToString();
                                                     valueString ??= "";
                                                     temp.Add(reader.GetName(i), valueString);
                                                 }
@@ -335,9 +327,9 @@ namespace AventusSharp.Data.Storage.Default
                                     {
                                         if (!temp.ContainsKey(reader.GetName(i)))
                                         {
-                                            if (reader[reader.GetName(i)] != null)
+                                            if (!reader.IsDBNull(i))
                                             {
-                                                string? valueString = reader[reader.GetName(i)].ToString();
+                                                string? valueString = reader.GetValue(i).ToString();
                                                 valueString ??= "";
                                                 temp.Add(reader.GetName(i), valueString);
                                             }
@@ -1036,7 +1028,7 @@ namespace AventusSharp.Data.Storage.Default
             VoidWithError result = new();
             ResultWithError<bool> tableExist = TableExist(table);
             result.Errors.AddRange(tableExist.Errors);
-           
+
             if (tableExist.Success && !tableExist.Result)
             {
                 string sql = PrepareSQLCreateTable(table);

@@ -1,8 +1,46 @@
-namespace Data {
+namespace Data.CustomTableMembers {
 
     @Convertible()
     export class AventusFile {
         public static get Fullname(): string { return "AventusSharp.Data.AventusFile, AventusSharp"; }
+        public Uri!: string;
+        public Upload?: File;
+
+        /**
+		 * Get the unique type for the data. Define it as the namespace + class name
+		 */
+		public get $type(): string {
+			return this.constructor['Fullname'];
+		}
+        
+        /**
+         * @inerhit
+         */
+        public toJSON() {
+            let toAvoid: string[] = ['className', 'namespace'];
+            return Aventus.Json.classToJson(this, {
+                isValidKey: (key) => !toAvoid.includes(key),
+                beforeEnd: (result) => {
+                    let resultTemp: { [key: string | number]: any; } = {};
+
+					if(result.$type) {
+						resultTemp.$type = result.$type;
+
+						for(let key in result) {
+							if(key != '$type') {
+								resultTemp[key] = result[key];
+							}
+						}
+						return resultTemp;
+					}
+
+					return result;
+                }
+            });
+        }
+    }
+
+    export abstract class GenericFile<T> {
         public Uri!: string;
         public Upload?: File;
 

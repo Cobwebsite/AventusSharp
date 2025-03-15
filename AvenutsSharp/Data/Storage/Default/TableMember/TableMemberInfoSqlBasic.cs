@@ -58,7 +58,11 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
         protected override void SetSqlValue(object obj, string? value)
         {
-            if (MemberType == typeof(int))
+            if (value == null && IsNullable)
+            {
+                SetValue(obj, value);
+            }
+            else if (MemberType == typeof(int))
             {
                 if (int.TryParse(value, out int nb))
                 {
@@ -103,11 +107,11 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             else if (MemberType == typeof(DateTime))
             {
-                if(value == null)
+                if (value == null)
                 {
                     SetValue(obj, null);
                 }
-                else if(DateTime.TryParse(value, out DateTime dateTime))
+                else if (DateTime.TryParse(value, out DateTime dateTime))
                 {
                     SetValue(obj, dateTime);
                 }

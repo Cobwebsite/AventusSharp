@@ -1,7 +1,5 @@
 ﻿using AventusSharp.Tools.Attributes;
-using AventusSharp.WebSocket.Attributes;
 using AventusSharp.WebSocket.Event;
-using System;
 using System.Collections.Generic;
 
 namespace AventusSharp.WebSocket
@@ -15,6 +13,7 @@ namespace AventusSharp.WebSocket
     {
         protected List<WsEndPoint> Endpoints { get; set; } = new List<WsEndPoint>();
 
+        [NoRoute]
         public void AddEndPoint(WsEndPoint endPoint)
         {
             if (!Endpoints.Contains(endPoint))

@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.CustomTableMembers;
+using AventusSharp.Tools.Attributes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -6,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace AventusSharp.Tools
 {
@@ -141,9 +141,10 @@ namespace AventusSharp.Tools
 
                     foreach (PropertyInfo prop in type.GetProperties())
                     {
+                        if(prop.GetCustomAttribute<NoExport>() != null) continue;
                         if (prop.CanRead && prop.GetIndexParameters().Length == 0)
                         {
-
+                            try{
                             object? propVal = prop.GetValue(value, null);
                             if (propVal != null)
                             {
@@ -152,12 +153,18 @@ namespace AventusSharp.Tools
                                     jo.Add(prop.Name, JToken.FromObject(propVal, serializer));
                                 }
                             }
+                            }catch(Exception e) {
+                                Console.WriteLine(type.Name);
+                                Console.WriteLine(prop.Name);
+                                Console.WriteLine(value);
+                                throw e;
+                            }
                         }
                     }
 
                     foreach (FieldInfo prop in type.GetFields())
                     {
-
+                        if(prop.GetCustomAttribute<NoExport>() != null) continue;
                         object? propVal = prop.GetValue(value);
                         if (propVal != null)
                         {

@@ -1,17 +1,11 @@
-﻿using AventusSharp.Data.Storage.Default;
-using AventusSharp.Tools;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Mysql.Tools
 {
     internal static class Utils
     {
-        private static readonly Random random = new();
         public static string CheckConstraint(string constraint)
         {
             if (constraint.Length > 64) // 128 mssql / 64 mysql

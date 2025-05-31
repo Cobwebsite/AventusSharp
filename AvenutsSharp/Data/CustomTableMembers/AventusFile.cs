@@ -1,6 +1,5 @@
 using System;
 using System.Data;
-using System.IO;
 using System.Reflection;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Storage.Default;
@@ -11,10 +10,10 @@ using AventusSharp.Tools;
 
 namespace AventusSharp.Data.CustomTableMembers
 {
-    internal class FileTableMember : CustomTableMember
+    internal class AventusFileTableMember : CustomTableMember
     {
         protected DataMemberInfo? dataMemberInfo { get; set; }
-        public FileTableMember(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
+        public AventusFileTableMember(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
             if (memberInfo != null)
             {
@@ -30,9 +29,12 @@ namespace AventusSharp.Data.CustomTableMembers
         public override object? GetSqlValue(object obj)
         {
             object? result = GetValue(obj);
-            if (result is AventusFile file)
+            if (result is _AventusFile file)
             {
-
+                ResultWithError<bool> beforeSaveResult = file.BeforeSave(obj);
+                if(!beforeSaveResult.Success) {
+                    throw beforeSaveResult.Errors[0].GetException();
+                }
                 return file.Uri;
             }
             return null;
@@ -43,7 +45,7 @@ namespace AventusSharp.Data.CustomTableMembers
             if (!string.IsNullOrEmpty(value) && dataMemberInfo != null && dataMemberInfo.Type != null)
             {
                 object? newFile = Activator.CreateInstance(dataMemberInfo.Type);
-                if (newFile is AventusFile file)
+                if (newFile is _AventusFile file)
                 {
                     file.SetUriFromStorage(value);
                     SetValue(obj, file);
@@ -57,14 +59,15 @@ namespace AventusSharp.Data.CustomTableMembers
     /// </summary>
     public interface IAventusFile
     {
-
+        string Uri { get; set; }
+        HttpFile? Upload { get; set; }
     }
 
     /// <summary>
     /// Class to handle file during process
     /// </summary>
-    [CustomTableMemberType<FileTableMember>]
-    public class AventusFile : IAventusFile
+    [CustomTableMemberType<AventusFileTableMember>]
+    public abstract class _AventusFile : IAventusFile
     {
         /// <summary>
         /// The current file Uri
@@ -76,25 +79,12 @@ namespace AventusSharp.Data.CustomTableMembers
         /// </summary>
         public HttpFile? Upload { get; set; }
 
+
         public virtual void SetUriFromStorage(string uri)
         {
             Uri = uri;
         }
-
-        public ResultWithError<bool> SaveToFolderOnUpload(string folderPath)
-        {
-            if (Upload == null)
-            {
-                ResultWithError<bool> result = new ResultWithError<bool>();
-                result.Result = true;
-                return result;
-            }
-
-            string savePath = Path.Combine(folderPath, Upload.FileName);
-            return SaveToFileOnUpload(savePath);
-        }
-
-        public ResultWithError<bool> SaveToFileOnUpload(string filePath)
+        public virtual ResultWithError<bool> BeforeSave(object instance)
         {
             ResultWithError<bool> result = new ResultWithError<bool>();
 
@@ -104,11 +94,48 @@ namespace AventusSharp.Data.CustomTableMembers
                 return result;
             }
 
-            ResultWithRouteError<bool> resultTemp = Upload.MoveWithError(filePath);
+            ResultWithRouteError<bool> resultTemp = Upload.MoveWithError(DefineFileSave(Upload));
             result.Result = resultTemp.Result;
             result.Errors = resultTemp.ToGeneric().Errors;
+            Upload = null;
 
             return result;
         }
+
+        protected abstract string DefineFileSave(HttpFile file);
+    }
+
+    public abstract class AventusFile<T> : _AventusFile where T : IStorable
+    {
+        public override sealed ResultWithError<bool> BeforeSave(object instance)
+        {
+            ResultWithError<bool> result = new ResultWithError<bool>();
+            if (instance is T tInstance)
+            {
+                return BeforeSave(tInstance);
+            }
+            string errorTxt = "The type " + GetType().Name + " is used on " + instance.GetType().Name + " that isn't a child of " + typeof(T).Name;
+            result.Errors.Add(new DataError(DataErrorCode.WrongType, errorTxt));
+            return result;
+        }
+
+        public virtual ResultWithError<bool> BeforeSave(T instance)
+        {
+            ResultWithError<bool> result = new ResultWithError<bool>();
+
+            if (Upload == null)
+            {
+                result.Result = true;
+                return result;
+            }
+
+            ResultWithRouteError<bool> resultTemp = Upload.MoveWithError(DefineFileSave(Upload));
+            result.Result = resultTemp.Result;
+            result.Errors = resultTemp.ToGeneric().Errors;
+            Upload = null;
+
+            return result;
+        }
+
     }
 }

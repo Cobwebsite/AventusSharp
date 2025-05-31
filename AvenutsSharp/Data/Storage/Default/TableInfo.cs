@@ -71,16 +71,22 @@ namespace AventusSharp.Data.Storage.Default
 
         public IGenericDM? DM { get; private set; }
 
-        public TableInfo(PyramidInfo pyramid)
+        public TableInfo(Type type)
         {
-            SqlTableName = GetSQLTableName(pyramid.type);
-            this.Type = pyramid.type;
-            if (pyramid.type.IsGenericType)
+            SqlTableName = GetSQLTableName(type);
+            Type = type;
+            if (type.IsGenericType)
             {
                 IsAbstract = true;
             }
             Name = TypeTools.GetReadableName(Type);
         }
+        public TableInfo(PyramidInfo pyramid) : this(pyramid.type)
+        {
+
+        }
+
+
 
         public VoidWithDataError Init()
         {
@@ -151,7 +157,7 @@ namespace AventusSharp.Data.Storage.Default
         private VoidWithDataError PrepareMembers(TableMemberInfo? temp)
         {
 
-            if(temp is TableMemberInfoSql sqlMember)
+            if (temp is TableMemberInfoSql sqlMember)
             {
                 VoidWithDataError result = sqlMember.PrepareForSQL();
                 if (!result.Success)
@@ -164,9 +170,9 @@ namespace AventusSharp.Data.Storage.Default
                     Primary = sqlMember;
                 }
             }
-            else if(temp is TableReverseMemberInfo reverseMember)
+            else if (temp is TableReverseMemberInfo reverseMember)
             {
-               
+
                 VoidWithDataError result = reverseMember.Prepare();
                 if (!result.Success)
                 {

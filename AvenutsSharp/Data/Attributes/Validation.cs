@@ -22,13 +22,16 @@ namespace AventusSharp.Data.Attributes
 
         public IStorable? Item { get; set; }
 
-        public ValidationContext(string fieldName, Type fieldType, Type? reflectedType, TableInfo tableInfo, IStorable? item)
+        public StorableAction Action { get; set; }
+
+        public ValidationContext(string fieldName, Type fieldType, Type? reflectedType, TableInfo tableInfo, StorableAction action, IStorable? item)
         {
             FieldName = fieldName;
             FieldType = fieldType;
             ReflectedType = reflectedType;
             TableInfo = tableInfo;
             Item = item;
+            Action = action;
         }
     }
 

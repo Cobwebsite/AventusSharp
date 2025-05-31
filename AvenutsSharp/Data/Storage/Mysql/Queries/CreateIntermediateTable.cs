@@ -47,7 +47,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             schema.Add(schemaProp);
             
             constraintName = Utils.CheckConstraint(constraintName);
-            string constraintProp = "\t" + "CONSTRAINT " + constraintName + " FOREIGN KEY (" + intermediateName + ") REFERENCES `" + instance.SqlTableName + "` (" + instance.Primary.SqlName + ")";
+            string constraintProp = "\t" + "CONSTRAINT " + constraintName + " FOREIGN KEY (" + intermediateName + ") REFERENCES `" + instance.SqlTableName + "` (" + instance.Primary.SqlName + ") ON DELETE CASCADE";
             foreignConstraint.Add(constraintProp);
 
 
@@ -62,7 +62,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             {
                 constraintName = "`FK_" + intermediateTableName + "_" + linkTableName + "`";
                 constraintName = Utils.CheckConstraint(constraintName);
-                constraintProp = "\t" + "CONSTRAINT " + constraintName + " FOREIGN KEY (" + intermediateName + ") REFERENCES `" + linkTableName + "` (" + linkPrimaryName + ")";
+                constraintProp = "\t" + "CONSTRAINT " + constraintName + " FOREIGN KEY (" + intermediateName + ") REFERENCES `" + linkTableName + "` (" + linkPrimaryName + ") ON DELETE CASCADE";
                 foreignConstraint.Add(constraintProp);
             }
             

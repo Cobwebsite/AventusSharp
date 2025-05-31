@@ -254,10 +254,10 @@ namespace AventusSharp.Data.Manager.DB
             }
         }
 
-        public List<GenericError> IsValueValid()
+        public List<GenericError> IsValueValid(StorableAction action)
         {
             TableMemberInfo memberInfo = MembersList[^1];
-            return memberInfo.IsValid(Value, RootValue);
+            return memberInfo.IsValid(Value, RootValue, action);
         }
 
     }

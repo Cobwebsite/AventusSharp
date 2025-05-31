@@ -141,30 +141,33 @@ namespace AventusSharp.Tools
 
                     foreach (PropertyInfo prop in type.GetProperties())
                     {
-                        if(prop.GetCustomAttribute<NoExport>() != null) continue;
+                        if (prop.GetCustomAttribute<NoExport>() != null) continue;
                         if (prop.CanRead && prop.GetIndexParameters().Length == 0)
                         {
-                            try{
-                            object? propVal = prop.GetValue(value, null);
-                            if (propVal != null)
+                            try
                             {
-                                if (!propToRemove.Contains(prop.Name) && !jo.ContainsKey(prop.Name))
+                                object? propVal = prop.GetValue(value, null);
+                                if (propVal != null)
                                 {
-                                    jo.Add(prop.Name, JToken.FromObject(propVal, serializer));
+                                    if (!propToRemove.Contains(prop.Name) && !jo.ContainsKey(prop.Name))
+                                    {
+                                        jo.Add(prop.Name, JToken.FromObject(propVal, serializer));
+                                    }
                                 }
                             }
-                            }catch(Exception e) {
+                            catch
+                            {
                                 Console.WriteLine(type.Name);
                                 Console.WriteLine(prop.Name);
                                 Console.WriteLine(value);
-                                throw e;
+                                throw;
                             }
                         }
                     }
 
                     foreach (FieldInfo prop in type.GetFields())
                     {
-                        if(prop.GetCustomAttribute<NoExport>() != null) continue;
+                        if (prop.GetCustomAttribute<NoExport>() != null) continue;
                         object? propVal = prop.GetValue(value);
                         if (propVal != null)
                         {

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.Dummy;
+using AventusSharp.Data.Migrations;
 
 namespace AventusSharp.Data
 {
@@ -54,7 +55,10 @@ namespace AventusSharp.Data
             }
             return type.Name.Split('`')[0];
         };
-
+        /// <summary>
+        /// Define if Aventus have to create models
+        /// </summary>
+        public bool AutoCreateModel { get; set; } = true;
         public DataManagerConfig()
         {
         }
@@ -885,6 +889,9 @@ namespace AventusSharp.Data
                         }
                     }
                 }
+
+                result.Run(() => MigrationManager.Run(searchingAssemblies));
+
                 foreach (IGenericDM dm in genericDMs)
                 {
                     if (monitor)

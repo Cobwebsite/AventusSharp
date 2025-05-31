@@ -1,6 +1,7 @@
 ﻿using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
@@ -440,6 +441,11 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region init
+        public MigrationFactory GetMigrationProvider()
+        {
+            return MigrationFactory.Register(DefineMigrationProvider());
+        }
+        protected abstract IMigrationProvider DefineMigrationProvider();
         public VoidWithError CreateLinks()
         {
             VoidWithError result = new VoidWithError();
@@ -690,8 +696,8 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         parameterInfo.Key.Value = null;
                     }
+                    errors.AddRange(parameterInfo.Key.IsValueValid(action));
 
-                    errors.AddRange(parameterInfo.Key.IsValueValid());
                 }
                 parametersValue["@" + parameterInfo.Key.Name] = TransformValueForFct(parameterInfo.Key);
             }
@@ -1955,6 +1961,8 @@ namespace AventusSharp.Data.Storage.Default
             result += "/" + database;
             return result;
         }
+
+        
     }
 
 

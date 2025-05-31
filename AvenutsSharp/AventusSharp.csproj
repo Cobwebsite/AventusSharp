@@ -41,10 +41,11 @@
   <ItemGroup>
     <PackageReference Include="HttpMultipartParser" Version="8.3.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
     <PackageReference Include="MySql.Data" Version="8.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Npgsql" Version="9.0.3" />
-    <PackageReference Include="Scriban" Version="5.9.1" />
+    <PackageReference Include="Scriban" Version="6.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.1" />
   </ItemGroup>
 

@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
 using System;
 using System.Collections;
@@ -22,7 +23,7 @@ namespace AventusSharp.Data.Storage.Default
         public VoidWithError DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> queryBuilder, List<X> elementsToDelete) where X : IStorable;
         public VoidWithError CreateTable(PyramidInfo pyramid);
         public ResultWithError<bool> TableExist(PyramidInfo pyramid);
-       
+
         public VoidWithError ConnectWithError();
         public ResultWithError<bool> ResetStorage();
 
@@ -32,6 +33,8 @@ namespace AventusSharp.Data.Storage.Default
         public ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action);
         public ResultWithError<Y> RunInsideTransaction<Y>(Func<ResultWithError<Y>> action);
         public VoidWithError RunInsideTransaction(Func<VoidWithError> action);
+
+        public abstract MigrationFactory GetMigrationProvider();
     }
 
 

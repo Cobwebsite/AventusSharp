@@ -5,6 +5,7 @@ using System.Data.Common;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
@@ -16,9 +17,11 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
 {
     private bool useDatabase = true;
     protected bool CreateDatabase { get; set; }
+    protected PostgreSqlMigrationProvider MigrationProvider { get; }
     public PostgreSqlStorage(StorageCredentials info, bool createDatabase = true) : base(info)
     {
         CreateDatabase = createDatabase;
+        MigrationProvider = new PostgreSqlMigrationProvider(this);
     }
 
     protected override DbConnection GetConnection()
@@ -37,6 +40,11 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
             builder.Port = (int)port;
         }
         return new NpgsqlConnection(builder.ConnectionString);
+    }
+
+    protected override IMigrationProvider DefineMigrationProvider()
+    {
+        return MigrationProvider;
     }
 
     public override VoidWithError ConnectWithError()

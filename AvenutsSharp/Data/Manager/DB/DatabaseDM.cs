@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
 using System;
@@ -183,12 +184,18 @@ namespace AventusSharp.Data.Manager.DB
             {
                 result = storage.CreateLinks();
                 if (!result.Success) return Task.FromResult(result);
-
-                result = storage.CreateTable(PyramidInfo);
+                if (Config != null && Config.AutoCreateModel)
+                {
+                    result = storage.CreateTable(PyramidInfo);
+                }
                 return Task.FromResult(result);
             }
             result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name));
             return Task.FromResult(result);
+        }
+        protected override MigrationFactory GetMigrationProvider()
+        {
+            return Storage.GetMigrationProvider(); 
         }
 
 

@@ -200,15 +200,15 @@ namespace CSharpToTypescript.Container
             }
             return "";
         }
-        private bool isParsingExtension = false;
+        //private bool isParsingExtension = false;
         private string GetExtension()
         {
             string extend = "AventusSharp.Socket.WsEvent";
             if (type.BaseType != null && type.BaseType.Name != "Object")
             {
-                isParsingExtension = true;
+                //isParsingExtension = true;
                 extend = GetTypeName(type.BaseType);
-                isParsingExtension = false;
+                //isParsingExtension = false;
             }
 
 

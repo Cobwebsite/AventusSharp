@@ -1,6 +1,7 @@
 ﻿using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
@@ -16,9 +17,11 @@ namespace AventusSharp.Data.Storage.Mysql
     {
         private bool useDatabase = true;
         protected bool CreateDatabase { get; set; }
+        protected MySQLMigrationProvider MigrationProvider { get; }
         public MySQLStorage(StorageCredentials info, bool createDatabase = true) : base(info)
         {
             CreateDatabase = createDatabase;
+            MigrationProvider = new MySQLMigrationProvider(this);
         }
 
         protected override DbConnection GetConnection()
@@ -39,6 +42,10 @@ namespace AventusSharp.Data.Storage.Mysql
             return new MySqlConnection(builder.ConnectionString);
         }
 
+        protected override IMigrationProvider DefineMigrationProvider()
+        {
+            return MigrationProvider;
+        }
         public override VoidWithError ConnectWithError()
         {
             VoidWithError result = new();
@@ -72,7 +79,8 @@ namespace AventusSharp.Data.Storage.Mysql
                                 connection.Open();
                                 Execute("CREATE DATABASE " + database + ";").Print();
                                 useDatabase = true;
-                            };
+                            }
+                            ;
 
 
 
@@ -255,5 +263,7 @@ namespace AventusSharp.Data.Storage.Mysql
             }
             throw new NotImplementedException();
         }
+
+
     }
 }

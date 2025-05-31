@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Routes.Request;
 using AventusSharp.Tools;
@@ -246,6 +247,7 @@ namespace AventusSharp.Data.Manager
             {
                 printErrorInConsole = config.log.printErrorInConsole;
             }
+            GetMigrationProvider();
             result = SetDMForType(pyramid, true).ToGeneric();
             return Task.FromResult(result);
         }
@@ -293,6 +295,7 @@ namespace AventusSharp.Data.Manager
             try
             {
                 result = await Initialize();
+
                 if (result.Success)
                 {
                     IsInit = true;
@@ -306,10 +309,50 @@ namespace AventusSharp.Data.Manager
         }
         protected abstract Task<VoidWithError> Initialize();
 
+        protected abstract MigrationFactory GetMigrationProvider();
+
         protected bool? MustPrintErrorInConsole()
         {
             return null;
         }
+        #endregion
+
+        #region Migration
+        protected VoidWithError ApplyMigration(MigrationModel<U> model)
+        {
+            VoidWithError result = new();
+            Console.WriteLine(model.ToString());
+            return result;
+        }
+        private MethodInfo? IApplyMigration = null;
+        VoidWithError IGenericDM.ApplyMigration<X>(IMigrationModel model)
+        {
+             try
+            {
+                VoidWithError? result = InvokeMethod<VoidWithError, X>(ref IApplyMigration, new object[] { model });
+                if (result == null)
+                {
+                    result = new VoidWithError();
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method ApplyMigration"));
+                }
+                return result;
+            }
+            catch (Exception e)
+            {
+                VoidWithError result = new ();
+                if (e is AventusException aventusException)
+                {
+                    result.Errors.Add(aventusException.Error);
+                }
+                else
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                }
+                return result;
+            }
+            
+        }
+
         #endregion
 
         #region generic query

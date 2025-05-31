@@ -9,6 +9,7 @@ using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Manager.DB;
 using System.Data;
 using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Migrations;
 
 namespace AventusSharp.Data.Storage.Mssql;
 
@@ -16,9 +17,11 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
 {
     private bool useDatabase = true;
     protected bool CreateDatabase { get; set; }
+    protected MsSqlMigrationProvider MigrationProvider { get; }
     public MsSqlStorage(StorageCredentials info, bool createDatabase = true) : base(info)
     {
         CreateDatabase = createDatabase;
+        MigrationProvider = new MsSqlMigrationProvider(this);
     }
 
     protected override DbConnection GetConnection()
@@ -38,7 +41,10 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         }
         return new SqlConnection(builder.ConnectionString);
     }
-
+    protected override IMigrationProvider DefineMigrationProvider()
+    {
+        return MigrationProvider;
+    }
     public override VoidWithError ConnectWithError()
     {
         VoidWithError result = new();

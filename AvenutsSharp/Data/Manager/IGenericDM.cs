@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+﻿using AventusSharp.Data.Migrations;
+using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -72,6 +73,8 @@ namespace AventusSharp.Data.Manager
         void OnItemLoaded<X>(X item) where X : notnull, IStorable;
 
         internal void PrintErrors(IWithError withError);
+
+        internal VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
     }
     public interface IGenericDM<U> : IGenericDM where U : notnull, IStorable
     {

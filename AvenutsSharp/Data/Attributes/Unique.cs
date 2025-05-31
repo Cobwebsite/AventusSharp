@@ -1,14 +1,9 @@
 ﻿using AventusSharp.Data.Manager;
-using AventusSharp.Data.Storage.Mysql.Queries;
 using AventusSharp.Tools;
-using Google.Protobuf.WellKnownTypes;
-using MySqlX.XDevAPI.Common;
 using System;
 using System.Collections;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using static Google.Protobuf.WireFormat;
 using Type = System.Type;
 
 namespace AventusSharp.Data.Attributes
@@ -32,6 +27,8 @@ namespace AventusSharp.Data.Attributes
 
         public override ValidationResult IsValid(object? value, ValidationContext context)
         {
+            if(value == null) return ValidationResult.Success;
+            
             if (query == null && context.TableInfo.DM != null && context.ReflectedType != null)
             {
                 MethodInfo? m = GetType().GetMethod("LoadQuery", BindingFlags.NonPublic | BindingFlags.Instance);

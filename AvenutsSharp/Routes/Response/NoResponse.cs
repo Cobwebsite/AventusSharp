@@ -5,9 +5,9 @@ namespace AventusSharp.Routes.Response
 {
     public class NoResponse : IResponse
     {
-        public async Task send(HttpContext context, IRouter? from = null)
+        public Task send(HttpContext context, IRouter? from = null)
         {
-            
+           return Task.CompletedTask;
         }
     }
 }

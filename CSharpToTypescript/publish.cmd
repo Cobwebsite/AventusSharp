@@ -1,2 +1,2 @@
-dotnet publish CSharpToTypescript\CSharpToTypescript.csproj /p:PublishProfile=CSharpToTypescript\Properties\PublishProfiles\FolderProfile.pubxml
-dotnet publish CSharpToTypescript\CSharpToTypescript.csproj /p:PublishProfile=CSharpToTypescript\Properties\PublishProfiles\FolderProfile1.pubxml
+dotnet publish D:\Aventus\AvenutsSharp\CSharpToTypescript\CSharpToTypescript.csproj /p:PublishProfile=D:\Aventus\AvenutsSharp\CSharpToTypescript\Properties\PublishProfiles\FolderProfile.pubxml
+dotnet publish D:\Aventus\AvenutsSharp\CSharpToTypescript\CSharpToTypescript.csproj /p:PublishProfile=D:\Aventus\AvenutsSharp\CSharpToTypescript\Properties\PublishProfiles\FolderProfile1.pubxml

@@ -10,9 +10,10 @@ namespace AventusSharp.Routes.Response
         {
             this.uri = uri;
         }
-        public async Task send(HttpContext context, IRouter? from = null)
+        public Task send(HttpContext context, IRouter? from = null)
         {
            context.Response.Redirect(uri);
+           return Task.CompletedTask;
         }
     }
 }

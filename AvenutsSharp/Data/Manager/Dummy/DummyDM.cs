@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+﻿using AventusSharp.Data.Migrations;
+using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -129,7 +130,10 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             return Task.FromResult(new VoidWithError());
         }
-
+        protected override MigrationFactory GetMigrationProvider()
+        {
+            return MigrationFactory.Make<DummyMigrationProvider>();
+        }
         private readonly Dictionary<Type, object> savedUpdateQuery = new();
         protected override ResultWithError<List<X>> UpdateLogic<X>(List<X> values)
         {
@@ -192,6 +196,7 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
+
 
     }
 }

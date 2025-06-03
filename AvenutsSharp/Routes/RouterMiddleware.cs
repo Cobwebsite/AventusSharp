@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AventusSharp.Mcp;
+using AventusSharp.Mcp.Attributes;
 using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Request;
 using AventusSharp.Routes.Response;
@@ -53,7 +56,7 @@ namespace AventusSharp.Routes
             VoidWithRouteError result = new VoidWithRouteError();
             LoadConfig();
             Func<string, Dictionary<string, RouterParameterInfo>, Type, MethodInfo, Regex> transformPattern = config.transformPattern ?? PrepareUrl;
-
+            McpMiddleware.ClearHttpMethods();
             foreach (Type t in types)
             {
                 if (routerInstances.ContainsKey(t))
@@ -89,11 +92,12 @@ namespace AventusSharp.Routes
                         {
                             continue;
                         }
-                        
+
                         List<string> routes = new List<string>();
                         List<Attribute> methodsAttribute = method.GetCustomAttributes().ToList();
                         List<MethodType> methodsToUse = new List<MethodType>();
                         bool canUse = true;
+                        bool addMcp = false;
                         foreach (Attribute methodAttribute in methodsAttribute)
                         {
                             if (methodAttribute is Attributes.Path pathAttr)
@@ -113,6 +117,10 @@ namespace AventusSharp.Routes
                             {
                                 canUse = false;
                             }
+                            else if (methodAttribute is McpTool)
+                            {
+                                addMcp = true;
+                            }
                         }
                         if (!canUse) continue;
 
@@ -129,10 +137,23 @@ namespace AventusSharp.Routes
                         bool hasBody = false;
                         foreach (ParameterInfo parameterInfo in parameters)
                         {
-                            RouterParameterInfo parameter = new RouterParameterInfo(parameterInfo.Name ?? "", parameterInfo.ParameterType)
+                            Type type = parameterInfo.ParameterType;
+                            bool mandatory = true;
+                            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                            {
+                                type = type.GetGenericArguments()[0];
+                                mandatory = false;
+                            }
+                            else if (parameterInfo.DefaultValue != null)
+                            {
+                                mandatory = false;
+                            }
+                            RouterParameterInfo parameter = new RouterParameterInfo(parameterInfo.Name ?? "", type, mandatory)
                             {
                                 positionCSharp = parameterInfo.Position,
-                            };
+                                description = parameterInfo.GetCustomAttribute<DescriptionAttribute>()?.Description
+                            }
+                            ;
                             fctParams.Add(parameter);
                             if (parameter.positionCSharp != -1)
                             {
@@ -159,7 +180,19 @@ namespace AventusSharp.Routes
                         {
                             methodsToUse.Add(hasBody ? MethodType.Post : MethodType.Get);
                         }
-                        
+
+                        if (addMcp)
+                        {
+                            List<RouterParameterInfo> _params = fctParams.FindAll(p => !injected.ContainsKey(p.type));
+                            McpMiddleware.AddHttpMethod(new McpHttpMethod()
+                            {
+                                _params = fctParams,
+                                _paramsFilter = _params,
+                                method = method,
+                                router = routerInstances[t]
+                            });
+                        }
+
                         foreach (string route in routes)
                         {
                             foreach (MethodType methodType in methodsToUse)
@@ -257,7 +290,7 @@ namespace AventusSharp.Routes
         }
         public static bool ContainsParams(string urlPattern, RouterParameterInfo param)
         {
-            return new Regex("{"+param.name+"}").IsMatch(urlPattern);
+            return new Regex("{" + param.name + "}").IsMatch(urlPattern);
         }
         public static string ReplaceParams(string urlPattern, Dictionary<string, RouterParameterInfo> @params)
         {
@@ -406,7 +439,7 @@ namespace AventusSharp.Routes
                                 }
                             }
                         }
-                        
+
                         return new RouterResolve(routerInfo, param);
                     }
                 }
@@ -416,7 +449,7 @@ namespace AventusSharp.Routes
         public static async Task OnRequest(HttpContext context, Func<Task> next)
         {
             RouterResolve? routerResolve = await Resolve(context);
-            if(routerResolve != null)
+            if (routerResolve != null)
             {
                 await OnRequest(context, routerResolve);
                 return;

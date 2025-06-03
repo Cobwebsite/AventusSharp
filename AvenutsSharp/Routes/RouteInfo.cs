@@ -37,14 +37,17 @@ namespace AventusSharp.Routes
     public class RouterParameterInfo
     {
         public string name;
+        public string? description;
         public Type type;
         public int positionCSharp = -1;
         public int positionUrl = -1;
+        public bool mandatory;
 
-        public RouterParameterInfo(string name, Type type)
+        public RouterParameterInfo(string name, Type type, bool mandatory)
         {
             this.name = name;
             this.type = type;
+            this.mandatory = mandatory;
         }
     }
 

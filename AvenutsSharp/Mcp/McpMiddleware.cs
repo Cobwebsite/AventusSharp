@@ -92,9 +92,9 @@ public static class McpMiddleware
 
 
         // IMcpServer server = McpServerFactory.Create(new StdioServerTransport("MyServer"), options);
-        IMcpServer server = McpServerFactory.Create(new StreamableHttpServerTransport(), options);
+        // IMcpServer server = McpServerFactory.Create(new StreamableHttpServerTransport(), options);
         // IMcpServer server = McpServerFactory.Create(new StreamableHttpPostTransport(), options);
-        server.RunAsync();
+        // server.RunAsync();
         return result.ToGeneric();
     }
 

@@ -350,12 +350,18 @@ namespace AventusSharp.Routes
         public static async Task<RouterResolve?> Resolve(HttpContext context)
         {
             string url = context.Request.Path.ToString().ToLower();
+            string method = context.Request.Method.ToLower();
+
+            if (config.PrintRequest)
+            {
+                Console.WriteLine("trigger " + url + " " + method);
+            }
 
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
             {
                 RouteInfo routerInfo = routeInfo.Value;
 
-                if (routerInfo.method.ToString().ToLower() == context.Request.Method.ToLower())
+                if (routerInfo.method.ToString().ToLower() == method)
                 {
                     Match match = routerInfo.pattern.Match(url);
                     if (match.Success)
@@ -438,6 +444,10 @@ namespace AventusSharp.Routes
 
                                 }
                             }
+                        }
+                        if (config.PrintTrigger)
+                        {
+                            Console.WriteLine("trigger " + routerInfo.ToString());
                         }
 
                         return new RouterResolve(routerInfo, param);

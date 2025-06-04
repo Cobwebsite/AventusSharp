@@ -45,6 +45,10 @@ namespace AventusSharp.Routes
         /// Set to true to print route triggered
         /// </summary>
         public bool PrintTrigger { get; set; } = false;
+        /// <summary>
+        /// Set to true to print all requests 
+        /// </summary>
+        public bool PrintRequest { get; set; } = false;
 
 
         public RouterConfig()

@@ -69,6 +69,20 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     SetValue(obj, nb);
                 }
             }
+            else if (MemberType == typeof(short))
+            {
+                if (short.TryParse(value, out short nb))
+                {
+                    SetValue(obj, nb);
+                }
+            }
+            else if (MemberType == typeof(long))
+            {
+                if (long.TryParse(value, out long nb))
+                {
+                    SetValue(obj, nb);
+                }
+            }
             else if (MemberType == typeof(double))
             {
                 if (double.TryParse(value, out double nb))
@@ -96,7 +110,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             else if (MemberType == typeof(bool))
             {
-                if (value == "1")
+                if (value == "1" || value?.ToLower() == "true")
                 {
                     SetValue(obj, true);
                 }

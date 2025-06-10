@@ -3,7 +3,7 @@
 namespace AventusSharp.Data.Attributes
 {
    
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class)]
     public class SqlName : Attribute
     {
 

@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
 
@@ -21,6 +23,7 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
     }
 }
 
+[ManualInit]
 internal class MigrationTable : Storable<MigrationTable>
 {
     public required string Name { get; set; }

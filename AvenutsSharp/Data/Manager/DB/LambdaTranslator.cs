@@ -423,6 +423,8 @@ namespace AventusSharp.Data.Manager.DB
             List<Type> listAllowed = new List<Type>()
             {
                 typeof(List<int>),
+                typeof(List<long>),
+                typeof(List<short>),
                 typeof(List<decimal>),
                 typeof(List<double>),
                 typeof(List<float>),

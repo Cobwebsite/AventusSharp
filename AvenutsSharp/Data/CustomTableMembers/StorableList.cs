@@ -89,6 +89,14 @@ namespace AventusSharp.Data.CustomTableMembers
     {
         protected override bool stringToValue(string value, out int result) => int.TryParse(value, out result);
     }
+    public class StorableListShort : StorableList<short>
+    {
+        protected override bool stringToValue(string value, out short result) => short.TryParse(value, out result);
+    }
+    public class StorableListLong : StorableList<long>
+    {
+        protected override bool stringToValue(string value, out long result) => long.TryParse(value, out result);
+    }
     public class StorableListFloat : StorableList<float>
     {
         protected override bool stringToValue(string value, out float result) => float.TryParse(value, out result);

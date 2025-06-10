@@ -406,7 +406,7 @@ namespace AventusSharp.Data
                 List<Type> dataTypes = new();
                 foreach (Assembly assembly in searchingAssemblies)
                 {
-                    dataTypes.AddRange(assembly.GetTypes().Where(type => type.GetInterfaces().Contains(typeof(IStorable)) && (type.IsClass || type.IsInterface)).ToList());
+                    dataTypes.AddRange(assembly.GetTypes().Where(type => type.GetInterfaces().Contains(typeof(IStorable)) && (type.IsClass || type.IsInterface) && type.GetCustomAttribute<ManualInit>() == null).ToList());
                 }
                 dataTypes.Insert(0, typeof(IStorable));
 

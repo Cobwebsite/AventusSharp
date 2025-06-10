@@ -19,7 +19,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
     {
         public DbType SqlType { get; }
     }
-    public interface ITableMemberInfoSizable {
+    public interface ITableMemberInfoSizable
+    {
         public Size? SizeAttr { get; }
     }
     public interface ITableMemberInfoSqlLinkSingle : ITableMemberInfoSqlLink, ITableMemberInfoSqlWritable
@@ -45,6 +46,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 return null;
             if (type == typeof(int))
                 return DbType.Int32;
+            if (type == typeof(short))
+                return DbType.Int16;
+            if (type == typeof(long))
+                return DbType.Int64;
             if (type == typeof(double) || type == typeof(float) || type == typeof(decimal))
                 return DbType.Double;
             if (type == typeof(string))
@@ -135,7 +140,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 if (memberInfo is PropertyInfo propertyInfo)
                 {
-                    NullabilityInfo info =  new NullabilityInfoContext().Create(propertyInfo);
+                    NullabilityInfo info = new NullabilityInfoContext().Create(propertyInfo);
                     if (info.WriteState == NullabilityState.Nullable || info.ReadState == NullabilityState.Nullable)
                     {
                         isNullable = true;
@@ -143,7 +148,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 else if (memberInfo is FieldInfo fieldInfo)
                 {
-                    NullabilityInfo info =  new NullabilityInfoContext().Create(fieldInfo);
+                    NullabilityInfo info = new NullabilityInfoContext().Create(fieldInfo);
                     if (info.WriteState == NullabilityState.Nullable || info.ReadState == NullabilityState.Nullable)
                     {
                         isNullable = true;
@@ -284,7 +289,22 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public bool IsDeleteSetNull { get; protected set; }
         public bool IsUpdatable { get; internal set; } = true;
         public bool IsUnique { get; internal set; }
-        public string SqlName { get; protected set; } = "";
+
+        private string _sqlName = "";
+        public string SqlName
+        {
+            get
+            {
+                return _sqlName;
+            }
+            protected set
+            {
+                if (_sqlName == "")
+                {
+                    _sqlName = value;
+                }
+            }
+        }
 
         protected bool IsNullByAttribute { get; set; } = false;
 

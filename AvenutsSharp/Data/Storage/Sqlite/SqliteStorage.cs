@@ -196,7 +196,9 @@
 
 //     public override string GetSqlColumnType(DbType dbType, TableMemberInfoSql? tableMember = null)
 //     {
+//         if (dbType == DbType.Int16) { return "smallint"; }
 //         if (dbType == DbType.Int32) { return "int"; }
+//         if (dbType == DbType.Int64) { return "bigint"; }
 //         if (dbType == DbType.Double) { return "float"; }
 //         if (dbType == DbType.Boolean) { return "bit"; }
 //         if (dbType == DbType.DateTime) { return "datetime"; }

@@ -42,6 +42,7 @@ namespace AventusSharp.Routes
         public int positionCSharp = -1;
         public int positionUrl = -1;
         public bool mandatory;
+        public bool isFullForm;
 
         public RouterParameterInfo(string name, Type type, bool mandatory)
         {

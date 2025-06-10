@@ -178,11 +178,11 @@ namespace AventusSharp.Routes.Request
         /// </summary>
         /// <param name="propPath"></param>
         /// <param name="result"></param>
-        protected void AddFileToResult(string propPath, object result)
+        protected void AddFileToResult(string? propPath, object result)
         {
             foreach (KeyValuePair<string, HttpFile> fileStored in files)
             {
-                if (fileStored.Key.StartsWith(propPath))
+                if (propPath == null || fileStored.Key.StartsWith(propPath))
                 {
                     string missingPath = fileStored.Key.Replace(propPath + ".", "");
                     string[] splitted = missingPath.Split(".");
@@ -281,27 +281,29 @@ namespace AventusSharp.Routes.Request
         /// <param name="type">Type needed</param>
         /// <param name="propPath">Path where to find data</param>
         /// <returns></returns>
-        public ResultWithRouteError<object> GetData(Type type, string propPath)
+        public ResultWithRouteError<object> GetData(Type type, string? propPath = null)
         {
             ResultWithRouteError<object> result = new();
 
             try
             {
                 JToken? dataToUse = data;
-                string[] props = propPath.Split(".");
-                foreach (string prop in props)
+                if (propPath != null)
                 {
-                    if (!string.IsNullOrEmpty(prop))
+                    string[] props = propPath.Split(".");
+                    foreach (string prop in props)
                     {
-                        dataToUse = dataToUse[prop];
-                        if (dataToUse == null)
+                        if (!string.IsNullOrEmpty(prop))
                         {
-                            result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
-                            return result;
+                            dataToUse = dataToUse[prop];
+                            if (dataToUse == null)
+                            {
+                                result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
+                                return result;
+                            }
                         }
                     }
                 }
-
                 
                 object? temp = JsonConvert.DeserializeObject(
                     JsonConvert.SerializeObject(dataToUse),

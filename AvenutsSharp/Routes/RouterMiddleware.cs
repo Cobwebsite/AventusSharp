@@ -151,7 +151,8 @@ namespace AventusSharp.Routes
                             RouterParameterInfo parameter = new RouterParameterInfo(parameterInfo.Name ?? "", type, mandatory)
                             {
                                 positionCSharp = parameterInfo.Position,
-                                description = parameterInfo.GetCustomAttribute<DescriptionAttribute>()?.Description
+                                description = parameterInfo.GetCustomAttribute<DescriptionAttribute>()?.Description,
+                                isFullForm = parameterInfo.GetCustomAttribute<FullForm>() == null ? false : true
                             }
                             ;
                             fctParams.Add(parameter);
@@ -407,6 +408,17 @@ namespace AventusSharp.Routes
                                             else if (parameter.type == typeof(List<HttpFile>))
                                             {
                                                 value = body.GetFiles(parameter.name);
+                                            }
+                                            else if (parameter.isFullForm)
+                                            {
+                                                ResultWithRouteError<object> bodyPart = body.GetData(parameter.type);
+                                                if (!bodyPart.Success)
+                                                {
+                                                    context.Response.StatusCode = 422;
+                                                    await new Json(bodyPart).send(context, routerInfo.router);
+                                                    return null;
+                                                }
+                                                value = bodyPart.Result;
                                             }
                                             else
                                             {

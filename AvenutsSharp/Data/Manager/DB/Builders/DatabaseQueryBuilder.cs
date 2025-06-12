@@ -91,9 +91,27 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
+        public IQueryBuilder<T> Fields()
+        {
+            FieldsGeneric();
+            return this;
+        }
+
+        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U>> expression)
+        {
+            IgnoreGeneric(expression);
+            return this;
+        }
+
         public IQueryBuilder<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort)
         {
             SortGeneric(expression, sort ?? DB.Sort.ASC);
+            return this;
+        }
+
+        public IQueryBuilder<T> Group<U>(Expression<Func<T, U>> expression)
+        {
+            GroupGeneric(expression);
             return this;
         }
 

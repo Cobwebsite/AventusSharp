@@ -15,7 +15,7 @@ namespace AventusSharp.Data.Manager.DB
         ASC,
         DESC
     }
-    public class DatabaseGenericBuilder<T> : ILambdaTranslatable
+    public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     {
         public Dictionary<string, bool> AllMembersByPath = new Dictionary<string, bool>() { { "", true } };
         public IDBStorage Storage { get; private set; }
@@ -34,6 +34,7 @@ namespace AventusSharp.Data.Manager.DB
         public int? LimitSize { get; private set; } = null;
         public int? OffsetSize { get; private set; } = null;
         public List<SortInfo>? Sorting { get; private set; } = null;
+        public List<GroupInfo>? Groups { get; private set; } = null;
 
         public DatabaseGenericBuilder(IDBStorage storage, IGenericDM DM, Type? baseType = null) : base()
         {
@@ -306,7 +307,103 @@ namespace AventusSharp.Data.Manager.DB
                 }
             }
         }
+        protected void FieldsGeneric()
+        {
+            string fullPath = "";
+            if (AllMembersByPath[fullPath])
+            {
+                Storage.LoadAllTableFieldsQuery(InfoByPath[fullPath].TableInfo, InfoByPath[fullPath].Alias, InfoByPath[fullPath], new List<string>(), new List<Type>(), this);
+                AllMembersByPath[fullPath] = false;
+            }
+        }
         protected string FieldGeneric<X>(Expression<Func<T, X>> expression)
+        {
+            // TODO add WhereGroupFctSqlEnum management to get for example lowercase
+            // the strucutre must be Lambda => Convert? => (member x times)
+            if (expression is LambdaExpression lambdaExpression)
+            {
+                Expression? exp = lambdaExpression.Body;
+                if (lambdaExpression.Body is UnaryExpression convertExpression)
+                {
+                    exp = convertExpression.Operand;
+                }
+
+                List<WhereGroupFctSqlEnum>? transformators = null;
+
+                while (exp is MethodCallExpression callExpression)
+                {
+                    WhereGroupFctSqlEnum? _fct = LambdaTranslator.GetFctSql(callExpression);
+                    if (_fct is WhereGroupFctSqlEnum fct)
+                    {
+                        if (transformators == null) transformators = new();
+                        transformators.Add(fct);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("Can't find a method for " + callExpression.Method.Name + " on type " + LambdaTranslator.ExtractType(callExpression));
+                    }
+                    if (callExpression.Object != null)
+                    {
+                        exp = callExpression.Object;
+                    }
+                    else if (callExpression.Arguments.Count > 0)
+                    {
+                        exp = callExpression.Arguments[0];
+                    }
+                    else
+                    {
+                        exp = null;
+                    }
+                }
+
+
+
+                if (exp is MemberExpression memberExpression)
+                {
+                    List<Type> types = new();
+                    List<string> names = new();
+
+                    types.Insert(0, memberExpression.Type);
+                    names.Insert(0, memberExpression.Member.Name);
+
+                    Expression? temp = memberExpression.Expression;
+                    while (temp is MemberExpression temp2)
+                    {
+                        types.Insert(0, temp2.Type);
+                        names.Insert(0, temp2.Member.Name);
+                        temp = temp2.Expression;
+                    }
+
+                    LoadLinks(names, types, false);
+
+                    string fullPath = string.Join(".", names.SkipLast(1));
+                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
+                    if (memberInfo.Key != null)
+                    {
+                        AllMembersByPath[fullPath] = false;
+
+                        if (memberInfo.Key is ITableMemberInfoSqlLink)
+                        {
+                            AllMembersByPath[string.Join(".", names)] = true;
+                        }
+                        InfoByPath[fullPath].Members[memberInfo.Key] = new DatabaseBuilderInfoMember(memberInfo.Key, memberInfo.Value, Storage, transformators);
+                    }
+                    else
+                    {
+                        // if we can't find the members info maybe it's a reverse link
+                        TableReverseMemberInfo? reversMemberInfo = InfoByPath[fullPath].GetReverseTableMemberInfo(memberExpression.Member.Name);
+                        if (reversMemberInfo != null && !InfoByPath[fullPath].ReverseLinks.Contains(reversMemberInfo))
+                        {
+                            InfoByPath[fullPath].ReverseLinks.Add(reversMemberInfo);
+                        }
+                    }
+                    return fullPath != "" ? fullPath + "." + memberExpression.Member.Name : memberExpression.Member.Name;
+                }
+            }
+
+            throw new Exception();
+        }
+        protected string IgnoreGeneric<X>(Expression<Func<T, X>> expression)
         {
             // TODO add WhereGroupFctSqlEnum management to get for example lowercase
             // the strucutre must be Lambda => Convert? => (member x times)
@@ -334,31 +431,31 @@ namespace AventusSharp.Data.Manager.DB
                         temp = temp2.Expression;
                     }
 
+
                     LoadLinks(names, types, false);
 
                     string fullPath = string.Join(".", names.SkipLast(1));
+                    if (AllMembersByPath[fullPath])
+                    {
+                        Storage.LoadAllTableFieldsQuery(InfoByPath[fullPath].TableInfo, InfoByPath[fullPath].Alias, InfoByPath[fullPath], new List<string>(), new List<Type>(), this);
+                        AllMembersByPath[fullPath] = false;
+                    }
                     KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
                     if (memberInfo.Key != null)
                     {
-                        AllMembersByPath[fullPath] = false;
-
-                        if (!InfoByPath[fullPath].Members.ContainsKey(memberInfo.Key))
+                        if (InfoByPath[fullPath].Members.ContainsKey(memberInfo.Key))
                         {
-                            if (memberInfo.Key is ITableMemberInfoSqlLink)
-                            {
-                                AllMembersByPath[string.Join(".", names)] = true;
-                            }
-                            InfoByPath[fullPath].Members[memberInfo.Key] = new DatabaseBuilderInfoMember(memberInfo.Key, memberInfo.Value, Storage);
+                            InfoByPath[fullPath].Members.Remove(memberInfo.Key);
                         }
                     }
                     else
                     {
-                        // if we can't find the members info maybe it's a reverse link
-                        TableReverseMemberInfo? reversMemberInfo = InfoByPath[fullPath].GetReverseTableMemberInfo(memberExpression.Member.Name);
-                        if (reversMemberInfo != null && !InfoByPath[fullPath].ReverseLinks.Contains(reversMemberInfo))
-                        {
-                            InfoByPath[fullPath].ReverseLinks.Add(reversMemberInfo);
-                        }
+                        // // if we can't find the members info maybe it's a reverse link
+                        // TableReverseMemberInfo? reversMemberInfo = InfoByPath[fullPath].GetReverseTableMemberInfo(memberExpression.Member.Name);
+                        // if (reversMemberInfo != null && !InfoByPath[fullPath].ReverseLinks.Contains(reversMemberInfo))
+                        // {
+                        //     InfoByPath[fullPath].ReverseLinks.Add(reversMemberInfo);
+                        // }
                     }
                     return fullPath != "" ? fullPath + "." + memberExpression.Member.Name : memberExpression.Member.Name;
                 }
@@ -372,7 +469,8 @@ namespace AventusSharp.Data.Manager.DB
             // the strucutre must be Lambda => Convert? => (member x times)
             if (expression is LambdaExpression lambdaExpression)
             {
-                if(Sorting == null) {
+                if (Sorting == null)
+                {
                     Sorting = new List<SortInfo>();
                 }
                 Expression exp = lambdaExpression.Body;
@@ -405,7 +503,60 @@ namespace AventusSharp.Data.Manager.DB
                     {
                         Sorting.Add(new SortInfo(memberInfo.Key, memberInfo.Value, sort));
                     }
-                    else {
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                    return;
+                }
+            }
+
+            throw new Exception();
+        }
+
+
+        protected void GroupGeneric<X>(Expression<Func<T, X>> expression)
+        {
+            // TODO add WhereGroupFctSqlEnum management to get for example lowercase
+            // the strucutre must be Lambda => Convert? => (member x times)
+            if (expression is LambdaExpression lambdaExpression)
+            {
+                if (Groups == null)
+                {
+                    Groups = new();
+                }
+                Expression exp = lambdaExpression.Body;
+                if (lambdaExpression.Body is UnaryExpression convertExpression)
+                {
+                    exp = convertExpression.Operand;
+                }
+
+                if (exp is MemberExpression memberExpression)
+                {
+                    List<Type> types = new();
+                    List<string> names = new();
+
+                    types.Insert(0, memberExpression.Type);
+                    names.Insert(0, memberExpression.Member.Name);
+
+                    Expression? temp = memberExpression.Expression;
+                    while (temp is MemberExpression temp2)
+                    {
+                        types.Insert(0, temp2.Type);
+                        names.Insert(0, temp2.Member.Name);
+                        temp = temp2.Expression;
+                    }
+
+                    LoadLinks(names, types, false);
+
+                    string fullPath = string.Join(".", names.SkipLast(1));
+                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
+                    if (memberInfo.Key != null)
+                    {
+                        Groups.Add(new GroupInfo(memberInfo.Key, memberInfo.Value));
+                    }
+                    else
+                    {
                         throw new NotImplementedException();
                     }
                     return;

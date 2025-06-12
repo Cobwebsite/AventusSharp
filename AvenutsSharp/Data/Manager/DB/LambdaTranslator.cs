@@ -21,6 +21,63 @@ namespace AventusSharp.Data.Manager.DB
         public Dictionary<string, DatabaseBuilderInfo> InfoByPath { get; }
         public void LoadLinks(List<string> pathSplitted, List<Type> types, bool addLinksToMembers);
     }
+
+    public class LambdaTranslator
+    {
+        public static Type ExtractType(MethodCallExpression node)
+        {
+            Type? onType = node.Object?.Type;
+            if (onType != null) return onType;
+
+            if (node.Arguments.Count > 0)
+            {
+                return node.Arguments[0].Type; // souvent "this" pour une extension
+            }
+            throw new Exception("Impossible to extract type");
+        }
+        public static WhereGroupFctSqlEnum? GetFctSql(MethodCallExpression node)
+        {
+            string methodName = node.Method.Name;
+            Type onType = ExtractType(node);
+
+            WhereGroupFctSqlEnum? fctSql = null;
+
+            List<Type> numbers = new List<Type>() { typeof(int), typeof(double), typeof(long), typeof(short), typeof(float), typeof(decimal) };
+
+            if (numbers.Contains(onType))
+            {
+                if (methodName == "Max")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Max;
+                }
+                else if (methodName == "Min")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Min;
+                }
+            }
+            else if (onType == typeof(string))
+            {
+                if (methodName == "ToLower")
+                {
+                    fctSql = WhereGroupFctSqlEnum.ToLower;
+                }
+                else if (methodName == "ToUpper")
+                {
+                    fctSql = WhereGroupFctSqlEnum.ToUpper;
+                }
+            }
+            else if (onType == typeof(DateTime) || onType == typeof(Datetime))
+            {
+                if (methodName == "DateOnly")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Date;
+                }
+            }
+            return fctSql;
+
+        }
+
+    }
     public class LambdaTranslator<T> : ExpressionVisitor
     {
         private static List<Type> _dateTypes = new List<Type>() { typeof(DateTime), typeof(Datetime), typeof(Date) };
@@ -321,7 +378,7 @@ namespace AventusSharp.Data.Manager.DB
                 else
                 {
                     Expression result = Visit(m.Expression);
-                    if(isBase && alreadyAdded)
+                    if (isBase && alreadyAdded)
                     {
                         isBase = false;
                     }
@@ -435,9 +492,9 @@ namespace AventusSharp.Data.Manager.DB
                 typeof(List<DateTime>),
             };
             string methodName = node.Method.Name;
-            Type? onType = node.Object?.Type;
+            Type onType = LambdaTranslator.ExtractType(node);
             WhereGroupFctEnum? fct = null;
-            WhereGroupFctSqlEnum? fctSql = null;
+            WhereGroupFctSqlEnum? fctSql = LambdaTranslator.GetFctSql(node);
             bool reverse = false;
             if (onType == typeof(string))
             {
@@ -452,21 +509,6 @@ namespace AventusSharp.Data.Manager.DB
                 else if (methodName == "EndsWith")
                 {
                     fct = WhereGroupFctEnum.EndsWith;
-                }
-                else if (methodName == "ToLower")
-                {
-                    fctSql = WhereGroupFctSqlEnum.ToLower;
-                }
-                else if (methodName == "ToUpper")
-                {
-                    fctSql = WhereGroupFctSqlEnum.ToUpper;
-                }
-            }
-            else if (onType == typeof(DateTime) || onType == typeof(Datetime))
-            {
-                if (methodName == "DateOnly")
-                {
-                    fctSql = WhereGroupFctSqlEnum.Date;
                 }
             }
             else if (onType != null && listAllowed.Contains(onType))

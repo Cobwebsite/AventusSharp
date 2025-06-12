@@ -69,12 +69,25 @@ namespace AventusSharp.Data.Manager
         public IQueryBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func);
 
         /// <summary>
+        /// Specifies that all fields have to be included in the query results.
+        /// </summary>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Fields();
+        /// <summary>
         /// Specifies a field to be included in the query results.
         /// </summary>
         /// <typeparam name="U">The type of the field to include.</typeparam>
         /// <param name="memberExpression">The expression representing the field to include.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
         public IQueryBuilder<T> Field<U>(Expression<Func<T, U>> memberExpression);
+
+        /// <summary>
+        /// Specifies a field to be excluded from the query results.
+        /// </summary>
+        /// <typeparam name="U">The type of the field to exclude.</typeparam>
+        /// <param name="memberExpression">The expression representing the field to exclude.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U>> memberExpression);
 
         /// <summary>
         /// Specifies sorting for the query based on the provided expression and sorting order.
@@ -84,6 +97,14 @@ namespace AventusSharp.Data.Manager
         /// <param name="sort">The sorting order (ascending or descending).</param>
         /// <returns>The current query builder instance for method chaining.</returns>
         public IQueryBuilder<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort);
+
+        /// <summary>
+        /// Specifies grouping for the query based on the provided expression.
+        /// </summary>
+        /// <typeparam name="U">The type of the field to group by.</typeparam>
+        /// <param name="expression">The field to group by.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Group<U>(Expression<Func<T, U>> expression);
 
         /// <summary>
         /// Includes a related object in the query.

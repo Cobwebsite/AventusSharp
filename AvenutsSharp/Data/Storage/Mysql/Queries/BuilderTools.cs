@@ -176,6 +176,11 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 WhereGroupFctSqlEnum.Hour => "HOUR",
                 WhereGroupFctSqlEnum.Minute => "MINUTE",
                 WhereGroupFctSqlEnum.Second => "SECOND",
+                WhereGroupFctSqlEnum.Max => "MAX",
+                WhereGroupFctSqlEnum.Min => "MIN",
+                WhereGroupFctSqlEnum.Abs => "ABS",
+                WhereGroupFctSqlEnum.Round => "ROUND",
+                WhereGroupFctSqlEnum.Floor => "FLOOR",
                 _ => "",
             };
         }

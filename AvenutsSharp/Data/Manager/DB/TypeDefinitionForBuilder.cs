@@ -45,6 +45,12 @@ namespace AventusSharp.Data.Manager.DB
         Hour,
         Minute,
         Second,
+        Max,
+        Min,
+        Abs,
+        Round,
+        Ceil,
+        Floor
     }
 
     public interface IWhereGroup { }
@@ -276,6 +282,18 @@ namespace AventusSharp.Data.Manager.DB
             Sort = sort;
         }
     }
+    public class GroupInfo
+    {
+        public TableMemberInfoSql TableMember { get; set; }
+        public string Alias { get; set; }
+
+        public GroupInfo(TableMemberInfoSql tableMember, string alias)
+        {
+            TableMember = tableMember;
+            Alias = alias;
+        }
+
+    }
     public class DatabaseBuilderInfoChild
     {
         public string Alias { get; set; }
@@ -299,11 +317,14 @@ namespace AventusSharp.Data.Manager.DB
 
         public TableMemberInfo? TypeMemberInfo { get; }
 
-        public DatabaseBuilderInfoMember(TableMemberInfoSql memberInfo, string alias, IDBStorage from)
+        public List<WhereGroupFctSqlEnum> Transformators { get; }
+
+        public DatabaseBuilderInfoMember(TableMemberInfoSql memberInfo, string alias, IDBStorage from, List<WhereGroupFctSqlEnum>? transformators = null)
         {
             this.MemberInfo = memberInfo;
             this.Alias = alias;
             Type = memberInfo.MemberType;
+            Transformators = transformators ?? new();
             if (memberInfo is TableMemberInfoSql1N)
             {
                 if (memberInfo.DM is IDatabaseDM databaseDM && databaseDM.NeedLocalCache && databaseDM.Storage == from)

@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.Manager;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
@@ -35,6 +36,8 @@ namespace AventusSharp.Data.Storage.Default
         public VoidWithError RunInsideTransaction(Func<VoidWithError> action);
 
         public abstract MigrationFactory GetMigrationProvider();
+
+        public void LoadAllTableFieldsQuery<X>(TableInfo tableInfo, string alias, DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types, DatabaseGenericBuilder<X> queryBuilder) where X : IStorable;
     }
 
 

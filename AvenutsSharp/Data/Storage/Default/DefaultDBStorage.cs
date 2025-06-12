@@ -906,10 +906,10 @@ namespace AventusSharp.Data.Storage.Default
             result.Result = o;
             return result;
         }
-        public void LoadAllTableFieldsQuery<X>(TableInfo tableInfo, string alias, DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types, DatabaseQueryBuilder<X> queryBuilder) where X : IStorable
+        public void LoadAllTableFieldsQuery<X>(TableInfo tableInfo, string alias, DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types, DatabaseGenericBuilder<X> queryBuilder) where X : IStorable
         {
             bool useShort = false;
-            if (queryBuilder.UseShortObject)
+            if (queryBuilder is DatabaseQueryBuilder<X> builder && builder.UseShortObject)
             {
                 if (path.Count == 0)
                 {
@@ -1962,7 +1962,7 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
-        
+
     }
 
 

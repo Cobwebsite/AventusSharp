@@ -8,7 +8,17 @@ namespace AventusSharp.Data.Manager.Dummy
 {
     public class DummyQueryBuilder<T> : IQueryBuilder<T>
     {
+
+        public IQueryBuilder<T> Fields()
+        {
+            throw new NotImplementedException();
+        }
         public IQueryBuilder<T> Field<U>(Expression<Func<T, U>> memberExpression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U>> memberExpression)
         {
             throw new NotImplementedException();
         }
@@ -59,6 +69,11 @@ namespace AventusSharp.Data.Manager.Dummy
         }
 
         public IQueryBuilder<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> Group<U>(Expression<Func<T, U>> expression)
         {
             throw new NotImplementedException();
         }

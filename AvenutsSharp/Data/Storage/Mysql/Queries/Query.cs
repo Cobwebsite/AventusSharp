@@ -15,7 +15,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             DatabaseBuilderInfo mainInfo = queryBuilder.InfoByPath[""];
             List<string> fields = new();
             List<string> joins = new();
-            string groupBy = "";
+            List<string> groupByPart = new List<string>();
 
             void loadInfo(DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types)
             {
@@ -90,15 +90,28 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                         }
                         fields.Add("GROUP_CONCAT(" + alias + "." + linkMultiple.TableIntermediateKey2 + ") `" + baseInfo.Alias + "*" + member.Key.SqlName + "`");
                         joins.Add("LEFT OUTER JOIN `" + linkMultiple.TableIntermediateName + "` " + alias + " ON " + alias + "." + linkMultiple.TableIntermediateKey1 + "=" + baseInfo.Alias + "." + baseInfo.TableInfo.Primary?.SqlName);
-                        if (groupBy == "")
-                        {
-                            groupBy = " GROUP BY " + mainInfo.Alias + "." + mainInfo.TableInfo.Primary?.SqlName;
-                        }
+                        groupByPart.Add(mainInfo.Alias + "." + mainInfo.TableInfo.Primary?.SqlName);
                     }
                     else
                     {
                         string alias = member.Value.Alias;
-                        fields.Add(alias + "." + member.Key.SqlName + " `" + alias + "*" + member.Key.SqlName + "`");
+                        if (member.Value.Transformators != null && member.Value.Transformators.Count > 0)
+                        {
+                            string open = "";
+                            string close = "";
+
+                            foreach (WhereGroupFctSqlEnum transformator in member.Value.Transformators)
+                            {
+                                open += BuilderTools.GetFctSqlName(transformator) + "(";
+                                close += ")";
+                            }
+                            fields.Add(open + alias + "." + member.Key.SqlName + close + " `" + alias + "*" + member.Key.SqlName + "`");
+
+                        }
+                        else
+                        {
+                            fields.Add(alias + "." + member.Key.SqlName + " `" + alias + "*" + member.Key.SqlName + "`");
+                        }
                     }
 
                 }
@@ -129,6 +142,19 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             if (joinTxt.Length > 1)
             {
                 joinTxt = " " + joinTxt;
+            }
+
+            if (queryBuilder.Groups != null)
+            {
+                foreach (GroupInfo groupInfo in queryBuilder.Groups)
+                {
+                    groupByPart.Add(groupInfo.Alias + "." + groupInfo.TableMember.SqlName);
+                }
+            }
+            string groupBy = "";
+            if (groupByPart.Count > 0)
+            {
+                groupBy = " GROUP BY " + string.Join(", ", groupByPart);
             }
 
             List<string> orderByPart = new List<string>();

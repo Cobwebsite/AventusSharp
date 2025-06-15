@@ -1,17 +1,12 @@
-﻿using AventusSharp.Tools;
-using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using Microsoft.AspNetCore.Http;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
 using AventusSharp.WebSocket.Request;
-using Scriban.Parsing;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace AventusSharp.WebSocket
 {
@@ -88,35 +83,39 @@ namespace AventusSharp.WebSocket
                         try
                         {
 
-                            JObject o = JObject.Parse(msg);
-                            if (o["channel"]?.ToString() == "ping")
+                            JsonNode _o = JsonValue.Create(msg);
+                            if (_o is JsonObject o)
                             {
-                                _ = Send("pong", (object)new JObject());
-                            }
-                            else
-                            {
-                                if (DisplayMsg)
+                                if (o["channel"]?.ToString() == "ping")
                                 {
-                                    Console.WriteLine("on a reçu sur " + o["channel"], "onMessage");
-                                }
-                                string? channel = o["channel"]?.ToString().ToLower();
-                                if (channel == null)
-                                {
-                                    return;
-                                }
-
-                                string? bodyTxt = o.ContainsKey("data") ? o["data"]?.ToString() : null;
-                                WebSocketRouterBody body = new(bodyTxt);
-
-                                string? uid = o.ContainsKey("uid") ? o["uid"]?.ToString() : null;
-                                if (uid != null)
-                                {
-                                    await instance.Route(this, channel, body, uid.ToString());
+                                    _ = Send("pong", new JsonObject());
                                 }
                                 else
                                 {
-                                    await instance.Route(this, channel, body);
+                                    if (DisplayMsg)
+                                    {
+                                        Console.WriteLine("on a reçu sur " + o["channel"], "onMessage");
+                                    }
+                                    string? channel = o["channel"]?.ToString().ToLower();
+                                    if (channel == null)
+                                    {
+                                        return;
+                                    }
+
+                                    string? bodyTxt = o.TryGetPropertyValue("data", out var node) ? node?.ToString() : null;
+                                    WebSocketRouterBody body = new(bodyTxt);
+
+                                    string? uid = o.TryGetPropertyValue("uid", out var node2) ? node2?.ToString() : null;
+                                    if (uid != null)
+                                    {
+                                        await instance.Route(this, channel, body, uid.ToString());
+                                    }
+                                    else
+                                    {
+                                        await instance.Route(this, channel, body);
+                                    }
                                 }
+
                             }
                         }
                         catch (Exception e)
@@ -161,16 +160,16 @@ namespace AventusSharp.WebSocket
         /// <returns></returns>
         private async Task Send(string eventName, string data, string? uid = null)
         {
-            JObject toSend = new()
+            JsonObject toSend = new()
             {
-                { "channel", eventName },
-                { "data", data }
+                ["channel"] = eventName,
+                ["data"] = data,
             };
             if (!string.IsNullOrEmpty(uid))
             {
-                toSend.Add("uid", uid);
+                toSend["uid"] = uid;
             }
-            byte[] dataToSend = Encoding.UTF8.GetBytes(toSend.ToString(Newtonsoft.Json.Formatting.None));
+            byte[] dataToSend = Encoding.UTF8.GetBytes(toSend.ToJsonString());
 
             await Send(dataToSend);
         }
@@ -181,9 +180,9 @@ namespace AventusSharp.WebSocket
         /// <param name="o">Object to send</param>
         /// <param name="uid">Uid to identify request</param>
         /// <returns></returns>
-        private async Task Send(string eventName, JObject o, string? uid = null)
+        private async Task Send(string eventName, JsonObject o, string? uid = null)
         {
-            string data = o.ToString(Formatting.None);
+            string data = o.ToJsonString();
             await Send(eventName, data, uid);
         }
 
@@ -224,12 +223,12 @@ namespace AventusSharp.WebSocket
             {
                 if (obj != null)
                 {
-                    string json = JsonConvert.SerializeObject(obj, instance.settings);
+                    string json = JsonSerializer.Serialize(obj, instance.settings);
                     await Send(eventName, json, uid);
                 }
                 else
                 {
-                    await Send(eventName, new JObject(), uid);
+                    await Send(eventName, new JsonObject(), uid);
                 }
             }
             catch (Exception e)

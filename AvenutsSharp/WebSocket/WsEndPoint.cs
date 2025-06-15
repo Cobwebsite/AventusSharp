@@ -1,14 +1,13 @@
-﻿using AventusSharp.Routes;
-using AventusSharp.Tools.Attributes;
+﻿using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Event;
 using AventusSharp.WebSocket.Request;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -28,7 +27,7 @@ namespace AventusSharp.WebSocket
         internal Dictionary<string, WebSocketRouteInfo> routesInfo = new Dictionary<string, WebSocketRouteInfo>();
         internal readonly List<WebSocketConnection> connections = new();
         private readonly List<Func<WebSocketConnection, string, WebSocketRouterBody, string, Task<bool>>> middlewares = new();
-        internal JsonSerializerSettings settings;
+        internal JsonSerializerOptions settings;
         public string Path { get; }
 
         public WsEndPoint()
@@ -46,7 +45,7 @@ namespace AventusSharp.WebSocket
             return false;
         }
 
-        protected void setSettings(JsonSerializerSettings settings)
+        protected void setSettings(JsonSerializerOptions settings)
         {
             this.settings = settings;
         }
@@ -139,9 +138,11 @@ namespace AventusSharp.WebSocket
             return Task.CompletedTask;
         }
 
-        public async Task Stop() {
+        public async Task Stop()
+        {
             List<WebSocketConnection> conns = connections.ToList();
-            foreach(WebSocketConnection connection in conns) {
+            foreach (WebSocketConnection connection in conns)
+            {
                 await connection.Close();
             }
         }
@@ -288,16 +289,16 @@ namespace AventusSharp.WebSocket
         {
             try
             {
-                JObject toSend = new()
+                JsonObject toSend = new()
                 {
-                    { "channel", eventName },
-                    { "data", data }
+                    ["channel"] = eventName,
+                    ["data"] = data,
                 };
                 if (!string.IsNullOrEmpty(uid))
                 {
-                    toSend.Add("uid", uid);
+                    toSend["uid"] = uid;
                 }
-                byte[] dataToSend = Encoding.UTF8.GetBytes(toSend.ToString(Formatting.None));
+                byte[] dataToSend = Encoding.UTF8.GetBytes(toSend.ToJsonString());
                 await Broadcast(dataToSend, connections, omit);
             }
             catch (Exception e)
@@ -315,11 +316,11 @@ namespace AventusSharp.WebSocket
         /// <param name="connections"></param>
         /// <param name="omit"></param>
         /// <returns></returns>
-        private async Task Broadcast(string eventName, JObject o, string? uid = null, List<WebSocketConnection>? connections = null, List<WebSocketConnection>? omit = null)
+        private async Task Broadcast(string eventName, JsonObject o, string? uid = null, List<WebSocketConnection>? connections = null, List<WebSocketConnection>? omit = null)
         {
             try
             {
-                string data = o.ToString(Formatting.None);
+                string data = o.ToJsonString();
                 await Broadcast(eventName, data, uid, connections, omit);
             }
             catch (Exception e)
@@ -344,7 +345,7 @@ namespace AventusSharp.WebSocket
                     omit = new();
                 }
 
-                if(connections == null)
+                if (connections == null)
                 {
                     connections = this.connections;
                 }
@@ -390,12 +391,12 @@ namespace AventusSharp.WebSocket
             {
                 if (obj != null)
                 {
-                    string json = JsonConvert.SerializeObject(obj, settings);
+                    string json = JsonSerializer.Serialize(obj, settings);
                     await Broadcast(eventName, json, uid, connections, omit);
                 }
                 else
                 {
-                    await Broadcast(eventName, new JObject(), uid, connections, omit);
+                    await Broadcast(eventName, new JsonObject(), uid, connections, omit);
                 }
 
             }

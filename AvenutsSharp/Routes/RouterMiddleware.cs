@@ -352,12 +352,11 @@ namespace AventusSharp.Routes
         {
             string url = context.Request.Path.ToString().ToLower();
             string method = context.Request.Method.ToLower();
-
             if (config.PrintRequest)
             {
                 Console.WriteLine("trigger " + url + " " + method);
             }
-
+            
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
             {
                 RouteInfo routerInfo = routeInfo.Value;
@@ -475,6 +474,10 @@ namespace AventusSharp.Routes
             {
                 await OnRequest(context, routerResolve);
                 return;
+            }
+            if (McpMiddleware.Activated && McpMiddleware.config.route == context.Request.Path.ToString().ToLower())
+            {
+                
             }
             await next();
         }

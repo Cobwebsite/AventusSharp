@@ -1,13 +1,13 @@
 ﻿using HttpMultipartParser;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -17,7 +17,7 @@ namespace AventusSharp.Routes.Request
     {
         private Dictionary<string, HttpFile> files = new Dictionary<string, HttpFile>();
         private HttpContext context;
-        private JObject data = new JObject();
+        private JsonObject data = new JsonObject();
         public RouterBody(HttpContext context)
         {
             this.context = context;
@@ -58,42 +58,42 @@ namespace AventusSharp.Routes.Request
                 {
                     string name = Regex.Replace(parameter.Name, @"\[(.*?)\]", ".$1");
                     string[] splitted = name.Split(".");
-                    JToken? container = data;
+                    JsonNode? container = data;
                     for (int i = 0; i < splitted.Length; i++)
                     {
                         if (container == null) return;
-                        Action<JToken> set = (obj) => container[splitted[i]] = obj;
-                        Func<JToken?> get = () => { return container[splitted[i]]; };
-
-                        if (container is JArray array)
+                        string key = splitted[i];
+                        Action<JsonNode> set = (obj) =>
                         {
-                            int key = int.Parse(splitted[i]);
-                            set = (obj) => container[key] = obj;
-                            get = () => { return container[key]; };
-                        }
+                            if (container is JsonObject objContainer)
+                                objContainer[key] = obj;
+                            else if (container is JsonArray arrContainer)
+                                arrContainer[int.Parse(key)] = obj;
+                        };
+                        Func<JsonNode?> get = () =>
+                        {
+                            if (container is JsonObject objContainer)
+                                return objContainer.ContainsKey(key) ? objContainer[key] : null;
+                            else if (container is JsonArray arrContainer)
+                                return arrContainer[int.Parse(key)];
+                            return null;
+                        };
+
+
                         if (i + 1 < splitted.Length)
                         {
-                            int nb;
-                            if (int.TryParse(splitted[i + 1], out nb))
+                            bool isArrayIndex = int.TryParse(splitted[i + 1], out _);
+
+                            if (get() == null)
                             {
-                                if (get() == null)
-                                {
-                                    set(new JArray());
-                                }
-                                container = get();
+                                set(isArrayIndex ? new JsonArray() : new JsonObject());
                             }
-                            else
-                            {
-                                if (get() == null)
-                                {
-                                    set(new JObject());
-                                }
-                                container = get();
-                            }
+                            container = get();
+
                         }
                         else
                         {
-                            set(parameter.Data);
+                            set(JsonValue.Create(parameter.Data));
                         }
                     }
                 };
@@ -150,7 +150,7 @@ namespace AventusSharp.Routes.Request
                 {
                     jsonString = await inputStream.ReadToEndAsync();
                 }
-                data = JObject.Parse(jsonString);
+                data = JsonNode.Parse(jsonString)?.AsObject() ?? new JsonObject();
             }
             catch (Exception e)
             {
@@ -287,7 +287,7 @@ namespace AventusSharp.Routes.Request
 
             try
             {
-                JToken? dataToUse = data;
+                JsonNode? dataToUse = data;
                 if (propPath != null)
                 {
                     string[] props = propPath.Split(".");
@@ -295,26 +295,34 @@ namespace AventusSharp.Routes.Request
                     {
                         if (!string.IsNullOrEmpty(prop))
                         {
-                            dataToUse = dataToUse[prop];
-                            if (dataToUse == null)
+                            if (dataToUse is JsonObject obj && obj.TryGetPropertyValue(prop, out var next))
                             {
-                                result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
+                                dataToUse = next;
+                            }
+                            else if (dataToUse is JsonArray arr && int.TryParse(prop, out int index) && index < arr.Count)
+                            {
+                                dataToUse = arr[index];
+                            }
+                            else
+                            {
+                                result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, $"Can't find path '{propPath}' in your http body"));
                                 return result;
                             }
                         }
                     }
                 }
-                
-                object? temp = JsonConvert.DeserializeObject(
-                    JsonConvert.SerializeObject(dataToUse),
-                    type,
-                    RouterMiddleware.config.JSONSettings
-                );
-                if (temp != null)
+
+                if (dataToUse != null)
                 {
-                    AddFileToResult(propPath, temp);
-                    result.Result = temp;
+                    var jsonString = dataToUse.ToJsonString();
+                    object? temp = JsonSerializer.Deserialize(jsonString, type, RouterMiddleware.config.JSONSettings);
+                    if (temp != null)
+                    {
+                        AddFileToResult(propPath, temp);
+                        result.Result = temp;
+                    }
                 }
+
             }
             catch (Exception e)
             {

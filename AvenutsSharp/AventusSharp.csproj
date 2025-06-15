@@ -36,18 +36,21 @@
     <None Include="logo_sharp.png" Pack="true" PackagePath="\" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="LICENSE" Pack="true" PackagePath="\" />
-</ItemGroup>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="HttpMultipartParser" Version="8.3.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
-    <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.2" />
     <PackageReference Include="MySql.Data" Version="8.3.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- <PackageReference Include="Newtonsoft.Json" Version="13.0.3" /> -->
     <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="Scriban" Version="6.0.0" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.1" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\maxim\Desktop\csharp-sdk\src\ModelContextProtocol\ModelContextProtocol.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -20,6 +20,7 @@ public static class McpMiddleware
 {
     private static Action<McpConfig> configAction = (config) => { };
     internal static McpConfig config = new McpConfig();
+    internal static bool Activated = false;
 
     public static void Configure(Action<McpConfig> configAction)
     {
@@ -42,7 +43,7 @@ public static class McpMiddleware
     //     return Register(types);
     // }
 
-    public static VoidWithError Register()
+    public static McpServerOptions Register()
     {
         VoidWithMcpError result = new VoidWithMcpError();
         Dictionary<string, AventusMcpTool> tools = new Dictionary<string, AventusMcpTool>();
@@ -55,6 +56,7 @@ public static class McpMiddleware
                 tools.Add(mcpTool.Tool.Name, mcpTool);
             }
         }
+        Console.WriteLine("Il y a " + tools.Count + " outils");
         McpServerOptions options = new()
         {
             ServerInfo = new Implementation() { Name = "MyServer", Version = "1.0.0" },
@@ -65,6 +67,7 @@ public static class McpMiddleware
                     ListToolsHandler = (request, cancellationToken) => ValueTask.FromResult(new ListToolsResult() { Tools = tools.Values.Select(p => p.Tool).ToList() }),
                     CallToolHandler = (request, cancellationToken) =>
                     {
+
                         string? name = request.Params?.Name;
                         if (name != null && tools.ContainsKey(name))
                         {
@@ -86,16 +89,23 @@ public static class McpMiddleware
                         // }
 
                     },
+
+                },
+                Resources = new()
+                {
+                    ListResourcesHandler = (request, cancellationToken) => ValueTask.FromResult(new ListResourcesResult() { Resources = new List<Resource>()}),
                 }
             },
         };
 
 
         // IMcpServer server = McpServerFactory.Create(new StdioServerTransport("MyServer"), options);
-        // IMcpServer server = McpServerFactory.Create(new StreamableHttpServerTransport(), options);
+        IMcpServer server = McpServerFactory.Create(new StreamableHttpServerTransport(), options);
         // IMcpServer server = McpServerFactory.Create(new StreamableHttpPostTransport(), options);
         // server.RunAsync();
-        return result.ToGeneric();
+
+        Activated = true;
+        return options;
     }
 
     private static AventusMcpTool? PrepareMethodToTool(McpHttpMethod mcpInfo)
@@ -154,7 +164,7 @@ public static class McpMiddleware
             {
                 // var server = new StreamableHttpServerTransport();
                 // server.
-                
+
                 return ValueTask.FromResult(new CallToolResponse()
                 {
                     Content = [new Content() { Text = $"Echo: ", Type = "text" }]

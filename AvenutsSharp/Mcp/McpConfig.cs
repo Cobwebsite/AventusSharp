@@ -3,7 +3,7 @@ namespace AventusSharp.Mcp;
 
 public class McpConfig
 {
-    
+    public string route = "/mcp";
 }
 
 /*

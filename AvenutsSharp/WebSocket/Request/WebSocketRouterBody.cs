@@ -1,24 +1,22 @@
-﻿using AventusSharp.Routes;
-using HttpMultipartParser;
-using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using System;
+﻿using System;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace AventusSharp.WebSocket.Request
 {
     public class WebSocketRouterBody
     {
-        private JObject data = new JObject();
+        private JsonObject data = new JsonObject();
         public WebSocketRouterBody(string? content)
         {
             try
             {
-                if (content != null)
-                    data = JObject.Parse(content);
+                if (!string.IsNullOrEmpty(content))
+                {
+                    JsonNode? node = JsonNode.Parse(content);
+                    if (node is JsonObject obj)
+                        data = obj;
+                }
             }
             catch { }
         }
@@ -36,25 +34,36 @@ namespace AventusSharp.WebSocket.Request
 
             try
             {
-                JToken? dataToUse = data;
+                JsonNode? dataToUse = data;
                 string[] props = propPath.Split(".");
                 foreach (string prop in props)
                 {
                     if (!string.IsNullOrEmpty(prop))
                     {
-                        dataToUse = dataToUse[prop];
-                        if (dataToUse == null)
+                        if (dataToUse is JsonObject obj && obj.TryGetPropertyValue(prop, out var next))
+                        {
+                            dataToUse = next;
+                        }
+                        else if (dataToUse is JsonArray arr && int.TryParse(prop, out int index) && index < arr.Count)
+                        {
+                            dataToUse = arr[index];
+                        }
+                        else
                         {
                             result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your websocket body"));
                             return result;
                         }
                     }
                 }
-                string txt = JsonConvert.SerializeObject(dataToUse);
-                object? temp = JsonConvert.DeserializeObject(txt, type, WebSocketMiddleware.config.JSONSettings);
-                if (temp != null)
+
+                if (dataToUse != null)
                 {
-                    result.Result = temp;
+                    var jsonString = dataToUse.ToJsonString();
+                    object? temp = JsonSerializer.Deserialize(jsonString, type, WebSocketMiddleware.config.JSONSettings);
+                    if (temp != null)
+                    {
+                        result.Result = temp;
+                    }
                 }
             }
             catch (Exception e)

@@ -1,251 +1,143 @@
 ﻿using AventusSharp.Data.CustomTableMembers;
 using AventusSharp.Tools.Attributes;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace AventusSharp.Tools
+namespace AventusSharp.Tools;
+
+/// <summary>
+/// Custom converter to add type when we need it (avoid dico and list bc crash in js)
+/// </summary>
+public class AventusJsonConverter : JsonConverter<object?>
 {
+    private readonly List<string> propToRemove = new() { };
+
     /// <summary>
-    /// Custom converter to add type when we need it (avoid dico and list bc crash in js)
+    /// always true because we can always convert until object
     /// </summary>
-    public class AventusJsonConverter : JsonConverter
+    /// <param name="objectType"></param>
+    /// <returns></returns>
+    public override bool CanConvert(Type objectType)
     {
-        private readonly List<string> propToRemove = new() { };
+        return true;
+    }
 
-        /// <summary>
-        /// always true because we can always convert until object
-        /// </summary>
-        /// <param name="objectType"></param>
-        /// <returns></returns>
-        public override bool CanConvert(Type objectType)
-        {
-            return true;
-        }
+    public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        JsonSerializerOptions clonedOptions = new JsonSerializerOptions(options);
+        clonedOptions.Converters.Remove(clonedOptions.Converters
+            .First(c => c.GetType() == typeof(AventusJsonConverter)));
 
-        public override bool CanRead
-        {
-            get { return true; }
-        }
+        return JsonSerializer.Deserialize(ref reader, typeToConvert, clonedOptions);
+    }
 
-        public override bool CanWrite
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="writer"></param>
+    /// <param name="value"></param>
+    /// <param name="options"></param>
+    public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+    {
+        if (value == null)
         {
-            get { return true; }
+            return;
         }
+        lock (value)
+        {
+            Type type = value.GetType();
 
-        /// <param name="reader"></param>
-        /// <param name="objectType"></param>
-        /// <param name="existingValue"></param>
-        /// <param name="serializer"></param>
-        /// <returns></returns>
-        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
-        {
-            return CloneNoConverter(serializer).Deserialize(reader, objectType);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="value"></param>
-        /// <param name="serializer"></param>
-        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
-        {
-            if (value == null)
+            if (type.IsPrimitive || Type.GetTypeCode(type) != TypeCode.Object)
             {
-                return;
+                JsonSerializerOptions clonedOptions = new JsonSerializerOptions(options);
+                clonedOptions.Converters.Remove(clonedOptions.Converters
+                    .First(c => c.GetType() == typeof(AventusJsonConverter)));
+                JsonSerializer.Serialize(writer, value, clonedOptions);
             }
-            lock (value)
+            else if (type.IsEnum)
             {
-                Type type = value.GetType();
-                if (type.IsPrimitive || TypeTools.IsPrimitiveType(type))
+                JsonSerializer.Serialize(writer, value.ToString());
+            }
+            else if (typeof(IDictionary).IsAssignableFrom(type))
+            {
+                IDictionary dict = (IDictionary)value;
+                writer.WriteStartObject();
+                writer.WriteString("$type", "Aventus.Map");
+                writer.WritePropertyName("values");
+                writer.WriteStartArray();
+                foreach (DictionaryEntry entry in dict)
                 {
-                    JToken t = JToken.FromObject(value);
-                    t.WriteTo(writer);
+                    writer.WriteStartArray();
+                    JsonSerializer.Serialize(writer, entry.Key, options);
+                    JsonSerializer.Serialize(writer, entry.Value, options);
+                    writer.WriteEndArray();
                 }
-                else if (type.BaseType != null && type.BaseType == typeof(Enum))
+                writer.WriteEndArray();
+                writer.WriteEndObject();
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                writer.WriteStartArray();
+                foreach (object? item in (IEnumerable)value)
                 {
-                    JToken t = JToken.FromObject(value);
-                    t.WriteTo(writer);
+                    JsonSerializer.Serialize(writer, item, options);
                 }
-                else if (type.IsGenericType && type.GetInterfaces().Contains(typeof(IDictionary)))
+                writer.WriteEndArray();
+            }
+            else
+            {
+                writer.WriteStartObject();
+                writer.WriteString("$type", type.FullName?.Split('`')[0] + ", " + type.Assembly.GetName().Name);
+
+                foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
                 {
-                    IEnumerable? keys = (IEnumerable?)type.GetProperty("Keys")?.GetValue(value, null);
-                    IEnumerable? values = (IEnumerable?)type.GetProperty("Values")?.GetValue(value, null);
-                    if (keys == null || values == null)
-                    {
-                        return;
-                    }
-                    JObject jo = new()
-                    {
-                        { "$type", "Aventus.Map" }
-                    };
-                    IEnumerator valueEnumerator = values.GetEnumerator();
-                    JArray joArray = new();
-                    foreach (object key in keys)
-                    {
-                        valueEnumerator.MoveNext();
-                        if (valueEnumerator.Current != null)
-                        {
-                            JArray keyValue = new JArray
-                            {
-                                JToken.FromObject(key, serializer),
-                                JToken.FromObject(valueEnumerator.Current, serializer)
-                            };
-                            joArray.Add(keyValue);
+                    if (prop.GetCustomAttribute<NoExport>() != null || !prop.CanRead || prop.GetIndexParameters().Length > 0)
+                        continue;
 
-                        }
+                    object? propValue = prop.GetValue(value);
+                    if (propValue != null && !propToRemove.Contains(prop.Name))
+                    {
+                        writer.WritePropertyName(prop.Name);
+                        JsonSerializer.Serialize(writer, propValue, options);
                     }
-                    jo.Add("values", joArray);
-                    jo.WriteTo(writer);
                 }
-                else if (type.IsGenericType && type.GetInterfaces().Contains(typeof(IList)))
+
+                foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
                 {
-                    IEnumerable values = (IEnumerable)value;
-                    IEnumerator valueEnumerator = values.GetEnumerator();
-                    JArray jo = new();
-                    while (valueEnumerator.MoveNext())
-                    {
-                        if (valueEnumerator.Current != null)
-                        {
-                            jo.Add(JToken.FromObject(valueEnumerator.Current, serializer));
-                        }
+                    if (field.GetCustomAttribute<NoExport>() != null)
+                        continue;
 
+                    object? fieldValue = field.GetValue(value);
+                    if (fieldValue != null && !propToRemove.Contains(field.Name))
+                    {
+                        writer.WritePropertyName(field.Name);
+                        JsonSerializer.Serialize(writer, fieldValue, options);
                     }
-                    jo.WriteTo(writer);
                 }
-                else if (type.GetInterfaces().Contains(typeof(IStorableList)))
-                {
-                    IEnumerable values = (IEnumerable)value;
-                    IEnumerator valueEnumerator = values.GetEnumerator();
-                    JArray jo = new();
-                    while (valueEnumerator.MoveNext())
-                    {
-                        if (valueEnumerator.Current != null)
-                        {
-                            jo.Add(JToken.FromObject(valueEnumerator.Current, serializer));
-                        }
 
-                    }
-                    jo.WriteTo(writer);
-                }
-                else
-                {
-                    JObject jo = new()
-                    {
-                        { "$type", type.FullName?.Split('`')[0] + ", " + type.Assembly.GetName().Name }
-                    };
-
-                    foreach (PropertyInfo prop in type.GetProperties())
-                    {
-                        if (prop.GetCustomAttribute<NoExport>() != null) continue;
-                        if (prop.CanRead && prop.GetIndexParameters().Length == 0)
-                        {
-                            try
-                            {
-                                object? propVal = prop.GetValue(value, null);
-                                if (propVal != null)
-                                {
-                                    if (!propToRemove.Contains(prop.Name) && !jo.ContainsKey(prop.Name))
-                                    {
-                                        jo.Add(prop.Name, JToken.FromObject(propVal, serializer));
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                Console.WriteLine(type.Name);
-                                Console.WriteLine(prop.Name);
-                                Console.WriteLine(value);
-                                throw;
-                            }
-                        }
-                    }
-
-                    foreach (FieldInfo prop in type.GetFields())
-                    {
-                        if (prop.GetCustomAttribute<NoExport>() != null) continue;
-                        object? propVal = prop.GetValue(value);
-                        if (propVal != null)
-                        {
-                            if (!propToRemove.Contains(prop.Name) && !jo.ContainsKey(prop.Name))
-                            {
-                                jo.Add(prop.Name, JToken.FromObject(propVal, serializer));
-                            }
-                        }
-
-                    }
-                    jo.WriteTo(writer);
-                }
+                writer.WriteEndObject();
             }
         }
+    }
 
+}
 
-        private static JsonSerializer? _cloneConverter;
-        private static JsonSerializer CloneNoConverter(JsonSerializer settings)
-        {
-            if (_cloneConverter == null)
-            {
-                JsonSerializer serializer = JsonSerializer.Create();
-                // if (!CollectionUtils.IsNullOrEmpty(settings.Converters))
-                // {
-                //     // insert settings converters at the beginning so they take precedence
-                //     // if user wants to remove one of the default converters they will have to do it manually
-                //     for (int i = 0; i < settings.Converters.Count; i++)
-                //     {
-                //         serializer.Converters.Insert(i, settings.Converters[i]);
-                //     }
-                // }
+public class CustomDateTimeConverter : JsonConverter<DateTime>
+{
+    private const string Format = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
-                // serializer specific
-                serializer.TypeNameHandling = settings.TypeNameHandling;
-                serializer.MetadataPropertyHandling = settings.MetadataPropertyHandling;
-                serializer.TypeNameAssemblyFormatHandling = settings.TypeNameAssemblyFormatHandling;
-                serializer.PreserveReferencesHandling = settings.PreserveReferencesHandling;
-                serializer.ReferenceLoopHandling = settings.ReferenceLoopHandling;
-                serializer.MissingMemberHandling = settings.MissingMemberHandling;
-                serializer.ObjectCreationHandling = settings.ObjectCreationHandling;
-                serializer.NullValueHandling = settings.NullValueHandling;
-                serializer.DefaultValueHandling = settings.DefaultValueHandling;
-                serializer.ConstructorHandling = settings.ConstructorHandling;
-                serializer.Context = settings.Context;
+    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return DateTime.ParseExact(reader.GetString()!, Format, System.Globalization.CultureInfo.InvariantCulture);
+    }
 
-
-                if (settings.ContractResolver != null)
-                {
-                    serializer.ContractResolver = settings.ContractResolver;
-                }
-                if (settings.TraceWriter != null)
-                {
-                    serializer.TraceWriter = settings.TraceWriter;
-                }
-                if (settings.EqualityComparer != null)
-                {
-                    serializer.EqualityComparer = settings.EqualityComparer;
-                }
-                if (settings.SerializationBinder != null)
-                {
-                    serializer.SerializationBinder = settings.SerializationBinder;
-                }
-
-                // reader/writer specific
-                // unset values won't override reader/writer set values
-                serializer.Formatting = settings.Formatting;
-                serializer.DateFormatHandling = settings.DateFormatHandling;
-                serializer.DateTimeZoneHandling = settings.DateTimeZoneHandling;
-                serializer.DateParseHandling = settings.DateParseHandling;
-                serializer.DateFormatString = settings.DateFormatString;
-                serializer.FloatFormatHandling = settings.FloatFormatHandling;
-                serializer.FloatParseHandling = settings.FloatParseHandling;
-                serializer.StringEscapeHandling = settings.StringEscapeHandling;
-                serializer.Culture = settings.Culture;
-                serializer.MaxDepth = settings.MaxDepth;
-                _cloneConverter = serializer;
-            }
-            return _cloneConverter;
-        }
+    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToUniversalTime().ToString(Format));
     }
 }

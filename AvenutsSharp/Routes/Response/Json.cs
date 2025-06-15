@@ -1,22 +1,31 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
-using System;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Routes.Response
 {
     public class Json : IResponse
     {
-        private string txt;
+        public string txt;
         public Json(object? o)
         {
-            txt = JsonConvert.SerializeObject(o, RouterMiddleware.config.JSONSettings);
+            txt = JsonSerializer.Serialize(o, RouterMiddleware.config.JSONSettings);
         }
 
         public Json(object? o, JsonConverter converter)
         {
-            txt = JsonConvert.SerializeObject(o, converter);
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                Converters = { converter }
+            };
+            txt = JsonSerializer.Serialize(o, options);
+        }
+
+        public Json(object? o, JsonSerializerOptions options)
+        {
+            txt = JsonSerializer.Serialize(o, options);
         }
 
         public Json(string json)

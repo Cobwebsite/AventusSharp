@@ -1,11 +1,12 @@
 ﻿using AventusSharp.Routes.Response;
 using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace AventusSharp.Routes
@@ -28,13 +29,10 @@ namespace AventusSharp.Routes
         /// <summary>
         /// Define how the object must be converted from/to json
         /// </summary>
-        public JsonSerializerSettings JSONSettings { get; set; } = new JsonSerializerSettings()
+        public JsonSerializerOptions JSONSettings { get; set; } = new JsonSerializerOptions()
         {
-            TypeNameHandling = TypeNameHandling.Auto,
-            NullValueHandling = NullValueHandling.Ignore,
-            DateFormatHandling = DateFormatHandling.IsoDateFormat,
-            DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffZ",
-            Converters = new List<JsonConverter>() { new AventusJsonConverter() }
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Converters = { new AventusJsonConverter(), new CustomDateTimeConverter() }
         };
 
         /// <summary>

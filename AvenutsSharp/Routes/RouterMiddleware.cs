@@ -10,6 +10,7 @@ using AventusSharp.Routes.Response;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AventusSharp.Routes
 {
@@ -89,7 +90,7 @@ namespace AventusSharp.Routes
                         {
                             continue;
                         }
-                        
+
                         List<string> routes = new List<string>();
                         List<Attribute> methodsAttribute = method.GetCustomAttributes().ToList();
                         List<MethodType> methodsToUse = new List<MethodType>();
@@ -159,7 +160,7 @@ namespace AventusSharp.Routes
                         {
                             methodsToUse.Add(hasBody ? MethodType.Post : MethodType.Get);
                         }
-                        
+
                         foreach (string route in routes)
                         {
                             foreach (MethodType methodType in methodsToUse)
@@ -257,7 +258,7 @@ namespace AventusSharp.Routes
         }
         public static bool ContainsParams(string urlPattern, RouterParameterInfo param)
         {
-            return new Regex("{"+param.name+"}").IsMatch(urlPattern);
+            return new Regex("{" + param.name + "}").IsMatch(urlPattern);
         }
         public static string ReplaceParams(string urlPattern, Dictionary<string, RouterParameterInfo> @params)
         {
@@ -342,6 +343,7 @@ namespace AventusSharp.Routes
                                     else
                                     {
                                         object? value = null;
+
                                         // check if dependancies injection
                                         if (injected.ContainsKey(parameter.type))
                                         {
@@ -350,37 +352,40 @@ namespace AventusSharp.Routes
                                         // check if body
                                         else
                                         {
-                                            if (body == null)
+                                            value = context.RequestServices.GetService(parameter.type);
+                                            if (value == null)
                                             {
-                                                body = new RouterBody(context);
-                                                VoidWithRouteError resultTemp = await body.Parse();
-                                                if (!resultTemp.Success)
+                                                if (body == null)
                                                 {
-                                                    context.Response.StatusCode = 422;
-                                                    await new Json(resultTemp).send(context, routerInfo.router);
-                                                    return null;
+                                                    body = new RouterBody(context);
+                                                    VoidWithRouteError resultTemp = await body.Parse();
+                                                    if (!resultTemp.Success)
+                                                    {
+                                                        context.Response.StatusCode = 422;
+                                                        await new Json(resultTemp).send(context, routerInfo.router);
+                                                        return null;
+                                                    }
+                                                }
+                                                if (parameter.type == typeof(HttpFile))
+                                                {
+                                                    value = body.GetFile(parameter.name);
+                                                }
+                                                else if (parameter.type == typeof(List<HttpFile>))
+                                                {
+                                                    value = body.GetFiles(parameter.name);
+                                                }
+                                                else
+                                                {
+                                                    ResultWithRouteError<object> bodyPart = body.GetData(parameter.type, parameter.name);
+                                                    if (!bodyPart.Success)
+                                                    {
+                                                        context.Response.StatusCode = 422;
+                                                        await new Json(bodyPart).send(context, routerInfo.router);
+                                                        return null;
+                                                    }
+                                                    value = bodyPart.Result;
                                                 }
                                             }
-                                            if (parameter.type == typeof(HttpFile))
-                                            {
-                                                value = body.GetFile(parameter.name);
-                                            }
-                                            else if (parameter.type == typeof(List<HttpFile>))
-                                            {
-                                                value = body.GetFiles(parameter.name);
-                                            }
-                                            else
-                                            {
-                                                ResultWithRouteError<object> bodyPart = body.GetData(parameter.type, parameter.name);
-                                                if (!bodyPart.Success)
-                                                {
-                                                    context.Response.StatusCode = 422;
-                                                    await new Json(bodyPart).send(context, routerInfo.router);
-                                                    return null;
-                                                }
-                                                value = bodyPart.Result;
-                                            }
-
                                         }
 
                                         // error
@@ -406,7 +411,7 @@ namespace AventusSharp.Routes
                                 }
                             }
                         }
-                        
+
                         return new RouterResolve(routerInfo, param);
                     }
                 }
@@ -416,7 +421,7 @@ namespace AventusSharp.Routes
         public static async Task OnRequest(HttpContext context, Func<Task> next)
         {
             RouterResolve? routerResolve = await Resolve(context);
-            if(routerResolve != null)
+            if (routerResolve != null)
             {
                 await OnRequest(context, routerResolve);
                 return;

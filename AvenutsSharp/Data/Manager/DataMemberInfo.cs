@@ -14,11 +14,11 @@ namespace AventusSharp.Data.Manager
     {
         public static DataMemberInfo? Create(object o)
         {
-            if(o is PropertyInfo p)
+            if (o is PropertyInfo p)
             {
                 return new DataMemberInfo(p);
             }
-            if(o is FieldInfo f)
+            if (o is FieldInfo f)
             {
                 return new DataMemberInfo(f);
             }
@@ -72,6 +72,32 @@ namespace AventusSharp.Data.Manager
             }
         }
         /// <summary>
+        /// Interface for IsNullable
+        /// </summary>
+        public bool IsNullable
+        {
+            get
+            {
+                if (memberInfo is PropertyInfo propertyInfo)
+                {
+                    NullabilityInfo info = new NullabilityInfoContext().Create(propertyInfo);
+                    if (info.WriteState == NullabilityState.Nullable || info.ReadState == NullabilityState.Nullable)
+                    {
+                        return true;
+                    }
+                }
+                else if (memberInfo is FieldInfo fieldInfo)
+                {
+                    NullabilityInfo info = new NullabilityInfoContext().Create(fieldInfo);
+                    if (info.WriteState == NullabilityState.Nullable || info.ReadState == NullabilityState.Nullable)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        /// <summary>
         /// Interface for GetCustomAttribute
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -106,7 +132,7 @@ namespace AventusSharp.Data.Manager
             return new List<object>();
 
         }
-        
+
         public T? GetAttribute<T>(bool inherit) where T : class
         {
             List<object> attrs = GetCustomAttributes(inherit);
@@ -144,7 +170,7 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="value"></param>
-        public void SetValue(object obj, object value)
+        public void SetValue(object obj, object? value)
         {
             if (memberInfo is FieldInfo fieldInfo)
             {

@@ -233,7 +233,11 @@ namespace AventusSharp.Data.Storage.Default
             noCommand.Errors.AddRange(commandResult.Errors);
             return noCommand;
         }
-        public ResultWithError<List<Dictionary<string, string?>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0, int loop = 0)
+        public ResultWithError<List<Dictionary<string, string?>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            return Query(command, dataParameters, 0, callerPath, callerNo);
+        }
+        public ResultWithError<List<Dictionary<string, string?>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, int loop, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithError<List<Dictionary<string, string?>>> result = new()
             {
@@ -354,7 +358,7 @@ namespace AventusSharp.Data.Storage.Default
                         if (e.Message.StartsWith("There is already an open DataReader") && loop < 5)
                         {
                             locker.Release();
-                            return Query(command, dataParameters, callerPath, callerNo, loop + 1);
+                            return Query(command, dataParameters, loop + 1, callerPath, callerNo);
                         }
                         DataError error = new DataError(DataErrorCode.UnknowError, e.Message + "\nSQL: " + command.CommandText);
                         error.Details.Add(command.CommandText);

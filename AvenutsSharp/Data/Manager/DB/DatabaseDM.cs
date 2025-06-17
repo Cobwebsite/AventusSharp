@@ -86,7 +86,7 @@ namespace AventusSharp.Data.Manager.DB
         public bool NeedShortLink { get; private set; } = false;
         public List<string>? ShortLinks { get; private set; } = null;
 
-        protected IDBStorage? storage;
+        private IDBStorage? storage;
         protected List<Type> GetAllDone { get; } = new List<Type>();
 
 

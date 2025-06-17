@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 
 namespace AventusSharp.Data.Storage.Default
 {
@@ -38,6 +39,10 @@ namespace AventusSharp.Data.Storage.Default
         public abstract MigrationFactory GetMigrationProvider();
 
         public void LoadAllTableFieldsQuery<X>(TableInfo tableInfo, string alias, DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types, DatabaseGenericBuilder<X> queryBuilder) where X : IStorable;
+
+
+        ResultWithError<List<Dictionary<string, string?>>> Query(string sql, string callerPath = "", int callerNo = 0);
+        ResultWithError<List<Dictionary<string, string?>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, string callerPath = "", int callerNo = 0);
     }
 
 

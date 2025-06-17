@@ -139,9 +139,11 @@ namespace AventusSharp.WebSocket
             return Task.CompletedTask;
         }
 
-        public async Task Stop() {
+        public async Task Stop()
+        {
             List<WebSocketConnection> conns = connections.ToList();
-            foreach(WebSocketConnection connection in conns) {
+            foreach (WebSocketConnection connection in conns)
+            {
                 await connection.Close();
             }
         }
@@ -202,13 +204,17 @@ namespace AventusSharp.WebSocket
                                     // check if body
                                     else
                                     {
-                                        ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name);
-                                        if (!bodyPart.Success)
+                                        value = connection.GetContext().RequestServices.GetService(parameter.type);
+                                        if (value == null)
                                         {
-                                            await connection.Send(path, bodyPart);
-                                            return;
+                                            ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name);
+                                            if (!bodyPart.Success)
+                                            {
+                                                await connection.Send(path, bodyPart);
+                                                return;
+                                            }
+                                            value = bodyPart.Result;
                                         }
-                                        value = bodyPart.Result;
                                     }
 
                                     // error
@@ -344,7 +350,7 @@ namespace AventusSharp.WebSocket
                     omit = new();
                 }
 
-                if(connections == null)
+                if (connections == null)
                 {
                     connections = this.connections;
                 }

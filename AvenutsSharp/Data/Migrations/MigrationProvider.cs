@@ -9,35 +9,35 @@ public class MigrationFactory
 {
     public static readonly MigrationFactory Instance = new MigrationFactory();
 
-    private static List<Type> _types = new List<Type>();
+    private static Dictionary<Type, IMigrationProvider> _types = new Dictionary<Type, IMigrationProvider>();
     private static List<IMigrationProvider> _instances = new List<IMigrationProvider>();
-    public static MigrationFactory Make<T>() where T : IMigrationProvider, new()
+    public static IMigrationProvider Make<T>() where T : IMigrationProvider, new()
     {
         Type t = typeof(T);
-        if (!_types.Contains(t))
+        if (!_types.ContainsKey(t))
         {
-            _types.Add(t);
+            object? instance = Activator.CreateInstance(t);
+            if (instance is IMigrationProvider provider)
+                _types.Add(t, provider);
         }
-        return Instance;
+        return _types[t];
     }
 
-    public static MigrationFactory Register<T>(T instance) where T : IMigrationProvider
+    public static IMigrationProvider Register<T>(T instance) where T : IMigrationProvider
     {
         if (!_instances.Contains(instance))
         {
             _instances.Add(instance);
         }
-        return Instance;
+        return instance;
     }
 
     internal static List<IMigrationProvider> GetAll()
     {
         List<IMigrationProvider> providers = _instances.ToList();
-        foreach (Type type in _types)
+        foreach (KeyValuePair<Type, IMigrationProvider> pair in _types)
         {
-            object? instance = Activator.CreateInstance(type);
-            if (instance is IMigrationProvider provider)
-                providers.Add(provider);
+            providers.Add(pair.Value);
         }
 
         return providers;
@@ -49,8 +49,16 @@ public class MigrationFactory
 public interface IMigrationProvider
 {
     VoidWithError Init();
+    ResultWithError<bool> Can(string name);
+    VoidWithError Save(string name);
+    void BeforeUp(VoidWithError voidWithError);
+    void AfterUp(VoidWithError voidWithError);
 }
 public abstract class MigrationProvider : IMigrationProvider
 {
     public abstract VoidWithError Init();
+    public abstract ResultWithError<bool> Can(string name);
+    public abstract VoidWithError Save(string name);
+    public abstract void BeforeUp(VoidWithError voidWithError);
+    public abstract void AfterUp(VoidWithError voidWithError);
 }

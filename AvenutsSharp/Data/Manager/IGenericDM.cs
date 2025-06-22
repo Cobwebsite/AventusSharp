@@ -75,6 +75,7 @@ namespace AventusSharp.Data.Manager
         internal void PrintErrors(IWithError withError);
 
         internal VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
+        internal IMigrationProvider GetMigrationProvider();
     }
     public interface IGenericDM<U> : IGenericDM where U : notnull, IStorable
     {

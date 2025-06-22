@@ -309,7 +309,11 @@ namespace AventusSharp.Data.Manager
         }
         protected abstract Task<VoidWithError> Initialize();
 
-        protected abstract MigrationFactory GetMigrationProvider();
+        internal abstract IMigrationProvider GetMigrationProvider();
+        IMigrationProvider IGenericDM.GetMigrationProvider()
+        {
+            return GetMigrationProvider();
+        }
 
         protected bool? MustPrintErrorInConsole()
         {

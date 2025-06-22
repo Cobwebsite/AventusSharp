@@ -445,7 +445,7 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region init
-        public MigrationFactory GetMigrationProvider()
+        public IMigrationProvider GetMigrationProvider()
         {
             return MigrationFactory.Register(DefineMigrationProvider());
         }

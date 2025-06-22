@@ -21,17 +21,69 @@ public abstract class Migration : IMigration
     private int priority = 0;
     private Dictionary<string, IMigrationModel> models = new Dictionary<string, IMigrationModel>();
 
-    public VoidWithError _Up()
+    public VoidWithError _Up(List<IMigrationProvider> providers)
     {
         _currentError = new VoidWithError();
+        string name = GetName();
+        if (providers.Count == 1)
+        {
+            ResultWithError<bool> canExectue = providers[0].Can(name);
+            if (!canExectue.Success || !canExectue.Result)
+            {
+                _currentError.Errors = canExectue.Errors;
+                return _currentError;
+            }
+        }
+
         Up();
 
         List<IMigrationModel> migrations = models.Values.ToList();
         migrations.Sort((a, b) => a.Priority - b.Priority);
+        if (providers.Count > 1)
+        {
+            providers = new();
+            foreach (IMigrationModel migration in migrations)
+            {
+                IMigrationProvider provider = migration.GetProvider();
+                if (!providers.Contains(provider))
+                {
+                    providers.Add(provider);
+                }
+            }
+
+            ResultWithError<bool> canExectue = new();
+            foreach (IMigrationProvider provider in providers)
+            {
+                canExectue.Execute(() => provider.Can(name));
+            }
+            if (!canExectue.Success || !canExectue.Result)
+            {
+                _currentError.Errors = canExectue.Errors;
+                return _currentError;
+            }
+        }
+
+        foreach (IMigrationProvider provider in providers)
+        {
+            provider.BeforeUp(_currentError);
+        }
 
         foreach (IMigrationModel migration in migrations)
         {
             _currentError.Run(migration.Run);
+        }
+
+        foreach (IMigrationProvider provider in providers)
+        {
+            provider.AfterUp(_currentError);
+        }
+
+        if (_currentError.Success)
+        {
+            foreach (IMigrationProvider provider in providers)
+            {
+                _currentError.Run(() => provider.Save(name));
+            }
         }
 
         return _currentError;
@@ -91,6 +143,7 @@ public interface IMigrationModel
 {
     internal int Priority { get; set; }
     internal VoidWithError Run();
+    internal IMigrationProvider GetProvider();
 }
 public class MigrationModel<T> : IMigrationModel where T : IStorable
 {
@@ -187,6 +240,17 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         }
         return result;
     }
+
+    IMigrationProvider IMigrationModel.GetProvider()
+    {
+        ResultWithError<IGenericDM> DMWithError = GenericDM.GetWithError<T>();
+        if (DMWithError.Success && DMWithError.Result != null)
+        {
+            return DMWithError.Result.GetMigrationProvider();
+        }
+        throw new Exception("Can't find provider");
+    }
+
 }
 
 public class MigrationPropertyOptions<T>

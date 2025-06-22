@@ -130,7 +130,7 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             return Task.FromResult(new VoidWithError());
         }
-        protected override MigrationFactory GetMigrationProvider()
+        internal override IMigrationProvider GetMigrationProvider()
         {
             return MigrationFactory.Make<DummyMigrationProvider>();
         }

@@ -193,7 +193,7 @@ namespace AventusSharp.Data.Manager.DB
             result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name));
             return Task.FromResult(result);
         }
-        protected override MigrationFactory GetMigrationProvider()
+        internal override IMigrationProvider GetMigrationProvider()
         {
             return Storage.GetMigrationProvider(); 
         }

@@ -45,7 +45,7 @@ public static class MigrationManager
 
         if (_migrationsClasses.Count > 0)
         {
-            // we prepare all provider that comes from our DM
+            // we prepare all providers that comes from our DM
             List<IMigrationProvider> providers = MigrationFactory.GetAll();
             foreach (IMigrationProvider provider in providers)
             {
@@ -65,7 +65,7 @@ public static class MigrationManager
 
             foreach (KeyValuePair<string, Migration> migrationPair in migrations)
             {
-                result.Run(migrationPair.Value._Up);
+                result.Run(() => migrationPair.Value._Up(providers));
             }
         }
         return result;

@@ -67,6 +67,10 @@ public static class McpMiddleware
                     ListToolsHandler = (request, cancellationToken) => ValueTask.FromResult(new ListToolsResult() { Tools = tools.Values.Select(p => p.Tool).ToList() }),
                     CallToolHandler = (request, cancellationToken) =>
                     {
+                        if (request.Server.ServerOptions.KnownClientInfo is ImplementationWithContext clientInfo)
+                        {
+                            var session = McpSessionContext.GetCurrentSession(clientInfo.SessionId);
+                        }
 
                         string? name = request.Params?.Name;
                         if (name != null && tools.ContainsKey(name))
@@ -93,7 +97,7 @@ public static class McpMiddleware
                 },
                 Resources = new()
                 {
-                    ListResourcesHandler = (request, cancellationToken) => ValueTask.FromResult(new ListResourcesResult() { Resources = new List<Resource>()}),
+                    ListResourcesHandler = (request, cancellationToken) => ValueTask.FromResult(new ListResourcesResult() { Resources = new List<Resource>() }),
                 }
             },
         };
@@ -165,9 +169,9 @@ public static class McpMiddleware
                 // var server = new StreamableHttpServerTransport();
                 // server.
 
-                return ValueTask.FromResult(new CallToolResponse()
+                return ValueTask.FromResult(new CallToolResult()
                 {
-                    Content = [new Content() { Text = $"Echo: ", Type = "text" }]
+                    Content = [new TextContentBlock() { Text = $"Echo: " }]
                 });
             }
         };
@@ -190,7 +194,7 @@ public static class McpMiddleware
 internal class AventusMcpTool
 {
     public required Tool Tool { get; set; }
-    public required Func<RequestContext<CallToolRequestParams>, ValueTask<CallToolResponse>> Run { get; set; }
+    public required Func<RequestContext<CallToolRequestParams>, ValueTask<CallToolResult>> Run { get; set; }
 }
 internal class McpHttpMethod
 {

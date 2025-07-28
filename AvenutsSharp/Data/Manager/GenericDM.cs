@@ -1791,6 +1791,11 @@ namespace AventusSharp.Data.Manager
         public ResultWithError<List<X>> DeleteWithError<X>(List<X> values) where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
+            if (values.Count == 0)
+            {
+                result.Result = values;
+                return result;
+            }
             List<GenericError> errors = CanDelete(values);
             if (errors.Count > 0)
             {

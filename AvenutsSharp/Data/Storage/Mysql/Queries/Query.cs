@@ -180,6 +180,10 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     limitOffset += " OFFSET " + queryBuilder.OffsetSize;
                 }
             }
+            else if (queryBuilder.OffsetSize != null)
+            {
+                limitOffset = " LIMIT 18446744073709551615 OFFSET " + queryBuilder.OffsetSize;
+            }
 
             string sql = "SELECT " + string.Join(",", fields)
                 + " FROM `" + mainInfo.TableInfo.SqlTableName + "` " + mainInfo.Alias

@@ -160,7 +160,7 @@ namespace AventusSharp.Data
             }
 
             ResultWithError<List<T>> result = new();
-            result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to create"));
+            // result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to create"));
             result.Result = new List<T>();
             return result;
         }
@@ -250,7 +250,7 @@ namespace AventusSharp.Data
             }
 
             ResultWithError<List<T>> result = new();
-            result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to Update"));
+            // result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to Update"));
             result.Result = new List<T>();
             return result;
         }
@@ -358,7 +358,7 @@ namespace AventusSharp.Data
             }
 
             ResultWithError<List<T>> result = new();
-            result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to Delete"));
+            // result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to Delete"));
             result.Result = new List<T>();
             return result;
         }
@@ -380,7 +380,7 @@ namespace AventusSharp.Data
             }
 
             ResultWithError<List<T>> result = new();
-            result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to Delete"));
+            // result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide values to Delete"));
             result.Result = new List<T>();
             return result;
         }

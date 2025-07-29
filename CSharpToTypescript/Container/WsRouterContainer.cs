@@ -34,7 +34,7 @@ namespace CSharpToTypescript.Container
         public string fileName = "";
         public string parentRoute = "";
         private List<WsRouteContainer> routes = new List<WsRouteContainer>();
-        private List<Func<string>> additionalFcts = new();
+        private Dictionary<string, Func<string>> additionalFcts = new();
         public List<LocalEventInfo> routeEvents = new();
 
         public Type? endPoint;
@@ -143,6 +143,10 @@ namespace CSharpToTypescript.Container
                 {
                     throw new Exception("Can't find method " + fct + " on " + realType.FullName);
                 }
+                if (additionalFcts.ContainsKey(method.Name))
+                {
+                    continue;
+                }
                 if (o != null)
                 {
                     Func<string> getFct = () =>
@@ -153,12 +157,12 @@ namespace CSharpToTypescript.Container
                         AddTxtClose("}", resultTemp);
                         return string.Join("\r\n", resultTemp);
                     };
-                    additionalFcts.Add(getFct);
+                    additionalFcts.Add(method.Name, getFct);
                 }
             }
 
             string prefix = ProjectManager.Config.wsEndpoint.prefix;
-            if (prefix != "")
+            if (prefix != "" && !additionalFcts.ContainsKey("getPrefix"))
             {
                 Func<string> getFct = () =>
                 {
@@ -169,7 +173,7 @@ namespace CSharpToTypescript.Container
                     AddTxtClose("}", resultTemp);
                     return string.Join("\r\n", resultTemp);
                 };
-                additionalFcts.Add(getFct);
+                additionalFcts.Add("getPrefix", getFct);
             }
         }
         private void ParentEvents()
@@ -409,9 +413,9 @@ namespace CSharpToTypescript.Container
             {
                 result.Add(fct.Value);
             }
-            foreach (Func<string> fct in additionalFcts)
+            foreach (var fctWithName in additionalFcts)
             {
-                result.Add(fct());
+                result.Add(fctWithName.Value());
             }
 
 

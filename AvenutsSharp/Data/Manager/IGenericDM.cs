@@ -52,8 +52,11 @@ namespace AventusSharp.Data.Manager
         #region Create
         List<X> Create<X>(List<X> values) where X : notnull, IStorable;
         ResultWithError<List<X>> CreateWithError<X>(List<X> values) where X : notnull, IStorable;
+        bool BulkCreate<X>(List<X> values) where X : notnull, IStorable;
+        VoidWithError BulkCreateWithError<X>(List<X> values) where X : notnull, IStorable;
         X? Create<X>(X value) where X : notnull, IStorable;
         ResultWithError<X> CreateWithError<X>(X value) where X : notnull, IStorable;
+
         #endregion
 
         #region Update

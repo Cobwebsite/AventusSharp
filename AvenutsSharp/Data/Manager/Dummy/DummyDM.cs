@@ -60,6 +60,16 @@ namespace AventusSharp.Data.Manager.Dummy
             return result;
         }
 
+        protected override VoidWithError BulkCreateLogic<X>(List<X> values)
+        {
+            VoidWithError result = new ();
+            foreach (X x in values)
+            {
+                Records[x.Id] = x;
+            }
+            return result;
+        }
+
         protected override ResultWithError<List<X>> DeleteLogic<X>(List<X> values)
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();

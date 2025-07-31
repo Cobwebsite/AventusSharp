@@ -165,6 +165,33 @@ namespace AventusSharp.Data
             return result;
         }
         /// <summary>
+        /// Create inside the DM a bunch of elements and return them
+        /// If something went wrong an empty list will be returned
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static bool BulkCreate(List<T> values)
+        {
+            if (values != null && values.Count > 0)
+            {
+                return GenericDM.Get<T>().BulkCreate(values);
+            }
+            return true;
+        }
+        /// <summary>
+        /// Create inside the DM a bunch of elements and return them
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static VoidWithError BulkCreateWithError(List<T> values)
+        {
+            if (values != null && values.Count > 0)
+            {
+                return GenericDM.Get<T>().BulkCreateWithError(values);
+            }
+            return new();
+        }
+        /// <summary>
         /// Create the value inside the DM and return it
         /// If something went wrong a null is returned
         /// </summary>

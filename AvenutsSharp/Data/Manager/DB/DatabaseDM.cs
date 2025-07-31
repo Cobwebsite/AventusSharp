@@ -195,7 +195,7 @@ namespace AventusSharp.Data.Manager.DB
         }
         internal override IMigrationProvider GetMigrationProvider()
         {
-            return Storage.GetMigrationProvider(); 
+            return Storage.GetMigrationProvider();
         }
 
 
@@ -504,10 +504,23 @@ namespace AventusSharp.Data.Manager.DB
                         result.Errors.AddRange(resultTemp.Errors);
                     }
                 }
+
+                return result;
+            });
+        }
+
+        protected override VoidWithError BulkCreateLogic<X>(List<X> values)
+        {
+            return Storage.RunInsideTransaction(delegate ()
+            {
+                VoidWithError result = new();
+
                 
                 return result;
             });
         }
+
+
         #endregion
 
         #region Update

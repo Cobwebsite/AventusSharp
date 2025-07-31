@@ -331,7 +331,7 @@ namespace AventusSharp.Data.Manager
         private MethodInfo? IApplyMigration = null;
         VoidWithError IGenericDM.ApplyMigration<X>(IMigrationModel model)
         {
-             try
+            try
             {
                 VoidWithError? result = InvokeMethod<VoidWithError, X>(ref IApplyMigration, new object[] { model });
                 if (result == null)
@@ -343,7 +343,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                VoidWithError result = new ();
+                VoidWithError result = new();
                 if (e is AventusException aventusException)
                 {
                     result.Errors.Add(aventusException.Error);
@@ -354,7 +354,7 @@ namespace AventusSharp.Data.Manager
                 }
                 return result;
             }
-            
+
         }
 
         #endregion
@@ -1229,6 +1229,7 @@ namespace AventusSharp.Data.Manager
         public event OnCreatedHandler<U> OnCreated;
 
         #region List
+        protected abstract VoidWithError BulkCreateLogic<X>(List<X> values) where X : U;
         protected abstract ResultWithError<List<X>> CreateLogic<X>(List<X> values) where X : U;
         protected virtual List<GenericError> CanCreate<X>(List<X> values) where X : U
         {
@@ -1341,6 +1342,38 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
+        public VoidWithError BulkCreateWithError<X>(List<X> values) where X : U
+        {
+            return BulkCreateLogic(values);
+        }
+        /// <summary>
+        /// <inheritdoc />
+        /// </summary>
+        VoidWithError IGenericDM.BulkCreateWithError<X>(List<X> values)
+        {
+            try
+            {
+                List<U> valuesTemp = TransformList<X, U>(values);
+                return BulkCreateWithError(valuesTemp);
+            }
+            catch (Exception e)
+            {
+                VoidWithError result = new VoidWithError();
+                if (e is AventusException aventusException)
+                {
+                    result.Errors.Add(aventusException.Error);
+                }
+                else
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                }
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// <inheritdoc />
+        /// </summary>
         public List<X> Create<X>(List<X> values) where X : U
         {
             ResultWithError<List<X>> result = CreateWithError(values);
@@ -1373,6 +1406,33 @@ namespace AventusSharp.Data.Manager
                 return new List<X>();
             }
         }
+
+        /// <summary>
+        /// <inheritdoc />
+        /// </summary>
+        public bool BulkCreate<X>(List<X> values) where X : U
+        {
+            return BulkCreateWithError(values).Success;
+        }
+        private MethodInfo? IBulkCreateList = null;
+        /// <summary>
+        /// <inheritdoc />
+        /// </summary>
+        bool IGenericDM.BulkCreate<X>(List<X> values)
+        {
+            try
+            {
+                List<U> valuesTemp = TransformList<X, U>(values);
+                bool? resultTemp = InvokeMethod<bool, U>(ref IBulkCreateList, new object[] { valuesTemp });
+                return resultTemp ?? false;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                return false;
+            }
+        }
+
         #endregion
 
         #region Item

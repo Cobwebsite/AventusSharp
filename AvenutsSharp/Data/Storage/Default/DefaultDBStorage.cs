@@ -1098,7 +1098,15 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Create
-
+        protected abstract string PrepareSQLForBulkCreate<X>(TableInfo tableInfo) where X : IStorable;
+        public VoidWithError BulkCreateWithError<X>(List<X> items) where X : IStorable
+        {
+            VoidWithError result = new();
+            TableInfo tableInfo = GetTableInfo(typeof(X)) ?? throw new Exception();
+            string sql = PrepareSQLForBulkCreate<X>(tableInfo);
+            
+            return result;
+        }
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder) where X : IStorable;
         public VoidWithError CreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, X item) where X : IStorable
         {

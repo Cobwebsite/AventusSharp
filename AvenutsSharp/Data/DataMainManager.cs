@@ -59,6 +59,10 @@ namespace AventusSharp.Data
         /// Define if Aventus have to create models
         /// </summary>
         public bool AutoCreateModel { get; set; } = true;
+        /// <summary>
+        /// Define config for migration
+        /// </summary>
+        public DataManagerConfigMigration Migration = new();
         public DataManagerConfig()
         {
         }
@@ -97,6 +101,14 @@ namespace AventusSharp.Data
         /// Print all errors from storable action in the console
         /// </summary>
         public bool printErrorInConsole = false;
+    }
+
+    public class DataManagerConfigMigration
+    {
+        /// <summary>
+        /// Define if migrations will be applied though multiple prodivers (for example : 2 databases)
+        /// </summary>
+        public bool MultipleProviders = false;
     }
 
     public static class DataMainManager

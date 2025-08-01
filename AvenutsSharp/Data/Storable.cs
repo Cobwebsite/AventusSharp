@@ -169,12 +169,13 @@ namespace AventusSharp.Data
         /// If something went wrong an empty list will be returned
         /// </summary>
         /// <param name="values"></param>
+        /// <param name="withId"></param>
         /// <returns></returns>
-        public static bool BulkCreate(List<T> values)
+        public static bool BulkCreate(List<T> values, bool withId = false)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().BulkCreate(values);
+                return GenericDM.Get<T>().BulkCreate(values, withId);
             }
             return true;
         }
@@ -182,12 +183,13 @@ namespace AventusSharp.Data
         /// Create inside the DM a bunch of elements and return them
         /// </summary>
         /// <param name="values"></param>
+        /// <param name="withId"></param>
         /// <returns></returns>
-        public static VoidWithError BulkCreateWithError(List<T> values)
+        public static VoidWithError BulkCreateWithError(List<T> values, bool withId = false)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().BulkCreateWithError(values);
+                return GenericDM.Get<T>().BulkCreateWithError(values, withId);
             }
             return new();
         }

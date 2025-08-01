@@ -24,7 +24,7 @@ namespace AventusSharp.Data.Storage.Mysql
             MigrationProvider = new MySQLMigrationProvider(this);
         }
 
-        protected override DbConnection GetConnection()
+        public override DbConnection GetConnection()
         {
             MySqlConnectionStringBuilder builder = new()
             {
@@ -181,6 +181,15 @@ namespace AventusSharp.Data.Storage.Mysql
             string sql = "SELECT COUNT(*) nb FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + table + "' and TABLE_SCHEMA = '" + GetDatabaseName() + "'; ";
             return sql;
         }
+        protected override string PrepareSQLTableRename(string oldName, string newName)
+        {
+            return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+        }
+        protected override string PrepareSQLTableDelete(string name)
+        {
+            return "DROP TABLE IF EXISTS `" + name + "`;";
+        }
+
         #endregion
 
         #region query
@@ -202,6 +211,10 @@ namespace AventusSharp.Data.Storage.Mysql
         protected override DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder)
         {
             return Queries.Create.PrepareSQL(createBuilder);
+        }
+        protected override DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId)
+        {
+            return Queries.BulkCreate.PrepareSQL(createBuilder, nbItems, withId);
         }
         #endregion
 

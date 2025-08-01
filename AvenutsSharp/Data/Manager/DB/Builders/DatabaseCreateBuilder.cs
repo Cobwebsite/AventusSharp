@@ -70,5 +70,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return result;
         }
 
+        public VoidWithError RunBulkWithError(List<T> items, bool withId)
+        {
+            VoidWithError result = Storage.BulkCreateFromBuilder(this, items, withId);
+            DM.PrintErrors(result);
+            return result;
+        }
+
     }
 }

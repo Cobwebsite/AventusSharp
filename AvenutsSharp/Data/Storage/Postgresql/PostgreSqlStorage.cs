@@ -24,7 +24,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         MigrationProvider = new PostgreSqlMigrationProvider(this);
     }
 
-    protected override DbConnection GetConnection()
+    public override DbConnection GetConnection()
     {
         NpgsqlConnectionStringBuilder builder = new()
         {
@@ -184,6 +184,14 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
                      "WHERE table_name = '" + table + "' AND table_schema = 'public';";
         return sql;
     }
+    protected override string PrepareSQLTableRename(string oldName, string newName)
+    {
+        return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+    }
+    protected override string PrepareSQLTableDelete(string name)
+    {
+        return "DROP TABLE IF EXISTS `" + name + "`;";
+    }
     #endregion
 
     #region query
@@ -205,6 +213,10 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
     protected override DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder)
     {
         return Queries.Create.PrepareSQL(createBuilder);
+    }
+    protected override DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId)
+    {
+        return Queries.BulkCreate.PrepareSQL(createBuilder, nbItems, withId);
     }
     #endregion
 

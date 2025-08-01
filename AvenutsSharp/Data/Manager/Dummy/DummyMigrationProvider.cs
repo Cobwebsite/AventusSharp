@@ -31,4 +31,9 @@ public class DummyMigrationProvider : MigrationProvider
     public override void AfterUp(VoidWithError voidWithError)
     {
     }
+
+    public override VoidWithError ApplyMigration<X>(IMigrationModel model)
+    {
+        return new();
+    }
 }

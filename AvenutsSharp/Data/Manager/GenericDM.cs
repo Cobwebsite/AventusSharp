@@ -1229,7 +1229,7 @@ namespace AventusSharp.Data.Manager
         public event OnCreatedHandler<U> OnCreated;
 
         #region List
-        protected abstract VoidWithError BulkCreateLogic<X>(List<X> values) where X : U;
+        protected abstract VoidWithError BulkCreateLogic<X>(List<X> values, bool withId) where X : U;
         protected abstract ResultWithError<List<X>> CreateLogic<X>(List<X> values) where X : U;
         protected virtual List<GenericError> CanCreate<X>(List<X> values) where X : U
         {
@@ -1342,19 +1342,19 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public VoidWithError BulkCreateWithError<X>(List<X> values) where X : U
+        public VoidWithError BulkCreateWithError<X>(List<X> values, bool withId = false) where X : U
         {
-            return BulkCreateLogic(values);
+            return BulkCreateLogic(values, withId);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        VoidWithError IGenericDM.BulkCreateWithError<X>(List<X> values)
+        VoidWithError IGenericDM.BulkCreateWithError<X>(List<X> values, bool withId)
         {
             try
             {
                 List<U> valuesTemp = TransformList<X, U>(values);
-                return BulkCreateWithError(valuesTemp);
+                return BulkCreateWithError(valuesTemp, withId);
             }
             catch (Exception e)
             {
@@ -1410,20 +1410,20 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public bool BulkCreate<X>(List<X> values) where X : U
+        public bool BulkCreate<X>(List<X> values, bool withId = false) where X : U
         {
-            return BulkCreateWithError(values).Success;
+            return BulkCreateWithError(values, withId).Success;
         }
         private MethodInfo? IBulkCreateList = null;
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        bool IGenericDM.BulkCreate<X>(List<X> values)
+        bool IGenericDM.BulkCreate<X>(List<X> values, bool withId)
         {
             try
             {
                 List<U> valuesTemp = TransformList<X, U>(values);
-                bool? resultTemp = InvokeMethod<bool, U>(ref IBulkCreateList, new object[] { valuesTemp });
+                bool? resultTemp = InvokeMethod<bool, U>(ref IBulkCreateList, new object[] { valuesTemp, withId });
                 return resultTemp ?? false;
             }
             catch (Exception e)
@@ -2049,6 +2049,151 @@ namespace AventusSharp.Data.Manager
             }
         }
         #endregion
+
+        #endregion
+
+        #region Transaction
+        protected abstract SemaphoreSlim getTransactionLocker();
+        protected abstract TransactionContext? getTransactionContext();
+        protected abstract void setTransactionContext(TransactionContext? context);
+        /// <summary>
+        /// Run a function inside a transaction that ll be commit if no error otherwise rollback
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="defaultValue"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action)
+        {
+            ResultWithError<TransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            if (!transactionResult.Success || transactionResult.Result == null)
+            {
+                ResultWithError<Y> resultError = new()
+                {
+                    Result = defaultValue,
+                    Errors = transactionResult.Errors
+                };
+                return resultError;
+            }
+            ResultWithError<Y> resultTemp = action();
+            if (resultTemp.Success)
+            {
+                ResultWithError<bool> commitResult = transactionResult.Result.Commit();
+                resultTemp.Errors.AddRange(commitResult.Errors);
+            }
+            else
+            {
+                ResultWithError<bool> rollbackResult = transactionResult.Result.Rollback();
+                resultTemp.Errors.AddRange(rollbackResult.Errors);
+            }
+            return resultTemp;
+        }
+        /// <summary>
+        /// Run a function inside a transaction that ll be commit if no error otherwise rollback
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public ResultWithError<Y> RunInsideTransaction<Y>(Func<ResultWithError<Y>> action)
+        {
+            return RunInsideTransaction<Y>(default, action);
+        }
+        /// <summary>
+        /// Run a function inside a transaction that ll be commit if no error otherwise rollback
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public VoidWithError RunInsideTransaction(Func<VoidWithError> action)
+        {
+            ResultWithError<TransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            if (!transactionResult.Success || transactionResult.Result == null)
+            {
+                VoidWithError resultError = new()
+                {
+                    Errors = transactionResult.Errors
+                };
+                return resultError;
+            }
+            VoidWithError resultTemp = action();
+            if (resultTemp.Success)
+            {
+                ResultWithError<bool> commitResult = transactionResult.Result.Commit();
+                if (commitResult.Result)
+                {
+                    setTransactionContext(null);
+                }
+                resultTemp.Errors.AddRange(commitResult.Errors);
+            }
+            else
+            {
+                ResultWithError<bool> rollbackResult = transactionResult.Result.Rollback();
+                setTransactionContext(null);
+                resultTemp.Errors.AddRange(rollbackResult.Errors);
+            }
+            return resultTemp;
+        }
+
+        protected abstract ResultWithError<TransactionContext> BeginTransactionContext();
+        protected abstract void EndTransactionContext();
+        protected ResultWithError<TransactionContext> BeginTransaction()
+        {
+            ResultWithError<TransactionContext> result = new();
+            var locker = getTransactionLocker();
+            try
+            {
+                lock (locker)
+                {
+                    locker.WaitAsync().GetAwaiter().GetResult();
+                    TransactionContext? transactionContext = getTransactionContext();
+                    if (transactionContext == null)
+                    {
+                        result.Run(() => BeginTransactionContext());
+                        if (result.Success && result.Result != null)
+                        {
+                            setTransactionContext(result.Result);
+                        }
+                        else
+                        {
+                            locker.Release();
+                            return result;
+                        }
+                    }
+                    else
+                    {
+                        transactionContext.count++;
+                        result.Result = transactionContext;
+                    }
+                    locker.Release();
+                }
+            }
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
+
+
+            return result;
+        }
+
+        protected void EndTransaction()
+        {
+            if (getTransactionContext() != null)
+            {
+                EndTransactionContext();
+                setTransactionContext(null);
+            }
+        }
+
+        protected void RunInsideLocker(Action fct)
+        {
+            SemaphoreSlim locker = getTransactionLocker();
+            lock (locker)
+            {
+                locker.WaitAsync().GetAwaiter().GetResult();
+                fct();
+                locker.Release();
+            }
+        }
 
         #endregion
 

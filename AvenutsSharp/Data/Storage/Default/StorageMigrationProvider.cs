@@ -9,7 +9,7 @@ namespace AventusSharp.Data.Storage.Default;
 public abstract class StorageMigrationProvider<T> : MigrationProvider where T : DefaultDBStorage<T>
 {
     private T _storage;
-    private TransactionContext? _context;
+    private DbTransactionContext? _context;
     public StorageMigrationProvider(T storage)
     {
         _storage = storage;
@@ -46,7 +46,7 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
 
     public override void BeforeUp(VoidWithError voidWithError)
     {
-        ResultWithError<TransactionContext> transactionQuery = _storage.BeginTransaction();
+        ResultWithError<DbTransactionContext> transactionQuery = _storage.BeginTransaction();
         if (transactionQuery.Success && transactionQuery.Result != null)
         {
             _context = transactionQuery.Result;
@@ -69,6 +69,11 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
                 voidWithError.Errors.AddRange(rollbackQuery.Errors);
             }
         }
+    }
+
+    public override VoidWithError ApplyMigration<X>(IMigrationModel model)
+    {
+        return _storage.ApplyMigration<X>(model);
     }
 }
 

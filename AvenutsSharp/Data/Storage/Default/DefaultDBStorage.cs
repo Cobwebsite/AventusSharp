@@ -49,7 +49,7 @@ namespace AventusSharp.Data.Storage.Default
         protected string database;
         protected bool addCreatedAndUpdatedDate;
         private bool linksCreated;
-        private TransactionContext? transactionContext;
+        private DbTransactionContext? transactionContext;
         private SemaphoreSlim locker = new SemaphoreSlim(1, 1);
         public bool IsConnectedOneTime { get; protected set; }
         public bool Debug { get; set; }
@@ -98,7 +98,7 @@ namespace AventusSharp.Data.Storage.Default
         }
 
         public abstract ResultWithError<bool> ResetStorage();
-        protected abstract DbConnection GetConnection();
+        public abstract DbConnection GetConnection();
         public abstract ResultWithDataError<DbCommand> CreateCmd(string sql);
         public abstract DbParameter GetDbParameter();
         public void Close()
@@ -375,9 +375,9 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
-        public ResultWithError<TransactionContext> BeginTransaction()
+        public ResultWithError<DbTransactionContext> BeginTransaction()
         {
-            ResultWithError<TransactionContext> result = new();
+            ResultWithError<DbTransactionContext> result = new();
 
             try
             {
@@ -398,7 +398,7 @@ namespace AventusSharp.Data.Storage.Default
                             return result;
                         }
                         DbTransaction transaction = connection.BeginTransaction();
-                        transactionContext = new TransactionContext(transaction, EndTransaction, RunInsideLocker);
+                        transactionContext = new DbTransactionContext(transaction, EndTransaction, RunInsideLocker);
                         result.Result = transactionContext;
                     }
                     else
@@ -439,6 +439,17 @@ namespace AventusSharp.Data.Storage.Default
                 fct();
                 locker.Release();
             }
+        }
+
+        public SemaphoreSlim getTransactionLocker() => locker;
+        public TransactionContext? getTransactionContext() => transactionContext;
+        public void setTransactionContext(TransactionContext? context)
+        {
+            if (context == null)
+                transactionContext = null;
+            else if (context is DbTransactionContext dbTransactionContext)
+                transactionContext = dbTransactionContext;
+
         }
 
 
@@ -757,6 +768,92 @@ namespace AventusSharp.Data.Storage.Default
 
         }
 
+        protected VoidWithError BulkQueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, List<IStorable> items)
+        {
+            List<GenericError> errors = new();
+
+            string sqlToExecute = sql;
+
+            VoidWithError result = new();
+            ResultWithDataError<DbCommand> cmdResult = CreateCmd(sqlToExecute);
+            result.Errors.AddRange(cmdResult.Errors);
+            if (!result.Success || cmdResult.Result == null)
+            {
+                return result;
+            }
+            DbCommand cmd = cmdResult.Result;
+            Dictionary<string, object?> parametersValue = new();
+            foreach (KeyValuePair<ParamsInfo, QueryParameterType> parameterInfo in parameters)
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    IStorable item = items[i];
+                    DbParameter parameter = GetDbParameter();
+                    parameter.ParameterName = "@" + parameterInfo.Key.Name + "__" + i;
+                    parameter.DbType = parameterInfo.Key.DbType;
+                    cmd.Parameters.Add(parameter);
+                    if (parameterInfo.Value == QueryParameterType.GrabValue)
+                    {
+                        if (Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)UpdatedDate$") || Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)CreatedDate$"))
+                        {
+                            parameterInfo.Key.Value = DateTime.Now;
+                            if (item != null)
+                            {
+                                parameterInfo.Key.SetCurrentValueOnObject(item);
+                            }
+                        }
+                        else if (item != null)
+                        {
+                            parameterInfo.Key.TypeLvl0 = item.GetType();
+                            parameterInfo.Key.SetValue(item);
+                        }
+                        else
+                        {
+                            parameterInfo.Key.Value = null;
+                        }
+                        errors.AddRange(parameterInfo.Key.IsValueValid(action));
+
+                    }
+                    parametersValue["@" + parameterInfo.Key.Name + "__" + i] = TransformValueForFct(parameterInfo.Key);
+                }
+
+            }
+            VoidWithError queryResult;
+            if (errors.Count > 0)
+            {
+                queryResult = new VoidWithError();
+                foreach (DataError error in errors)
+                {
+                    queryResult.Errors.Add(error);
+                }
+            }
+            else
+            {
+                //write all combinaisons if one of the parameter is a list
+                List<Dictionary<string, object?>> parametersFinal = new();
+
+                Action<int, Dictionary<string, object?>> combinaisons = (int i, Dictionary<string, object?> current) => { };
+                combinaisons = (int i, Dictionary<string, object?> current) =>
+                {
+                    if (i == parametersValue.Count)
+                    {
+                        parametersFinal.Add(current);
+                        return;
+                    }
+                    KeyValuePair<string, object?> parameterValue = parametersValue.ElementAt(i);
+
+                    current.Add(parameterValue.Key, parameterValue.Value);
+                    combinaisons(i + 1, current);
+                };
+
+                combinaisons(0, new());
+
+                queryResult = Execute(cmd, parametersFinal);
+            }
+            cmd.Dispose();
+            return queryResult;
+
+        }
 
         #region Get
         protected abstract DatabaseQueryBuilderInfo PrepareSQLForQuery<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable;
@@ -1095,16 +1192,64 @@ namespace AventusSharp.Data.Storage.Default
             }
             return result;
         }
+
+        protected abstract string PrepareSQLTableRename(string oldName, string newName);
+        public ResultWithError<bool> TableRename(string oldName, string newName)
+        {
+            ResultWithError<bool> result = new();
+            string sql = PrepareSQLTableRename(oldName, newName);
+            result.Run(() => Execute(sql));
+            result.Result = result.Success;
+            return result;
+        }
+
+        protected abstract string PrepareSQLTableDelete(string name);
+        public ResultWithError<bool> TableDelete(string name)
+        {
+            ResultWithError<bool> result = new();
+            string sql = PrepareSQLTableDelete(name);
+            result.Run(() => Execute(sql));
+            result.Result = result.Success;
+            return result;
+        }
+
         #endregion
 
         #region Create
-        protected abstract string PrepareSQLForBulkCreate<X>(TableInfo tableInfo) where X : IStorable;
-        public VoidWithError BulkCreateWithError<X>(List<X> items) where X : IStorable
+        protected abstract DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId) where X : IStorable;
+        public VoidWithError BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
         {
             VoidWithError result = new();
-            TableInfo tableInfo = GetTableInfo(typeof(X)) ?? throw new Exception();
-            string sql = PrepareSQLForBulkCreate<X>(tableInfo);
-            
+            List<DatabaseCreateBuilderInfoQuery> queries;
+            if (createBuilder.info == null)
+            {
+                createBuilder.info = PrepareSQLForBulkCreate(createBuilder, items.Count, withId);
+            }
+
+            queries = createBuilder.info.Queries;
+
+            foreach (DatabaseCreateBuilderInfoQuery query in queries)
+            {
+                string sql = query.Sql;
+                Dictionary<ParamsInfo, QueryParameterType> parametersCreate = new();
+                foreach (ParamsInfo parameterInfo in query.Parameters)
+                {
+                    parameterInfo.Value = null;
+                    parametersCreate.Add(parameterInfo, QueryParameterType.GrabValue);
+                }
+
+                List<IStorable> storables = items.Select(p => (IStorable)p).ToList();
+                VoidWithError createResult = BulkQueryGeneric(StorableAction.Create, sql, parametersCreate, storables);
+
+                if (!createResult.Success)
+                {
+                    result.Errors.AddRange(createResult.Errors);
+                    return result;
+                }
+
+            }
+
+
             return result;
         }
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder) where X : IStorable;
@@ -1823,9 +1968,46 @@ namespace AventusSharp.Data.Storage.Default
 
         #endregion
 
+        #region Migration
+        public VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable
+        {
+            VoidWithError result = new VoidWithError();
+            if (model.ModelAction == null)
+            {
+                // changement dans la table
+                // check des champs
+            }
+            else if (model.ModelAction == MigrationModelAction.Update)
+            {
+                if (!string.IsNullOrEmpty(model.OldName))
+                {
+                    // changement du nom de la table
+                    result.Run(() => TableRename(model.OldName, TableInfo.GetSQLTableName(model.Type)));
+                }
+                foreach (var member in model.Properties)
+                {
+                    // if(member.)
+                }
+                // attentio a check quand meme les champs apres
+            }
+            else if (model.ModelAction == MigrationModelAction.Create)
+            {
+                // création de la table
+                // check des champs
+            }
+            else if (model.ModelAction == MigrationModelAction.Delete)
+            {
+                result.Run(() => TableDelete(TableInfo.GetSQLTableName(model.Type)));
+                // suppression de la table... peut etre enlever le fait de pouvoir chainer a ce moment
+            }
+            return new();
+        }
+        #endregion
+
         #endregion
 
         #region Tools
+
         /// <summary>
         /// Order data but type
         /// </summary>
@@ -1891,7 +2073,7 @@ namespace AventusSharp.Data.Storage.Default
         /// <returns></returns>
         public ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action)
         {
-            ResultWithError<TransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            ResultWithError<DbTransactionContext> transactionResult = BeginTransaction().ToGeneric();
             if (!transactionResult.Success || transactionResult.Result == null)
             {
                 ResultWithError<Y> resultError = new()
@@ -1931,7 +2113,7 @@ namespace AventusSharp.Data.Storage.Default
         /// <returns></returns>
         public VoidWithError RunInsideTransaction(Func<VoidWithError> action)
         {
-            ResultWithError<TransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            ResultWithError<DbTransactionContext> transactionResult = BeginTransaction().ToGeneric();
             if (!transactionResult.Success || transactionResult.Result == null)
             {
                 VoidWithError resultError = new()
@@ -1978,106 +2160,36 @@ namespace AventusSharp.Data.Storage.Default
     }
 
 
-    public class TransactionContext : IDisposable
+    public class DbTransactionContext : TransactionContext
     {
 
         public DbTransaction transaction;
 
-        private bool isEnded = false;
 
         public DbConnection? Connection
         {
             get => transaction.Connection;
         }
 
-        public int count;
-        private Action<Action> _runInsideLocker;
-        private Action _endTransaction;
-
-        public TransactionContext(DbTransaction transaction, Action endTransaction, Action<Action> runInsideLocker)
+        public DbTransactionContext(DbTransaction transaction, Action endTransaction, Action<Action> runInsideLocker) : base(endTransaction, runInsideLocker)
         {
             this.transaction = transaction;
-            _endTransaction = endTransaction;
-            _runInsideLocker = runInsideLocker;
-            count = 1;
             if (transaction.Connection == null) throw new Exception("Transaction without connection");
         }
 
-        public ResultWithError<bool> Commit()
+        protected override void TransactionDispose()
         {
-            ResultWithError<bool> result = new ResultWithError<bool>();
-            _runInsideLocker(() =>
-            {
-                if (isEnded)
-                {
-                    result.Result = false;
-                    return;
-                }
-                count--;
-                if (count <= 0)
-                {
-                    isEnded = true;
-                    result = _Commit();
-                    return;
-                }
-                result.Result = false;
-            });
-            return result;
-        }
-
-        private ResultWithError<bool> _Commit()
-        {
-            ResultWithError<bool> result = new();
-            try
-            {
-                transaction.Commit();
-                result.Result = true;
-                _endTransaction();
-            }
-            catch (Exception e)
-            {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-            }
-            return result;
-        }
-
-
-        public ResultWithError<bool> Rollback()
-        {
-            ResultWithError<bool> result = new ResultWithError<bool>();
-            _runInsideLocker(() =>
-            {
-                if (isEnded)
-                {
-                    result.Result = false;
-                    return;
-                }
-                isEnded = true;
-                result = _Rollback();
-            });
-            return result;
-        }
-
-        private ResultWithError<bool> _Rollback()
-        {
-            ResultWithError<bool> result = new();
-            try
-            {
-                transaction.Rollback();
-                result.Result = true;
-                _endTransaction();
-            }
-            catch (Exception e)
-            {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-            }
-            return result;
-        }
-
-        public void Dispose()
-        {
-            _Rollback();
             transaction.Dispose();
+        }
+
+        protected override void TransactionRollback()
+        {
+            transaction.Rollback();
+        }
+
+        protected override void TransactionCommit()
+        {
+            transaction.Commit();
         }
     }
 }

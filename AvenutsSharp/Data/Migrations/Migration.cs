@@ -44,10 +44,18 @@ public abstract class Migration : IMigration
             providers = new();
             foreach (IMigrationModel migration in migrations)
             {
-                IMigrationProvider provider = migration.GetProvider();
-                if (!providers.Contains(provider))
+                ResultWithError<IMigrationProvider> providerQuery = migration.GetProvider();
+                if (providerQuery.Success && providerQuery.Result != null)
                 {
-                    providers.Add(provider);
+                    if (!providers.Contains(providerQuery.Result))
+                    {
+                        providers.Add(providerQuery.Result);
+                    }
+                }
+                else
+                {
+                    _currentError.Errors = providerQuery.Errors;
+                    return _currentError;
                 }
             }
 
@@ -123,13 +131,13 @@ public abstract class Migration : IMigration
     {
         var result = GetOrCreateModel<T>();
         result.ChangeModelAction(MigrationModelAction.Update);
+        ((IMigrationModel)result).OldName = oldName;
         return result;
     }
-    public MigrationModel<T> DeleteModel<T>() where T : IStorable
+    public void DeleteModel<T>() where T : IStorable
     {
         var result = GetOrCreateModel<T>();
         result.ChangeModelAction(MigrationModelAction.Delete);
-        return result;
     }
     public MigrationModel<T> SelectModel<T>() where T : IStorable
     {
@@ -141,14 +149,36 @@ public abstract class Migration : IMigration
 public enum MigrationModelAction { Create, Update, Delete }
 public interface IMigrationModel
 {
+    internal MigrationModelAction? ModelAction { get; }
     internal int Priority { get; set; }
+    internal string? OldName { get; set; }
+    internal Type Type { get; }
+    internal Dictionary<string, IMigrationProperty> Properties { get; }
     internal VoidWithError Run();
-    internal IMigrationProvider GetProvider();
+    internal ResultWithError<IMigrationProvider> GetProvider();
 }
 public class MigrationModel<T> : IMigrationModel where T : IStorable
 {
-    private MigrationModelAction? ModelAction { get; set; }
+    private MigrationModelAction? _modelAction;
+    internal MigrationModelAction? ModelAction
+    {
+        get => _modelAction;
+        set
+        {
+            _modelAction = value;
+        }
+    }
+    MigrationModelAction? IMigrationModel.ModelAction
+    {
+        get => _modelAction;
+    }
     int IMigrationModel.Priority { get; set; }
+    string? IMigrationModel.OldName { get; set; }
+    internal Type Type { get => typeof(T); }
+    Type IMigrationModel.Type { get => Type; }
+
+    internal Dictionary<string, IMigrationProperty> Properties = new Dictionary<string, IMigrationProperty>();
+    Dictionary<string, IMigrationProperty> IMigrationModel.Properties => Properties;
 
     internal void ChangeModelAction(MigrationModelAction action)
     {
@@ -176,21 +206,19 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         }
     }
 
-    private Dictionary<string, IMigrationProperty> properties = new Dictionary<string, IMigrationProperty>();
 
     private MigrationProperty<T, U> GetOrCreateProperty<U>(string name)
     {
-        if (!properties.ContainsKey(name))
+        if (!Properties.ContainsKey(name))
         {
-            properties[name] = new MigrationProperty<T, U>(this, name, null);
+            Properties[name] = new MigrationProperty<T, U>(this, name, null);
         }
-        if (properties[name] is MigrationProperty<T, U> result)
+        if (Properties[name] is MigrationProperty<T, U> result)
         {
             return result;
         }
         throw new Exception("Impossible");
     }
-
 
     public MigrationProperty<T, U> AddProperty<U>(string name, MigrationPropertyOptions<U>? options = null)
     {
@@ -225,14 +253,27 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         });
     }
 
-
-    VoidWithError IMigrationModel.Run()
+    private VoidWithError _Run()
     {
-        VoidWithError result = new();
+        ResultWithError<IMigrationProvider> providerQuery = _GetProvider();
+        if (!providerQuery.Success || providerQuery.Result == null)
+        {
+            VoidWithError result = new()
+            {
+                Errors = providerQuery.Errors
+            };
+            return result;
+        }
+        return providerQuery.Result.ApplyMigration<T>(this);
+    }
+
+    private ResultWithError<IMigrationProvider> _GetProvider()
+    {
+        ResultWithError<IMigrationProvider> result = new();
         ResultWithError<IGenericDM> DMWithError = GenericDM.GetWithError<T>();
         if (DMWithError.Success && DMWithError.Result != null)
         {
-            result.Run(() => DMWithError.Result.ApplyMigration<T>(this));
+            result.Result = DMWithError.Result.GetMigrationProvider();
         }
         else
         {
@@ -241,16 +282,14 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         return result;
     }
 
-    IMigrationProvider IMigrationModel.GetProvider()
+    ResultWithError<IMigrationProvider> IMigrationModel.GetProvider()
     {
-        ResultWithError<IGenericDM> DMWithError = GenericDM.GetWithError<T>();
-        if (DMWithError.Success && DMWithError.Result != null)
-        {
-            return DMWithError.Result.GetMigrationProvider();
-        }
-        throw new Exception("Can't find provider");
+        return _GetProvider();
     }
-
+    VoidWithError IMigrationModel.Run()
+    {
+        return _Run();
+    }
 }
 
 public class MigrationPropertyOptions<T>

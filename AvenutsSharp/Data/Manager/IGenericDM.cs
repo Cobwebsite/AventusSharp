@@ -52,8 +52,8 @@ namespace AventusSharp.Data.Manager
         #region Create
         List<X> Create<X>(List<X> values) where X : notnull, IStorable;
         ResultWithError<List<X>> CreateWithError<X>(List<X> values) where X : notnull, IStorable;
-        bool BulkCreate<X>(List<X> values) where X : notnull, IStorable;
-        VoidWithError BulkCreateWithError<X>(List<X> values) where X : notnull, IStorable;
+        bool BulkCreate<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
+        VoidWithError BulkCreateWithError<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
         X? Create<X>(X value) where X : notnull, IStorable;
         ResultWithError<X> CreateWithError<X>(X value) where X : notnull, IStorable;
 
@@ -77,8 +77,17 @@ namespace AventusSharp.Data.Manager
 
         internal void PrintErrors(IWithError withError);
 
-        internal VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
         internal IMigrationProvider GetMigrationProvider();
+
+        VoidWithError ApplyMigration<X>(IMigrationModel model);
+
+
+        #region Transaction
+        ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action);
+        ResultWithError<Y> RunInsideTransaction<Y>(Func<ResultWithError<Y>> action);
+        VoidWithError RunInsideTransaction(Func<VoidWithError> action);
+
+        #endregion
     }
     public interface IGenericDM<U> : IGenericDM where U : notnull, IStorable
     {
@@ -129,5 +138,6 @@ namespace AventusSharp.Data.Manager
 
         new void OnItemLoaded<X>(X item) where X : U;
         #endregion
+
     }
 }

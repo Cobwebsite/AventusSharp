@@ -47,6 +47,11 @@ public static class MigrationManager
         {
             // we prepare all providers that comes from our DM
             List<IMigrationProvider> providers = MigrationFactory.GetAll();
+            if (providers.Count > 1 && !DataMainManager.Config.Migration.MultipleProviders)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.MultipleProvidersNotSet, "You must set MultipleProviders to true inside the Migration configuration"));
+                return result;
+            }
             foreach (IMigrationProvider provider in providers)
             {
                 result.Run(provider.Init);

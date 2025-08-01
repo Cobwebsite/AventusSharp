@@ -53,6 +53,8 @@ public interface IMigrationProvider
     VoidWithError Save(string name);
     void BeforeUp(VoidWithError voidWithError);
     void AfterUp(VoidWithError voidWithError);
+    VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
+
 }
 public abstract class MigrationProvider : IMigrationProvider
 {
@@ -61,4 +63,5 @@ public abstract class MigrationProvider : IMigrationProvider
     public abstract VoidWithError Save(string name);
     public abstract void BeforeUp(VoidWithError voidWithError);
     public abstract void AfterUp(VoidWithError voidWithError);
+    public abstract VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
 }

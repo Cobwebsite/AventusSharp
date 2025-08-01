@@ -24,7 +24,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         MigrationProvider = new MsSqlMigrationProvider(this);
     }
 
-    protected override DbConnection GetConnection()
+    public override DbConnection GetConnection()
     {
         SqlConnectionStringBuilder builder = new()
         {
@@ -184,6 +184,14 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                      "WHERE TABLE_NAME = '" + table + "' AND TABLE_CATALOG = '" + GetDatabaseName() + "';";
         return sql;
     }
+    protected override string PrepareSQLTableRename(string oldName, string newName)
+    {
+        return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+    }
+    protected override string PrepareSQLTableDelete(string name)
+    {
+        return "DROP TABLE IF EXISTS `" + name + "`;";
+    }
     #endregion
 
     #region query
@@ -205,6 +213,10 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     protected override DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder)
     {
         return Queries.Create.PrepareSQL(createBuilder);
+    }
+    protected override DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId)
+    {
+        return Queries.BulkCreate.PrepareSQL(createBuilder, nbItems, withId);
     }
     #endregion
 

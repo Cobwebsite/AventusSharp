@@ -5,6 +5,7 @@ using AventusSharp.Tools;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -473,7 +474,7 @@ namespace AventusSharp.Data.Manager.DB
         // private readonly Dictionary<Type, object> savedCreateQuery = new();
         protected override ResultWithError<List<X>> CreateLogic<X>(List<X> values)
         {
-            return Storage.RunInsideTransaction(new List<X>(), delegate ()
+            return RunInsideTransaction(new List<X>(), delegate ()
             {
                 ResultWithError<List<X>> result = new()
                 {
@@ -509,13 +510,14 @@ namespace AventusSharp.Data.Manager.DB
             });
         }
 
-        protected override VoidWithError BulkCreateLogic<X>(List<X> values)
+        protected override VoidWithError BulkCreateLogic<X>(List<X> values, bool withId)
         {
-            return Storage.RunInsideTransaction(delegate ()
+            return RunInsideTransaction(delegate ()
             {
-                VoidWithError result = new();
-
-                
+                if (values.Count == 0) return new();
+                X value = values[0];
+                DatabaseCreateBuilder<X> builder = new DatabaseCreateBuilder<X>(Storage, this, value.GetType());
+                VoidWithError result = builder.RunBulkWithError(values, withId);
                 return result;
             });
         }
@@ -531,7 +533,7 @@ namespace AventusSharp.Data.Manager.DB
         // private readonly Dictionary<Type, object> savedUpdateQuery = new();
         protected override ResultWithError<List<X>> UpdateLogic<X>(List<X> values)
         {
-            return Storage.RunInsideTransaction(new List<X>(), delegate ()
+            return RunInsideTransaction(new List<X>(), delegate ()
             {
                 ResultWithError<List<X>> result = new()
                 {
@@ -577,7 +579,7 @@ namespace AventusSharp.Data.Manager.DB
         // private readonly Dictionary<Type, object> savedDeleteQuery = new();
         protected override ResultWithError<List<X>> DeleteLogic<X>(List<X> values)
         {
-            return Storage.RunInsideTransaction(new List<X>(), delegate ()
+            return RunInsideTransaction(new List<X>(), delegate ()
             {
                 ResultWithError<List<X>> result = new()
                 {
@@ -643,5 +645,47 @@ namespace AventusSharp.Data.Manager.DB
 
         #endregion
 
+        #region Transaction
+        protected override SemaphoreSlim getTransactionLocker()
+        {
+            return Storage.getTransactionLocker();
+        }
+        protected override TransactionContext? getTransactionContext()
+        {
+            return Storage.getTransactionContext();
+        }
+        protected override void setTransactionContext(TransactionContext? context)
+        {
+            Storage.setTransactionContext(context);
+        }
+        protected override ResultWithError<TransactionContext> BeginTransactionContext()
+        {
+            ResultWithError<TransactionContext> result = new();
+            DbConnection connection = Storage.GetConnection();
+            try
+            {
+                connection.Open();
+            }
+            catch
+            {
+                result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, "The storage " + GetType().Name + "(" + ToString() + ") can't connect to the database"));
+                return result;
+            }
+            DbTransaction transaction = connection.BeginTransaction();
+            result.Result = new DbTransactionContext(transaction, EndTransaction, RunInsideLocker);
+            return result;
+        }
+        protected override void EndTransactionContext()
+        {
+            if (getTransactionContext() is DbTransactionContext dbTransactionContext)
+            {
+                dbTransactionContext.transaction.Dispose();
+                if (dbTransactionContext.transaction.Connection != null)
+                {
+                    dbTransactionContext.transaction.Connection.Dispose();
+                }
+            }
+        }
+        #endregion
     }
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.Dummy
@@ -60,9 +61,9 @@ namespace AventusSharp.Data.Manager.Dummy
             return result;
         }
 
-        protected override VoidWithError BulkCreateLogic<X>(List<X> values)
+        protected override VoidWithError BulkCreateLogic<X>(List<X> values, bool withId)
         {
-            VoidWithError result = new ();
+            VoidWithError result = new();
             foreach (X x in values)
             {
                 Records[x.Id] = x;
@@ -207,6 +208,33 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
+        #region Transaction
+        private DummyTransactionContext? transactionContext;
+        private SemaphoreSlim locker = new SemaphoreSlim(1, 1);
+        protected override SemaphoreSlim getTransactionLocker()
+        {
+            return locker;
+        }
+        protected override TransactionContext? getTransactionContext()
+        {
+            return transactionContext;
+        }
+        protected override void setTransactionContext(TransactionContext? context)
+        {
+            if (context == null)
+                transactionContext = null;
+            else if (context is DummyTransactionContext dummyTransactionContext)
+                transactionContext = dummyTransactionContext;
+        }
+        protected override ResultWithError<TransactionContext> BeginTransactionContext()
+        {
+            return new();
+        }
+        protected override void EndTransactionContext()
+        {
+            
+        }
+        #endregion
 
     }
 }

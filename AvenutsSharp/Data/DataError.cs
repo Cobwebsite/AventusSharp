@@ -50,7 +50,9 @@ namespace AventusSharp.Data
         TypeNotFound,
         ReverseLinkNotExist,
         ErrorCreatingReverseQuery,
-        LinkNotSet
+        LinkNotSet,
+        MultipleProvidersNotSet,
+        FileNotFound
     }
 
 

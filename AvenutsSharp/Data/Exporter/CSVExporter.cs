@@ -82,7 +82,7 @@ public class CSVExporter
                 {
                     if (config.mapper != null)
                     {
-                        CSVMapper<X> csvMapper = new();
+                        CSVMapper<X> csvMapper = new(config.CultureInfo);
                         config.mapper(csvMapper);
                         csv.Context.RegisterClassMap(csvMapper.mapper);
                         result.Errors.AddRange(csvMapper.errors);
@@ -97,7 +97,7 @@ public class CSVExporter
                 {
                     if (config.mapper != null)
                     {
-                        CSVMapper<X> csvMapper = new();
+                        CSVMapper<X> csvMapper = new(config.CultureInfo);
                         config.mapper(csvMapper);
                         csv.Context.RegisterClassMap(csvMapper.mapper);
                         result.Errors.AddRange(csvMapper.errors);

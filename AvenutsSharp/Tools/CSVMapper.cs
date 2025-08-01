@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using AventusSharp.Data;
@@ -14,8 +16,11 @@ public class CSVMapper<T>
 {
     internal AventusClassMap<T> mapper;
     internal List<DataError> errors = new List<DataError>();
-    public CSVMapper()
+    internal List<string> removeNames = new List<string>();
+    private CultureInfo cultureInfo;
+    public CSVMapper(CultureInfo cultureInfo)
     {
+        this.cultureInfo = cultureInfo;
         mapper = new();
     }
     public void Map(string objectName, string csvName)
@@ -27,11 +32,33 @@ public class CSVMapper<T>
         }
         else
         {
-            errors.Add(new DataError(DataErrorCode.MemberNotFound, "The member " + csvName + " can't be found on " + TypeTools.GetReadableName(typeof(T))));
+            errors.Add(new DataError(DataErrorCode.MemberNotFound, "The member " + objectName + " can't be found on " + TypeTools.GetReadableName(typeof(T))));
         }
     }
     public void Map(Expression<Func<T, object?>> expression, string csvName)
     {
         mapper.Map(expression).Name(csvName);
     }
+
+    public void Ignore(string name)
+    {
+        MemberInfo[] members = typeof(T).GetMember(name);
+        if (members.Length > 0)
+        {
+            mapper.Map(typeof(T), members[0]).Ignore();
+        }
+        else
+        {
+            errors.Add(new DataError(DataErrorCode.MemberNotFound, "The member " + name + " can't be found on " + TypeTools.GetReadableName(typeof(T))));
+        }
+    }
+    public void Ignore(Expression<Func<T, object?>> expression)
+    {
+        if (mapper.MemberMaps.Count == 0)
+        {
+            mapper.AutoMap(this.cultureInfo);
+        }
+        mapper.Map(expression).Ignore();
+    }
+
 }

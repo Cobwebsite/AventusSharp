@@ -20,6 +20,7 @@ public record CSVImporterConfig<X> : CsvConfiguration
     }
 
     public Action<CSVMapper<X>>? mapper = null;
+    public bool WithId = false;
 }
 public class CSVImporter
 {
@@ -47,10 +48,20 @@ public class CSVImporter
                 {
                     if (config.mapper != null)
                     {
-                        CSVMapper<X> csvMapper = new();
+                        CSVMapper<X> csvMapper = new(config.CultureInfo);
+                        if (!config.WithId)
+                        {
+                            csvMapper.Ignore(p => p.Id);
+                        }
                         config.mapper(csvMapper);
                         csv.Context.RegisterClassMap(csvMapper.mapper);
                         result.Errors.AddRange(csvMapper.errors);
+                    }
+                    else if (!config.WithId)
+                    {
+                        CSVMapper<X> csvMapper = new(config.CultureInfo);
+                        csvMapper.Ignore(p => p.Id);
+                        csv.Context.RegisterClassMap(csvMapper.mapper);
                     }
                     List<X> records = new();
                     while (csv.Read())
@@ -59,7 +70,7 @@ public class CSVImporter
                         records.Add(record);
                         if (records.Count == config.BufferSize)
                         {
-                            result.Run(() => dm.BulkCreateWithError(records));
+                            result.Run(() => dm.BulkCreateWithError(records, config.WithId));
                             if (!result.Success)
                             {
                                 return result;
@@ -69,7 +80,7 @@ public class CSVImporter
                     }
                     if (records.Count > 0)
                     {
-                        result.Run(() => dm.BulkCreateWithError(records));
+                        result.Run(() => dm.BulkCreateWithError(records, config.WithId));
                     }
                 }
             }

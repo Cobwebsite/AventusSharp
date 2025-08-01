@@ -516,6 +516,17 @@ namespace AventusSharp.Data
         {
             return GenericDM.LoadDependancesList(from, fct, set);
         }
+
+        public static VoidWithError LoadReverseLink<Y>(List<T>? from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
+        {
+            ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
+            return LoadReverseLink(realFrom, expression);
+        }
+
+        public static VoidWithError LoadReverseLink<Y>(ResultWithError<List<T>> from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
+        {
+            return GenericDM.LoadReverseLink(from, expression);
+        }
     }
 
 

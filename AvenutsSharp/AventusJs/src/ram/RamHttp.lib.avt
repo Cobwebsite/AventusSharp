@@ -1,5 +1,7 @@
+import type { VoidWithError } from "Aventus@Main:Aventus.package.avt";
 import { Storable } from "../Storable.data.avt";
 import { StorableRouter } from "../generated/Routes/StorableRouter.lib.avt";
+import { RamCompletor } from "./RamCompletor.lib.avt";
 
 namespace RAM {
     export abstract class RamHttp<T extends Storable> extends Aventus.Ram<T> {
@@ -81,6 +83,10 @@ namespace RAM {
                     result.errors = [...result.errors, ...response.errors];
                 }
             }
+        }
+
+        public complete(objects?: T | T[], error?: VoidWithError): RamCompletor<T> {
+            return new RamCompletor(objects, error);
         }
 
         //#region create

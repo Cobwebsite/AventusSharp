@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
+using Org.BouncyCastle.Math.EC.Rfc7748;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -16,6 +17,9 @@ namespace AventusSharp.Data.Manager
     public interface IGenericDM
     {
         Type GetMainType();
+        ResultWithError<PyramidInfo> GetPyramidsInfo<X>();
+        ResultWithError<DataMemberInfo> GetMemberInfo<X>(string name);
+        ResultWithError<List<DataMemberInfo>> GetMembersInfo<X, Y>();
         List<Type> DefineManualDependances();
         string Name { get; }
         bool IsInit { get; }
@@ -91,6 +95,10 @@ namespace AventusSharp.Data.Manager
     }
     public interface IGenericDM<U> : IGenericDM where U : notnull, IStorable
     {
+        new ResultWithError<PyramidInfo> GetPyramidsInfo<X>() where X : U;
+        new ResultWithError<DataMemberInfo> GetMemberInfo<X>(string name) where X : U;
+        new ResultWithError<List<DataMemberInfo>> GetMembersInfo<X, Y>() where X : U;
+
         #region Get
         new List<X> GetAll<X>() where X : U;
         new ResultWithError<List<X>> GetAllWithError<X>() where X : U;

@@ -35,6 +35,25 @@ namespace AventusSharp.Data.Manager.DB
             }
             throw new Exception("Impossible to extract type");
         }
+        public static string ExtractName<T, X>(Expression<Func<T, X>> expression)
+        {
+            if (expression is LambdaExpression lambdaExpression)
+            {
+                Expression? exp = lambdaExpression.Body;
+                if (lambdaExpression.Body is UnaryExpression convertExpression)
+                {
+                    exp = convertExpression.Operand;
+                }
+
+
+                if (exp is MemberExpression memberExpression)
+                {
+                    return memberExpression.Member.Name;
+                }
+            }
+
+            throw new Exception("Impossible to extract Name");
+        }
         public static WhereGroupFctSqlEnum? GetFctSql(MethodCallExpression node)
         {
             string methodName = node.Method.Name;
@@ -480,22 +499,38 @@ namespace AventusSharp.Data.Manager.DB
             List<Type> listAllowed = new List<Type>()
             {
                 typeof(List<int>),
+                typeof(List<int?>),
                 typeof(List<long>),
+                typeof(List<long?>),
                 typeof(List<short>),
+                typeof(List<short?>),
                 typeof(List<decimal>),
+                typeof(List<decimal?>),
                 typeof(List<double>),
+                typeof(List<double?>),
                 typeof(List<float>),
+                typeof(List<float?>),
                 typeof(List<string>),
+                typeof(List<string?>),
                 typeof(List<bool>),
+                typeof(List<bool?>),
                 typeof(List<Datetime>),
+                typeof(List<Datetime?>),
                 typeof(List<Date>),
+                typeof(List<Date?>),
                 typeof(List<DateTime>),
+                typeof(List<DateTime?>),
             };
             string methodName = node.Method.Name;
             Type onType = LambdaTranslator.ExtractType(node);
             WhereGroupFctEnum? fct = null;
             WhereGroupFctSqlEnum? fctSql = LambdaTranslator.GetFctSql(node);
             bool reverse = false;
+            Type? nullableOnType = Nullable.GetUnderlyingType(onType);
+            if (nullableOnType != null)
+            {
+                onType = nullableOnType;
+            }
             if (onType == typeof(string))
             {
                 if (methodName == "StartsWith")
@@ -726,6 +761,11 @@ namespace AventusSharp.Data.Manager.DB
             if (type.IsGenericType && type.GetInterfaces().Contains(typeof(IList)))
             {
                 Type typeInList = type.GetGenericArguments()[0];
+                Type? nullableOnType = Nullable.GetUnderlyingType(typeInList);
+                if (nullableOnType != null)
+                {
+                    typeInList = nullableOnType;
+                }
                 if (typeInList != null && typeInList.GetInterfaces().Contains(typeof(IStorable)))
                 {
                     return true;

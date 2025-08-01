@@ -13,10 +13,12 @@ public record CSVImporterConfig<X> : CsvConfiguration
 {
     public CSVImporterConfig(CultureInfo cultureInfo) : base(cultureInfo)
     {
+        BufferSize = 1000;
     }
 
     public CSVImporterConfig() : base(CultureInfo.InvariantCulture)
     {
+        BufferSize = 1000;
     }
 
     public Action<CSVMapper<X>>? mapper = null;

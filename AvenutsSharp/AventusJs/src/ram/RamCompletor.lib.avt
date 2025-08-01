@@ -1,0 +1,102 @@
+import type { VoidWithError } from "Aventus@Main:Aventus.package.avt";
+import type { Storable } from "../Storable.data.avt";
+
+namespace RAM {
+    type NumberKeys<T> = {
+        [K in keyof T]: T[K] extends number ? K : never;
+    }[keyof T];
+
+    type KeysOfType<T, U> = {
+        [K in keyof T]: NonNullable<T[K]> extends U ? K : never;
+    }[keyof T];
+
+    type ItemField<T extends Aventus.IData, U extends Aventus.IData> = {
+        id: NumberKeys<T>;
+        obj: KeysOfType<T, U>;
+        ram: typeof Aventus.Ram<U>;
+    };
+
+    export class RamCompletor<T extends Storable> {
+
+        protected objects: T[] = [];
+        protected fields: ItemField<T, any>[] = [];
+        protected error?: VoidWithError;
+        public constructor(objects?: T | T[], error?: VoidWithError) {
+            if(!objects) {
+                objects = [];
+            }
+            else if(!Array.isArray(objects)) {
+                objects = [objects];
+            }
+            this.objects = objects;
+            this.error = error;
+        }
+
+        public add<U extends Aventus.IData>(field: ItemField<T, U>): RamCompletor<T> {
+            this.fields.push(field);
+            return this;
+        }
+
+        public async run(): Promise<Aventus.VoidWithError> {
+            const objects = this.objects;
+            const fields = this.fields;
+            const result: Aventus.VoidWithError = new Aventus.VoidWithError();
+
+            if(objects.length == 0) return result;
+
+            const listIds: { [obj: string]: number[]; } = {};
+            const mapRecords: { [obj: string]: { [id: string]: T[]; }; } = {};
+
+            for(let field of fields) {
+                let objKey = field.obj as string;
+                let idKey = field.id as string;
+                listIds[objKey] = [];
+                mapRecords[objKey] = {};
+
+                for(let value of objects) {
+                    if(value[idKey]) {
+                        const listId = listIds[objKey];
+                        const mapRecord = mapRecords[objKey];
+                        if(value[objKey]) continue;
+
+                        if(!listId.includes(value[idKey]))
+                            listId.push(value[idKey]);
+                        if(!mapRecord[value[idKey]]) {
+                            mapRecord[value[idKey]] = [];
+                        }
+                        mapRecord[value[idKey]].push(value);
+                    }
+                }
+            }
+
+            for(let field of fields) {
+                let objKey = field.obj as string;
+                if(!listIds[objKey] || !mapRecords[objKey]) continue;
+
+                const listId = listIds[objKey];
+                const mapRecord = mapRecords[objKey];
+                if(listId.length > 0) {
+                    const ram = Aventus.Instance.get(field.ram);
+                    const query = await ram.getByIdsWithError(listId);
+                    if(query.success && query.result) {
+                        for(let item of query.result) {
+                            if(mapRecord[item.Id]) {
+                                for(let record of mapRecord[item.Id]) {
+                                    record[objKey] = item;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        result.errors = [...result.errors, ...query.errors];
+                        if(this.error) {
+                            this.error.errors = [...this.error.errors, ...query.errors];
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+    }
+}

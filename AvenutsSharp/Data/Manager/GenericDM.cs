@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager.DB;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Routes.Request;
@@ -6,6 +7,7 @@ using AventusSharp.Tools;
 using MySqlX.XDevAPI.Common;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -171,7 +173,171 @@ namespace AventusSharp.Data.Manager
             return result;
         }
 
+        public static VoidWithError LoadReverseLink<X, Y>(ResultWithError<List<X>> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
+        {
+            string name = LambdaTranslator.ExtractName(expression);
+            return LoadReverseLinkInternal<X, Y>(from, name);
+        }
+        internal static VoidWithError LoadReverseLinkInternal<X, Y>(ResultWithError<List<X>> from, string name) where X : IStorable where Y : IStorable
+        {
+            VoidWithError result = new VoidWithError();
+            if (!from.Success || from.Result == null)
+            {
+                result.Errors = from.Errors;
+                return result;
+            }
+            List<int> ids = new List<int>();
+            Dictionary<int, X> elements = new();
+            foreach (X item in from.Result)
+            {
+                if (!ids.Contains(item.Id))
+                {
+                    ids.Add(item.Id);
+                }
+                elements[item.Id] = item;
+            }
 
+            if (ids.Count > 0)
+            {
+                IGenericDM dmX = GenericDM.Get<X>();
+                IGenericDM dmY = GenericDM.Get<Y>();
+                ResultWithError<DataMemberInfo> memberXQuery = dmX.GetMemberInfo<X>(name);
+                if (memberXQuery.Result != null && memberXQuery.Success)
+                {
+                    ReverseLink? reverseLinkAttr = memberXQuery.Result.GetCustomAttribute<ReverseLink>();
+                    if (reverseLinkAttr == null)
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, "The field " + memberXQuery.Result.Name + " isn't a ReverseLink"));
+                        return result;
+                    }
+
+                    string? reverseName = reverseLinkAttr.field;
+                    DataMemberInfo? reverseMember = null;
+                    if (reverseName != null)
+                    {
+                        ResultWithError<DataMemberInfo> memberYQuery = dmY.GetMemberInfo<Y>(name);
+
+                        if (memberYQuery.Result != null && memberYQuery.Success)
+                        {
+                            reverseMember = memberYQuery.Result;
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(memberYQuery.Errors);
+                            result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The name " + reverseName + " can't be found on " + TypeTools.GetReadableName(typeof(Y))));
+                        }
+                    }
+                    else
+                    {
+                        ResultWithError<List<DataMemberInfo>> membersYQuery = dmY.GetMembersInfo<Y, X>();
+                        if (membersYQuery.Result != null && membersYQuery.Success)
+                        {
+                            if (membersYQuery.Result.Count > 1)
+                            {
+                                result.Errors.Add(
+                                    new DataError(
+                                        DataErrorCode.TooMuchMemberFound,
+                                        "Too much matching type " + TypeTools.GetReadableName(typeof(X)) + " on type " + TypeTools.GetReadableName(typeof(Y)) + ". Please define a name (" + string.Join(", ", membersYQuery.Result.Select(s => s.Name)) + ")"
+                                    )
+                                );
+                            }
+                            else if (membersYQuery.Result.Count == 0)
+                            {
+                                membersYQuery = dmY.GetMembersInfo<Y, int>();
+                                if (membersYQuery.Result != null && membersYQuery.Success)
+                                {
+                                    membersYQuery.Result = membersYQuery.Result.Where(p => p.GetCustomAttribute<ForeignKey<X>>() != null).ToList();
+                                    if (membersYQuery.Result.Count > 1)
+                                    {
+                                        result.Errors.Add(
+                                            new DataError(
+                                                DataErrorCode.TooMuchMemberFound,
+                                                "Too much matching type " + TypeTools.GetReadableName(typeof(X)) + " on type " + TypeTools.GetReadableName(typeof(Y)) + ". Please define a name (" + string.Join(", ", membersYQuery.Result.Select(s => s.Name)) + ")"
+                                            )
+                                        );
+                                    }
+                                    else if (membersYQuery.Result.Count == 0)
+                                    {
+                                        result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The type " + TypeTools.GetReadableName(typeof(X)) + " can't be found on " + TypeTools.GetReadableName(typeof(Y))));
+                                    }
+                                    else
+                                    {
+                                        reverseMember = membersYQuery.Result[0];
+                                    }
+                                }
+                                else
+                                {
+                                    result.Errors.AddRange(membersYQuery.Errors);
+                                }
+                            }
+                            else
+                            {
+                                reverseMember = membersYQuery.Result[0];
+                            }
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(membersYQuery.Errors);
+                        }
+                    }
+
+                    if (reverseMember != null)
+                    {
+                        ParameterExpression argParam = Expression.Parameter(typeof(Y), "t");
+                        Expression nameProperty = Expression.PropertyOrField(argParam, reverseMember.Name);
+                        Expression body;
+                        if (reverseMember.IsNullable)
+                        {
+                            Expression<Func<List<int?>>> idLambda = () => ids.Select(p => (int?)p).ToList();
+                            body = idLambda.Body;
+                        }
+                        else
+                        {
+                            Expression<Func<List<int>>> idLambda = () => ids;
+                            body = idLambda.Body;
+                        }
+                        Expression e1 = Expression.Call(body, "Contains", Type.EmptyTypes, nameProperty);
+                        Expression<Func<Y, bool>> lambda = (Expression<Func<Y, bool>>)Expression.Lambda(e1, argParam);
+
+                        ResultWithError<List<Y>> linkedElement = dmY.WhereWithError(lambda);
+                        if (linkedElement.Success && linkedElement.Result != null)
+                        {
+                            foreach (Y item in linkedElement.Result)
+                            {
+                                object? reverseItem = reverseMember.GetValue(item);
+                                X? element = default;
+                                if (reverseItem is int reverseId)
+                                {
+                                    element = elements[reverseId];
+                                }
+                                else if (reverseItem is IStorable reverseItem2)
+                                {
+                                    element = elements[reverseItem2.Id];
+                                }
+                                if (element != null)
+                                {
+                                    object? list = memberXQuery.Result.GetValue(element);
+                                    if (list is IList Ilist)
+                                    {
+                                        Ilist.Add(item);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            result.Errors.AddRange(linkedElement.Errors);
+                        }
+                    }
+                }
+                else
+                {
+                    result.Errors.AddRange(memberXQuery.Errors);
+                }
+            }
+
+            return result;
+        }
     }
     public abstract class GenericDM<T, U> : IGenericDM<U> where T : IGenericDM<U>, new() where U : notnull, IStorable
     {
@@ -319,6 +485,145 @@ namespace AventusSharp.Data.Manager
         {
             return null;
         }
+
+
+        public ResultWithError<PyramidInfo> GetPyramidsInfo<X>() where X : U
+        {
+            ResultWithError<PyramidInfo> result = new();
+            if (PyramidsInfo.ContainsKey(typeof(X)))
+            {
+                result.Result = PyramidsInfo[typeof(X)];
+            }
+            else
+            {
+                result.Errors.Add(new DataError(DataErrorCode.PyramidNotFound, "Can't found the pyramid for " + TypeTools.GetReadableName(typeof(X))));
+            }
+            return result;
+        }
+        private MethodInfo? IGetPyramidsInfo = null;
+
+        ResultWithError<PyramidInfo> IGenericDM.GetPyramidsInfo<X>()
+        {
+            try
+            {
+                ResultWithError<PyramidInfo>? result = InvokeMethod<ResultWithError<PyramidInfo>, X>(ref IGetPyramidsInfo, Array.Empty<object>());
+                if (result == null)
+                {
+                    return new();
+                }
+                return result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return new();
+            }
+        }
+
+        public ResultWithError<DataMemberInfo> GetMemberInfo<X>(string name) where X : U
+        {
+            ResultWithError<DataMemberInfo> result = new();
+            var pyramidQuery = GetPyramidsInfo<X>();
+            if (!pyramidQuery.Success || pyramidQuery.Result == null)
+            {
+                result.Errors = pyramidQuery.Errors;
+            }
+            else
+            {
+                PyramidInfo? pyramid = pyramidQuery.Result;
+                DataMemberInfo? memberInfo = null;
+                while (pyramid != null)
+                {
+                    memberInfo = pyramid.memberInfo.Find(p => p.Name == name);
+                    if (memberInfo != null) break;
+                    pyramid = pyramid.parent;
+                }
+
+                if (memberInfo == null)
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Can't find the member " + name + " on " + TypeTools.GetReadableName(typeof(X))));
+                }
+                else
+                {
+                    result.Result = memberInfo;
+                }
+            }
+            return result;
+        }
+        private MethodInfo? IGetMemberInfo = null;
+
+        ResultWithError<DataMemberInfo> IGenericDM.GetMemberInfo<X>(string name)
+        {
+            try
+            {
+                ResultWithError<DataMemberInfo>? result = InvokeMethod<ResultWithError<DataMemberInfo>, X>(ref IGetMemberInfo, new object[] { name });
+                if (result == null)
+                {
+                    return new();
+                }
+                return result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return new();
+            }
+        }
+
+
+        public ResultWithError<List<DataMemberInfo>> GetMembersInfo<X, Y>() where X : U
+        {
+            return GetMembersInfo<X>(typeof(Y));
+        }
+        public ResultWithError<List<DataMemberInfo>> GetMembersInfo<X>(Type y) where X : U
+        {
+            ResultWithError<List<DataMemberInfo>> result = new();
+            var pyramidQuery = GetPyramidsInfo<X>();
+            if (!pyramidQuery.Success || pyramidQuery.Result == null)
+            {
+                result.Errors = pyramidQuery.Errors;
+            }
+            else
+            {
+                PyramidInfo? pyramid = pyramidQuery.Result;
+                Dictionary<string, DataMemberInfo> membersInfo = new();
+                while (pyramid != null)
+                {
+                    List<DataMemberInfo> membersTemp = pyramid.memberInfo.FindAll(p => p.Type != null && p.Type.IsAssignableFrom(y));
+                    foreach (var memberTemp in membersTemp)
+                    {
+                        if (!membersInfo.ContainsKey(memberTemp.Name))
+                        {
+                            membersInfo[memberTemp.Name] = memberTemp;
+                        }
+                    }
+                    pyramid = pyramid.parent;
+                }
+
+                result.Result = membersInfo.Values.ToList();
+            }
+            return result;
+        }
+        private MethodInfo? IGetMembersInfo = null;
+        ResultWithError<List<DataMemberInfo>> IGenericDM.GetMembersInfo<X, Y>()
+        {
+            try
+            {
+                Type t = typeof(Y);
+                ResultWithError<List<DataMemberInfo>>? result = InvokeMethod<ResultWithError<List<DataMemberInfo>>, X>(ref IGetMembersInfo, new object[] { t });
+                if (result == null)
+                {
+                    return new();
+                }
+                return result;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return new();
+            }
+        }
+
         #endregion
 
         #region Migration
@@ -2442,7 +2747,7 @@ namespace AventusSharp.Data.Manager
                         }
                     }
 
-                    else if (parameterInfos[i].ParameterType != types[i])
+                    else if (!parameterInfos[i].ParameterType.IsAssignableFrom(types[i]))
                     {
                         return false;
                     }
@@ -2473,7 +2778,6 @@ namespace AventusSharp.Data.Manager
         {
             PrintErrors(withError);
         }
-
 
         #endregion
 

@@ -1,5 +1,7 @@
+import type { VoidWithError } from "Aventus@Main:Aventus.package.avt";
 import { type StorableWsRouter } from "../generated/WebSocket/StorableWsRouter.lib.avt";
 import { Storable } from "../Storable.data.avt";
+import { RamCompletor } from "./RamCompletor.lib.avt";
 
 namespace RAM {
     export type RamWebSocketListenOnStart = {
@@ -112,6 +114,10 @@ namespace RAM {
                 Delete: true,
                 DeleteMany: true,
             };
+        }
+
+        public complete(objects?: T | T[], error?: VoidWithError): RamCompletor<T> {
+            return new RamCompletor(objects, error);
         }
 
         @BindThis()

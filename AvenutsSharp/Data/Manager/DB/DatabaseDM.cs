@@ -514,10 +514,18 @@ namespace AventusSharp.Data.Manager.DB
         {
             return RunInsideTransaction(delegate ()
             {
-                if (values.Count == 0) return new();
-                X value = values[0];
-                DatabaseCreateBuilder<X> builder = new DatabaseCreateBuilder<X>(Storage, this, value.GetType());
-                VoidWithError result = builder.RunBulkWithError(values, withId);
+                VoidWithError result = new();
+                try
+                {
+                    if (values.Count == 0) return new();
+                    X value = values[0];
+                    DatabaseCreateBuilder<X> builder = new DatabaseCreateBuilder<X>(Storage, this, value.GetType());
+                    result = builder.RunBulkWithError(values, withId);
+                }
+                catch (Exception e)
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                }
                 return result;
             });
         }

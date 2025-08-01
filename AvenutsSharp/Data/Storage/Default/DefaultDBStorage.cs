@@ -9,8 +9,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -867,9 +869,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             string sql = queryBuilder.info.Sql;
 
-
             ResultWithError<List<Dictionary<string, string?>>> queryResult = QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
-
             result.Errors.AddRange(queryResult.Errors);
             if (queryResult.Success && queryResult.Result != null)
             {
@@ -897,6 +897,20 @@ namespace AventusSharp.Data.Storage.Default
                         result.Errors.AddRange(resultTemp.Errors);
                     }
 
+                }
+
+                foreach (TableReverseMemberInfo reverse in baseInfo.ReverseLinks)
+                {
+                    MethodInfo? method = typeof(GenericDM).GetMethod("LoadReverseLinkInternal",  BindingFlags.Static | BindingFlags.NonPublic);
+                    if (method != null && reverse.ReverseLinkType != null)
+                    {
+                        MethodInfo? methodGeneric = method.MakeGenericMethod(typeof(X), reverse.ReverseLinkType);
+                        var obj = methodGeneric.Invoke(null, [result, reverse.Name]);
+                        if (obj is VoidWithError objVoid)
+                        {
+                            result.Errors.AddRange(objVoid.Errors);
+                        }
+                    }
                 }
             }
 
@@ -993,17 +1007,17 @@ namespace AventusSharp.Data.Storage.Default
             }
 
             // TODO : change it to make only one DB request based on the list
-            foreach (TableReverseMemberInfo reverse in info.ReverseLinks)
-            {
-                if (o is IStorable storable)
-                {
-                    VoidWithDataError reverseResult = reverse.ReverseLoadAndSet(storable);
-                    if (!reverseResult.Success)
-                    {
-                        result.Errors.AddRange(reverseResult.Errors);
-                    }
-                }
-            }
+            // foreach (TableReverseMemberInfo reverse in info.ReverseLinks)
+            // {
+            //     if (o is IStorable storable)
+            //     {
+            //         VoidWithDataError reverseResult = reverse.ReverseLoadAndSet(storable);
+            //         if (!reverseResult.Success)
+            //         {
+            //             result.Errors.AddRange(reverseResult.Errors);
+            //         }
+            //     }
+            // }
             result.Result = o;
             return result;
         }

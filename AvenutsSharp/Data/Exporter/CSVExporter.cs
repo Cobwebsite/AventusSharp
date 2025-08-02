@@ -13,14 +13,17 @@ public record CSVExporterConfig<X> : CsvConfiguration
 {
     public CSVExporterConfig(CultureInfo cultureInfo) : base(cultureInfo)
     {
+        BufferSize = 1000;
     }
 
     public CSVExporterConfig(CSVExporterConfig<X> config) : base(config)
     {
+        BufferSize = 1000;
     }
 
     public CSVExporterConfig() : base(CultureInfo.InvariantCulture)
     {
+        BufferSize = 1000;
     }
 
     public Action<CSVMapper<X>>? mapper = null;

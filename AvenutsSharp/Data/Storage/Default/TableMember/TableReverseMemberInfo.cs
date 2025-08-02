@@ -117,6 +117,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             return result;
         }
+
         public VoidWithDataError ReverseLoadAndSet(IStorable o)
         {
             VoidWithDataError result = new();

@@ -173,6 +173,7 @@ namespace AventusSharp.Data
         /// <returns></returns>
         public static bool BulkCreate(List<T> values, bool withId = false)
         {
+            // TODO change withId by a config object to add bufferSize
             if (values != null && values.Count > 0)
             {
                 return GenericDM.Get<T>().BulkCreate(values, withId);
@@ -483,49 +484,101 @@ namespace AventusSharp.Data
         }
         #endregion
 
-
+        /// <summary>
+        /// Apply the function ValidationRules to check if element is valid
+        /// </summary>
+        /// <param name="action">The type of action that you need to check</param>
+        /// <returns></returns>
         public List<DataError> IsValid(StorableAction action)
         {
             List<DataError> errors = new();
             errors.AddRange(ValidationRules(action));
             return errors;
         }
-
+        /// <summary>
+        /// Define custom rules you need to check for your object
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
         protected virtual List<DataError> ValidationRules(StorableAction action)
         {
             return new List<DataError>();
         }
 
+        /// <summary>
+        /// Allow to load the a real object from an id on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the int (Id of the element to load)</param>
+        /// <param name="set">Set to add the object to the item</param>
+        /// <returns></returns>
         public static ResultWithError<List<Y>> LoadDependances<Y>(List<T>? from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
             return LoadDependances(realFrom, fct, set);
         }
-
+        /// <summary>
+        /// Allow to load the a real object from an id on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the int (Id of the element to load)</param>
+        /// <param name="set">Set to add the object to the item</param>
+        /// <returns></returns>
         public static ResultWithError<List<Y>> LoadDependances<Y>(ResultWithError<List<T>> from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
         {
-            return GenericDM.LoadDependances(from, fct, set);
+            return LoaderHelper.LoadDependances(from, fct, set);
         }
 
+        /// <summary>
+        /// Allow to load the list of real object from a list of ids on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the List of int</param>
+        /// <param name="set">Set to add the object to the list</param>
+        /// <returns></returns>
         public static ResultWithError<List<Y>> LoadDependancesList<Y>(List<T>? from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
             return LoadDependancesList(realFrom, fct, set);
         }
+        /// <summary>
+        /// Allow to load the list of real object from a list of ids on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the List of int</param>
+        /// <param name="set">Set to add the object to the list</param>
+        /// <returns></returns>
         public static ResultWithError<List<Y>> LoadDependancesList<Y>(ResultWithError<List<T>> from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
         {
-            return GenericDM.LoadDependancesList(from, fct, set);
+            return LoaderHelper.LoadDependancesList(from, fct, set);
         }
 
+        /// <summary>
+        /// Allow to load a member of type List marked ReverseLink
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">List of objects with the member</param>
+        /// <param name="expression">The member the need to be loaded</param>
+        /// <returns></returns>
         public static VoidWithError LoadReverseLink<Y>(List<T>? from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
             return LoadReverseLink(realFrom, expression);
         }
-
+        /// <summary>
+        /// Allow to load a member of type List marked ReverseLink
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">List of objects with the member</param>
+        /// <param name="expression">The member the need to be loaded</param>
+        /// <returns></returns>
         public static VoidWithError LoadReverseLink<Y>(ResultWithError<List<T>> from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
         {
-            return GenericDM.LoadReverseLink(from, expression);
+            return LoaderHelper.LoadReverseLink(from, expression);
         }
     }
 

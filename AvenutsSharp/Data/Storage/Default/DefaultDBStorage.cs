@@ -873,13 +873,14 @@ namespace AventusSharp.Data.Storage.Default
             result.Errors.AddRange(queryResult.Errors);
             if (queryResult.Success && queryResult.Result != null)
             {
+                Dictionary<TableReverseMemberInfo, List<object>> reverseLinks = new();
                 result.Result = new List<X>();
                 DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
 
                 for (int i = 0; i < queryResult.Result.Count; i++)
                 {
                     Dictionary<string, string?> itemFields = queryResult.Result[i];
-                    ResultWithDataError<object> resultTemp = CreateObject(baseInfo, itemFields);
+                    ResultWithDataError<object> resultTemp = CreateObject(baseInfo, itemFields, reverseLinks);
                     if (resultTemp.Success && resultTemp.Result != null)
                     {
                         if (resultTemp.Result is X oCasted)
@@ -899,24 +900,39 @@ namespace AventusSharp.Data.Storage.Default
 
                 }
 
+                if (reverseLinks.Count > 0)
+                {
+                    MethodInfo? method = typeof(LoaderHelper).GetMethod("LoadReverseLinkInternalList", BindingFlags.Static | BindingFlags.NonPublic);
+                    if (method != null)
+                    {
+                        foreach (KeyValuePair<TableReverseMemberInfo, List<object>> pairReverse in reverseLinks)
+                        {
+                            TableReverseMemberInfo reverse = pairReverse.Key;
+                            List<object> objs = pairReverse.Value;
+
+                            if (reverse.ReverseLinkType != null && objs.Count > 0 && reverse.ReflectedType != null)
+                            {
+                                MethodInfo? methodGeneric = method.MakeGenericMethod(reverse.ReflectedType, reverse.ReverseLinkType);
+                                IList casted = objs.ToListOfType(reverse.ReflectedType);
+                                var obj = methodGeneric.Invoke(null, [casted, reverse.Name]);
+                                if (obj is VoidWithError objVoid)
+                                {
+                                    result.Errors.AddRange(objVoid.Errors);
+                                }
+                            }
+                        }
+
+                    }
+                }
                 foreach (TableReverseMemberInfo reverse in baseInfo.ReverseLinks)
                 {
-                    MethodInfo? method = typeof(GenericDM).GetMethod("LoadReverseLinkInternal",  BindingFlags.Static | BindingFlags.NonPublic);
-                    if (method != null && reverse.ReverseLinkType != null)
-                    {
-                        MethodInfo? methodGeneric = method.MakeGenericMethod(typeof(X), reverse.ReverseLinkType);
-                        var obj = methodGeneric.Invoke(null, [result, reverse.Name]);
-                        if (obj is VoidWithError objVoid)
-                        {
-                            result.Errors.AddRange(objVoid.Errors);
-                        }
-                    }
+
                 }
             }
 
             return result;
         }
-        protected ResultWithDataError<object> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields)
+        protected ResultWithDataError<object> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields, Dictionary<TableReverseMemberInfo, List<object>> reverseLinks)
         {
             ResultWithDataError<object> result = new ResultWithDataError<object>();
             string rootAlias = info.Alias;
@@ -979,7 +995,7 @@ namespace AventusSharp.Data.Storage.Default
                             else if (info.joins.ContainsKey(memberInfo))
                             {
                                 // loaded from the query
-                                ResultWithDataError<object> oTemp = CreateObject(info.joins[memberInfo], itemFields);
+                                ResultWithDataError<object> oTemp = CreateObject(info.joins[memberInfo], itemFields, reverseLinks);
                                 if (oTemp.Success && oTemp.Result != null)
                                 {
                                     memberInfo.SetValue(o, oTemp.Result);
@@ -1007,17 +1023,14 @@ namespace AventusSharp.Data.Storage.Default
             }
 
             // TODO : change it to make only one DB request based on the list
-            // foreach (TableReverseMemberInfo reverse in info.ReverseLinks)
-            // {
-            //     if (o is IStorable storable)
-            //     {
-            //         VoidWithDataError reverseResult = reverse.ReverseLoadAndSet(storable);
-            //         if (!reverseResult.Success)
-            //         {
-            //             result.Errors.AddRange(reverseResult.Errors);
-            //         }
-            //     }
-            // }
+            foreach (TableReverseMemberInfo reverse in info.ReverseLinks)
+            {
+                if (!reverseLinks.ContainsKey(reverse))
+                {
+                    reverseLinks[reverse] = new();
+                }
+                reverseLinks[reverse].Add(o);
+            }
             result.Result = o;
             return result;
         }
@@ -1234,36 +1247,37 @@ namespace AventusSharp.Data.Storage.Default
         public VoidWithError BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
         {
             VoidWithError result = new();
-            List<DatabaseCreateBuilderInfoQuery> queries;
-            if (createBuilder.info == null)
+            int bufferSize = 500;
+            for (int i = 0; i < items.Count; i += bufferSize)
             {
-                createBuilder.info = PrepareSQLForBulkCreate(createBuilder, items.Count, withId);
-            }
+                List<X> buffer = items.GetRange(i, Math.Min(bufferSize, items.Count - i));
+                List<DatabaseCreateBuilderInfoQuery> queries;
+                createBuilder.info = PrepareSQLForBulkCreate(createBuilder, buffer.Count, withId);
 
-            queries = createBuilder.info.Queries;
+                queries = createBuilder.info.Queries;
 
-            foreach (DatabaseCreateBuilderInfoQuery query in queries)
-            {
-                string sql = query.Sql;
-                Dictionary<ParamsInfo, QueryParameterType> parametersCreate = new();
-                foreach (ParamsInfo parameterInfo in query.Parameters)
+                foreach (DatabaseCreateBuilderInfoQuery query in queries)
                 {
-                    parameterInfo.Value = null;
-                    parametersCreate.Add(parameterInfo, QueryParameterType.GrabValue);
+                    string sql = query.Sql;
+                    Dictionary<ParamsInfo, QueryParameterType> parametersCreate = new();
+                    foreach (ParamsInfo parameterInfo in query.Parameters)
+                    {
+                        parameterInfo.Value = null;
+                        parametersCreate.Add(parameterInfo, QueryParameterType.GrabValue);
+                    }
+
+                    List<IStorable> storables = buffer.Select(p => (IStorable)p).ToList();
+                    VoidWithError createResult = BulkQueryGeneric(StorableAction.Create, sql, parametersCreate, storables);
+
+                    if (!createResult.Success)
+                    {
+                        result.Errors.AddRange(createResult.Errors);
+                        return result;
+                    }
+
                 }
 
-                List<IStorable> storables = items.Select(p => (IStorable)p).ToList();
-                VoidWithError createResult = BulkQueryGeneric(StorableAction.Create, sql, parametersCreate, storables);
-
-                if (!createResult.Success)
-                {
-                    result.Errors.AddRange(createResult.Errors);
-                    return result;
-                }
-
             }
-
-
             return result;
         }
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder) where X : IStorable;

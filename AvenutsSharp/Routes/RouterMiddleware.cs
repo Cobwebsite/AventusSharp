@@ -447,7 +447,7 @@ namespace AventusSharp.Routes
             {
                 if (!canContinue) return;
                 canContinue = false;
-                await middleware.Run(context, () =>
+                await middleware.Run(context, routerInfo, () =>
                 {
                     return Task.Run(() =>
                     {

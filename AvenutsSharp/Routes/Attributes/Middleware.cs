@@ -14,6 +14,6 @@ namespace AventusSharp.Routes.Attributes
 
         }
 
-        public abstract Task Run(HttpContext context, Func<Task> next);
+        public abstract Task Run(HttpContext context, RouteInfo info, Func<Task> next);
     }
 }

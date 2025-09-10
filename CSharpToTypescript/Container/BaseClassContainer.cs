@@ -202,7 +202,7 @@ namespace CSharpToTypescript.Container
                         }
                         if (IsValidExtendsInterface(@interface))
                         {
-                            if(extendsNameAdded.ContainsKey(@interface.Name))
+                            if (extendsNameAdded.ContainsKey(@interface.Name))
                             {
                                 extends.Remove(extendsNameAdded[@interface.Name]);
                             }
@@ -475,6 +475,7 @@ namespace CSharpToTypescript.Container
 
                 string typeName = "\"" + Tools.GetFullName(type) + ", " + type.ContainingAssembly.Name + "\"";
                 Type? realType = Tools.GetCompiledType(type.BaseType);
+                AddTxt("/** Fullname of the class */", result);
                 if (realType != null && !realType.IsInterface && !realType.IsAbstract && realType != typeof(object) && extends.Count > 0)
                 {
                     AddTxt("public static override get Fullname(): string { return " + typeName + "; }", result);
@@ -520,14 +521,14 @@ namespace CSharpToTypescript.Container
                 if (equalsSyntax.Value is ObjectCreationExpressionSyntax newSyntax && newSyntax.Type is IdentifierNameSyntax nameSyntax)
                 {
                     SymbolInfo temp = ProjectManager.Compilation.GetSemanticModel(nameSyntax.SyntaxTree).GetSymbolInfo(newSyntax);
-                    if(temp.Symbol is IMethodSymbol methodSymbol)
+                    if (temp.Symbol is IMethodSymbol methodSymbol)
                     {
                         string typeName = this.GetTypeName(methodSymbol.ContainingType);
                         result = "new " + typeName + "()";
                         // TODO code it when example found
                         //foreach (IParameterSymbol parameter in methodSymbol.Parameters)
                         //{
-                            
+
                         //}
                     }
                     else

@@ -72,11 +72,16 @@ namespace AventusSharp.Routes
 
                     List<Attribute> routeAttributes = t.GetCustomAttributes().ToList();
                     string prefix = "";
+                    List<Middleware> middlewaresClass = new List<Middleware>();
                     foreach (Attribute routeAttribute in routeAttributes)
                     {
                         if (routeAttribute is Prefix prefixAttr)
                         {
                             prefix = prefixAttr.txt;
+                        }
+                        else if (routeAttribute is Middleware middleware)
+                        {
+                            middlewaresClass.Add(middleware);
                         }
                     }
                     List<MethodInfo> methods = t.GetMethods()
@@ -94,6 +99,7 @@ namespace AventusSharp.Routes
                         List<string> routes = new List<string>();
                         List<Attribute> methodsAttribute = method.GetCustomAttributes().ToList();
                         List<MethodType> methodsToUse = new List<MethodType>();
+                        List<Middleware> middlewares = middlewaresClass.ToList();
                         bool canUse = true;
                         foreach (Attribute methodAttribute in methodsAttribute)
                         {
@@ -113,6 +119,10 @@ namespace AventusSharp.Routes
                             else if (methodAttribute is NoRoute)
                             {
                                 canUse = false;
+                            }
+                            else if (methodAttribute is Middleware middleware)
+                            {
+                                middlewares.Add(middleware);
                             }
                         }
                         if (!canUse) continue;
@@ -171,7 +181,7 @@ namespace AventusSharp.Routes
                                 try
                                 {
                                     Regex regex = transformPattern(urlPattern, @params, t, method);
-                                    RouteInfo info = new RouteInfo(regex, methodType, method, routerInstances[t], parameters.Length);
+                                    RouteInfo info = new RouteInfo(regex, methodType, method, routerInstances[t], parameters.Length, middlewares);
                                     info.parameters = @params;
 
 
@@ -432,6 +442,20 @@ namespace AventusSharp.Routes
         public static async Task OnRequest(HttpContext context, RouterResolve routerResolve)
         {
             RouteInfo routerInfo = routerResolve.RouteInfo;
+            bool canContinue = true;
+            foreach (Middleware middleware in routerInfo.middlewares)
+            {
+                if (!canContinue) return;
+                canContinue = false;
+                await middleware.Run(context, () =>
+                {
+                    return Task.Run(() =>
+                    {
+                        canContinue = true;
+                    });
+                });
+            }
+            if (!canContinue) return;
             object?[] param = routerResolve.Params;
             if (routerInfo.action.ReturnType == typeof(void))
             {

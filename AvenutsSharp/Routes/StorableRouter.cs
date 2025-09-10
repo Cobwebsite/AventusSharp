@@ -9,6 +9,10 @@ namespace AventusSharp.Routes
 {
     public abstract class StorableRouter<T> : IRouter where T : IStorable
     {
+        /// <summary>
+        /// Define the name of the object for the url
+        /// </summary>
+        /// <returns></returns>
         protected virtual string StorableName()
         {
             Type t = typeof(T);

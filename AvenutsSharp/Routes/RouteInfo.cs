@@ -1,4 +1,5 @@
-﻿using AventusSharp.Routes.Request;
+﻿using AventusSharp.Routes.Attributes;
+using AventusSharp.Routes.Request;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,18 +15,20 @@ namespace AventusSharp.Routes
         public IRouter router;
         public int nbParamsFunction;
         public Dictionary<string, RouterParameterInfo> parameters = new Dictionary<string, RouterParameterInfo>();
+        public List<Middleware> middlewares = [];
         public string UniqueKey
         {
             get => pattern.ToString() + "||" + method.ToString();
         }
 
-        public RouteInfo(Regex pattern, MethodType method, MethodInfo action, IRouter router, int nbParamsFunction)
+        public RouteInfo(Regex pattern, MethodType method, MethodInfo action, IRouter router, int nbParamsFunction, List<Middleware> middlewares)
         {
             this.pattern = pattern;
             this.method = method;
             this.action = action;
             this.router = router;
             this.nbParamsFunction = nbParamsFunction;
+            this.middlewares = middlewares;
         }
 
         public override string ToString()

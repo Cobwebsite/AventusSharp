@@ -173,6 +173,22 @@ namespace CSharpToTypescript.Container
             return string.Join("\r\n", result);
         }
 
+        protected IMethodSymbol? GetMethod(MethodInfo method)
+        {
+            return GetMethod(method.Name);
+        }
+        protected IMethodSymbol? GetMethod(string name)
+        {
+            foreach (ISymbol symbol in type.GetMembers())
+            {
+
+                if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && methodSymbol.Name == name)
+                {
+                    return methodSymbol;
+                }
+            }
+            return null;
+        }
         public virtual string GetTypeName(Type type, int depth = 0, bool genericExtendsConstraint = false)
         {
             if (type.IsGenericTypeParameter)

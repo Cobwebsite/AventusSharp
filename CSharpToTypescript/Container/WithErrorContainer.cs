@@ -75,6 +75,7 @@ namespace CSharpToTypescript.Container
         {
             if (IsConvertible)
             {
+                AddTxt("/** Fullname of the class */", result);
                 string typeName = "\"" + type.ContainingNamespace.ToString() + "." + type.Name + ", " + type.ContainingAssembly.Name + "\"";
                 if (isPasserel)
                 {

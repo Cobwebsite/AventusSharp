@@ -152,6 +152,16 @@ namespace CSharpToTypescript.Container
                     Func<string> getFct = () =>
                     {
                         List<string> resultTemp = new();
+                        IMethodSymbol? methodInfo = GetMethod(method);
+                        string documentation = methodInfo != null ? GetDocumentation(methodInfo) : "";
+                        if (documentation.Length > 0)
+                        {
+                            AddTxt(documentation, resultTemp);
+                        }
+                        else
+                        {
+                            AddTxt("/** @inheritdoc */", resultTemp);
+                        }
                         AddTxtOpen("public " + method.Name + "() {", resultTemp);
                         AddTxt("return \"" + o.ToString() + "\";", resultTemp);
                         AddTxtClose("}", resultTemp);
@@ -580,7 +590,7 @@ namespace CSharpToTypescript.Container
                 {
                     canBeAdded = false;
                 }
-                else if(attr is FctName fctNameAttr)
+                else if (attr is FctName fctNameAttr)
                 {
                     this.name = fctNameAttr.name;
                 }

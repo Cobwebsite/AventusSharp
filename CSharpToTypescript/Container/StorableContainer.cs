@@ -51,6 +51,7 @@ namespace CSharpToTypescript.Container
             if (IsConvertible)
             {
                 string typeName = "\"" + type.ContainingNamespace.ToString() + "." + type.Name + ", " + type.ContainingAssembly.Name + "\"";
+                AddTxt("/** Fullname of the class */", result);
                 AddTxt("public static override get Fullname(): string { return " + typeName + "; }", result);
             }
         }

@@ -43,7 +43,7 @@ namespace AventusSharp.Routes
         public Type type;
         public int positionCSharp = -1;
         public int positionUrl = -1;
-
+        public bool optional = false;
         public RouterParameterInfo(string name, Type type)
         {
             this.name = name;

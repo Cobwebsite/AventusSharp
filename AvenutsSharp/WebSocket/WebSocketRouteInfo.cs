@@ -49,6 +49,7 @@ namespace AventusSharp.WebSocket
         public Type type;
         public int positionCSharp = -1;
         public int positionUrl = -1;
+        public bool optional = false;
 
         public WebSocketRouterParameterInfo(string name, Type type)
         {

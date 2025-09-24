@@ -220,6 +220,7 @@ namespace AventusSharp.WebSocket
                         fctParams.Add(new WebSocketRouterParameterInfo(parameter.Name ?? "", parameter.ParameterType)
                         {
                             positionCSharp = parameter.Position,
+                            optional = parameter.IsOptional
                         });
                     }
 

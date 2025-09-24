@@ -1053,11 +1053,11 @@ namespace AventusSharp.Data.Storage.Default
             {
                 if (tableInfo.TypeMember != null)
                 {
-                    baseInfo.Members.Add(tableInfo.TypeMember, new DatabaseBuilderInfoMember(tableInfo.TypeMember, alias, this));
+                    baseInfo.Members[tableInfo.TypeMember] = new DatabaseBuilderInfoMember(tableInfo.TypeMember, alias, this);
                 }
                 if (tableInfo.Primary != null)
                 {
-                    baseInfo.Members.Add(tableInfo.Primary, new DatabaseBuilderInfoMember(tableInfo.Primary, alias, this));
+                    baseInfo.Members[tableInfo.Primary] = new DatabaseBuilderInfoMember(tableInfo.Primary, alias, this);
                 }
             }
             else
@@ -1084,12 +1084,12 @@ namespace AventusSharp.Data.Storage.Default
                         }
                         else
                         {
-                            baseInfo.Members.Add(member, info);
+                            baseInfo.Members[member] = info;
                         }
                     }
                     else
                     {
-                        baseInfo.Members.Add(member, new DatabaseBuilderInfoMember(member, alias, this));
+                        baseInfo.Members[member] = new DatabaseBuilderInfoMember(member, alias, this);
                     }
                 }
             }

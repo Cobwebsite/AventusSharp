@@ -377,7 +377,15 @@ namespace CSharpToTypescript.Container
                         {
                             continue;
                         }
-                        parametersBodyAndType.Add(pair.Key, parent.GetTypeName(parameter.Type));
+
+                        if (parameter.Type.NullableAnnotation == NullableAnnotation.Annotated)
+                        {
+                            parametersBodyAndType.Add(pair.Key + "?", parent.GetTypeName(parameter.Type).Replace("?", ""));
+                        }
+                        else
+                        {
+                            parametersBodyAndType.Add(pair.Key, parent.GetTypeName(parameter.Type));
+                        }
                     }
                 }
 

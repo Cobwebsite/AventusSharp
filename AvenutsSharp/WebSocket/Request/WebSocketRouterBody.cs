@@ -29,8 +29,9 @@ namespace AventusSharp.WebSocket.Request
         /// </summary>
         /// <param name="type">Type needed</param>
         /// <param name="propPath">Path where to find data</param>
+        /// <param name="isOptional">Determine if data is required</param>
         /// <returns></returns>
-        public ResultWithWsError<object> GetData(Type type, string propPath)
+        public ResultWithWsError<object> GetData(Type type, string propPath, bool isOptional)
         {
             ResultWithWsError<object> result = new();
 
@@ -40,10 +41,19 @@ namespace AventusSharp.WebSocket.Request
                 string[] props = propPath.Split(".");
                 foreach (string prop in props)
                 {
+                    if (dataToUse == null)
+                    {
+                        if (!isOptional)
+                        {
+                            result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your websocket body"));
+                            return result;
+                        }
+                        break;
+                    }
                     if (!string.IsNullOrEmpty(prop))
                     {
                         dataToUse = dataToUse[prop];
-                        if (dataToUse == null)
+                        if (dataToUse == null && !isOptional)
                         {
                             result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your websocket body"));
                             return result;

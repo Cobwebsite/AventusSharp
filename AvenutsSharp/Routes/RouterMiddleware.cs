@@ -140,10 +140,13 @@ namespace AventusSharp.Routes
                         bool hasBody = false;
                         foreach (ParameterInfo parameterInfo in parameters)
                         {
+
                             RouterParameterInfo parameter = new RouterParameterInfo(parameterInfo.Name ?? "", parameterInfo.ParameterType)
                             {
                                 positionCSharp = parameterInfo.Position,
+                                optional = parameterInfo.IsOptional
                             };
+
                             fctParams.Add(parameter);
                             if (parameter.positionCSharp != -1)
                             {
@@ -386,7 +389,7 @@ namespace AventusSharp.Routes
                                                 }
                                                 else
                                                 {
-                                                    ResultWithRouteError<object> bodyPart = body.GetData(parameter.type, parameter.name);
+                                                    ResultWithRouteError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
                                                     if (!bodyPart.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
@@ -399,7 +402,7 @@ namespace AventusSharp.Routes
                                         }
 
                                         // error
-                                        if (value == null)
+                                        if (value == null && !parameter.optional)
                                         {
                                             Console.WriteLine("ERRRRROOOOOR");
                                         }

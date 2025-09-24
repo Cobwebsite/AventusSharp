@@ -97,7 +97,7 @@ namespace AventusSharp.WebSocket
                             {
                                 if (DisplayMsg)
                                 {
-                                    Console.WriteLine("on a reçu sur " + o["channel"], "onMessage");
+                                    Console.WriteLine("Received on " + o["channel"], "onMessage");
                                 }
                                 string? channel = o["channel"]?.ToString().ToLower();
                                 if (channel == null)

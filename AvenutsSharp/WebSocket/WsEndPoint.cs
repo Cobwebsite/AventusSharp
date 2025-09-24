@@ -207,7 +207,7 @@ namespace AventusSharp.WebSocket
                                         value = connection.GetContext().RequestServices.GetService(parameter.type);
                                         if (value == null)
                                         {
-                                            ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name);
+                                            ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
                                             if (!bodyPart.Success)
                                             {
                                                 await connection.Send(path, bodyPart);
@@ -218,7 +218,7 @@ namespace AventusSharp.WebSocket
                                     }
 
                                     // error
-                                    if (value == null)
+                                    if (value == null && !parameter.optional)
                                     {
                                         Console.WriteLine("ERRRRROOOOOR");
                                     }

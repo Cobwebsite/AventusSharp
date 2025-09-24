@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using CsvHelper;
@@ -32,6 +34,18 @@ public class CSVImporter
     }
     public static VoidWithError Import<X>(string path, CSVImporterConfig<X> config) where X : IStorable
     {
+        return _import<X>(path, config, false);
+    }
+    public static VoidWithError BulkImport<X>(string path) where X : IStorable
+    {
+        return BulkImport<X>(path, new CSVImporterConfig<X>(CultureInfo.InvariantCulture));
+    }
+    public static VoidWithError BulkImport<X>(string path, CSVImporterConfig<X> config) where X : IStorable
+    {
+        return _import<X>(path, config, true);
+    }
+    private static VoidWithError _import<X>(string path, CSVImporterConfig<X> config, bool bulk) where X : IStorable
+    {
         VoidWithError result = new();
         if (!File.Exists(path))
         {
@@ -59,12 +73,35 @@ public class CSVImporter
                         csv.Context.RegisterClassMap(csvMapper.mapper);
                         result.Errors.AddRange(csvMapper.errors);
                     }
-                    else if (!config.WithId)
+                    else
                     {
                         CSVMapper<X> csvMapper = new(config.CultureInfo);
-                        csvMapper.Ignore(p => p.Id);
+                        csv.Read();
+                        csv.ReadHeader();
+                        List<string> names = new();
+                        if (csv.HeaderRecord != null)
+                        {
+                            names.AddRange(typeof(X).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(p => p.Name).ToList());
+                            names.AddRange(typeof(X).GetFields(BindingFlags.Public | BindingFlags.Instance).Select(p => p.Name).ToList());
+                            foreach (string header in csv.HeaderRecord)
+                            {
+                                if (names.Contains(header))
+                                {
+                                    names.Remove(header);
+                                    csvMapper.Map(header, header);
+                                }
+                            }
+                        }
+                        if (!config.WithId)
+                        {
+                            if (!names.Contains("Id"))
+                            {
+                                csvMapper.Ignore(p => p.Id);
+                            }
+                        }
                         csv.Context.RegisterClassMap(csvMapper.mapper);
                     }
+
                     List<X> records = new();
                     while (csv.Read())
                     {
@@ -80,9 +117,19 @@ public class CSVImporter
                             records.Clear();
                         }
                     }
+
+                    Console.WriteLine(typeof(X).Name + " " + records.Count + " items");
                     if (records.Count > 0)
                     {
-                        result.Run(() => dm.BulkCreateWithError(records, config.WithId));
+                        if (bulk || config.WithId)
+                        {
+                            result.Run(() => dm.BulkCreateWithError(records, config.WithId));
+
+                        }
+                        else
+                        {
+                            result.Run(() => dm.CreateWithError(records));
+                        }
                     }
                 }
             }

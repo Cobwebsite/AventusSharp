@@ -1,4 +1,5 @@
-﻿using HttpMultipartParser;
+﻿using AventusSharp.Tools;
+using HttpMultipartParser;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -280,8 +281,9 @@ namespace AventusSharp.Routes.Request
         /// </summary>
         /// <param name="type">Type needed</param>
         /// <param name="propPath">Path where to find data</param>
+        /// <param name="isOptional">Determine if data is required</param>
         /// <returns></returns>
-        public ResultWithRouteError<object> GetData(Type type, string propPath)
+        public ResultWithRouteError<object> GetData(Type type, string propPath, bool isOptional)
         {
             ResultWithRouteError<object> result = new();
 
@@ -291,18 +293,31 @@ namespace AventusSharp.Routes.Request
                 string[] props = propPath.Split(".");
                 foreach (string prop in props)
                 {
+                    if (dataToUse == null)
+                    {
+                        if (!isOptional)
+                        {
+                            result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
+                            return result;
+                        }
+                        break;
+                    }
                     if (!string.IsNullOrEmpty(prop))
                     {
                         dataToUse = dataToUse[prop];
-                        if (dataToUse == null)
+                        if (dataToUse == null && !isOptional)
                         {
                             result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
                             return result;
                         }
                     }
+                    else
+                    {
+                        dataToUse = null;
+                    }
                 }
 
-                
+
                 object? temp = JsonConvert.DeserializeObject(
                     JsonConvert.SerializeObject(dataToUse),
                     type,

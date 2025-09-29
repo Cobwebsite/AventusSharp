@@ -241,6 +241,7 @@ public class LoaderHelper
                         Expression<Func<List<int>>> idLambda = () => ids;
                         body = idLambda.Body;
                     }
+                    
                     Expression e1 = Expression.Call(body, "Contains", Type.EmptyTypes, nameProperty);
                     Expression<Func<Y, bool>> lambda = (Expression<Func<Y, bool>>)Expression.Lambda(e1, argParam);
 
@@ -262,6 +263,15 @@ public class LoaderHelper
                             foreach (X element in elementList)
                             {
                                 object? list = memberXQuery.Result.GetValue(element);
+                                if (list is null)
+                                {
+                                    bool isList = memberXQuery.Result.Type?.GetInterfaces().Contains(typeof(IList)) ?? false;
+                                    if (isList)
+                                    {
+                                        list = Activator.CreateInstance(memberXQuery.Result.Type!);
+                                        memberXQuery.Result.SetValue(element, list);
+                                    }
+                                }
                                 if (list is IList Ilist)
                                 {
                                     Ilist.Add(item);
@@ -274,6 +284,7 @@ public class LoaderHelper
                                     }
                                     catch (Exception e)
                                     {
+                                        Console.WriteLine(e);
                                         result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
                                     }
                                 }

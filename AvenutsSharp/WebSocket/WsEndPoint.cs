@@ -173,7 +173,10 @@ namespace AventusSharp.WebSocket
                 if (match.Success)
                 {
                     if (WebSocketMiddleware.config.PrintTrigger)
+                    {
                         Console.WriteLine("trigger " + routeInfo.ToString());
+                        Console.WriteLine("with body " + body.ToString());
+                    }
 
                     object?[] param = new object[routeInfo.nbParamsFunction];
                     Dictionary<Type, object> wellKnowned = new Dictionary<Type, object>()

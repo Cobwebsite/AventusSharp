@@ -35,7 +35,7 @@ namespace TestConsole.cs
             }
             storage.ResetStorage();
 
-            storage.Debug = true;
+            // storage.Debug = true;
 
             storage1 = storage;
         }

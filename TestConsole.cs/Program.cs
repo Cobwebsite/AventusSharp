@@ -206,26 +206,28 @@ PersonHuman maxime = new()
 {
     firstname = "Maxime",
     lastname = "Bétrisey",
-    birthday = new DateTime(1995, 06, 16),
-    tags = new List<Tag>()
-    {
-        //new Tag()
-        //{
-        //    Name = "Man"
-        //},
-        // new Tag()
-        //{
-        //    Name = "Unknow"
-        //}
-    }
+    birthday = new Date(new DateTime(1995, 06, 16)),
+    // tags = new List<Tag>()
+    // {
+    //     //new Tag()
+    //     //{
+    //     //    Name = "Man"
+    //     //},
+    //     // new Tag()
+    //     //{
+    //     //    Name = "Unknow"
+    //     //}
+    // }
 };
 PersonHuman.Create(maxime);
 //PersonHuman benjamin = new() { firstname = "Benjamin", lastname = "Bétrisey" };
 //benjamin.Create();
 
 //List<string> names = new List<string>() { "Maxime" };
-
-PersonHuman.WhereWithError(p => p.birthday.Year == 1995);
+StorageContainer.storage1.Debug = true;
+DateTime datetime = new DateTime(1995, 06, 16);
+string firstname = "Maxime";
+PersonHuman.WhereWithError(p => p.firstname.ToLower() == firstname.ToLower());
 //PersonHuman.GetAll();
 //Cat felix = new()
 //{

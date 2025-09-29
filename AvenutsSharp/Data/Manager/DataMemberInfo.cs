@@ -179,7 +179,6 @@ namespace AventusSharp.Data.Manager
             else if (memberInfo is PropertyInfo propertyInfo)
             {
                 propertyInfo.SetValue(obj, value);
-
             }
         }
         /// <summary>

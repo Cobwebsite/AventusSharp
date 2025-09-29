@@ -74,5 +74,10 @@ namespace AventusSharp.WebSocket.Request
             return result;
         }
 
+
+        public override string ToString()
+        {
+            return data.ToString();
+        }
     }
 }

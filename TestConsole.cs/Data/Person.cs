@@ -13,16 +13,16 @@ namespace TestConsole.cs.Data
 
         public string lastname { get; set; }
 
-        public DateTime birthday { get; set; }
+        public Date birthday { get; set; }
 
-        [Nullable]
-        public Location location { get; set; }
+        // [Nullable]
+        // public Location location { get; set; }
 
         [NotInDB]
         public Role role { get; set; }
 
-        [AutoCRUD]
-        public List<Tag> tags { get; set; } = new List<Tag>();
+        // [AutoCRUD]
+        // public List<Tag> tags { get; set; } = new List<Tag>();
     }
 
 

@@ -115,6 +115,15 @@ namespace AventusSharp.Data.Manager.DB
         private List<Expression?> tree = new List<Expression?>();
 
         private bool nextGroupNegate = false;
+
+        private bool canSimplify
+        {
+            get
+            {
+                return false;
+                // return !databaseBuilder.ReplaceWhereByParameters;
+            }
+        }
         private Expression? parentExpression
         {
             get
@@ -196,6 +205,7 @@ namespace AventusSharp.Data.Manager.DB
 
         protected override Expression VisitBinary(BinaryExpression b)
         {
+            IWhereRootGroup? currentGroupSave = currentGroup;
             WhereGroup newGroup = new();
             AddToParentGroup(newGroup);
             currentGroup = newGroup;
@@ -210,7 +220,10 @@ namespace AventusSharp.Data.Manager.DB
             }
             queryGroups.Add(newGroup);
 
-            Visit(b.Left);
+
+
+            bool canSimplifyFct = false;
+            Expression leftResult = Visit(b.Left);
 
             switch (b.NodeType)
             {
@@ -240,11 +253,46 @@ namespace AventusSharp.Data.Manager.DB
                 case ExpressionType.GreaterThanOrEqual:
                     AddToParentGroup(new WhereGroupFct(WhereGroupFctEnum.GreaterThanOrEqual));
                     break;
+                case ExpressionType.Add:
+                case ExpressionType.AddChecked:
+                    AddToParentGroup(new WhereGroupFct(WhereGroupFctEnum.Add));
+                    canSimplifyFct = true;
+                    break;
+                case ExpressionType.Subtract:
+                case ExpressionType.SubtractChecked:
+                    AddToParentGroup(new WhereGroupFct(WhereGroupFctEnum.Subtract));
+                    canSimplifyFct = true;
+                    break;
+                case ExpressionType.Multiply:
+                case ExpressionType.MultiplyChecked:
+                    AddToParentGroup(new WhereGroupFct(WhereGroupFctEnum.Multiply));
+                    canSimplifyFct = true;
+                    break;
+                case ExpressionType.Divide:
+                    AddToParentGroup(new WhereGroupFct(WhereGroupFctEnum.Divide));
+                    canSimplifyFct = true;
+                    break;
                 default:
                     throw new NotSupportedException(string.Format("The binary operator '{0}' is not supported", b.NodeType));
             }
 
-            Visit(b.Right);
+            Expression rightResult = Visit(b.Right);
+
+            if (canSimplify && canSimplifyFct && leftResult is ConstantExpression cLeft && rightResult is ConstantExpression cRight)
+            {
+                LambdaExpression lambda = Expression.Lambda(b.Update(cLeft, b.Conversion, cRight));
+                object? value = lambda.Compile().DynamicInvoke();
+                if (currentGroupSave is WhereGroup whereGroupSave)
+                {
+                    whereGroupSave.Groups.Remove(newGroup);
+                    queryGroupsBase.Remove(newGroup);
+                    queryGroups.Remove(newGroup);
+                }
+                currentGroup = currentGroupSave;
+                var cst = Expression.Constant(value, b.Type);
+                Visit(cst);
+                return cst;
+            }
 
             queryGroups.RemoveAt(queryGroups.Count - 1);
             currentGroup = queryGroups.LastOrDefault();
@@ -328,7 +376,25 @@ namespace AventusSharp.Data.Manager.DB
             if (isBase)
             {
                 alreadyAdded = false;
+                Expression? _m = m;
                 onParameter = false;
+                while (_m is MemberExpression me)
+                {
+                    if (me.Expression is ParameterExpression)
+                    {
+                        onParameter = true;
+                        break;
+                    }
+                    _m = me.Expression;
+                }
+
+                if (!onParameter && canSimplify)
+                {
+                    LambdaExpression lambda = Expression.Lambda(m);
+                    ConstantExpression cst = Expression.Constant(lambda.Compile().DynamicInvoke(), m.Type);
+                    Visit(cst);
+                    return cst;
+                }
             }
             if (_dateTypes.Contains(m.Type))
             {
@@ -361,11 +427,13 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     object? container = cst.Value;
                     DataMemberInfo? memberInfo;
+
                     if ((memberInfo = DataMemberInfo.Create(m.Member)) != null)
                     {
                         if (container != null)
                         {
                             object? value = memberInfo.GetValue(container);
+
                             if (isBase)
                             {
                                 if (databaseBuilder.ReplaceWhereByParameters)
@@ -495,6 +563,58 @@ namespace AventusSharp.Data.Manager.DB
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+            if (canSimplify)
+            {
+                IWhereRootGroup? currentGroupSave = currentGroup;
+                WhereGroup newGroupTemp = new();
+                AddToParentGroup(newGroupTemp);
+                currentGroup = newGroupTemp;
+                if (queryGroups.Count == 0)
+                {
+                    queryGroupsBase.Add(newGroupTemp);
+                }
+                queryGroups.Add(newGroupTemp);
+
+                Expression? resultTemp = Visit(node.Object);
+
+                if (currentGroupSave is WhereGroup whereGroupSave)
+                {
+                    whereGroupSave.Groups.Remove(newGroupTemp);
+                    queryGroupsBase.Remove(newGroupTemp);
+                    queryGroups.Remove(newGroupTemp);
+                }
+                currentGroup = currentGroupSave;
+
+                if (resultTemp is ConstantExpression)
+                {
+                    bool isAllCst = true;
+                    List<Expression> arguments = new();
+                    foreach (Expression argument in node.Arguments)
+                    {
+                        Expression argumentTemp = Visit(argument);
+                        if (!(argumentTemp is ConstantExpression cArgument))
+                        {
+                            isAllCst = false;
+                            break;
+                        }
+                        else
+                        {
+                            arguments.Add(cArgument);
+                        }
+                    }
+
+                    if (isAllCst)
+                    {
+                        LambdaExpression lambda = Expression.Lambda(node.Update(resultTemp, arguments.ToArray()));
+                        object? value = lambda.Compile().DynamicInvoke();
+                        ConstantExpression cst = Expression.Constant(value, node.Type);
+                        Visit(cst);
+                        return cst;
+                    }
+                }
+            }
+
+
 
             List<Type> listAllowed = new List<Type>()
             {

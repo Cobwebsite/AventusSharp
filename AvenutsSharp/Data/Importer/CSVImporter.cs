@@ -118,7 +118,6 @@ public class CSVImporter
                         }
                     }
 
-                    Console.WriteLine(typeof(X).Name + " " + records.Count + " items");
                     if (records.Count > 0)
                     {
                         if (bulk || config.WithId)

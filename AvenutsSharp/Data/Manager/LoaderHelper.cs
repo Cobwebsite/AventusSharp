@@ -160,7 +160,7 @@ public class LoaderHelper
                 DataMemberInfo? reverseMember = null;
                 if (reverseName != null)
                 {
-                    ResultWithError<DataMemberInfo> memberYQuery = dmY.GetMemberInfo<Y>(name);
+                    ResultWithError<DataMemberInfo> memberYQuery = dmY.GetMemberInfo<Y>(reverseName);
 
                     if (memberYQuery.Result != null && memberYQuery.Success)
                     {
@@ -175,6 +175,10 @@ public class LoaderHelper
                 else
                 {
                     ResultWithError<List<DataMemberInfo>> membersYQuery = dmY.GetMembersInfo<Y, X>();
+                    if (membersYQuery.Result != null)
+                    {
+                        membersYQuery.Result = membersYQuery.Result.Where(p => p.GetCustomAttribute<NotInDB>() == null).ToList();
+                    }
                     if (membersYQuery.Result != null && membersYQuery.Success)
                     {
                         if (membersYQuery.Result.Count > 1)
@@ -233,7 +237,8 @@ public class LoaderHelper
                     Expression body;
                     if (reverseMember.IsNullable)
                     {
-                        Expression<Func<List<int?>>> idLambda = () => ids.Select(p => (int?)p).ToList();
+                        List<int?> idsNull = ids.Select(p => (int?)p).ToList();
+                        Expression<Func<List<int?>>> idLambda = () => idsNull;
                         body = idLambda.Body;
                     }
                     else
@@ -241,7 +246,9 @@ public class LoaderHelper
                         Expression<Func<List<int>>> idLambda = () => ids;
                         body = idLambda.Body;
                     }
-                    
+
+                    Console.WriteLine(body);
+                    Console.WriteLine(nameProperty);
                     Expression e1 = Expression.Call(body, "Contains", Type.EmptyTypes, nameProperty);
                     Expression<Func<Y, bool>> lambda = (Expression<Func<Y, bool>>)Expression.Lambda(e1, argParam);
 

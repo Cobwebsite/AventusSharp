@@ -247,8 +247,6 @@ public class LoaderHelper
                         body = idLambda.Body;
                     }
 
-                    Console.WriteLine(body);
-                    Console.WriteLine(nameProperty);
                     Expression e1 = Expression.Call(body, "Contains", Type.EmptyTypes, nameProperty);
                     Expression<Func<Y, bool>> lambda = (Expression<Func<Y, bool>>)Expression.Lambda(e1, argParam);
 
@@ -291,7 +289,6 @@ public class LoaderHelper
                                     }
                                     catch (Exception e)
                                     {
-                                        Console.WriteLine(e);
                                         result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
                                     }
                                 }

@@ -425,7 +425,10 @@ namespace CSharpToTypescript.Container
             }
             foreach (var fctWithName in additionalFcts)
             {
-                result.Add(fctWithName.Value());
+                if (!functionNeeded.ContainsKey(fctWithName.Key))
+                {
+                    result.Add(fctWithName.Value());
+                }
             }
 
 

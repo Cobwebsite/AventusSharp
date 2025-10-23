@@ -175,28 +175,14 @@ namespace AventusSharp.Data.Storage.Default
                                     {
                                         command.Parameters[parameter.Key].Value = parameter.Value;
                                     }
-                                    if (Debug)
-                                    {
-                                        Console.WriteLine();
-                                        string queryWithParam = command.CommandText;
-                                        foreach (KeyValuePair<string, object?> parameter in parameters)
-                                        {
-                                            queryWithParam = queryWithParam.Replace(parameter.Key, parameter.Key + "(" + parameter.Value?.ToString() + ")");
-                                        }
-                                        Console.WriteLine(queryWithParam);
-                                        Console.WriteLine();
-                                    }
+
+                                    printCommand(command.CommandText, parameters);
                                     command.ExecuteNonQuery();
                                 }
                             }
                             else
                             {
-                                if (Debug)
-                                {
-                                    Console.WriteLine();
-                                    Console.WriteLine(command.CommandText);
-                                    Console.WriteLine();
-                                }
+                                printCommand(command.CommandText);
                                 command.ExecuteNonQuery();
                             }
                         }
@@ -278,17 +264,8 @@ namespace AventusSharp.Data.Storage.Default
                                     command.Parameters[parameter.Key].Value = parameter.Value;
                                 }
 
-                                if (Debug)
-                                {
-                                    Console.WriteLine();
-                                    string queryWithParam = command.CommandText;
-                                    foreach (KeyValuePair<string, object?> parameter in parameters)
-                                    {
-                                        queryWithParam = queryWithParam.Replace(parameter.Key, parameter.Key + "(" + parameter.Value?.ToString() + ")");
-                                    }
-                                    Console.WriteLine(queryWithParam);
-                                    Console.WriteLine();
-                                }
+                                printCommand(command.CommandText, parameters);
+
                                 using (IDataReader reader = command.ExecuteReader())
                                 {
                                     while (reader.Read())
@@ -319,12 +296,7 @@ namespace AventusSharp.Data.Storage.Default
                         }
                         else
                         {
-                            if (Debug)
-                            {
-                                Console.WriteLine();
-                                Console.WriteLine(command.CommandText);
-                                Console.WriteLine();
-                            }
+                            printCommand(command.CommandText, null);
                             using (IDataReader reader = command.ExecuteReader())
                             {
                                 while (reader.Read())
@@ -455,6 +427,22 @@ namespace AventusSharp.Data.Storage.Default
         }
 
 
+        private void printCommand(string queryWithParam, Dictionary<string, object?>? parameters = null)
+        {
+            if (Debug)
+            {
+                Console.WriteLine();
+                if (parameters != null)
+                {
+                    foreach (KeyValuePair<string, object?> parameter in parameters)
+                    {
+                        queryWithParam = queryWithParam.Replace(parameter.Key, parameter.Key + "(" + parameter.Value?.ToString() + ")");
+                    }
+                }
+                Console.WriteLine(queryWithParam);
+                Console.WriteLine();
+            }
+        }
         #endregion
 
         #region init
@@ -863,6 +851,10 @@ namespace AventusSharp.Data.Storage.Default
         {
             ResultWithError<List<X>> result = new();
 
+            if (Debug)
+            {
+                Console.WriteLine(string.Join(",", queryBuilder.WhereParamsInfo.Select(p => p.Value.Value)));
+            }
             if (queryBuilder.info == null)
             {
                 queryBuilder.info = PrepareSQLForQuery(queryBuilder);

@@ -46,6 +46,15 @@ namespace AventusSharp.Tools
         {
             return CloneNoConverter(serializer).Deserialize(reader, objectType);
         }
+
+        protected string GetTypeName(Type type)
+        {
+            if (type == typeof(GenericError))
+            {
+                return "Aventus.GenericError";
+            }
+            return type.FullName?.Split('`')[0] + ", " + type.Assembly.GetName().Name;
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -136,7 +145,7 @@ namespace AventusSharp.Tools
                 {
                     JObject jo = new()
                     {
-                        { "$type", type.FullName?.Split('`')[0] + ", " + type.Assembly.GetName().Name }
+                        { "$type", GetTypeName(type) }
                     };
 
                     foreach (PropertyInfo prop in type.GetProperties())

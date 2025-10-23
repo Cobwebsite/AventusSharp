@@ -11,8 +11,7 @@ namespace AventusSharp.Data.Attributes
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class Unique : ValidationAttribute
     {
-        protected MethodInfo? setVariable;
-        protected MethodInfo? runWithError;
+        protected Func<object, int, IResultWithError>? prepare;
         protected object? query;
         protected string message;
 
@@ -27,8 +26,8 @@ namespace AventusSharp.Data.Attributes
 
         public override ValidationResult IsValid(object? value, ValidationContext context)
         {
-            if(value == null) return ValidationResult.Success;
-            
+            if (value == null) return ValidationResult.Success;
+
             if (query == null && context.TableInfo.DM != null && context.ReflectedType != null)
             {
                 MethodInfo? m = GetType().GetMethod("LoadQuery", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -40,11 +39,9 @@ namespace AventusSharp.Data.Attributes
                 m.Invoke(this, new object?[] { context.TableInfo.DM, context.ReflectedType, context, value });
             }
 
-            if (setVariable != null && runWithError != null && query != null && context.Item != null)
+            if (prepare != null && query != null && context.Item != null)
             {
-                setVariable.Invoke(query, new object?[] { "value", value });
-                setVariable.Invoke(query, new object?[] { "id", context.Item.Id });
-                IResultWithError? resultWithError = (IResultWithError?)runWithError.Invoke(query, null);
+                IResultWithError? resultWithError = prepare(value, context.Item.Id);
                 if (resultWithError != null)
                 {
                     if (resultWithError.Errors.Count > 0)
@@ -75,20 +72,7 @@ namespace AventusSharp.Data.Attributes
                 DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't create the query");
                 throw error.GetException();
             }
-            setVariable = query.GetType().GetMethod("SetVariable");
-            if (setVariable == null)
-            {
-                DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function setVariable");
-                throw error.GetException();
-
-            }
-            runWithError = query.GetType().GetMethod("RunWithError");
-            if (runWithError == null)
-            {
-                DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError");
-                throw error.GetException();
-
-            }
+            
             MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
             if (whereWithParam == null)
             {
@@ -125,7 +109,19 @@ namespace AventusSharp.Data.Attributes
 
             // t => t.$FieldName == value && t.Id != id
             LambdaExpression lambda = Expression.Lambda(e3, argParam);
-            whereWithParam.Invoke(query, new object[] { lambda });
+            var prepared = whereWithParam.Invoke(query, new object[] { lambda });
+            if (prepared is QueryBuilderPrepared<T> preparedQuery)
+            {
+                prepare = (object value, int id) =>
+                {
+                    return preparedQuery.New().SetVariables((define) =>
+                    {
+                        define("value", value);
+                        define("id", id);
+                    }).RunWithError();
+                };
+
+            }
         }
     }
 }

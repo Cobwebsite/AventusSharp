@@ -203,32 +203,44 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't create the query"));
                     return result;
                 }
-                MethodInfo? setVariable = query.GetType().GetMethod("SetVariable");
-                if (setVariable == null)
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function setVariable"));
-                    return result;
-                }
-                MethodInfo? runWithError = query.GetType().GetMethod("RunWithError");
-                if (runWithError == null)
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
-                    return result;
-                }
+                // MethodInfo? setVariable = query.GetType().GetMethod("SetVariable");
+                // if (setVariable == null)
+                // {
+                //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function setVariable"));
+                //     return result;
+                // }
+                // MethodInfo? runWithError = query.GetType().GetMethod("RunWithError");
+                // if (runWithError == null)
+                // {
+                //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
+                //     return result;
+                // }
                 MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
                 if (whereWithParam == null)
                 {
                     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function whereWithParam"));
                     return result;
                 }
-                whereWithParam.Invoke(query, new object[] { lambda });
 
+                var prepared = whereWithParam.Invoke(query, new object[] { lambda });
+                IQueryBuilderPrepared preparedQuery;
+                if (prepared is IQueryBuilderPrepared _preparedQuery)
+                {
+                    preparedQuery = _preparedQuery;
+                }
+                else
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
+                    return result;
+                }
 
                 reverseQueryBuilder = delegate (int id)
                 {
                     ResultWithDataError<List<IStorable>> result = new();
-                    setVariable.Invoke(query, new object[] { Storable.Id, id });
-                    IResultWithError? resultWithError = (IResultWithError?)runWithError.Invoke(query, null);
+                    IResultWithError? resultWithError = _preparedQuery.New().SetVariables((define) =>
+                    {
+                        define(Storable.Id, id);
+                    }).RunWithError();
                     if (resultWithError != null)
                     {
                         foreach (GenericError error in resultWithError.Errors)

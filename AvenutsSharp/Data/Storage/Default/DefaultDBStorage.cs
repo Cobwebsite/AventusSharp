@@ -440,6 +440,8 @@ namespace AventusSharp.Data.Storage.Default
                     }
                 }
                 Console.WriteLine(queryWithParam);
+                // System.Diagnostics.StackTrace t = new System.Diagnostics.StackTrace();
+                // Console.WriteLine(t);
                 Console.WriteLine();
             }
         }
@@ -851,10 +853,6 @@ namespace AventusSharp.Data.Storage.Default
         {
             ResultWithError<List<X>> result = new();
 
-            if (Debug)
-            {
-                Console.WriteLine(string.Join(",", queryBuilder.WhereParamsInfo.Select(p => p.Value.Value)));
-            }
             if (queryBuilder.info == null)
             {
                 queryBuilder.info = PrepareSQLForQuery(queryBuilder);

@@ -131,7 +131,12 @@ namespace AventusSharp.Data.Manager
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
     }
-    public class QueryBuilderPrepared<T>
+
+    public interface IQueryBuilderPrepared
+    {
+        public IQueryBuilderPreparedInstance New();
+    }
+    public class QueryBuilderPrepared<T> : IQueryBuilderPrepared
     {
         private Mutex mutex;
         private IQueryBuilder<T> builder;
@@ -149,6 +154,11 @@ namespace AventusSharp.Data.Manager
         {
             mutex.WaitOne();
             return new QueryBuilderPreparedInstance<T>(builder, this);
+        }
+
+        IQueryBuilderPreparedInstance IQueryBuilderPrepared.New()
+        {
+            return New();
         }
 
         internal void Done()
@@ -265,7 +275,13 @@ namespace AventusSharp.Data.Manager
 
 
     }
-    public class QueryBuilderPreparedInstance<T>
+
+    public interface IQueryBuilderPreparedInstance
+    {
+        public IQueryBuilderPreparedInstance SetVariables(Action<Action<string, object>> define);
+        public IResultWithError RunWithError();
+    }
+    public class QueryBuilderPreparedInstance<T> : IQueryBuilderPreparedInstance
     {
         private IQueryBuilder<T> builder;
         private QueryBuilderPrepared<T> prepared;
@@ -296,6 +312,10 @@ namespace AventusSharp.Data.Manager
             define(builder.SetVariableInternal);
             return this;
         }
+        IQueryBuilderPreparedInstance IQueryBuilderPreparedInstance.SetVariables(Action<Action<string, object>> define)
+        {
+            return SetVariables(define);
+        }
         /// <summary>
         /// Executes the query and returns a list of results.
         /// </summary>
@@ -315,6 +335,10 @@ namespace AventusSharp.Data.Manager
             ResultWithError<List<T>> result = builder.RunWithError();
             prepared.Done();
             return result;
+        }
+        IResultWithError IQueryBuilderPreparedInstance.RunWithError()
+        {
+            return RunWithError();
         }
         /// <summary>
         /// Executes the query and returns a single result.

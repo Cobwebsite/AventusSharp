@@ -1235,7 +1235,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<bool>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method WhereWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method ExistWithError"));
                 }
                 return result;
             }

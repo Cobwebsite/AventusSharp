@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager
@@ -40,21 +41,6 @@ namespace AventusSharp.Data.Manager
         public ResultWithError<T> SingleWithError();
 
         /// <summary>
-        /// Prepares the query by adding parameters or additional objects.
-        /// </summary>
-        /// <param name="objects">Objects to be used in preparing the query.</param>
-        /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Prepare(params object[] objects);
-
-        /// <summary>
-        /// Sets a variable for the query.
-        /// </summary>
-        /// <param name="name">The name of the variable.</param>
-        /// <param name="value">The value of the variable.</param>
-        /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> SetVariable(string name, object value);
-
-        /// <summary>
         /// Adds a condition to the query using the provided expression.
         /// </summary>
         /// <param name="func">The condition to apply to the query.</param>
@@ -66,7 +52,7 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="func">The condition to apply to the query.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func);
+        public QueryBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func);
 
         /// <summary>
         /// Specifies that all fields have to be included in the query results.
@@ -141,5 +127,214 @@ namespace AventusSharp.Data.Manager
         /// <param name="offset">The number of results to skip before returning results.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
         public IQueryBuilder<T> Take(int length, int offset);
+
+        internal void PrepareInternal(params object[] objects);
+        internal void SetVariableInternal(string name, object value);
+    }
+    public class QueryBuilderPrepared<T>
+    {
+        private Mutex mutex;
+        private IQueryBuilder<T> builder;
+        public QueryBuilderPrepared(IQueryBuilder<T> builder)
+        {
+            this.builder = builder;
+            mutex = new();
+        }
+
+        /// <summary>
+        /// Start a new query where you can call Prepare or SetVariables
+        /// </summary>
+        /// <returns></returns>
+        public QueryBuilderPreparedInstance<T> New()
+        {
+            mutex.WaitOne();
+            return new QueryBuilderPreparedInstance<T>(builder, this);
+        }
+
+        internal void Done()
+        {
+            mutex.ReleaseMutex();
+        }
+
+
+        /// <summary>
+        /// Specifies a field to be included in the query results.
+        /// </summary>
+        /// <typeparam name="U">The type of the field to include.</typeparam>
+        /// <param name="expression">The expression representing the field to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Field<U>(Expression<Func<T, U>> expression)
+        {
+            builder.Field(expression);
+            return this;
+        }
+        /// <summary>
+        /// Specifies that all fields have to be included in the query results.
+        /// </summary>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Fields()
+        {
+            builder.Fields();
+            return this;
+        }
+        /// <summary>
+        /// Specifies a field to be excluded from the query results.
+        /// </summary>
+        /// <typeparam name="U">The type of the field to exclude.</typeparam>
+        /// <param name="expression">The expression representing the field to exclude.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Ignore<U>(Expression<Func<T, U>> expression)
+        {
+            builder.Ignore(expression);
+            return this;
+        }
+        /// <summary>
+        /// Specifies sorting for the query based on the provided expression and sorting order.
+        /// </summary>
+        /// <typeparam name="U">The type of the field to sort by.</typeparam>
+        /// <param name="expression">The field to sort by.</param>
+        /// <param name="sort">The sorting order (ascending or descending).</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort)
+        {
+            builder.Sort(expression, sort ?? DB.Sort.ASC);
+            return this;
+        }
+        /// <summary>
+        /// Specifies grouping for the query based on the provided expression.
+        /// </summary>
+        /// <typeparam name="U">The type of the field to group by.</typeparam>
+        /// <param name="expression">The field to group by.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Group<U>(Expression<Func<T, U>> expression)
+        {
+            builder.Group(expression);
+            return this;
+        }
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="expression">The expression representing the related object to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Include(Expression<Func<T, IStorable>> expression)
+        {
+            builder.Include(expression);
+            return this;
+        }
+        /// <summary>
+        /// Limits the number of results returned by the query.
+        /// </summary>
+        /// <param name="limit">The maximum number of results to return.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Limit(int? limit)
+        {
+            builder.Limit(limit);
+            return this;
+        }
+        /// <summary>
+        /// Skips a number of results and then limits the remaining results.
+        /// </summary>
+        /// <param name="offset">The number of results to skip.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Offset(int? offset)
+        {
+            builder.Offset(offset);
+            return this;
+        }
+        /// <summary>
+        /// Specifies the number of results to return.
+        /// </summary>
+        /// <param name="length">The number of results to return.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Take(int length)
+        {
+            builder.Take(length);
+            return this;
+        }
+        /// <summary>
+        /// Specifies the number of results to return, starting from a given offset.
+        /// </summary>
+        /// <param name="length">The number of results to return.</param>
+        /// <param name="offset">The number of results to skip before returning results.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Take(int length, int offset)
+        {
+            builder.Take(length, offset);
+            return this;
+        }
+
+
+    }
+    public class QueryBuilderPreparedInstance<T>
+    {
+        private IQueryBuilder<T> builder;
+        private QueryBuilderPrepared<T> prepared;
+        public QueryBuilderPreparedInstance(IQueryBuilder<T> builder, QueryBuilderPrepared<T> prepared)
+        {
+            this.builder = builder;
+            this.prepared = prepared;
+        }
+
+
+        /// <summary>
+        /// Prepares the query by adding parameters or additional objects.
+        /// </summary>
+        /// <param name="objects">Objects to be used in preparing the query.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPreparedInstance<T> Prepare(params object[] objects)
+        {
+            builder.PrepareInternal(objects);
+            return this;
+        }
+        /// <summary>
+        /// Sets all variables for the query.
+        /// </summary>
+        /// <param name="define">The fct to define the variable.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPreparedInstance<T> SetVariables(Action<Action<string, object>> define)
+        {
+            define(builder.SetVariableInternal);
+            return this;
+        }
+        /// <summary>
+        /// Executes the query and returns a list of results.
+        /// </summary>
+        /// <returns>A list of type <typeparamref name="T"/>.</returns>
+        public List<T> Run()
+        {
+            List<T> result = builder.Run();
+            prepared.Done();
+            return result;
+        }
+        /// <summary>
+        /// Executes the query and returns a result with error handling.
+        /// </summary>
+        /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
+        public ResultWithError<List<T>> RunWithError()
+        {
+            ResultWithError<List<T>> result = builder.RunWithError();
+            prepared.Done();
+            return result;
+        }
+        /// <summary>
+        /// Executes the query and returns a single result.
+        /// </summary>
+        /// <returns>A single <typeparamref name="T"/> object, or null if no result is found.</returns>
+        public T? Single()
+        {
+            T? result = builder.Single();
+            prepared.Done();
+            return result;
+        }
+        /// <summary>
+        /// Executes the query and returns a single result with error handling.
+        /// </summary>
+        /// <returns>A ResultWithError containing a single <typeparamref name="T"/> object.</returns>
+        public ResultWithError<T> SingleWithError()
+        {
+            ResultWithError<T> result = builder.SingleWithError();
+            prepared.Done();
+            return result;
+        }
     }
 }

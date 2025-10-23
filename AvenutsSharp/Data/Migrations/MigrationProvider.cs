@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using AventusSharp.Data.Manager;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Migrations;
@@ -64,4 +67,39 @@ public abstract class MigrationProvider : IMigrationProvider
     public abstract void BeforeUp(VoidWithError voidWithError);
     public abstract void AfterUp(VoidWithError voidWithError);
     public abstract VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
+
+    protected void InitMigrationTableDM()
+    {
+        Type type = typeof(MigrationTable);
+
+        if (DataMainManager.DefaultDMType == null) return;
+
+        Type simpleType = DataMainManager.DefaultDMType.MakeGenericType([type]);
+        MethodInfo? GetInstance = simpleType.GetMethod("GetInstance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+        if (GetInstance == null)
+        {
+            return;
+        }
+        IGenericDM? simpleManager = (IGenericDM?)GetInstance.Invoke(null, null);
+        if (simpleManager == null)
+        {
+            return;
+        }
+
+        List<DataMemberInfo> memberInfos = new();
+        FieldInfo[] fields = type.GetFields();
+        foreach (FieldInfo field in fields)
+        {
+            memberInfos.Add(new(field));
+        }
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.Instance);
+        foreach (PropertyInfo property in properties)
+        {
+            memberInfos.Add(new(property));
+        }
+
+        PyramidInfo pyramid = new PyramidInfo(type, memberInfos);
+        simpleManager.SetConfiguration(pyramid, DataMainManager.Config);
+
+    }
 }

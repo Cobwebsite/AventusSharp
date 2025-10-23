@@ -94,7 +94,17 @@ namespace AventusSharp.Data.Manager.Dummy
         }
 
 
-        public IQueryBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func)
+        public QueryBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IQueryBuilder<T>.PrepareInternal(params object[] objects)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IQueryBuilder<T>.SetVariableInternal(string name, object value)
         {
             throw new NotImplementedException();
         }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace AventusSharp.Data.Manager
 {
@@ -24,21 +25,6 @@ namespace AventusSharp.Data.Manager
         public ResultWithError<List<T>> RunWithError();
 
         /// <summary>
-        /// Prepares the delete query by adding parameters or additional objects.
-        /// </summary>
-        /// <param name="objects">Objects to be used in preparing the delete query.</param>
-        /// <returns>The current delete builder instance for method chaining.</returns>
-        public IDeleteBuilder<T> Prepare(params object[] objects);
-
-        /// <summary>
-        /// Sets a variable for the delete query.
-        /// </summary>
-        /// <param name="name">The name of the variable.</param>
-        /// <param name="value">The value of the variable.</param>
-        /// <returns>The current delete builder instance for method chaining.</returns>
-        public IDeleteBuilder<T> SetVariable(string name, object value);
-
-        /// <summary>
         /// Adds a condition to the delete query using the provided expression.
         /// </summary>
         /// <param name="func">The condition to apply to the delete query.</param>
@@ -50,6 +36,89 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="func">The condition to apply to the delete query.</param>
         /// <returns>The current delete builder instance for method chaining.</returns>
-        public IDeleteBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func);
+        public DeleteBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func);
+
+        internal void PrepareInternal(params object[] objects);
+        internal void SetVariableInternal(string name, object value);
     }
+
+    public class DeleteBuilderPrepared<T>
+    {
+        private Mutex mutex;
+        private IDeleteBuilder<T> builder;
+        public DeleteBuilderPrepared(IDeleteBuilder<T> builder)
+        {
+            this.builder = builder;
+            mutex = new();
+        }
+
+        /// <summary>
+        /// Start a new query where you can call Prepare or SetVariables
+        /// </summary>
+        /// <returns></returns>
+        public DeleteBuilderPreparedInstance<T> New()
+        {
+            mutex.WaitOne();
+            return new DeleteBuilderPreparedInstance<T>(builder, this);
+        }
+
+        internal void Done()
+        {
+            mutex.ReleaseMutex();
+        }
+
+    }
+    public class DeleteBuilderPreparedInstance<T>
+    {
+        private IDeleteBuilder<T> builder;
+        private DeleteBuilderPrepared<T> prepared;
+        public DeleteBuilderPreparedInstance(IDeleteBuilder<T> builder, DeleteBuilderPrepared<T> prepared)
+        {
+            this.builder = builder;
+            this.prepared = prepared;
+        }
+
+
+        /// <summary>
+        /// Prepares the query by adding parameters or additional objects.
+        /// </summary>
+        /// <param name="objects">Objects to be used in preparing the query.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public DeleteBuilderPreparedInstance<T> Prepare(params object[] objects)
+        {
+            builder.PrepareInternal(objects);
+            return this;
+        }
+        /// <summary>
+        /// Sets all variables for the query.
+        /// </summary>
+        /// <param name="define">The fct to define the variable.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public DeleteBuilderPreparedInstance<T> SetVariables(Action<Action<string, object>> define)
+        {
+            define(builder.SetVariableInternal);
+            return this;
+        }
+        /// <summary>
+        /// Executes the query and returns a list of results.
+        /// </summary>
+        /// <returns>A list of type <typeparamref name="T"/>.</returns>
+        public List<T>? Run()
+        {
+            List<T>? result = builder.Run();
+            prepared.Done();
+            return result;
+        }
+        /// <summary>
+        /// Executes the query and returns a result with error handling.
+        /// </summary>
+        /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
+        public ResultWithError<List<T>> RunWithError()
+        {
+            ResultWithError<List<T>> result = builder.RunWithError();
+            prepared.Done();
+            return result;
+        }
+    }
+
 }

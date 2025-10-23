@@ -3,6 +3,7 @@ using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 
 namespace AventusSharp.Data.Manager.DB.Builders
 {
@@ -22,6 +23,8 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public DatabaseQueryBuilderInfo? info = null;
         public bool UseShortObject { get; set; } = true;
+
+        private QueryBuilderPrepared<T>? prepared = null;
 
         public DatabaseQueryBuilder(IDBStorage storage, IGenericDM DM) : base(storage, DM)
         {
@@ -68,21 +71,14 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
-        public IQueryBuilder<T> WhereWithParameters(Expression<Func<T, bool>> expression)
+        public QueryBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> expression)
         {
             WhereGenericWithParameters(expression);
-            return this;
-        }
-
-        public IQueryBuilder<T> Prepare(params object[] objects)
-        {
-            PrepareGeneric(objects);
-            return this;
-        }
-        public IQueryBuilder<T> SetVariable(string name, object value)
-        {
-            SetVariableGeneric(name, value);
-            return this;
+            if (prepared == null)
+            {
+                prepared = new(this);
+            }
+            return prepared;
         }
 
         public IQueryBuilder<T> Field<U>(Expression<Func<T, U>> expression)
@@ -144,5 +140,25 @@ namespace AventusSharp.Data.Manager.DB.Builders
             Offset(offset);
             return this;
         }
+
+        internal void PrepareInternal(params object[] objects)
+        {
+            PrepareGeneric(objects);
+        }
+
+        internal void SetVariableInternal(string name, object value)
+        {
+            SetVariableGeneric(name, value);
+        }
+        void IQueryBuilder<T>.PrepareInternal(params object[] objects)
+        {
+            PrepareGeneric(objects);
+        }
+
+        void IQueryBuilder<T>.SetVariableInternal(string name, object value)
+        {
+            SetVariableGeneric(name, value);
+        }
     }
+
 }

@@ -20,6 +20,7 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
         TableInfo tableInfo = new TableInfo(typeof(MigrationTable));
         tableInfo.Init();
         result.Run(() => _storage.CreateTable(tableInfo));
+        InitMigrationTableDM();
         return result;
     }
 

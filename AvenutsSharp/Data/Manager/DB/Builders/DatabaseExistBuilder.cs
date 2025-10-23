@@ -30,20 +30,10 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
-        public IExistBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func)
+        public ExistBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
             WhereGenericWithParameters(func);
-            return this;
-        }
-        public IExistBuilder<T> Prepare(params object[] objects)
-        {
-            PrepareGeneric(objects);
-            return this;
-        }
-        public IExistBuilder<T> SetVariable(string name, object value)
-        {
-            SetVariableGeneric(name, value);
-            return this;
+            return new(this);
         }
         public bool Run()
         {
@@ -62,5 +52,14 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return result;
         }
 
+        void IExistBuilder<T>.PrepareInternal(params object[] objects)
+        {
+            PrepareGeneric(objects);
+        }
+
+        void IExistBuilder<T>.SetVariableInternal(string name, object value)
+        {
+            SetVariableGeneric(name, value);
+        }
     }
 }

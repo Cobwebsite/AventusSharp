@@ -31,7 +31,6 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public DatabaseQueryBuilder<T> queryBuilder;
 
-
         public DatabaseDeleteBuilder(IDBStorage storage, IGenericDM dm, bool needDeleteField, Type? baseType = null) : base(storage, dm, baseType)
         {
             NeedDeleteField = needDeleteField;
@@ -76,20 +75,6 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return result;
         }
 
-        public IDeleteBuilder<T> Prepare(params object[] objects)
-        {
-            PrepareGeneric(objects);
-            queryBuilder.Prepare(objects);
-            return this;
-        }
-
-        public IDeleteBuilder<T> SetVariable(string name, object value)
-        {
-            SetVariableGeneric(name, value);
-            queryBuilder.SetVariable(name, value);
-            return this;
-        }
-
         protected override void OnVariableSet(ParamsInfo param, object fromObject)
         {
             string name = param.Name.Split(".").First();
@@ -106,12 +91,24 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
-        public IDeleteBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func)
+        public DeleteBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
 
             WhereGenericWithParameters(func);
             queryBuilder.WhereWithParameters(func);
-            return this;
+            return new(this);
+        }
+
+        void IDeleteBuilder<T>.PrepareInternal(params object[] objects)
+        {
+            PrepareGeneric(objects);
+            queryBuilder.PrepareInternal(objects);
+        }
+
+        void IDeleteBuilder<T>.SetVariableInternal(string name, object value)
+        {
+            SetVariableGeneric(name, value);
+            queryBuilder.SetVariableInternal(name, value);
         }
     }
 }

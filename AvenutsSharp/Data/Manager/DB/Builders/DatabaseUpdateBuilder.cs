@@ -111,7 +111,11 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return result;
         }
 
-        public ResultWithError<T> RunWithErrorSingle(T item)
+        public T? Single(T item)
+        {
+            return SingleWithError(item).Result;
+        }
+        public ResultWithError<T> SingleWithError(T item)
         {
             ResultWithError<T> result = new();
             ResultWithError<List<T>> resultTemp = RunWithError(item);
@@ -133,23 +137,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
             }
             else
                 result.Errors.AddRange(resultTemp.Errors);
-            
+
             DM.PrintErrors(result);
             return result;
 
         }
 
-        public IUpdateBuilder<T> Prepare(params object[] objects)
-        {
-            PrepareGeneric(objects);
-            return this;
-        }
-
-        public IUpdateBuilder<T> SetVariable(string name, object value)
-        {
-            SetVariableGeneric(name, value);
-            return this;
-        }
 
         public IUpdateBuilder<T> Field<U>(Expression<Func<T, U>> fct)
         {
@@ -202,10 +195,20 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
-        public IUpdateBuilder<T> WhereWithParameters(Expression<Func<T, bool>> func)
+        public UpdateBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
             WhereGenericWithParameters(func);
-            return this;
+            return new(this);
+        }
+
+        void IUpdateBuilder<T>.PrepareInternal(params object[] objects)
+        {
+            PrepareGeneric(objects);
+        }
+
+        void IUpdateBuilder<T>.SetVariableInternal(string name, object value)
+        {
+            SetVariableGeneric(name, value);
         }
     }
 }

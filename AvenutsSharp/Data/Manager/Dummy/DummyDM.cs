@@ -159,11 +159,10 @@ namespace AventusSharp.Data.Manager.Dummy
                 if (!savedUpdateQuery.ContainsKey(type))
                 {
                     DummyUpdateBuilder<X> query = new();
-                    query.WhereWithParameters(p => p.Id == id);
-                    savedUpdateQuery[type] = query;
+                    savedUpdateQuery[type] = query.WhereWithParameters(p => p.Id == id);;
                 }
 
-                ResultWithError<List<X>> resultTemp = ((DummyUpdateBuilder<X>)savedUpdateQuery[type]).Prepare(value.Id).RunWithError(value);
+                ResultWithError<List<X>> resultTemp = ((UpdateBuilderPrepared<X>)savedUpdateQuery[type]).New().Prepare(value.Id).RunWithError(value);
                 if (resultTemp.Success && resultTemp.Result?.Count > 0)
                 {
                     result.Result.Add(resultTemp.Result[0]);

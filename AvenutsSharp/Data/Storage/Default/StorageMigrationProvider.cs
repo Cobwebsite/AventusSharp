@@ -3,6 +3,7 @@ using System.Diagnostics;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
+using AventusSharp.Tools.Attributes;
 
 namespace AventusSharp.Data.Storage.Default;
 
@@ -79,6 +80,7 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
 }
 
 [ManualInit]
+[NoExport]
 internal class MigrationTable : Storable<MigrationTable>
 {
     public required string Name { get; set; }

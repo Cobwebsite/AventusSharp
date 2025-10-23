@@ -3,8 +3,6 @@ import { ResultWithError, VoidWithError } from '../Tools/ResultWithError.lib.avt
 namespace Routes {
 
 	export abstract class StorableRouter<T extends Aventus.IData> extends Aventus.HttpRoute {
-
-
 		@BindThis()
 		public async GetAll(): Promise<ResultWithError<T[]>> {
 			const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}`, Aventus.HttpMethod.GET);

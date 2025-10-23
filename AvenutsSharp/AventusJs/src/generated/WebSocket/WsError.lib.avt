@@ -15,16 +15,19 @@ namespace WebSocket {
 
 	@Convertible()
 	export class WsError extends Aventus.GenericError<typeof WsErrorCode>  {
-		public static get Fullname(): string { return "AventusSharp.WebSocket.WsError, AventusSharp"; }
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.WebSocket.WsError, AventusSharp"; }
 	}
 
 	@Convertible()
 	export class VoidWithWsError extends VoidWithError<WsError>  {
+		/** Fullname of the class */
 		public static override get Fullname(): string { return "AventusSharp.WebSocket.VoidWithWsError, AventusSharp"; }
 	}
 
 	@Convertible()
 	export class ResultWithWsError<T> extends ResultWithError<T, WsError>  {
+		/** Fullname of the class */
 		public static override get Fullname(): string { return "AventusSharp.WebSocket.ResultWithWsError, AventusSharp"; }
 	}
 

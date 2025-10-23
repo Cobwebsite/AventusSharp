@@ -42,26 +42,33 @@ namespace Data {
 		TypeNotFound,
 		ReverseLinkNotExist,
 		ErrorCreatingReverseQuery,
-		LinkNotSet
+		LinkNotSet,
+		MultipleProvidersNotSet,
+		FileNotFound,
+		PyramidNotFound
 	}
 
 	@Convertible()
 	export class DataError extends Aventus.GenericError<typeof DataErrorCode>  {
-		public static get Fullname(): string { return "AventusSharp.Data.DataError, AventusSharp"; }
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.Data.DataError, AventusSharp"; }
 	}
 
 	@Convertible()
 	export class VoidWithDataError extends VoidWithError<DataError>  {
+		/** Fullname of the class */
 		public static override get Fullname(): string { return "AventusSharp.Data.VoidWithDataError, AventusSharp"; }
 	}
 
 	@Convertible()
 	export class ResultWithDataError<T> extends ResultWithError<T, DataError>  {
+		/** Fullname of the class */
 		public static override get Fullname(): string { return "AventusSharp.Data.ResultWithDataError, AventusSharp"; }
 	}
 
 	@Convertible()
 	export class FieldErrorInfo extends SharpClass  {
+		/** Fullname of the class */
 		public static get Fullname(): string { return "AventusSharp.Data.FieldErrorInfo, AventusSharp"; }
 		public Name!: string;
 	}

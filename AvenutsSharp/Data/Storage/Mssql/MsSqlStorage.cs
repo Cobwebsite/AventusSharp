@@ -24,21 +24,27 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         MigrationProvider = new MsSqlMigrationProvider(this);
     }
 
-    public override DbConnection GetConnection()
+    protected SqlConnectionStringBuilder GetStringBuilder(bool useDatabase)
     {
         SqlConnectionStringBuilder builder = new()
         {
-            DataSource = host,
             UserID = username,
             Password = password,
+            DataSource = host,
+            TrustServerCertificate = credentials.trustServerCertificate
         };
-        if (useDatabase)
-            builder.InitialCatalog = database;
-
         if (port != null)
         {
             builder.DataSource = $"{host},{port}";
         }
+        if (useDatabase)
+            builder.InitialCatalog = database;
+
+        return builder;
+    }
+    public override DbConnection GetConnection()
+    {
+        SqlConnectionStringBuilder builder = GetStringBuilder(useDatabase);
         return new SqlConnection(builder.ConnectionString);
     }
     protected override IMigrationProvider DefineMigrationProvider()
@@ -65,12 +71,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                 {
                     try
                     {
-                        SqlConnectionStringBuilder builder = new()
-                        {
-                            UserID = username,
-                            Password = password,
-                            DataSource = host
-                        };
+                        SqlConnectionStringBuilder builder = GetStringBuilder(false);
                         using (DbConnection connection = new SqlConnection(builder.ConnectionString))
                         {
                             useDatabase = false;
@@ -81,14 +82,8 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                         ;
 
 
-
-                        SqlConnectionStringBuilder builderFull = new()
-                        {
-                            UserID = username,
-                            Password = password,
-                            InitialCatalog = database,
-                            DataSource = host
-                        };
+                        
+                        SqlConnectionStringBuilder builderFull = GetStringBuilder(true);
                         using (DbConnection connection = new SqlConnection(builderFull.ConnectionString))
                         {
                             connection.Open();

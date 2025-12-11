@@ -48,11 +48,26 @@ namespace AventusSharp.Data.Storage.Default
         /// <remarks>True if the class itself or a field contains a reference on itself</remarks>
         public bool IsInfinite { get; private set; }
 
+
+        private Dictionary<string, TableMemberInfoSql> _Members = new();
         /// <summary>
         /// List of members for this class only
         /// </summary>
         /// <remarks></remarks>
-        public List<TableMemberInfoSql> Members { get; private set; } = new List<TableMemberInfoSql>();
+        public List<TableMemberInfoSql> Members
+        {
+            get
+            {
+                List<TableMemberInfoSql> list = _Members.Values.ToList();
+                if (TypeMember != null)
+                {
+                    list.Insert(0, TypeMember);
+                }
+                return list;
+            }
+        }
+
+
 
         internal CustomInternalTableMemberInfoSql? TypeMember { get; private set; } = null;
 
@@ -122,8 +137,7 @@ namespace AventusSharp.Data.Storage.Default
                 return obj.GetType().AssemblyQualifiedName;
             });
             typeMember.IsUpdatable = false;
-            this.TypeMember = typeMember;
-            Members.Insert(0, typeMember);
+            TypeMember = typeMember;
         }
 
         private VoidWithDataError LoadMembers(Type type)
@@ -164,7 +178,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     return result;
                 }
-                Members.Add(sqlMember);
+                _Members[sqlMember.SqlName] = sqlMember;
                 if (sqlMember.IsPrimary)
                 {
                     Primary = sqlMember;

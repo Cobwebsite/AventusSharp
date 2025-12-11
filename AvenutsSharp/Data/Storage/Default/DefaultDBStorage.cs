@@ -26,6 +26,7 @@ namespace AventusSharp.Data.Storage.Default
         public string username;
         public string password;
         public string database;
+        public bool trustServerCertificate = false;
         public bool addCreatedAndUpdatedDate = true;
 
         public StorageCredentials(string host, string username, string password, string database)
@@ -44,11 +45,14 @@ namespace AventusSharp.Data.Storage.Default
 
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {
-        protected string host;
-        protected uint? port;
-        protected string username;
-        protected string password;
-        protected string database;
+        protected string host { get => credentials.host; }
+        protected uint? port { get => credentials.port; }
+        protected string username { get => credentials.username; }
+        protected string password { get => credentials.password; }
+        protected string database { get => credentials.database; }
+
+        protected StorageCredentials credentials;
+
         protected bool addCreatedAndUpdatedDate;
         private bool linksCreated;
         private DbTransactionContext? transactionContext;
@@ -70,11 +74,7 @@ namespace AventusSharp.Data.Storage.Default
 
         public DefaultDBStorage(StorageCredentials info)
         {
-            host = info.host;
-            port = info.port;
-            username = info.username;
-            password = info.password;
-            database = info.database;
+            credentials = info;
             addCreatedAndUpdatedDate = info.addCreatedAndUpdatedDate;
         }
 

@@ -17,7 +17,7 @@ using System.Data.SqlTypes;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {
-    
+
     public abstract class TableMemberInfo
     {
         public static TableMemberInfo? Create(MemberInfo fieldInfo, TableInfo tableInfo)
@@ -26,7 +26,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 return new TableReverseMemberInfo(fieldInfo, tableInfo);
             }
-            if(fieldInfo.GetCustomAttribute<NotInDB> () != null)
+            if (fieldInfo.GetCustomAttribute<NotInDB>() != null)
             {
                 return null;
             }
@@ -58,19 +58,20 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             ParseAttributes();
         }
 
-      
+
 
         public void ChangeTableInfo(TableInfo tableInfo)
         {
             TableInfo = tableInfo;
         }
 
-       
+
         public List<GenericError> IsValid(object? o, object? rootValue, StorableAction action)
         {
             List<GenericError> errors = new();
             IStorable? storable = null;
-            if(rootValue is IStorable storableTemp) {
+            if (rootValue is IStorable storableTemp)
+            {
                 storable = storableTemp;
             }
             ValidationContext context = new(Name, MemberType, ReflectedType, TableInfo, action, storable);
@@ -100,7 +101,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             List<object> attributes = GetCustomAttributes(false);
             foreach (object attribute in attributes)
             {
-                if(attribute is Attribute attr)
+                if (attribute is Attribute attr)
                 {
                     ParseAttribute(attr);
                 }
@@ -172,7 +173,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         /// <returns></returns>
         public virtual object? GetValueToSave(object? obj)
         {
-            if(obj == null) return null;
+            if (obj == null) return null;
             return GetValue(obj);
         }
         #endregion
@@ -192,7 +193,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 else if (memberInfo is PropertyInfo propertyInfo)
                 {
-                    type =propertyInfo.PropertyType;
+                    type = propertyInfo.PropertyType;
                 }
                 if (type != null)
                 {
@@ -323,6 +324,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
+                new DataError(DataErrorCode.UnknowError, "erreur for field " + Name).Print();
                 new DataError(DataErrorCode.UnknowError, e).Print();
             }
         }

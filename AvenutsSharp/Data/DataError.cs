@@ -53,7 +53,8 @@ namespace AventusSharp.Data
         LinkNotSet,
         MultipleProvidersNotSet,
         FileNotFound,
-        PyramidNotFound
+        PyramidNotFound,
+        IsReadOnly
     }
 
 

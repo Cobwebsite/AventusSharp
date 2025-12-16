@@ -25,6 +25,8 @@ namespace AventusSharp.Routes
         /// Define the regex to match the route based on various info
         /// </summary>
         public Func<string, Dictionary<string, RouterParameterInfo>, Type, MethodInfo, Regex>? transformPattern;
+
+        public DefaultUrlConfig defaultUrl = new();
         /// <summary>
         /// Define how the object must be converted from/to json
         /// </summary>
@@ -54,5 +56,12 @@ namespace AventusSharp.Routes
                 return Path.Combine(Environment.CurrentDirectory, "Views");
             };
         }
+    }
+
+    public class DefaultUrlConfig
+    {
+        public bool useNamespace = false;
+        public bool useClassName = true;
+        public string? namespaceRoot;
     }
 }

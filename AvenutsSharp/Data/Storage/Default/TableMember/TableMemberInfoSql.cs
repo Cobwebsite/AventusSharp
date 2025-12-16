@@ -206,6 +206,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         }
 
 
+        protected ISqlTransform? SqlTransform { get; set; }
         public TableMemberInfoSql(TableInfo tableInfo) : base(tableInfo)
         {
         }
@@ -226,6 +227,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 return null;
             }
+            
             return GetSqlValue(obj);
         }
         public abstract object? GetSqlValue(object obj);
@@ -336,6 +338,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 IsAutoIncrement = true;
                 return true;
+            }
+            if (attribute is ISqlTransform sqlTransform)
+            {
+                SqlTransform = sqlTransform;
             }
             // if (attribute.GetType().FullName == "System.Runtime.CompilerServices.NullableAttribute")
             // {

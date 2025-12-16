@@ -14,6 +14,7 @@ namespace AventusSharp.Data.Storage.Default
 {
     public interface IDBStorage
     {
+        public string? DateTimeFormat { get; }
         public bool IsConnectedOneTime { get; }
         public bool Debug { get; set; }
         public DbConnection GetConnection();

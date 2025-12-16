@@ -123,7 +123,7 @@ public class Query
 
         loadInfo(mainInfo, new List<string>(), new List<Type>());
 
-        string whereTxt = BuilderTools.Where(queryBuilder.Wheres);
+        string whereTxt = BuilderTools.Where(queryBuilder.Wheres, storage);
 
         string joinTxt = string.Join(" ", joins);
         if (joinTxt.Length > 1)

@@ -136,7 +136,7 @@ public class Update
         loadInfo(mainInfo, new List<TableMemberInfoSql>());
 
 
-        string whereTxt = BuilderTools.Where(updateBuilder.Wheres);
+        string whereTxt = BuilderTools.Where(updateBuilder.Wheres, storage);
 
         string joinTxt = string.Join(" ", joins);
         if (joinTxt.Length > 1)

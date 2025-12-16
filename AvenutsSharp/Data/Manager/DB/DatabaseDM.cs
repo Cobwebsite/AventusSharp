@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,6 +82,7 @@ namespace AventusSharp.Data.Manager.DB
     }
     public class GenericDatabaseDM<T, U> : GenericDM<T, U>, IDatabaseDM where T : IGenericDM<U>, new() where U : IStorable
     {
+         
         private readonly Dictionary<int, U> Records = new Dictionary<int, U>();
 
         public bool NeedLocalCache { get; private set; } = false;
@@ -106,6 +108,19 @@ namespace AventusSharp.Data.Manager.DB
         #region Config
         protected virtual IDBStorage? DefineStorage()
         {
+            return null;
+        }
+        protected virtual IDBStorage? SearchAttributeStorage()
+        {
+            Attributes.Storage? attr = typeof(U).GetCustomAttribute<Attributes.Storage>();
+            if(attr != null) {
+                Type type = attr.type;
+                if(!DBStorage.listStorage.ContainsKey(type))
+                {
+                    DBStorage.listStorage.Add(type, (IDBStorage)TypeTools.CreateNewObj(type));
+                }
+                return DBStorage.listStorage[type];
+            }
             return null;
         }
         protected virtual bool? UseLocalCache()
@@ -141,6 +156,7 @@ namespace AventusSharp.Data.Manager.DB
         {
             VoidWithError result = new VoidWithError();
             storage = DefineStorage();
+            storage ??= SearchAttributeStorage();
             storage ??= config.defaultStorage;
             if (storage == null)
             {

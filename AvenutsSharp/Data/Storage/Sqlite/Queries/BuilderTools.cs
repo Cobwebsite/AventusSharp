@@ -1,13 +1,14 @@
 ﻿using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Storage.Default;
 using System.Collections.Generic;
 using BuilderToolsMysql = AventusSharp.Data.Storage.Mysql.Queries.BuilderTools;
 
 namespace AventusSharp.Data.Storage.Sqlite.Queries;
 public static class BuilderTools
 {
-    public static string Where(List<IWhereRootGroup>? wheres)
+    public static string Where(List<IWhereRootGroup>? wheres, IDBStorage storage)
     {
-        return BuilderToolsMysql.Where(wheres);
+        return BuilderToolsMysql.Where(wheres, storage);
     }
 
     public static string GetFctName(WhereGroupFctEnum fctEnum)

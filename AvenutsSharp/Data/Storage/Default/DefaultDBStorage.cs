@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -43,6 +44,29 @@ namespace AventusSharp.Data.Storage.Default
         }
     }
 
+    public static class DBStorage
+    {
+        internal static Dictionary<Type, IDBStorage> listStorage = new();
+
+        public static T? Get<T>() where T : IDBStorage
+        {
+            if (listStorage.ContainsKey(typeof(T)))
+            {
+                return (T)listStorage[typeof(T)];
+            }
+            return default;
+        }
+
+        public static IDBStorage? GetFrom<T>() where T : IStorable
+        {
+            IGenericDM dm = GenericDM.Get<T>();
+            if (dm is IDatabaseDM database)
+            {
+                return database.Storage;
+            }
+            return null;
+        }
+    }
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {
         protected string host { get => credentials.host; }
@@ -59,6 +83,10 @@ namespace AventusSharp.Data.Storage.Default
         private SemaphoreSlim locker = new SemaphoreSlim(1, 1);
         public bool IsConnectedOneTime { get; protected set; }
         public bool Debug { get; set; }
+
+        [StringSyntax(StringSyntaxAttribute.DateTimeFormat)]
+        public string? DateTimeFormat { get; set; }
+        public bool ReadOnly { get; set; }
 
 
         private readonly Dictionary<Type, TableInfo> allTableInfos = new();
@@ -140,6 +168,11 @@ namespace AventusSharp.Data.Storage.Default
         public VoidWithError Execute(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             VoidWithError result = new();
+            if (ReadOnly && !command.CommandText.ToLower().StartsWith("select"))
+            {
+                result.Errors.Add(new DataError(DataErrorCode.IsReadOnly, "Can't execute the command " + command.CommandText + " because the connection is readonly"));
+                return result;
+            }
             try
             {
                 lock (locker)

@@ -132,7 +132,8 @@ namespace AventusSharp.Routes
 
                         if (routes.Count == 0)
                         {
-                            string defaultName = prefix + Tools.GetDefaultMethodUrl(method);
+
+                            string defaultName = prefix + Tools.GetDefaultMethodUrl(method, config.defaultUrl);
                             routes.Add(defaultName);
                         }
 

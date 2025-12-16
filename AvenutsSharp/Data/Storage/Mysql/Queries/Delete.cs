@@ -75,7 +75,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             }
             loadInfo(mainInfo);
 
-            string whereTxt = BuilderTools.Where(deleteBuilder.Wheres);
+            string whereTxt = BuilderTools.Where(deleteBuilder.Wheres, storage);
 
             string joinTxt = string.Join(" ", joins);
             if (joinTxt.Length > 1)

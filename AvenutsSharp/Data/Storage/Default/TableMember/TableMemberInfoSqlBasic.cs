@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Tools;
 using System;
 using System.Data;
@@ -53,12 +54,25 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
         public override object? GetSqlValue(object obj)
         {
-            return GetValue(obj);
+            var result = GetValue(obj);
+            if(SqlTransform != null)
+            {
+                result = SqlTransform.ToSql(obj, this);
+            }
+            else if (result is DateTime dt && DM is IDatabaseDM database && database.Storage.DateTimeFormat != null)
+            {
+                return dt.ToString(database.Storage.DateTimeFormat);
+            }
+            return result;
         }
 
         protected override void SetSqlValue(object obj, string? value)
         {
-            if (value == null && IsNullable)
+            if(SqlTransform != null)
+            {
+                SetValue(obj, SqlTransform.FromSql(value, this));
+            }
+            else if (value == null && IsNullable)
             {
                 SetValue(obj, value);
             }

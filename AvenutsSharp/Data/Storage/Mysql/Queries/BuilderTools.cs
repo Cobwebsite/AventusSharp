@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Storage.Default;
 using Microsoft.AspNetCore.Http.Extensions;
 using System.Collections.Generic;
 
@@ -6,7 +7,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
 {
     public static class BuilderTools
     {
-        public static string Where(List<IWhereRootGroup>? wheres)
+        public static string Where(List<IWhereRootGroup>? wheres, IDBStorage storage)
         {
             if (wheres == null)
             {
@@ -15,7 +16,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             string whereTxt = "";
             foreach (IWhereRootGroup whereGroup in wheres)
             {
-                whereTxt += WherePart(whereGroup, whereTxt);
+                whereTxt += WherePart(whereGroup, whereTxt, storage);
             }
             if (whereTxt.Length > 1)
             {
@@ -23,7 +24,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             }
             return whereTxt;
         }
-        private static string WherePart(IWhereRootGroup rootWhereGroup, string whereTxt)
+        private static string WherePart(IWhereRootGroup rootWhereGroup, string whereTxt, IDBStorage storage)
         {
             whereTxt += "(";
             string subQuery = "";
@@ -35,11 +36,11 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 {
                     if (queryGroup is WhereGroup childWhereGroup)
                     {
-                        subQuery += WherePart(childWhereGroup, "");
+                        subQuery += WherePart(childWhereGroup, "", storage);
                     }
                     else if (queryGroup is WhereGroupSingleBool childWhereBoolGroup)
                     {
-                        subQuery += WherePart(childWhereBoolGroup, "");
+                        subQuery += WherePart(childWhereBoolGroup, "", storage);
                     }
                     else if (queryGroup is WhereGroupFct fctGroup)
                     {
@@ -104,7 +105,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     }
                     else if (queryGroup is WhereGroupConstantDateTime dateTimeConst)
                     {
-                        subQuery += "'" + dateTimeConst.Value.ToString("yyyy-MM-dd HH:mm:ss") + "'";
+                        subQuery += "'" + dateTimeConst.Value.ToString(storage.DateTimeFormat) + "'";
                     }
                     else if (queryGroup is WhereGroupConstantOther otherConst)
                     {
@@ -122,7 +123,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     lastGroup = queryGroup;
                 }
                 whereTxt += subQuery;
-               
+
             }
             else if (rootWhereGroup is WhereGroupSingleBool whereSingleBool)
             {

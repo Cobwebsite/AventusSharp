@@ -66,6 +66,8 @@ namespace AventusSharp.Data.Storage.Default
             }
             return null;
         }
+    
+    
     }
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {

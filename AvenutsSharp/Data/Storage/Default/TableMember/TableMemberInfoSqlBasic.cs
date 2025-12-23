@@ -27,7 +27,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
 
             SqlName = memberInfo.Name;
-            DbType? dbType = GetDbType(MemberType);
+            DbType? dbType = GetDbType(MemberType, this);
             if (dbType == null)
             {
                 result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, "Type " + TypeTools.GetReadableName(MemberType) + " can't be parsed into Database type"));
@@ -57,7 +57,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             var result = GetValue(obj);
             if(SqlTransform != null)
             {
-                result = SqlTransform.ToSql(obj, this);
+                result = SqlTransform.ToSql(result, this);
             }
             else if (result is DateTime dt && DM is IDatabaseDM database && database.Storage.DateTimeFormat != null)
             {

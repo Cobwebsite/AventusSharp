@@ -181,11 +181,11 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     }
     protected override string PrepareSQLTableRename(string oldName, string newName)
     {
-        return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+        return "RENAME TABLE = [" + oldName + "] TO [" + newName + "]; ";
     }
     protected override string PrepareSQLTableDelete(string name)
     {
-        return "DROP TABLE IF EXISTS `" + name + "`;";
+        return "DROP TABLE IF EXISTS [" + name + "];";
     }
     #endregion
 

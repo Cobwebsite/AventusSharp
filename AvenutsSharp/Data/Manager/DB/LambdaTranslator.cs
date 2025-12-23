@@ -816,7 +816,7 @@ namespace AventusSharp.Data.Manager.DB
             {
                 lastType = lastType.GetGenericArguments()[0];
             }
-            DbType dbType = TableMemberInfoSql.GetDbType(lastType) ?? throw new Exception("Can't find a type to use inside sql for type " + from.Name);
+            DbType dbType = TableMemberInfoSql.GetDbType(lastType, null) ?? throw new Exception("Can't find a type to use inside sql for type " + from.Name);
             TableInfo? tableInfo = databaseBuilder.Storage.GetTableInfo(from);
 
             for (int i = 1; i < members.Count; i++)
@@ -859,7 +859,7 @@ namespace AventusSharp.Data.Manager.DB
                 return;
             }
 
-            DbType dbType = TableMemberInfoSql.GetDbType(type) ?? throw new Exception("Can't find a type to use inside sql for type " + type.Name);
+            DbType dbType = TableMemberInfoSql.GetDbType(type, null) ?? throw new Exception("Can't find a type to use inside sql for type " + type.Name);
 
             databaseBuilder.WhereParamsInfo.Add(paramName, new ParamsInfo()
             {

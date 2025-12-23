@@ -82,9 +82,11 @@ internal class Delete
             joinTxt = " " + joinTxt;
         }
 
-        result.Sql = "DELETE " + string.Join(",", aliases) + " FROM [" + mainInfo.TableInfo.SqlTableName + "] " + mainInfo.Alias
+        result.Sql = "DELETE FROM [" + mainInfo.TableInfo.SqlTableName + "] "
             + joinTxt
             + whereTxt;
+
+            // TODO Correct sql to delete parent by multiple query
 
 
         return result;

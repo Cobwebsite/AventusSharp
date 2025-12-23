@@ -24,18 +24,18 @@ namespace AventusSharp.Data.Manager
             }
             return null;
         }
-        private readonly MemberInfo memberInfo;
+        public readonly MemberInfo MemberInfo;
         public DataMemberInfo(FieldInfo fieldInfo)
         {
-            memberInfo = fieldInfo;
+            MemberInfo = fieldInfo;
         }
         public DataMemberInfo(PropertyInfo propertyInfo)
         {
-            memberInfo = propertyInfo;
+            MemberInfo = propertyInfo;
         }
         public DataMemberInfo(MemberInfo memberInfo)
         {
-            this.memberInfo = memberInfo;
+            this.MemberInfo = memberInfo;
         }
 
         #region merge info
@@ -46,11 +46,11 @@ namespace AventusSharp.Data.Manager
         {
             get
             {
-                if (memberInfo is FieldInfo fieldInfo)
+                if (MemberInfo is FieldInfo fieldInfo)
                 {
                     return fieldInfo.FieldType;
                 }
-                else if (memberInfo is PropertyInfo propertyInfo)
+                else if (MemberInfo is PropertyInfo propertyInfo)
                 {
                     return propertyInfo.PropertyType;
                 }
@@ -64,9 +64,9 @@ namespace AventusSharp.Data.Manager
         {
             get
             {
-                if (memberInfo != null)
+                if (MemberInfo != null)
                 {
-                    return memberInfo.Name;
+                    return MemberInfo.Name;
                 }
                 return "";
             }
@@ -78,7 +78,7 @@ namespace AventusSharp.Data.Manager
         {
             get
             {
-                if (memberInfo is PropertyInfo propertyInfo)
+                if (MemberInfo is PropertyInfo propertyInfo)
                 {
                     NullabilityInfo info = new NullabilityInfoContext().Create(propertyInfo);
                     if (info.WriteState == NullabilityState.Nullable || info.ReadState == NullabilityState.Nullable)
@@ -86,7 +86,7 @@ namespace AventusSharp.Data.Manager
                         return true;
                     }
                 }
-                else if (memberInfo is FieldInfo fieldInfo)
+                else if (MemberInfo is FieldInfo fieldInfo)
                 {
                     NullabilityInfo info = new NullabilityInfoContext().Create(fieldInfo);
                     if (info.WriteState == NullabilityState.Nullable || info.ReadState == NullabilityState.Nullable)
@@ -104,7 +104,7 @@ namespace AventusSharp.Data.Manager
         /// <returns></returns>
         public T? GetCustomAttribute<T>() where T : Attribute
         {
-            return memberInfo.GetCustomAttribute<T>();
+            return MemberInfo.GetCustomAttribute<T>();
         }
         /// <summary>
         /// Interface for GetCustomAttributes
@@ -115,11 +115,11 @@ namespace AventusSharp.Data.Manager
         {
             try
             {
-                if (memberInfo is FieldInfo fieldInfo)
+                if (MemberInfo is FieldInfo fieldInfo)
                 {
                     return fieldInfo.GetCustomAttributes(inherit).ToList();
                 }
-                else if (memberInfo is PropertyInfo propertyInfo)
+                else if (MemberInfo is PropertyInfo propertyInfo)
                 {
                     return propertyInfo.GetCustomAttributes(inherit).ToList();
 
@@ -153,11 +153,11 @@ namespace AventusSharp.Data.Manager
         /// <returns></returns>
         public object? GetValue(object? obj)
         {
-            if (memberInfo is FieldInfo fieldInfo)
+            if (MemberInfo is FieldInfo fieldInfo)
             {
                 return fieldInfo.GetValue(obj);
             }
-            else if (memberInfo is PropertyInfo propertyInfo)
+            else if (MemberInfo is PropertyInfo propertyInfo)
             {
                 return propertyInfo.GetValue(obj);
 
@@ -172,11 +172,11 @@ namespace AventusSharp.Data.Manager
         /// <param name="value"></param>
         public void SetValue(object obj, object? value)
         {
-            if (memberInfo is FieldInfo fieldInfo)
+            if (MemberInfo is FieldInfo fieldInfo)
             {
                 fieldInfo.SetValue(obj, value);
             }
-            else if (memberInfo is PropertyInfo propertyInfo)
+            else if (MemberInfo is PropertyInfo propertyInfo)
             {
                 propertyInfo.SetValue(obj, value);
             }
@@ -188,11 +188,11 @@ namespace AventusSharp.Data.Manager
         {
             get
             {
-                if (memberInfo is FieldInfo fieldInfo)
+                if (MemberInfo is FieldInfo fieldInfo)
                 {
                     return fieldInfo.ReflectedType;
                 }
-                else if (memberInfo is PropertyInfo propertyInfo)
+                else if (MemberInfo is PropertyInfo propertyInfo)
                 {
                     return propertyInfo.ReflectedType;
                 }

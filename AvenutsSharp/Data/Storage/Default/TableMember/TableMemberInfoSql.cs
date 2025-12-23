@@ -40,8 +40,12 @@ namespace AventusSharp.Data.Storage.Default.TableMember
     }
     public abstract class TableMemberInfoSql : TableMemberInfo
     {
-        public static DbType? GetDbType(Type? type)
+        public static DbType? GetDbType(Type? type, TableMemberInfoSql? member)
         {
+            if (member != null && member.OverrideDBType != null)
+            {
+                return member.OverrideDBType;
+            }
             if (type == null)
                 return null;
             if (type == typeof(int))
@@ -185,7 +189,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 return new TableMemberInfoSql1N(memberInfo, tableInfo, isNullable);
             }
 
-            else if (GetDbType(type) != null)
+            else if (GetDbType(type, null) != null)
             {
                 return new TableMemberInfoSqlBasic(memberInfo, tableInfo, isNullable);
             }
@@ -207,6 +211,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
 
         protected ISqlTransform? SqlTransform { get; set; }
+        protected DbType? OverrideDBType { get; set; }
         public TableMemberInfoSql(TableInfo tableInfo) : base(tableInfo)
         {
         }
@@ -227,7 +232,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 return null;
             }
-            
+
             return GetSqlValue(obj);
         }
         public abstract object? GetSqlValue(object obj);
@@ -342,6 +347,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             if (attribute is ISqlTransform sqlTransform)
             {
                 SqlTransform = sqlTransform;
+                OverrideDBType = sqlTransform.GetDbType(this);
             }
             // if (attribute.GetType().FullName == "System.Runtime.CompilerServices.NullableAttribute")
             // {

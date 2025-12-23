@@ -47,7 +47,7 @@ namespace AventusSharp.Data.Storage.Mssql.Queries
                         };
 
                         paramsInfos.Add(paramsInfo);
-                        columns.Add("`" + member.SqlName + "`");
+                        columns.Add("[" + member.SqlName + "]");
                         values.Add("@" + member.SqlName);
                     }
                     else if (member is ITableMemberInfoSqlLinkMultiple)

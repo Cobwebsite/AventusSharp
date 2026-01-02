@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AventusSharp.Scheduler.Cron;
 using AventusSharp.Scheduler.Unit;
 
 namespace AventusSharp.Scheduler
@@ -182,6 +183,19 @@ namespace AventusSharp.Scheduler
             PendingRunOnce = true;
 
             return new SpecificTimeUnit(this);
+        }
+
+        public void Cron(Action<CronBuilder> build)
+        {
+            var builder = new CronBuilder();
+            build(builder);
+            var cron = new CronTimeCalculator(builder.ToString());
+            CalculateNextRun = (x) => cron.Calculate(x);
+        }
+        public void Cron(string cronExpression)
+        {
+            var cron = new CronTimeCalculator(cronExpression);
+            CalculateNextRun = (x) => cron.Calculate(x);
         }
 
         /// <summary>

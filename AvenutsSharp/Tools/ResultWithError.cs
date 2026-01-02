@@ -113,6 +113,40 @@ namespace AventusSharp.Tools
             return this;
         }
 
+        public Y? Extract<Y>(Func<ResultWithError<Y, T>> fct)
+        {
+            if (Success)
+            {
+                ResultWithError<Y, T> execResult = fct();
+                if (execResult.Success && execResult.Result != null)
+                {
+                    return execResult.Result;
+                }
+                if (execResult.Errors.Count > 0)
+                {
+                    Errors.AddRange(execResult.Errors);
+                }
+            }
+            return default;
+        }
+
+        public Y? ExtractAsync<Y>(Func<Task<ResultWithError<Y, T>>> fct)
+        {
+            if (Success)
+            {
+                ResultWithError<Y, T> execResult = fct().GetAwaiter().GetResult();
+                if (execResult.Success && execResult.Result != null)
+                {
+                    return execResult.Result;
+                }
+                if (execResult.Errors.Count > 0)
+                {
+                    Errors.AddRange(execResult.Errors);
+                }
+            }
+            return default;
+        }
+
     }
 
     public class VoidWithError : VoidWithError<GenericError>
@@ -139,6 +173,7 @@ namespace AventusSharp.Tools
             base.RunAsync(fct);
             return this;
         }
+
     }
 
     public interface IResultWithError : IWithError

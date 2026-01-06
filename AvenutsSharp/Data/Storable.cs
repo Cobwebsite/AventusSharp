@@ -1,5 +1,4 @@
-﻿using AventusSharp.Attributes.Data;
-using AventusSharp.Data.Attributes;
+﻿using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
@@ -50,7 +49,23 @@ namespace AventusSharp.Data
     [NoExport]
     public abstract class Storable<T> : IStorable where T : IStorable
     {
-
+        public static void EnableDebug()
+        {
+            var st = DBStorage.GetFrom<T>();
+            if (st != null)
+            {
+                st.Debug = true;
+            }
+        }
+        public static void DisableDebug()
+        {
+            var st = DBStorage.GetFrom<T>();
+            if (st != null)
+            {
+                st.Debug = true;
+            }
+        }
+        
         [Primary, AutoIncrement]
         public int Id { get; set; }
 

@@ -201,10 +201,9 @@ namespace AventusSharp.Data.Manager.DB
             {
                 result = storage.CreateLinks();
                 if (!result.Success) return Task.FromResult(result);
-                if (Config != null && Config.AutoCreateModel)
-                {
-                    result = storage.CreateTable(PyramidInfo);
-                }
+                bool force = Config != null && Config.AutoCreateModel;
+                result = storage.CreateTable(PyramidInfo, force);
+                
                 return Task.FromResult(result);
             }
             result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name));
@@ -214,8 +213,6 @@ namespace AventusSharp.Data.Manager.DB
         {
             return Storage.GetMigrationProvider();
         }
-
-
         #endregion
 
         #region Get

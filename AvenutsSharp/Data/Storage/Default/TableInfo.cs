@@ -178,7 +178,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     return result;
                 }
-                _Members[sqlMember.SqlName] = sqlMember;
+                _Members[sqlMember.Name] = sqlMember;
                 if (sqlMember.IsPrimary)
                 {
                     Primary = sqlMember;
@@ -197,6 +197,37 @@ namespace AventusSharp.Data.Storage.Default
             return new VoidWithDataError();
         }
 
+        public void AddMember(TableMemberInfoSql sqlMember)
+        {
+            _Members[sqlMember.Name] = sqlMember;
+        }
+        public void AddMemberFirst(TableMemberInfoSql sqlMember)
+        {
+            Dictionary<string, TableMemberInfoSql> temp = new();
+            temp[sqlMember.Name] = sqlMember;
+            foreach(var pair in _Members)
+            {
+                temp[pair.Key] = pair.Value;
+            }
+            _Members = temp;
+        }
+        public void AddMembers(List<TableMemberInfoSql> sqlMembers)
+        {
+            foreach (var sqlMember in sqlMembers)
+                _Members[sqlMember.Name] = sqlMember;
+        }
+        public void AddMembersFirst(List<TableMemberInfoSql> sqlMembers)
+        {
+            Dictionary<string, TableMemberInfoSql> temp = new();
+            foreach (var sqlMember in sqlMembers)
+                temp[sqlMember.Name] = sqlMember;
+
+            foreach(var pair in _Members)
+            {
+                temp[pair.Key] = pair.Value;
+            }
+            _Members = temp;
+        }
         public bool IsChildOf(object o)
         {
             Type O = o.GetType();

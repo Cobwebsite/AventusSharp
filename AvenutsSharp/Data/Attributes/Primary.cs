@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace AventusSharp.Attributes.Data
+namespace AventusSharp.Data.Attributes;
+
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+public class Primary : Attribute
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    internal class Primary : Attribute
-    {
-    }
 }

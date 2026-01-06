@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace AventusSharp.Attributes.Data
+namespace AventusSharp.Data.Attributes;
+
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+public class AutoIncrement : System.Attribute
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class AutoIncrement : System.Attribute
-    {
-    }
 }

@@ -50,11 +50,11 @@ public class Update
                     paramsInfosGrab.Add(new ParamsInfo()
                     {
                         DbType = writable.SqlType,
-                        Name = name,
+                        Name = name.Replace(".", "_"),
                         TypeLvl0 = baseInfo.TableInfo.Type,
                         MembersList = membersListTemp
                     });
-                    fields.Add(name + " = @" + name);
+                    fields.Add(name + " = @" + name.Replace(".", "_"));
                 }
                 else if (member.Key is ITableMemberInfoSqlLinkMultiple memberNM)
                 {
@@ -142,9 +142,10 @@ public class Update
             joinTxt = " " + joinTxt;
         }
 
-        string sql = "UPDATE [" + mainInfo.TableInfo.SqlTableName + "] " + mainInfo.Alias
+        string sql = "UPDATE " + mainInfo.Alias
             + joinTxt
             + " SET " + string.Join(",", fields)
+            + " FROM [" + mainInfo.TableInfo.SqlTableName + "] " + mainInfo.Alias
             + whereTxt;
 
         DatabaseUpdateBuilderInfoQuery resultTemp = new(sql, updateBuilder.WhereParamsInfo.Values.ToList(), paramsInfosGrab);

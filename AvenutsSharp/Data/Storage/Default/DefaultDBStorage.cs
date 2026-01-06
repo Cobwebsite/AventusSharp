@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
@@ -66,8 +67,8 @@ namespace AventusSharp.Data.Storage.Default
             }
             return null;
         }
-    
-    
+
+
     }
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {
@@ -595,16 +596,16 @@ namespace AventusSharp.Data.Storage.Default
                             classInfo.Primary = memberInfo;
                         }
                     }
-                    classInfo.Members.InsertRange(0, membersToAdd);
+                    classInfo.AddMembersFirst(membersToAdd);
                     if (addCreatedAndUpdatedDate)
                     {
                         if (createdDate != null)
                         {
-                            classInfo.Members.Add(createdDate);
+                            classInfo.AddMember(createdDate);
                         }
                         if (updatedDate != null)
                         {
-                            classInfo.Members.Add(updatedDate);
+                            classInfo.AddMember(updatedDate);
                         }
                     }
                 }
@@ -631,7 +632,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             return prepareResult;
                         }
-                        classInfo.Members.Insert(0, parentLink);
+                        classInfo.AddMemberFirst(parentLink);
                         classInfo.Primary = parentLink;
                     }
                 }
@@ -1157,26 +1158,29 @@ namespace AventusSharp.Data.Storage.Default
         #region Table
         protected abstract string PrepareSQLCreateTable(TableInfo table);
         protected abstract string PrepareSQLCreateIntermediateTable(TableMemberInfoSql tableMember);
-        public VoidWithError CreateTable(PyramidInfo pyramid)
+        public VoidWithError CreateTable(PyramidInfo pyramid, bool force)
         {
             VoidWithError result = new();
             if (!pyramid.isForceInherit)
             {
-                if (allTableInfos.ContainsKey(pyramid.type))
+                if (force || pyramid.type.GetCustomAttribute<CreateTable>() != null)
                 {
-                    VoidWithError resultTemp = CreateTable(allTableInfos[pyramid.type]);
-                    result.Errors.AddRange(resultTemp.Errors);
-                }
-                else
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "Can't find the type " + pyramid.type));
+                    if (allTableInfos.ContainsKey(pyramid.type))
+                    {
+                        VoidWithError resultTemp = CreateTable(allTableInfos[pyramid.type]);
+                        result.Errors.AddRange(resultTemp.Errors);
+                    }
+                    else
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "Can't find the type " + pyramid.type));
+                    }
                 }
             }
             else
             {
                 foreach (PyramidInfo child in pyramid.children)
                 {
-                    VoidWithError resultTemp = CreateTable(child);
+                    VoidWithError resultTemp = CreateTable(child, force);
                     result.Errors.AddRange(resultTemp.Errors);
                 }
             }

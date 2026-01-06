@@ -144,7 +144,7 @@ public class Query
         if (queryBuilder.LimitSize != null)
         {
             int offset = queryBuilder.OffsetSize ?? 0;
-            limitOffset = $" OFFSET ${offset} ROWS FETCH NEXT ${queryBuilder.LimitSize} ROWS ONLY";
+            limitOffset = $" OFFSET {offset} ROWS FETCH NEXT {queryBuilder.LimitSize} ROWS ONLY";
             if (orderByPart.Count == 0)
             {
                 DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];

@@ -30,7 +30,8 @@ namespace AventusSharp.Tools
                 typeof(Char),
                 typeof(Double),
                 typeof(Single),
-                typeof(DateTime)
+                typeof(DateTime),
+                typeof(TimeSpan),
             };
         }
 

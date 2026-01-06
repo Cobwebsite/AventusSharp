@@ -144,6 +144,17 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     SetValue(obj, dateTime);
                 }
             }
+            else if (MemberType == typeof(TimeSpan))
+            {
+                if (value == null)
+                {
+                    SetValue(obj, null);
+                }
+                else if (TimeSpan.TryParse(value, out TimeSpan dateTime))
+                {
+                    SetValue(obj, dateTime);
+                }
+            }
             else if (MemberType.IsEnum)
             {
                 if (value == null)

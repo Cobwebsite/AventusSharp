@@ -7,9 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Data;
 using AventusSharp.Data.Manager;
-using AventusSharp.Attributes.Data;
 using System.Linq.Expressions;
-using AventusSharp.Data.Storage.Mysql.Tools;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {

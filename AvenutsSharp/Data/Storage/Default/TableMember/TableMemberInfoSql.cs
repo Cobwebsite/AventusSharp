@@ -1,5 +1,4 @@
-﻿using AventusSharp.Attributes.Data;
-using AventusSharp.Data.Attributes;
+﻿using AventusSharp.Data.Attributes;
 using System.Collections.Generic;
 using System.Data;
 using System;
@@ -64,6 +63,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 return DbType.Boolean;
             if (type == typeof(DateTime))
                 return DbType.DateTime;
+            if (type == typeof(TimeSpan))
+                return DbType.Time;
             if (type.IsEnum)
                 return DbType.String;
             if (IsTypeUsable(type))

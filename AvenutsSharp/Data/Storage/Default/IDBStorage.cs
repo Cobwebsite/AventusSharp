@@ -27,7 +27,7 @@ namespace AventusSharp.Data.Storage.Default
         public VoidWithError CreateFromBuilder<X>(DatabaseCreateBuilder<X> queryBuilder, X item) where X : IStorable;
         public ResultWithError<List<int>> UpdateFromBuilder<X>(DatabaseUpdateBuilder<X> queryBuilder, X item) where X : IStorable;
         public VoidWithError DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> queryBuilder, List<X> elementsToDelete) where X : IStorable;
-        public VoidWithError CreateTable(PyramidInfo pyramid);
+        public VoidWithError CreateTable(PyramidInfo pyramid, bool force);
         public ResultWithError<bool> TableExist(PyramidInfo pyramid);
 
         public VoidWithError ConnectWithError();

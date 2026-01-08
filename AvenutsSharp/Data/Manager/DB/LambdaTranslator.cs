@@ -337,7 +337,7 @@ namespace AventusSharp.Data.Manager.DB
                                 }
                                 else
                                 {
-                                    tupple.Add("'" + o.ToString() + "'");
+                                    tupple.Add("'" + o.ToString()?.Replace("'", "''") + "'");
                                 }
                             }
                             if (tupple.Count == 0)

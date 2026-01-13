@@ -601,7 +601,7 @@ namespace CSharpToTypescript.Container
 
             if (route == "")
             {
-                string defaultName = AventusSharp.Routes.Tools.GetDefaultMethodUrl(method);
+                string defaultName = AventusSharp.WebSocket.Tools.GetDefaultMethodUrl(method);
                 ParseRoute(defaultName, new Dictionary<string, ParameterInfo>());
             }
         }

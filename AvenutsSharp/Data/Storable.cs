@@ -67,7 +67,7 @@ namespace AventusSharp.Data
         }
         
         [Primary, AutoIncrement]
-        public int Id { get; set; }
+        public virtual int Id { get; set; }
 
         public static List<T> GetAll()
         {

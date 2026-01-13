@@ -346,6 +346,41 @@ namespace AventusSharp.Scheduler
         #endregion
 
         #region Calculating, scheduling & running
+        public static void CalculateNextRun(Schedule schedule)
+        {
+            if (schedule.CalculateNextRun == null)
+            {
+                if (schedule.DelayRunFor > TimeSpan.Zero)
+                {
+                    // delayed job
+                    schedule.NextRun = Now.Add(schedule.DelayRunFor);
+                    _schedules.Add(schedule);
+                }
+                else
+                {
+                    return;
+                }
+                bool hasAdded = false;
+                foreach (Schedule child in schedule.AdditionalSchedules.Where(x => x.CalculateNextRun != null))
+                {
+                    if (child.CalculateNextRun != null)
+                    {
+                        DateTime nextRun = child.CalculateNextRun(Now.Add(child.DelayRunFor).AddMilliseconds(1));
+                        if (!hasAdded || schedule.NextRun > nextRun)
+                        {
+                            schedule.NextRun = nextRun;
+                            hasAdded = true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                schedule.NextRun = schedule.CalculateNextRun(Now.Add(schedule.DelayRunFor));
+                _schedules.Add(schedule);
+            }
+        }
+
 
         private static IEnumerable<Schedule> CalculateNextRun(IEnumerable<Schedule> schedules)
         {

@@ -1,4 +1,5 @@
-﻿using AventusSharp.WebSocket;
+﻿using AventusSharp.Routes;
+using AventusSharp.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -80,6 +81,8 @@ namespace CSharpToTypescript
         public string? parentFile;
         [JsonProperty("namespace")]
         public string? _namespace = "Routes";
+
+        public DefaultUrlConfig defaultUrl = new();
     }
 
     public class ProjectConfigWsEndpoint

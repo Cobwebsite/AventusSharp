@@ -36,6 +36,8 @@ namespace AventusSharp.Data.Manager.DB
         public List<SortInfo>? Sorting { get; private set; } = null;
         public List<GroupInfo>? Groups { get; private set; } = null;
 
+        public WhereGroup? Scopes { get; set; }
+
         public DatabaseGenericBuilder(IDBStorage storage, IGenericDM DM, Type? baseType = null) : base()
         {
             Storage = storage;
@@ -124,7 +126,18 @@ namespace AventusSharp.Data.Manager.DB
             DatabaseBuilderInfo info = new(alias, table);
             InfoByPath[path] = info;
 
+            if (table.Scopes.Count > 0)
+            {
+                if (Scopes == null) Scopes = new();
 
+                LambdaTranslator<T> translator = new(this);
+                foreach (var scope in table.Scopes)
+                {
+                    if (Scopes.Groups.Count > 0)
+                        Scopes.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
+                    Scopes.Groups.AddRange(translator.Translate(scope));
+                }
+            }
 
             LoadParent(table, info);
             LoadChildren(table, info, info.Children);
@@ -615,6 +628,24 @@ namespace AventusSharp.Data.Manager.DB
         {
             string mergedPath = string.Join(".", path);
             return AllMembersByPath.ContainsKey(mergedPath) && AllMembersByPath[mergedPath] == true;
+        }
+
+        protected void MergeScopeAndWhere()
+        {
+            if (Scopes == null) return;
+
+            if (Wheres == null)
+            {
+                Wheres = new List<IWhereRootGroup>() { Scopes };
+                return;
+            }
+
+            var group = new WhereGroup();
+            group.Groups.AddRange(Scopes);
+            group.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
+            group.Groups.AddRange(Wheres);
+            Wheres = new List<IWhereRootGroup>() { group };
+
         }
     }
 }

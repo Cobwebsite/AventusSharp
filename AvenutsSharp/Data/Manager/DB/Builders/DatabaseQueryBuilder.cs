@@ -42,6 +42,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
         }
         public ResultWithError<List<T>> RunWithError()
         {
+            MergeScopeAndWhere();
             var result = Storage.QueryFromBuilder(this);
             DM.PrintErrors(result);
             return result;

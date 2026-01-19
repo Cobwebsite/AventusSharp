@@ -137,7 +137,7 @@ public class LoaderHelper
             if (!ids.Contains(item.Id))
             {
                 ids.Add(item.Id);
-                elements[item.Id] = new(); ;
+                elements[item.Id] = new();
             }
             elements[item.Id].Add(item);
         }

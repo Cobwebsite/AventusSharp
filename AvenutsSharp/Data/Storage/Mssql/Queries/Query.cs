@@ -19,6 +19,7 @@ public class Query
 
         void loadInfo(DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types)
         {
+            
             bool loadMembers = queryBuilder.MustLoadMembers(path);
             if (loadMembers)
             {

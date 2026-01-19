@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using AventusSharp.Tools;
 using AventusSharp.Data.Storage.Default.TableMember;
+using SQLitePCL;
+using System.Linq.Expressions;
 
 namespace AventusSharp.Data.Storage.Default
 {
@@ -86,6 +88,8 @@ namespace AventusSharp.Data.Storage.Default
 
         public IGenericDM? DM { get; private set; }
 
+        public List<Expression<Func<object, bool>>> Scopes { get; set; } = new();
+
         public TableInfo(Type type)
         {
             SqlTableName = GetSQLTableName(type);
@@ -95,6 +99,16 @@ namespace AventusSharp.Data.Storage.Default
                 IsAbstract = true;
             }
             Name = TypeTools.GetReadableName(Type);
+
+
+            List<Attribute> scopes = type.GetCustomAttributes().Where(p => p is IScope).ToList();
+            foreach (Attribute _scope in scopes)
+            {
+                if (_scope is IScope scope)
+                {
+                    Scopes.Add(scope.Where());
+                }
+            }
         }
         public TableInfo(PyramidInfo pyramid) : this(pyramid.type)
         {
@@ -205,7 +219,7 @@ namespace AventusSharp.Data.Storage.Default
         {
             Dictionary<string, TableMemberInfoSql> temp = new();
             temp[sqlMember.Name] = sqlMember;
-            foreach(var pair in _Members)
+            foreach (var pair in _Members)
             {
                 temp[pair.Key] = pair.Value;
             }
@@ -222,7 +236,7 @@ namespace AventusSharp.Data.Storage.Default
             foreach (var sqlMember in sqlMembers)
                 temp[sqlMember.Name] = sqlMember;
 
-            foreach(var pair in _Members)
+            foreach (var pair in _Members)
             {
                 temp[pair.Key] = pair.Value;
             }

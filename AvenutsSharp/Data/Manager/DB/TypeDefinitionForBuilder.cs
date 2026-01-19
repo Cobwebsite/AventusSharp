@@ -54,11 +54,11 @@ namespace AventusSharp.Data.Manager.DB
     }
 
     public interface IWhereGroup { }
-    public interface IWhereRootGroup
+    public interface IWhereRootGroup : IWhereGroup
     {
         public bool negate { get; set; }
     }
-    public class WhereGroup : IWhereGroup, IWhereRootGroup
+    public class WhereGroup : IWhereRootGroup
     {
         public List<IWhereGroup> Groups { get; set; } = new List<IWhereGroup>();
         public bool negate { get; set; } = false;
@@ -82,7 +82,7 @@ namespace AventusSharp.Data.Manager.DB
         }
     }
 
-    public class WhereGroupSingleBool : IWhereGroup, IWhereRootGroup
+    public class WhereGroupSingleBool : IWhereRootGroup
     {
         public string Alias { get; set; }
         public TableMemberInfoSql TableMemberInfo { get; set; }

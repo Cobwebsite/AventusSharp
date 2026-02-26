@@ -48,6 +48,14 @@ namespace AventusSharp.Data.Manager
         public IQueryBuilder<T> Where(Expression<Func<T, bool>> func);
 
         /// <summary>
+        /// Adds a condition to the query using one search string and multiple fields
+        /// </summary>
+        /// <param name="search">The text to search to the query.</param>
+        /// <param name="fields">The fields to search for the query.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Where(string search, List<string> fields);
+
+        /// <summary>
         /// Adds a condition to the query with parameters for the provided expression.
         /// </summary>
         /// <param name="func">The condition to apply to the query.</param>

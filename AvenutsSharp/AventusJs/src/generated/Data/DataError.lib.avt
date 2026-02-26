@@ -45,7 +45,8 @@ namespace Data {
 		LinkNotSet,
 		MultipleProvidersNotSet,
 		FileNotFound,
-		PyramidNotFound
+		PyramidNotFound,
+		IsReadOnly
 	}
 
 	@Convertible()

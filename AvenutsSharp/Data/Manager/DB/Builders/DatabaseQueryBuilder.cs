@@ -1,8 +1,14 @@
 ﻿using AventusSharp.Data.Storage.Default;
+using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Routes;
 using AventusSharp.Tools;
+using Microsoft.Extensions.ObjectPool;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 
 namespace AventusSharp.Data.Manager.DB.Builders
@@ -33,15 +39,17 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public List<T> Run()
         {
-            ResultWithError<List<T>> result = Storage.QueryFromBuilder(this);
-            if (result.Success && result.Result != null)
-            {
-                return result.Result;
-            }
-            return new List<T>();
+            return RunWithError().Result ?? new List<T>();
         }
         public ResultWithError<List<T>> RunWithError()
         {
+            if (Errors.Count > 0)
+            {
+                return new ResultWithError<List<T>>()
+                {
+                    Errors = Errors
+                };
+            }
             MergeScopeAndWhere();
             var result = Storage.QueryFromBuilder(this);
             DM.PrintErrors(result);
@@ -70,6 +78,123 @@ namespace AventusSharp.Data.Manager.DB.Builders
         {
             WhereGeneric(expression);
             return this;
+        }
+
+        private Dictionary<Type, object?> _searchable = new();
+        private (bool success, object? value) TryGetSearchValue(Type type, string search)
+        {
+            if (!_searchable.ContainsKey(type))
+            {
+                try
+                {
+                    var converter = TypeDescriptor.GetConverter(type);
+                    if (converter != null && converter.CanConvertFrom(typeof(string)))
+                    {
+                        _searchable[type] = converter.ConvertFromString(search);
+                    }
+                    else
+                    {
+                        _searchable[type] = null;
+                    }
+                }
+                catch
+                {
+                    _searchable[type] = null; // Conversion impossible (ex: "abc" vers int)
+                }
+            }
+
+            object? val = _searchable[type];
+            return (val != null, val);
+        }
+
+        public IQueryBuilder<T> Where(string search, List<string> fields)
+        {
+            ParameterExpression parameter = Expression.Parameter(typeof(T), "x");
+
+            Expression? finalBody = null;
+
+            if (string.IsNullOrEmpty(search)) return this; // Ou logique spécifique
+
+            var table = InfoByPath[""];
+
+            foreach (var field in fields)
+            {
+                TableMemberInfoSql? member = table.TableInfo.Members.FirstOrDefault(p => p.Name == field);
+                MemberInfo? memberInfo = member?.memberInfo;
+
+                if (memberInfo == null || member == null)
+                {
+                    Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Can't find the field " + field + " on the object " + typeof(T).Name));
+                    return this;
+                }
+
+                MemberExpression propertyAccess;
+
+                if (memberInfo is PropertyInfo propertyInfo)
+                {
+                    propertyAccess = Expression.Property(parameter, propertyInfo);
+                }
+                else if (memberInfo is FieldInfo fieldInfo)
+                {
+                    propertyAccess = Expression.Field(parameter, fieldInfo);
+                }
+                else
+                {
+                    Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible"));
+                    return this;
+                }
+
+                Expression? fieldCondition = null;
+
+                if (member.MemberType == typeof(string))
+                {
+                    MethodInfo containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) })!;
+                    ConstantExpression searchConstant = Expression.Constant(search, typeof(string));
+
+                    // TODO check if null maybe it will crash
+                    fieldCondition = Expression.Call(propertyAccess, containsMethod, searchConstant);
+                }
+                else if (member.MemberType == typeof(DateTime) || member.MemberType == typeof(DateTime?))
+                {
+                    if (DateTime.TryParse(search, out DateTime dateValue))
+                    {
+                        fieldCondition = Expression.Equal(
+                            propertyAccess,
+                            Expression.Convert(Expression.Constant(dateValue), member.MemberType)
+                        );
+                    }
+                }
+                else
+                {
+                    var result = TryGetSearchValue(member.MemberType, search);
+
+                    if (result.success)
+                    {
+                        fieldCondition = Expression.Equal(
+                            propertyAccess,
+                            Expression.Convert(Expression.Constant(result.value), member.MemberType)
+                        );
+                    }
+                }
+
+                if (fieldCondition != null)
+                {
+                    if (finalBody == null)
+                    {
+                        finalBody = fieldCondition;
+                    }
+                    else
+                    {
+                        finalBody = Expression.OrElse(finalBody, fieldCondition);
+                    }
+                }
+            }
+
+            if (finalBody == null) return this;
+
+            Expression<Func<T, bool>> lambda = Expression.Lambda<Func<T, bool>>(finalBody, parameter);
+
+            return Where(lambda);
         }
 
         public QueryBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> expression)

@@ -38,6 +38,9 @@ namespace AventusSharp.Data.Manager.DB
 
         public WhereGroup? Scopes { get; set; }
 
+        public List<GenericError> Errors { get; private set; } = new List<GenericError>();
+
+
         public DatabaseGenericBuilder(IDBStorage storage, IGenericDM DM, Type? baseType = null) : base()
         {
             Storage = storage;

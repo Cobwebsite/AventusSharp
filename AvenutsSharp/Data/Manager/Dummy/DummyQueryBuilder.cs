@@ -22,7 +22,7 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
-        
+
         public IQueryBuilder<T> Include(Expression<Func<T, IStorable>> memberExpression)
         {
             throw new NotImplementedException();
@@ -92,7 +92,10 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
-
+        public IQueryBuilder<T> Where(string search, List<string> fields)
+        {
+            throw new NotImplementedException();
+        }
 
         public QueryBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
@@ -108,6 +111,6 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
-        
+
     }
 }

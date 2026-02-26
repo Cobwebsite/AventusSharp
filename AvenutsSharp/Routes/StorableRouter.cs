@@ -129,6 +129,27 @@ namespace AventusSharp.Routes
             return Storable<T>.GetByIdsWithError(ids).ToGeneric();
         }
 
+        [Post, Path("/[StorableName]/search")]
+        public virtual ResultWithError<List<T>> Search(HttpContext context, string search, List<string> fields, int limit = -1, int page = 0)
+        {
+            ResultWithError<List<T>> result = DM_Search(context, search, fields, limit, page);
+            if (result.Result != null)
+            {
+                List<T> list = new();
+                foreach (T item in result.Result)
+                {
+                    list.Add(OnSend(context, item));
+                }
+                result.Result = list;
+            }
+            return result;
+        }
+        protected virtual ResultWithError<List<T>> DM_Search(HttpContext context, string search, List<string> fields, int limit, int page)
+        {
+            var query = Storable<T>.StartQuery().Where(search, fields).Take(limit, limit * page);
+            return query.RunWithError();
+        }
+
 
         [Put]
         [Path("/[StorableName]/{id}")]

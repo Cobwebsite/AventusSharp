@@ -54,6 +54,7 @@ namespace AventusSharp.SSE
             context.Response.Headers.Append("Content-Type", "text/event-stream");
             context.Response.Headers.Append("Cache-Control", "no-cache");
             context.Response.Headers.Append("X-Accel-Buffering", "no");
+            await context.Response.WriteAsync(": connected\n\n");
             await context.Response.Body.FlushAsync();
         }
 

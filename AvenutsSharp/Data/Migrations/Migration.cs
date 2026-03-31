@@ -62,7 +62,7 @@ public abstract class Migration : IMigration
             ResultWithError<bool> canExectue = new();
             foreach (IMigrationProvider provider in providers)
             {
-                canExectue.Execute(() => provider.Can(name));
+                canExectue.Run(() => provider.Can(name));
             }
             if (!canExectue.Success || !canExectue.Result)
             {

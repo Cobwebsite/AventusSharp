@@ -591,7 +591,7 @@ namespace AventusSharp.Data.Storage.Default
                             membersToAdd.Remove(memberInfo);
                             updatedDate = memberInfo;
                         }
-                        if (memberInfo.IsPrimary)
+                        if (memberInfo.IsPrimary && classInfo.Primary == null)
                         {
                             classInfo.Primary = memberInfo;
                         }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.Dummy
 {
@@ -13,22 +14,22 @@ namespace AventusSharp.Data.Manager.Dummy
         }
 
 
-        public List<T>? Run(T item)
+        public Task<List<T>?> Run(T item)
         {
             throw new NotImplementedException();
         }
 
-        public ResultWithError<List<T>> RunWithError(T item)
+        public Task<ResultWithError<List<T>>> RunWithError(T item)
         {
             throw new NotImplementedException();
         }
 
-        public T? Single(T item)
+        public Task<T?> Single(T item)
         {
             throw new NotImplementedException();
         }
 
-        public ResultWithError<T> SingleWithError(T item)
+        public Task<ResultWithError<T>> SingleWithError(T item)
         {
             throw new NotImplementedException();
         }

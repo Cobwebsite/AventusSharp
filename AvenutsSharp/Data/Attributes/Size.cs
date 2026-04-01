@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Attributes
 {
@@ -36,7 +37,7 @@ namespace AventusSharp.Data.Attributes
         public Size(SizeEnum max, string msg = "") : this(0, max, msg) { }
 
 
-        public override ValidationResult IsValid(object? value, ValidationContext context)
+        public override Task<ValidationResult> IsValid(object? value, ValidationContext context)
         {
             if (value is string casted)
             {
@@ -45,7 +46,7 @@ namespace AventusSharp.Data.Attributes
                     if (casted.Length > Max || casted.Length < Min)
                     {
                         string msg = Msg == "" ? $"The size of the field {context.FieldName} must be between {Min} and {Max} chars." : Msg;
-                        return new ValidationResult(msg, context.FieldName);
+                        return Task.FromResult(new ValidationResult(msg, context.FieldName));
                     }
                 }
                 else
@@ -53,11 +54,11 @@ namespace AventusSharp.Data.Attributes
                     if (casted.Length < Min)
                     {
                         string msg = Msg == "" ? $"The size of the field {context.FieldName} must be greater than {Min} chars." : Msg;
-                        return new ValidationResult(msg, context.FieldName);
+                        return Task.FromResult(new ValidationResult(msg, context.FieldName));
                     }
                 }
             }
-            return ValidationResult.Success;
+            return Task.FromResult(ValidationResult.Success);
         }
     }
 }

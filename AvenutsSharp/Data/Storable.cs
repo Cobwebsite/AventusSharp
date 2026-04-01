@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data
 {
@@ -21,14 +22,14 @@ namespace AventusSharp.Data
 
         public List<DataError> IsValid(StorableAction action);
 
-        bool Create();
-        public List<GenericError> CreateWithError();
+        Task<bool> Create();
+        public Task<List<GenericError>> CreateWithError();
 
-        bool Update();
-        public List<GenericError> UpdateWithError();
+        Task<bool> Update();
+        public Task<List<GenericError>> UpdateWithError();
 
-        public bool Delete();
-        public List<GenericError> DeleteWithError();
+        public Task<bool> Delete();
+        public Task<List<GenericError>> DeleteWithError();
     }
 
     public interface IStorableTimestamp : IStorable
@@ -69,11 +70,11 @@ namespace AventusSharp.Data
         [Primary, AutoIncrement]
         public virtual int Id { get; set; }
 
-        public static List<T> GetAll()
+        public static Task<List<T>> GetAll()
         {
             return GenericDM.Get<T>().GetAll<T>();
         }
-        public static ResultWithError<List<T>> GetAllWithError()
+        public static Task<ResultWithError<List<T>>> GetAllWithError()
         {
             return GenericDM.Get<T>().GetAllWithError<T>();
         }
@@ -94,55 +95,55 @@ namespace AventusSharp.Data
             return GenericDM.Get<T>().CreateExist<T>();
         }
 
-        public static T? GetById(int id)
+        public static Task<T?> GetById(int id)
         {
             return GenericDM.Get<T>().GetById<T>(id);
         }
-        public static ResultWithError<T> GetByIdWithError(int id)
+        public static Task<ResultWithError<T>> GetByIdWithError(int id)
         {
             return GenericDM.Get<T>().GetByIdWithError<T>(id);
         }
-        public static List<T> GetByIds(List<int> ids)
+        public static Task<List<T>> GetByIds(List<int> ids)
         {
             return GenericDM.Get<T>().GetByIds<T>(ids);
         }
-        public static List<T> GetByIds(params int[] ids)
+        public static Task<List<T>> GetByIds(params int[] ids)
         {
             return GenericDM.Get<T>().GetByIds<T>(ids.ToList());
         }
-        public static ResultWithError<List<T>> GetByIdsWithError(List<int> ids)
+        public static Task<ResultWithError<List<T>>> GetByIdsWithError(List<int> ids)
         {
             return GenericDM.Get<T>().GetByIdsWithError<T>(ids);
         }
-        public static ResultWithError<List<T>> GetByIdsWithError(params int[] ids)
+        public static Task<ResultWithError<List<T>>> GetByIdsWithError(params int[] ids)
         {
             return GenericDM.Get<T>().GetByIdsWithError<T>(ids.ToList());
         }
 
 
-        public static List<T> Where(Expression<Func<T, bool>> func)
+        public static Task<List<T>> Where(Expression<Func<T, bool>> func)
         {
             return GenericDM.Get<T>().Where(func);
         }
-        public static ResultWithError<List<T>> WhereWithError(Expression<Func<T, bool>> func)
+        public static Task<ResultWithError<List<T>>> WhereWithError(Expression<Func<T, bool>> func)
         {
             return GenericDM.Get<T>().WhereWithError(func);
         }
 
-        public static T? Single(Expression<Func<T, bool>> func)
+        public static Task<T?> Single(Expression<Func<T, bool>> func)
         {
             return GenericDM.Get<T>().Single(func);
         }
-        public static ResultWithError<T> SingleWithError(Expression<Func<T, bool>> func)
+        public static Task<ResultWithError<T>> SingleWithError(Expression<Func<T, bool>> func)
         {
             return GenericDM.Get<T>().SingleWithError(func);
         }
 
-        public static bool Exist(Expression<Func<T, bool>> func)
+        public static Task<bool> Exist(Expression<Func<T, bool>> func)
         {
             return GenericDM.Get<T>().Exist(func);
         }
-        public static ResultWithError<bool> ExistWithError(Expression<Func<T, bool>> func)
+        public static Task<ResultWithError<bool>> ExistWithError(Expression<Func<T, bool>> func)
         {
             return GenericDM.Get<T>().ExistWithError(func);
         }
@@ -154,11 +155,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static List<T> Create(List<T> values)
+        public static async Task<List<T>> Create(List<T> values)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().Create(values);
+                return await GenericDM.Get<T>().Create(values);
             }
             return new List<T>();
         }
@@ -167,11 +168,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static ResultWithError<List<T>> CreateWithError(List<T> values)
+        public static async Task<ResultWithError<List<T>>> CreateWithError(List<T> values)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().CreateWithError(values);
+                return await GenericDM.Get<T>().CreateWithError(values);
             }
 
             ResultWithError<List<T>> result = new();
@@ -186,12 +187,12 @@ namespace AventusSharp.Data
         /// <param name="values"></param>
         /// <param name="withId"></param>
         /// <returns></returns>
-        public static bool BulkCreate(List<T> values, bool withId = false)
+        public static async Task<bool> BulkCreate(List<T> values, bool withId = false)
         {
             // TODO change withId by a config object to add bufferSize
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().BulkCreate(values, withId);
+                return await GenericDM.Get<T>().BulkCreate(values, withId);
             }
             return true;
         }
@@ -201,11 +202,11 @@ namespace AventusSharp.Data
         /// <param name="values"></param>
         /// <param name="withId"></param>
         /// <returns></returns>
-        public static VoidWithError BulkCreateWithError(List<T> values, bool withId = false)
+        public static async Task<VoidWithError> BulkCreateWithError(List<T> values, bool withId = false)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().BulkCreateWithError(values, withId);
+                return await GenericDM.Get<T>().BulkCreateWithError(values, withId);
             }
             return new();
         }
@@ -215,11 +216,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static T? Create(T value)
+        public static async Task<T?> Create(T value)
         {
             if (value != null)
             {
-                return GenericDM.Get<T>().Create(value);
+                return await GenericDM.Get<T>().Create(value);
             }
             return default;
         }
@@ -228,28 +229,28 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static ResultWithError<T> CreateWithError(T value)
+        public static async Task<ResultWithError<T>> CreateWithError(T value)
         {
-            return GenericDM.Get<T>().CreateWithError(value);
+            return await GenericDM.Get<T>().CreateWithError(value);
         }
         /// <summary>
         /// Create the current element inside the DM
         /// </summary>
         /// <returns></returns>
-        public bool Create()
+        public async Task<bool> Create()
         {
-            return CreateWithError().Count == 0;
+            return (await CreateWithError()).Count == 0;
         }
         /// <summary>
         /// Create the current element inside the DM
         /// If return Count == 0 it means no error and your item is stored
         /// </summary>
         /// <returns></returns>
-        public List<GenericError> CreateWithError()
+        public async Task<List<GenericError>> CreateWithError()
         {
             if (this is T TThis)
             {
-                ResultWithError<T> result = GenericDM.Get<T>().CreateWithError(TThis);
+                ResultWithError<T> result = await GenericDM.Get<T>().CreateWithError(TThis);
                 if (result.Success)
                 {
                     if (Equals(result.Result, this))
@@ -274,11 +275,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static List<T> Update(List<T> values)
+        public static async Task<List<T>> Update(List<T> values)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().Update(values);
+                return await GenericDM.Get<T>().Update(values);
             }
             return new List<T>();
         }
@@ -287,11 +288,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static ResultWithError<List<T>> UpdateWithError(List<T> values)
+        public static async Task<ResultWithError<List<T>>> UpdateWithError(List<T> values)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().UpdateWithError(values);
+                return await GenericDM.Get<T>().UpdateWithError(values);
             }
 
             ResultWithError<List<T>> result = new();
@@ -305,11 +306,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static T? Update(T value)
+        public static async Task<T?> Update(T value)
         {
             if (value != null)
             {
-                return GenericDM.Get<T>().Update(value);
+                return await GenericDM.Get<T>().Update(value);
             }
             return default;
         }
@@ -318,17 +319,17 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static ResultWithError<T> UpdateWithError(T value)
+        public static async Task<ResultWithError<T>> UpdateWithError(T value)
         {
-            return GenericDM.Get<T>().UpdateWithError(value);
+            return await GenericDM.Get<T>().UpdateWithError(value);
         }
         /// <summary>
         /// Update the current element inside the DM
         /// </summary>
         /// <returns></returns>
-        public bool Update()
+        public async Task<bool> Update()
         {
-            return UpdateWithError().Count == 0;
+            return (await UpdateWithError()).Count == 0;
         }
 
         /// <summary>
@@ -336,11 +337,11 @@ namespace AventusSharp.Data
         /// If return Count == 0 it means no error and your item is stored
         /// </summary>
         /// <returns></returns>
-        public List<GenericError> UpdateWithError()
+        public async Task<List<GenericError>> UpdateWithError()
         {
             if (this is T TThis)
             {
-                ResultWithError<T> result = GenericDM.Get<T>().UpdateWithError(TThis);
+                ResultWithError<T> result = await GenericDM.Get<T>().UpdateWithError(TThis);
                 if (result.Success)
                 {
                     if (Equals(result.Result, this))
@@ -364,11 +365,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static List<T> Delete(List<T> values)
+        public static async Task<List<T>> Delete(List<T> values)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().Delete(values);
+                return await GenericDM.Get<T>().Delete(values);
             }
             return new List<T>();
         }
@@ -378,11 +379,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public static List<T> Delete(List<int> ids)
+        public static async Task<List<T>> Delete(List<int> ids)
         {
             if (ids != null && ids.Count > 0)
             {
-                ResultWithError<List<T>> resultTemp = DeleteWithError(ids);
+                ResultWithError<List<T>> resultTemp = await DeleteWithError(ids);
                 if (resultTemp.Result != null)
                 {
                     return resultTemp.Result;
@@ -395,11 +396,11 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static ResultWithError<List<T>> DeleteWithError(List<T> values)
+        public static async Task<ResultWithError<List<T>>> DeleteWithError(List<T> values)
         {
             if (values != null && values.Count > 0)
             {
-                return GenericDM.Get<T>().DeleteWithError(values);
+                return await GenericDM.Get<T>().DeleteWithError(values);
             }
 
             ResultWithError<List<T>> result = new();
@@ -412,14 +413,14 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public static ResultWithError<List<T>> DeleteWithError(List<int> ids)
+        public static async Task<ResultWithError<List<T>>> DeleteWithError(List<int> ids)
         {
             if (ids != null && ids.Count > 0)
             {
-                ResultWithError<List<T>> resultTemp = GenericDM.Get<T>().GetByIdsWithError<T>(ids);
+                ResultWithError<List<T>> resultTemp = await GenericDM.Get<T>().GetByIdsWithError<T>(ids);
                 if (resultTemp.Success && resultTemp.Result != null)
                 {
-                    return GenericDM.Get<T>().DeleteWithError(resultTemp.Result);
+                    return await GenericDM.Get<T>().DeleteWithError(resultTemp.Result);
                 }
                 return resultTemp;
             }
@@ -435,18 +436,18 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static T? Delete(T value)
+        public static async Task<T?> Delete(T value)
         {
             if (value != null)
             {
-                return GenericDM.Get<T>().Delete(value);
+                return await GenericDM.Get<T>().Delete(value);
             }
             return default;
         }
 
-        public static T? Delete(int id)
+        public static async Task<T?> Delete(int id)
         {
-            ResultWithError<T> resultTemp = DeleteWithError(id);
+            ResultWithError<T> resultTemp = await DeleteWithError(id);
             if (resultTemp.Success && resultTemp.Result != null)
             {
                 return resultTemp.Result;
@@ -454,12 +455,12 @@ namespace AventusSharp.Data
             return default;
         }
 
-        public static ResultWithError<T> DeleteWithError(int id)
+        public static async Task<ResultWithError<T>> DeleteWithError(int id)
         {
-            ResultWithError<T> resultTemp = GenericDM.Get<T>().GetByIdWithError<T>(id);
+            ResultWithError<T> resultTemp = await GenericDM.Get<T>().GetByIdWithError<T>(id);
             if (resultTemp.Success && resultTemp.Result != null)
             {
-                resultTemp.Errors = resultTemp.Result.DeleteWithError();
+                resultTemp.Errors = await resultTemp.Result.DeleteWithError();
             }
             return resultTemp;
         }
@@ -468,29 +469,29 @@ namespace AventusSharp.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static ResultWithError<T> DeleteWithError(T value)
+        public static async Task<ResultWithError<T>> DeleteWithError(T value)
         {
-            return GenericDM.Get<T>().DeleteWithError(value);
+            return await GenericDM.Get<T>().DeleteWithError(value);
         }
 
         /// <summary>
         /// Delete the current element inside the DM
         /// </summary>
         /// <returns></returns>
-        public bool Delete()
+        public async Task<bool> Delete()
         {
-            return DeleteWithError().Count == 0;
+            return (await DeleteWithError()).Count == 0;
         }
         /// <summary>
         /// Delete the current element inside the DM
         /// If return Count == 0 it means no error and your item is stored
         /// </summary>
         /// <returns></returns>
-        public List<GenericError> DeleteWithError()
+        public async Task<List<GenericError>> DeleteWithError()
         {
             if (this is T TThis)
             {
-                ResultWithError<T> result = GenericDM.Get<T>().DeleteWithError(TThis);
+                ResultWithError<T> result = await GenericDM.Get<T>().DeleteWithError(TThis);
                 return result.Errors;
             }
             string errorMsg = "Element " + this.GetType() + " isn't a " + typeof(T).Name + ". This should be impossible";
@@ -528,7 +529,7 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the int (Id of the element to load)</param>
         /// <param name="set">Set to add the object to the item</param>
         /// <returns></returns>
-        public static ResultWithError<List<Y>> LoadDependances<Y>(List<T>? from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        public static Task<ResultWithError<List<Y>>> LoadDependances<Y>(List<T>? from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
             return LoadDependances(realFrom, fct, set);
@@ -541,9 +542,9 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the int (Id of the element to load)</param>
         /// <param name="set">Set to add the object to the item</param>
         /// <returns></returns>
-        public static ResultWithError<List<Y>> LoadDependances<Y>(ResultWithError<List<T>> from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        public static async Task<ResultWithError<List<Y>>> LoadDependances<Y>(ResultWithError<List<T>> from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
         {
-            return LoaderHelper.LoadDependances(from, fct, set);
+            return await LoaderHelper.LoadDependances(from, fct, set);
         }
 
         /// <summary>
@@ -554,7 +555,7 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the List of int</param>
         /// <param name="set">Set to add the object to the list</param>
         /// <returns></returns>
-        public static ResultWithError<List<Y>> LoadDependancesList<Y>(List<T>? from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        public static Task<ResultWithError<List<Y>>> LoadDependancesList<Y>(List<T>? from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
             return LoadDependancesList(realFrom, fct, set);
@@ -567,9 +568,9 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the List of int</param>
         /// <param name="set">Set to add the object to the list</param>
         /// <returns></returns>
-        public static ResultWithError<List<Y>> LoadDependancesList<Y>(ResultWithError<List<T>> from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        public static async Task<ResultWithError<List<Y>>> LoadDependancesList<Y>(ResultWithError<List<T>> from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
         {
-            return LoaderHelper.LoadDependancesList(from, fct, set);
+            return await LoaderHelper.LoadDependancesList(from, fct, set);
         }
 
         /// <summary>
@@ -579,7 +580,7 @@ namespace AventusSharp.Data
         /// <param name="from">List of objects with the member</param>
         /// <param name="expression">The member the need to be loaded</param>
         /// <returns></returns>
-        public static VoidWithError LoadReverseLink<Y>(List<T>? from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
+        public static Task<VoidWithError> LoadReverseLink<Y>(List<T>? from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
             return LoadReverseLink(realFrom, expression);
@@ -591,7 +592,7 @@ namespace AventusSharp.Data
         /// <param name="from">List of objects with the member</param>
         /// <param name="expression">The member the need to be loaded</param>
         /// <returns></returns>
-        public static VoidWithError LoadReverseLink<Y>(ResultWithError<List<T>> from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
+        public static Task<VoidWithError> LoadReverseLink<Y>(ResultWithError<List<T>> from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
         {
             return LoaderHelper.LoadReverseLink(from, expression);
         }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager
 {
@@ -17,27 +18,27 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A list of updated <typeparamref name="T"/> objects, or null if no items were updated.</returns>
-        public List<T>? Run(T item);
+        public Task<List<T>?> Run(T item);
 
         /// <summary>
         /// Executes the update operation and returns a result with error handling.
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A ResultWithError containing a list of updated <typeparamref name="T"/> objects.</returns>
-        public ResultWithError<List<T>> RunWithError(T item);
+        public Task<ResultWithError<List<T>>> RunWithError(T item);
 
         /// <summary>
         /// Executes the update operation and returns a result with error handling for a single updated item.
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A single updated <typeparamref name="T"/> object.</returns>
-        public T? Single(T item);
+        public Task<T?> Single(T item);
         /// <summary>
         /// Executes the update operation and returns a result with error handling for a single updated item.
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A ResultWithError containing a single updated <typeparamref name="T"/> object.</returns>
-        public ResultWithError<T> SingleWithError(T item);
+        public Task<ResultWithError<T>> SingleWithError(T item);
 
         /// <summary>
         /// Specifies a field to be updated in the query.
@@ -140,9 +141,9 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A list of updated <typeparamref name="T"/> objects, or null if no items were updated.</returns>
-        public List<T>? Run(T item)
+        public async Task<List<T>?> Run(T item)
         {
-            List<T>? result = builder.Run(item);
+            List<T>? result = await builder.Run(item);
             prepared.Done();
             return result;
         }
@@ -151,9 +152,9 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A ResultWithError containing a list of updated <typeparamref name="T"/> objects.</returns>
-        public ResultWithError<List<T>> RunWithError(T item)
+        public async Task<ResultWithError<List<T>>> RunWithError(T item)
         {
-            ResultWithError<List<T>> result = builder.RunWithError(item);
+            ResultWithError<List<T>> result = await builder.RunWithError(item);
             prepared.Done();
             return result;
         }
@@ -163,9 +164,9 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A single updated <typeparamref name="T"/> object.</returns>
-        public T? Single(T item)
+        public async Task<T?> Single(T item)
         {
-            T? result = builder.Single(item);
+            T? result = await builder.Single(item);
             prepared.Done();
             return result;
         }
@@ -174,9 +175,9 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="item">The item to be updated.</param>
         /// <returns>A ResultWithError containing a single updated <typeparamref name="T"/> object.</returns>
-        public ResultWithError<T> SingleWithError(T item)
+        public async Task<ResultWithError<T>> SingleWithError(T item)
         {
-            ResultWithError<T> result = builder.SingleWithError(item);
+            ResultWithError<T> result = await builder.SingleWithError(item);
             prepared.Done();
             return result;
         }

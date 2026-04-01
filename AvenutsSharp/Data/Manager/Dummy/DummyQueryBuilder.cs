@@ -3,6 +3,7 @@ using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.Dummy
 {
@@ -43,12 +44,12 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
-        public List<T> Run()
+        public Task<List<T>> Run()
         {
             throw new NotImplementedException();
         }
 
-        public ResultWithError<List<T>> RunWithError()
+        public Task<ResultWithError<List<T>>> RunWithError()
         {
             throw new NotImplementedException();
         }
@@ -58,12 +59,12 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
-        public T? Single()
+        public Task<T?> Single()
         {
             throw new NotImplementedException();
         }
 
-        public ResultWithError<T> SingleWithError()
+        public Task<ResultWithError<T>> SingleWithError()
         {
             throw new NotImplementedException();
         }

@@ -1,23 +1,27 @@
 using System;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.Dummy;
 
 
 public class DummyTransactionContext : TransactionContext
 {
-    public DummyTransactionContext(Action endTransaction, Action<Action> runInsideLocker) : base(endTransaction, runInsideLocker)
+    public DummyTransactionContext(Func<Task> endTransaction) : base(endTransaction)
     {
     }
 
-    protected override void TransactionCommit()
+    protected override Task TransactionCommit()
     {
+        return Task.CompletedTask;
     }
 
-    protected override void TransactionDispose()
+    protected override Task TransactionDispose()
     {
+        return Task.CompletedTask;
     }
 
-    protected override void TransactionRollback()
+    protected override Task TransactionRollback()
     {
+        return Task.CompletedTask;
     }
 }

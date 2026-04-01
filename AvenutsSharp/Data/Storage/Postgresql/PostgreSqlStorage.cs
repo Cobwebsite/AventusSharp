@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
@@ -47,7 +48,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         return MigrationProvider;
     }
 
-    public override VoidWithError ConnectWithError()
+    public override async Task<VoidWithError> ConnectWithError()
     {
         VoidWithError result = new();
         try
@@ -55,7 +56,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
             IsConnectedOneTime = true;
             using (DbConnection connection = GetConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
                 IsConnectedOneTime = true;
             }
         }
@@ -77,7 +78,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
                         {
                             useDatabase = false;
                             connection.Open();
-                            Execute("CREATE DATABASE " + database + ";").Print();
+                            (await Execute("CREATE DATABASE " + database + ";")).Print();
                             useDatabase = true;
                         }
                         ;
@@ -138,14 +139,14 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         return new NpgsqlParameter();
     }
 
-    public override ResultWithError<bool> ResetStorage()
+    public override async Task<ResultWithError<bool>> ResetStorage()
     {
         ResultWithError<bool> result = new();
 
         string sql = "SELECT 'DROP TABLE IF EXISTS \"' || tablename || '\" CASCADE;' as query " +
                      "FROM pg_tables WHERE schemaname = 'public';";
 
-        ResultWithError<List<Dictionary<string, string?>>> queryResult = Query(sql);
+        ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
         if (!queryResult.Success || queryResult.Result == null)
         {
             result.Errors.AddRange(queryResult.Errors);
@@ -158,7 +159,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
             dropAllCmd += line["query"];
         }
 
-        VoidWithError executeResult = Execute(dropAllCmd);
+        VoidWithError executeResult = await Execute(dropAllCmd);
         if (!executeResult.Success)
         {
             result.Errors.AddRange(executeResult.Errors);

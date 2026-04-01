@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
@@ -51,22 +52,22 @@ public class MigrationFactory
 }
 public interface IMigrationProvider
 {
-    VoidWithError Init();
-    ResultWithError<bool> Can(string name);
-    VoidWithError Save(string name);
-    void BeforeUp(VoidWithError voidWithError);
-    void AfterUp(VoidWithError voidWithError);
-    VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
+    Task<VoidWithError> Init();
+    Task<ResultWithError<bool>> Can(string name);
+    Task<VoidWithError> Save(string name);
+    Task BeforeUp(VoidWithError voidWithError);
+    Task AfterUp(VoidWithError voidWithError);
+    Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
 
 }
 public abstract class MigrationProvider : IMigrationProvider
 {
-    public abstract VoidWithError Init();
-    public abstract ResultWithError<bool> Can(string name);
-    public abstract VoidWithError Save(string name);
-    public abstract void BeforeUp(VoidWithError voidWithError);
-    public abstract void AfterUp(VoidWithError voidWithError);
-    public abstract VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
+    public abstract Task<VoidWithError> Init();
+    public abstract Task<ResultWithError<bool>> Can(string name);
+    public abstract Task<VoidWithError> Save(string name);
+    public abstract Task BeforeUp(VoidWithError voidWithError);
+    public abstract Task AfterUp(VoidWithError voidWithError);
+    public abstract Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable;
 
     protected void InitMigrationTableDM()
     {

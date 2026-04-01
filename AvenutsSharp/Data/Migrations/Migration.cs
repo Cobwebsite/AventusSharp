@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using SQLitePCL;
@@ -21,13 +22,13 @@ public abstract class Migration : IMigration
     private int priority = 0;
     private Dictionary<string, IMigrationModel> models = new Dictionary<string, IMigrationModel>();
 
-    public VoidWithError _Up(List<IMigrationProvider> providers)
+    public async Task<VoidWithError> _Up(List<IMigrationProvider> providers)
     {
         _currentError = new VoidWithError();
         string name = GetName();
         if (providers.Count == 1)
         {
-            ResultWithError<bool> canExectue = providers[0].Can(name);
+            ResultWithError<bool> canExectue = await providers[0].Can(name);
             if (!canExectue.Success || !canExectue.Result)
             {
                 _currentError.Errors = canExectue.Errors;
@@ -62,7 +63,7 @@ public abstract class Migration : IMigration
             ResultWithError<bool> canExectue = new();
             foreach (IMigrationProvider provider in providers)
             {
-                canExectue.Run(() => provider.Can(name));
+                await canExectue.RunAsync(async () => await provider.Can(name));
             }
             if (!canExectue.Success || !canExectue.Result)
             {
@@ -73,24 +74,24 @@ public abstract class Migration : IMigration
 
         foreach (IMigrationProvider provider in providers)
         {
-            provider.BeforeUp(_currentError);
+            await provider.BeforeUp(_currentError);
         }
 
         foreach (IMigrationModel migration in migrations)
         {
-            _currentError.Run(migration.Run);
+            await _currentError.RunAsync(migration.Run);
         }
 
         foreach (IMigrationProvider provider in providers)
         {
-            provider.AfterUp(_currentError);
+            await provider.AfterUp(_currentError);
         }
 
         if (_currentError.Success)
         {
             foreach (IMigrationProvider provider in providers)
             {
-                _currentError.Run(() => provider.Save(name));
+                await _currentError.RunAsync(() => provider.Save(name));
             }
         }
 
@@ -154,7 +155,7 @@ public interface IMigrationModel
     internal string? OldName { get; set; }
     internal Type Type { get; }
     internal Dictionary<string, IMigrationProperty> Properties { get; }
-    internal VoidWithError Run();
+    internal Task<VoidWithError> Run();
     internal ResultWithError<IMigrationProvider> GetProvider();
 }
 public class MigrationModel<T> : IMigrationModel where T : IStorable
@@ -253,7 +254,7 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         });
     }
 
-    private VoidWithError _Run()
+    private async Task<VoidWithError> _Run()
     {
         ResultWithError<IMigrationProvider> providerQuery = _GetProvider();
         if (!providerQuery.Success || providerQuery.Result == null)
@@ -264,7 +265,7 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
             };
             return result;
         }
-        return providerQuery.Result.ApplyMigration<T>(this);
+        return await providerQuery.Result.ApplyMigration<T>(this);
     }
 
     private ResultWithError<IMigrationProvider> _GetProvider()
@@ -286,9 +287,9 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
     {
         return _GetProvider();
     }
-    VoidWithError IMigrationModel.Run()
+    async Task<VoidWithError> IMigrationModel.Run()
     {
-        return _Run();
+        return await _Run();
     }
 }
 

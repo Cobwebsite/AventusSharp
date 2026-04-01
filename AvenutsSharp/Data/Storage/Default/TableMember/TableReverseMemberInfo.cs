@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Data;
 using AventusSharp.Data.Manager;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {
@@ -30,7 +31,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         }
 
 
-        public Func<int, ResultWithDataError<List<IStorable>>>? reverseQueryBuilder;
+        public Func<int, Task<ResultWithDataError<List<IStorable>>>>? reverseQueryBuilder;
         public TableMemberInfoSql? reverseMember;
         public Type? ReverseLinkType;
         public bool isSingle = false;
@@ -116,7 +117,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             return result;
         }
 
-        public VoidWithDataError ReverseLoadAndSet(IStorable o)
+        public async Task<VoidWithDataError> ReverseLoadAndSet(IStorable o)
         {
             VoidWithDataError result = new();
             if (TableLinked == null)
@@ -125,40 +126,46 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 return result;
             }
             object? iresultTemp = GetType().GetMethod("_ReverseQuery", BindingFlags.NonPublic | BindingFlags.Instance)?.MakeGenericMethod(TableLinked.Type).Invoke(this, new object[] { o.Id });
-            if (iresultTemp is IResultWithError resultTemp)
+            if (iresultTemp is Task task)
             {
-                if (resultTemp.Errors.Count > 0)
+                task.Wait();
+                iresultTemp = o.GetType().GetProperty("Result")?.GetValue(iresultTemp);
+                if (iresultTemp is IResultWithError resultTemp)
                 {
-                    foreach (var errorTemp in resultTemp.Errors)
+                    if (resultTemp.Errors.Count > 0)
                     {
-                        if (errorTemp is DataError dataError)
+                        foreach (var errorTemp in resultTemp.Errors)
                         {
-                            result.Errors.Add(dataError);
+                            if (errorTemp is DataError dataError)
+                            {
+                                result.Errors.Add(dataError);
+                            }
                         }
+                        return result;
                     }
-                    return result;
-                }
 
 
-                if (isSingle)
-                {
-                    if (resultTemp.Result is IList list && list.Count > 0)
+                    if (isSingle)
                     {
-                        SetValue(o, list[0]);
+                        if (resultTemp.Result is IList list && list.Count > 0)
+                        {
+                            SetValue(o, list[0]);
+                        }
+                        else
+                        {
+                            SetValue(o, null);
+                        }
                     }
                     else
                     {
-                        SetValue(o, null);
+                        SetValue(o, resultTemp.Result);
                     }
                 }
-                else
-                {
-                    SetValue(o, resultTemp.Result);
-                }
             }
+
             return result;
         }
-        public ResultWithDataError<List<IStorable>> ReverseQuery(int Id)
+        public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(int Id)
         {
             ResultWithDataError<List<IStorable>> result = new();
             if (reverseQueryBuilder == null)
@@ -232,10 +239,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     return result;
                 }
 
-                reverseQueryBuilder = delegate (int id)
+                reverseQueryBuilder = async delegate (int id)
                 {
                     ResultWithDataError<List<IStorable>> result = new();
-                    IResultWithError? resultWithError = _preparedQuery.New().SetVariables((define) =>
+                    IResultWithError? resultWithError = await _preparedQuery.New().SetVariables((define) =>
                     {
                         define(Storable.Id, id);
                     }).RunWithError();
@@ -263,18 +270,18 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     return result;
                 };
             }
-            result = reverseQueryBuilder(Id);
+            result = await reverseQueryBuilder(Id);
             return result;
         }
 
-        public ResultWithDataError<List<IStorable>> ReverseQuery(List<int> ids)
+        public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(List<int> ids)
         {
             // TODO change the list to be the main code used by single id
             ResultWithDataError<List<IStorable>> result = new();
             Dictionary<int, IStorable> elements = new Dictionary<int, IStorable>();
             foreach (int id in ids)
             {
-                ResultWithDataError<List<IStorable>> resultTemp = ReverseQuery(id);
+                ResultWithDataError<List<IStorable>> resultTemp = await ReverseQuery(id);
                 if (!resultTemp.Success)
                 {
                     result.Errors.AddRange(resultTemp.Errors);
@@ -293,10 +300,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             return result;
         }
 
-        private ResultWithDataError<List<X>> _ReverseQuery<X>(int id) where X : IStorable
+        private async Task<ResultWithDataError<List<X>>> _ReverseQuery<X>(int id) where X : IStorable
         {
             ResultWithDataError<List<X>> result = new ResultWithDataError<List<X>>();
-            ResultWithDataError<List<IStorable>> resultTemp = ReverseQuery(id);
+            ResultWithDataError<List<IStorable>> resultTemp = await ReverseQuery(id);
             result.Result = new List<X>();
             if (!resultTemp.Success || resultTemp.Result == null)
             {

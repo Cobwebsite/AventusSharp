@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
@@ -15,24 +16,24 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
     {
         _storage = storage;
     }
-    public override VoidWithError Init()
+    public override async Task<VoidWithError> Init()
     {
         VoidWithError result = new();
         TableInfo tableInfo = new TableInfo(typeof(MigrationTable));
         tableInfo.Init();
-        result.Run(() => _storage.CreateTable(tableInfo));
+        await result.RunAsync(() => _storage.CreateTable(tableInfo));
         InitMigrationTableDM();
         return result;
     }
 
-    public override ResultWithError<bool> Can(string name)
+    public override async Task<ResultWithError<bool>> Can(string name)
     {
-        ResultWithError<bool> result = MigrationTable.ExistWithError(p => p.Name == name);
+        ResultWithError<bool> result = await MigrationTable.ExistWithError(p => p.Name == name);
         result.Result = !result.Result;
         return result;
     }
 
-    public override VoidWithError Save(string name)
+    public override async Task<VoidWithError> Save(string name)
     {
         MigrationTable migration = new()
         {
@@ -41,14 +42,14 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
         };
         VoidWithError result = new()
         {
-            Errors = migration.CreateWithError()
+            Errors = await migration.CreateWithError()
         };
         return result;
     }
 
-    public override void BeforeUp(VoidWithError voidWithError)
+    public override async Task BeforeUp(VoidWithError voidWithError)
     {
-        ResultWithError<DbTransactionContext> transactionQuery = _storage.BeginTransaction();
+        ResultWithError<DbTransactionContext> transactionQuery = await _storage.BeginTransaction();
         if (transactionQuery.Success && transactionQuery.Result != null)
         {
             _context = transactionQuery.Result;
@@ -56,24 +57,24 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
         voidWithError.Errors.AddRange(transactionQuery.Errors);
     }
 
-    public override void AfterUp(VoidWithError voidWithError)
+    public override async Task AfterUp(VoidWithError voidWithError)
     {
         if (_context != null)
         {
             if (voidWithError.Success)
             {
-                ResultWithError<bool> commitQuery = _context.Commit();
+                ResultWithError<bool> commitQuery = await _context.Commit();
                 voidWithError.Errors.AddRange(commitQuery.Errors);
             }
             else
             {
-                ResultWithError<bool> rollbackQuery = _context.Rollback();
+                ResultWithError<bool> rollbackQuery = await _context.Rollback();
                 voidWithError.Errors.AddRange(rollbackQuery.Errors);
             }
         }
     }
 
-    public override VoidWithError ApplyMigration<X>(IMigrationModel model)
+    public override Task<VoidWithError> ApplyMigration<X>(IMigrationModel model)
     {
         return _storage.ApplyMigration<X>(model);
     }

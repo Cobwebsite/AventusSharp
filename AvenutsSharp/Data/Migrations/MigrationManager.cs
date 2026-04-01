@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Migrations;
@@ -10,11 +11,11 @@ namespace AventusSharp.Data.Migrations;
 public static class MigrationManager
 {
     private static List<Type> _migrationsClasses = new List<Type>();
-    public static VoidWithError Run(List<Assembly> assemblies)
+    public static async Task<VoidWithError> Run(List<Assembly> assemblies)
     {
         VoidWithError result = new VoidWithError();
         result.Run(() => LoadMigrations(assemblies));
-        result.Run(ApplyMigrations);
+        await result.RunAsync(ApplyMigrations);
 
 
 
@@ -39,7 +40,7 @@ public static class MigrationManager
         return result;
     }
 
-    private static VoidWithError ApplyMigrations()
+    private static async Task<VoidWithError> ApplyMigrations()
     {
         VoidWithError result = new VoidWithError();
 
@@ -54,7 +55,7 @@ public static class MigrationManager
             }
             foreach (IMigrationProvider provider in providers)
             {
-                result.Run(provider.Init);
+                await result.RunAsync(provider.Init);
             }
 
             SortedDictionary<string, Migration> migrations = new SortedDictionary<string, Migration>();
@@ -70,7 +71,7 @@ public static class MigrationManager
 
             foreach (KeyValuePair<string, Migration> migrationPair in migrations)
             {
-                result.Run(() => migrationPair.Value._Up(providers));
+                await result.RunAsync(() => migrationPair.Value._Up(providers));
             }
         }
         return result;

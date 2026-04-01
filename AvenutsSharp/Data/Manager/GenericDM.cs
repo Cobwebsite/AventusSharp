@@ -366,18 +366,19 @@ namespace AventusSharp.Data.Manager
         #endregion
 
         #region Migration
-        protected VoidWithError ApplyMigration(MigrationModel<U> model)
+        protected async Task<VoidWithError> ApplyMigration(MigrationModel<U> model)
         {
             VoidWithError result = new();
             Console.WriteLine(model.ToString());
+            // TODO
             return result;
         }
         private MethodInfo? IApplyMigration = null;
-        VoidWithError IGenericDM.ApplyMigration<X>(IMigrationModel model)
+        async Task<VoidWithError> IGenericDM.ApplyMigration<X>(IMigrationModel model)
         {
             try
             {
-                VoidWithError? result = InvokeMethod<VoidWithError, X>(ref IApplyMigration, new object[] { model });
+                VoidWithError? result = await InvokeMethodAsync<VoidWithError, X>(ref IApplyMigration, [model]);
                 if (result == null)
                 {
                     result = new VoidWithError();
@@ -466,79 +467,81 @@ namespace AventusSharp.Data.Manager
         #region Get
 
         #region GetAll
-        protected abstract ResultWithError<List<X>> GetAllLogic<X>() where X : U;
+        protected abstract Task<ResultWithError<List<X>>> GetAllLogic<X>() where X : U;
 
-        protected virtual List<GenericError> CanGetAll()
+        protected virtual Task<List<GenericError>> CanGetAll()
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeGetAll(List<GenericError> errors)
+        private async Task WrapperBeforeGetAll(List<GenericError> errors)
         {
             try
             {
-                errors.AddRange(BeforeGetAllWithError());
-                BeforeGetAll();
+                errors.AddRange(await BeforeGetAllWithError());
+                await BeforeGetAll();
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeGetAllWithError()
+        protected virtual Task<List<GenericError>> BeforeGetAllWithError()
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeGetAll()
+        protected virtual Task BeforeGetAll()
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterGetAll<X>(ResultWithError<List<X>> result) where X : U
+        private async Task WrapperAfterGetAll<X>(ResultWithError<List<X>> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterGetAllWithError<X>(result));
-                AfterGetAll<X>(result);
+                result.Errors.AddRange(await AfterGetAllWithError<X>(result));
+                await AfterGetAll<X>(result);
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> AfterGetAllWithError<X>(ResultWithError<List<X>> result) where X : U
+        protected virtual Task<List<GenericError>> AfterGetAllWithError<X>(ResultWithError<List<X>> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterGetAll<X>(ResultWithError<List<X>> result) where X : U
+        protected virtual Task AfterGetAll<X>(ResultWithError<List<X>> result) where X : U
         {
+            return Task.CompletedTask;
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<U>> GetAllWithError()
+        public Task<ResultWithError<List<U>>> GetAllWithError()
         {
             return GetAllWithError<U>();
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<X>> GetAllWithError<X>() where X : U
+        public async Task<ResultWithError<List<X>>> GetAllWithError<X>() where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
-            List<GenericError> errors = CanGetAll();
+            List<GenericError> errors = await CanGetAll();
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 PrintErrors(result);
                 return result;
             }
-            WrapperBeforeGetAll(errors);
+            await WrapperBeforeGetAll(errors);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 PrintErrors(result);
                 return result;
             }
-            result = GetAllLogic<X>();
-            WrapperAfterGetAll(result);
+            result = await GetAllLogic<X>();
+            await WrapperAfterGetAll(result);
             PrintErrors(result);
             return result;
         }
@@ -546,11 +549,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<List<X>> IGenericDM.GetAllWithError<X>()
+        async Task<ResultWithError<List<X>>> IGenericDM.GetAllWithError<X>()
         {
             try
             {
-                ResultWithError<List<X>>? result = InvokeMethod<ResultWithError<List<X>>, X>(ref IGetAllWithError, Array.Empty<object>());
+                ResultWithError<List<X>>? result = await InvokeMethodAsync<ResultWithError<List<X>>, X>(ref IGetAllWithError, Array.Empty<object>());
                 if (result == null)
                 {
                     result = new ResultWithError<List<X>>();
@@ -575,16 +578,16 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<U> GetAll()
+        public Task<List<U>> GetAll()
         {
             return GetAll<U>();
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<X> GetAll<X>() where X : U
+        public async Task<List<X>> GetAll<X>() where X : U
         {
-            ResultWithError<List<X>> result = GetAllWithError<X>();
+            ResultWithError<List<X>> result = await GetAllWithError<X>();
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -596,11 +599,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        List<X> IGenericDM.GetAll<X>()
+        async Task<List<X>> IGenericDM.GetAll<X>()
         {
             try
             {
-                List<X>? result = InvokeMethod<List<X>, X>(ref IGetAll, Array.Empty<object>());
+                List<X>? result = await InvokeMethodAsync<List<X>, X>(ref IGetAll, Array.Empty<object>());
                 if (result == null)
                 {
                     return new List<X>();
@@ -617,55 +620,57 @@ namespace AventusSharp.Data.Manager
         #endregion
 
         #region GetById
-        protected abstract ResultWithError<X> GetByIdLogic<X>(int id) where X : U;
+        protected abstract Task<ResultWithError<X>> GetByIdLogic<X>(int id) where X : U;
 
-        protected virtual List<GenericError> CanGetById(int id)
+        protected virtual Task<List<GenericError>> CanGetById(int id)
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeGetById(int id, List<GenericError> errors)
+        private async Task WrapperBeforeGetById(int id, List<GenericError> errors)
         {
             try
             {
-                errors.AddRange(BeforeGetByIdWithError(id));
-                BeforeGetById(id);
+                errors.AddRange(await BeforeGetByIdWithError(id));
+                await BeforeGetById(id);
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeGetByIdWithError(int id)
+        protected virtual Task<List<GenericError>> BeforeGetByIdWithError(int id)
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeGetById(int id)
+        protected virtual Task BeforeGetById(int id)
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterGetById<X>(int id, ResultWithError<X> result) where X : U
+        private async Task WrapperAfterGetById<X>(int id, ResultWithError<X> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterGetByIdWithError(id, result));
-                AfterGetById(id, result);
+                result.Errors.AddRange(await AfterGetByIdWithError(id, result));
+                await AfterGetById(id, result);
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> AfterGetByIdWithError<X>(int id, ResultWithError<X> result) where X : U
+        protected virtual Task<List<GenericError>> AfterGetByIdWithError<X>(int id, ResultWithError<X> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterGetById<X>(int id, ResultWithError<X> result) where X : U
+        protected virtual Task AfterGetById<X>(int id, ResultWithError<X> result) where X : U
         {
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<U> GetByIdWithError(int id)
+        public Task<ResultWithError<U>> GetByIdWithError(int id)
         {
             return GetByIdWithError<U>(id);
         }
@@ -673,27 +678,27 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<X> GetByIdWithError<X>(int id) where X : U
+        public async Task<ResultWithError<X>> GetByIdWithError<X>(int id) where X : U
         {
             ResultWithError<X> result = new ResultWithError<X>();
             try
             {
-                List<GenericError> errors = CanGetById(id);
+                List<GenericError> errors = await CanGetById(id);
                 if (errors.Count > 0)
                 {
                     result.Errors = errors;
                     PrintErrors(result);
                     return result;
                 }
-                WrapperBeforeGetById(id, errors);
+                await WrapperBeforeGetById(id, errors);
                 if (errors.Count > 0)
                 {
                     result.Errors = errors;
                     PrintErrors(result);
                     return result;
                 }
-                result = GetByIdLogic<X>(id);
-                WrapperAfterGetById(id, result);
+                result = await GetByIdLogic<X>(id);
+                await WrapperAfterGetById(id, result);
             }
             catch (Exception ex)
             {
@@ -706,11 +711,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<X> IGenericDM.GetByIdWithError<X>(int id)
+        async Task<ResultWithError<X>> IGenericDM.GetByIdWithError<X>(int id)
         {
             try
             {
-                ResultWithError<X>? result = InvokeMethod<ResultWithError<X>, X>(ref IGetByIdWithError, new object[] { id });
+                ResultWithError<X>? result = await InvokeMethodAsync<ResultWithError<X>, X>(ref IGetByIdWithError, new object[] { id });
                 if (result == null)
                 {
                     result = new ResultWithError<X>();
@@ -735,16 +740,16 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public U? GetById(int id)
+        public Task<U?> GetById(int id)
         {
             return GetById<U>(id);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public X? GetById<X>(int id) where X : U
+        public async Task<X?> GetById<X>(int id) where X : U
         {
-            ResultWithError<X> result = GetByIdWithError<X>(id);
+            ResultWithError<X> result = await GetByIdWithError<X>(id);
             if (result.Success)
             {
                 return result.Result;
@@ -755,11 +760,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        X IGenericDM.GetById<X>(int id)
+#pragma warning disable CS8616 // Nullability of reference types in return type doesn't match implemented member.
+        async Task<X> IGenericDM.GetById<X>(int id)
+#pragma warning restore CS8616 // Nullability of reference types in return type doesn't match implemented member.
         {
             try
             {
-                X? result = InvokeMethod<X, X>(ref IGetById, new object[] { id });
+                X? result = await InvokeMethodAsync<X, X>(ref IGetById, new object[] { id });
                 if (result == null)
                 {
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
@@ -777,69 +784,71 @@ namespace AventusSharp.Data.Manager
             }
         }
 
-        object? IGenericDM.GetById(int id)
+        async Task<object?> IGenericDM.GetById(int id)
         {
-            return GetById<U>(id);
+            return await GetById<U>(id);
         }
         #endregion
 
         #region GetByIds
-        protected abstract ResultWithError<List<X>> GetByIdsLogic<X>(List<int> ids) where X : U;
+        protected abstract Task<ResultWithError<List<X>>> GetByIdsLogic<X>(List<int> ids) where X : U;
 
-        protected virtual List<GenericError> CanGetByIds(List<int> ids)
+        protected virtual Task<List<GenericError>> CanGetByIds(List<int> ids)
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeGetByIds(List<int> ids, List<GenericError> errors)
+        private async Task WrapperBeforeGetByIds(List<int> ids, List<GenericError> errors)
         {
             try
             {
-                errors.AddRange(BeforeGetByIdsWithError(ids));
-                BeforeGetByIds(ids);
+                errors.AddRange(await BeforeGetByIdsWithError(ids));
+                await BeforeGetByIds(ids);
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeGetByIdsWithError(List<int> ids)
+        protected virtual Task<List<GenericError>> BeforeGetByIdsWithError(List<int> ids)
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeGetByIds(List<int> ids)
+        protected virtual Task BeforeGetByIds(List<int> ids)
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterGetByIds<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
+        private async Task WrapperAfterGetByIds<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterGetByIdsWithError(ids, result));
-                AfterGetByIds(ids, result);
+                result.Errors.AddRange(await AfterGetByIdsWithError(ids, result));
+                await AfterGetByIds(ids, result);
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> AfterGetByIdsWithError<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
+        protected virtual Task<List<GenericError>> AfterGetByIdsWithError<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterGetByIds<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
+        protected virtual Task AfterGetByIds<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
         {
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<U>> GetByIdsWithError(List<int> ids)
+        public Task<ResultWithError<List<U>>> GetByIdsWithError(List<int> ids)
         {
             return GetByIdsWithError<U>(ids);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<X>> GetByIdsWithError<X>(List<int> ids) where X : U
+        public async Task<ResultWithError<List<X>>> GetByIdsWithError<X>(List<int> ids) where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
             if (ids.Count == 0)
@@ -847,22 +856,22 @@ namespace AventusSharp.Data.Manager
                 result.Result = new List<X>();
                 return result;
             }
-            List<GenericError> errors = CanGetByIds(ids);
+            List<GenericError> errors = await CanGetByIds(ids);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 PrintErrors(result);
                 return result;
             }
-            WrapperBeforeGetByIds(ids, errors);
+            await WrapperBeforeGetByIds(ids, errors);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 PrintErrors(result);
                 return result;
             }
-            result = GetByIdsLogic<X>(ids);
-            WrapperAfterGetByIds(ids, result);
+            result = await GetByIdsLogic<X>(ids);
+            await WrapperAfterGetByIds(ids, result);
             PrintErrors(result);
             return result;
         }
@@ -870,11 +879,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<List<X>> IGenericDM.GetByIdsWithError<X>(List<int> ids)
+        async Task<ResultWithError<List<X>>> IGenericDM.GetByIdsWithError<X>(List<int> ids)
         {
             try
             {
-                ResultWithError<List<X>>? result = InvokeMethod<ResultWithError<List<X>>, X>(ref IGetByIdsWithError, new object[] { ids });
+                ResultWithError<List<X>>? result = await InvokeMethodAsync<ResultWithError<List<X>>, X>(ref IGetByIdsWithError, new object[] { ids });
                 if (result == null)
                 {
                     result = new ResultWithError<List<X>>();
@@ -899,16 +908,16 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<U>? GetByIds(List<int> ids)
+        public Task<List<U>?> GetByIds(List<int> ids)
         {
             return GetByIds<U>(ids);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<X>? GetByIds<X>(List<int> ids) where X : U
+        public async Task<List<X>?> GetByIds<X>(List<int> ids) where X : U
         {
-            ResultWithError<List<X>> result = GetByIdsWithError<X>(ids);
+            ResultWithError<List<X>> result = await GetByIdsWithError<X>(ids);
             if (result.Success)
             {
                 return result.Result;
@@ -919,11 +928,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        List<X> IGenericDM.GetByIds<X>(List<int> ids)
+        async Task<List<X>> IGenericDM.GetByIds<X>(List<int> ids)
         {
             try
             {
-                List<X>? result = InvokeMethod<List<X>, X>(ref IGetByIds, new object[] { ids });
+                List<X>? result = await InvokeMethodAsync<List<X>, X>(ref IGetByIds, new object[] { ids });
                 if (result == null)
                 {
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
@@ -941,81 +950,83 @@ namespace AventusSharp.Data.Manager
         #endregion
 
         #region Where
-        protected abstract ResultWithError<List<X>> WhereLogic<X>(Expression<Func<X, bool>> func) where X : U;
+        protected abstract Task<ResultWithError<List<X>>> WhereLogic<X>(Expression<Func<X, bool>> func) where X : U;
 
-        protected virtual List<GenericError> CanWhere<X>(Expression<Func<X, bool>> func) where X : U
+        protected virtual Task<List<GenericError>> CanWhere<X>(Expression<Func<X, bool>> func) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeWhere<X>(Expression<Func<X, bool>> func, List<GenericError> errors) where X : U
+        private async Task WrapperBeforeWhere<X>(Expression<Func<X, bool>> func, List<GenericError> errors) where X : U
         {
             try
             {
-                errors.AddRange(BeforeWhereWithError(func));
-                BeforeWhere(func);
+                errors.AddRange(await BeforeWhereWithError(func));
+                await BeforeWhere(func);
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeWhereWithError<X>(Expression<Func<X, bool>> func) where X : U
+        protected virtual Task<List<GenericError>> BeforeWhereWithError<X>(Expression<Func<X, bool>> func) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeWhere<X>(Expression<Func<X, bool>> func) where X : U
+        protected virtual Task BeforeWhere<X>(Expression<Func<X, bool>> func) where X : U
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterWhere<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
+        private async Task WrapperAfterWhere<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterWhereWithError(func, result));
-                AfterWhere(func, result);
+                result.Errors.AddRange(await AfterWhereWithError(func, result));
+                await AfterWhere(func, result);
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> AfterWhereWithError<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
+        protected virtual Task<List<GenericError>> AfterWhereWithError<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterWhere<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
+        protected virtual Task AfterWhere<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
         {
+            return Task.CompletedTask;
         }
 
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<U>> WhereWithError(Expression<Func<U, bool>> func)
+        public Task<ResultWithError<List<U>>> WhereWithError(Expression<Func<U, bool>> func)
         {
             return WhereWithError<U>(func);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<X>> WhereWithError<X>(Expression<Func<X, bool>> func) where X : U
+        public async Task<ResultWithError<List<X>>> WhereWithError<X>(Expression<Func<X, bool>> func) where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
-            List<GenericError> errors = CanWhere(func);
+            List<GenericError> errors = await CanWhere(func);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 PrintErrors(result);
                 return result;
             }
-            WrapperBeforeWhere(func, errors);
+            await WrapperBeforeWhere(func, errors);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 PrintErrors(result);
                 return result;
             }
-            result = WhereLogic(func);
-            WrapperAfterWhere(func, result);
+            result = await WhereLogic(func);
+            await WrapperAfterWhere(func, result);
             PrintErrors(result);
             return result;
         }
@@ -1023,11 +1034,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<List<X>> IGenericDM.WhereWithError<X>(Expression<Func<X, bool>> func)
+        async Task<ResultWithError<List<X>>> IGenericDM.WhereWithError<X>(Expression<Func<X, bool>> func)
         {
             try
             {
-                ResultWithError<List<X>>? result = InvokeMethod<ResultWithError<List<X>>, X>(ref IWhereWithError, new object[] { func });
+                ResultWithError<List<X>>? result = await InvokeMethodAsync<ResultWithError<List<X>>, X>(ref IWhereWithError, new object[] { func });
                 if (result == null)
                 {
                     result = new ResultWithError<List<X>>();
@@ -1052,16 +1063,16 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<U> Where(Expression<Func<U, bool>> func)
+        public Task<List<U>> Where(Expression<Func<U, bool>> func)
         {
             return Where<U>(func);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<X> Where<X>(Expression<Func<X, bool>> func) where X : U
+        public async Task<List<X>> Where<X>(Expression<Func<X, bool>> func) where X : U
         {
-            ResultWithError<List<X>> result = WhereWithError(func);
+            ResultWithError<List<X>> result = await WhereWithError(func);
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -1072,11 +1083,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        List<X> IGenericDM.Where<X>(Expression<Func<X, bool>> func)
+        async Task<List<X>> IGenericDM.Where<X>(Expression<Func<X, bool>> func)
         {
             try
             {
-                List<X>? result = InvokeMethod<List<X>, X>(ref IWhere, new object[] { func }, false);
+                List<X>? result = await InvokeMethodAsync<List<X>, X>(ref IWhere, new object[] { func }, false);
                 if (result == null)
                 {
                     return new List<X>();
@@ -1095,17 +1106,17 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<U> SingleWithError(Expression<Func<U, bool>> func)
+        public Task<ResultWithError<U>> SingleWithError(Expression<Func<U, bool>> func)
         {
             return SingleWithError<U>(func);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<X> SingleWithError<X>(Expression<Func<X, bool>> func) where X : U
+        public async Task<ResultWithError<X>> SingleWithError<X>(Expression<Func<X, bool>> func) where X : U
         {
             ResultWithError<X> result = new ResultWithError<X>();
-            ResultWithError<List<X>> where = WhereWithError<X>(func);
+            ResultWithError<List<X>> where = await WhereWithError<X>(func);
 
             result.Errors = where.Errors;
             if (where.Result != null && where.Result.Count > 0)
@@ -1118,11 +1129,11 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<X> IGenericDM.SingleWithError<X>(Expression<Func<X, bool>> func)
+        async Task<ResultWithError<X>> IGenericDM.SingleWithError<X>(Expression<Func<X, bool>> func)
         {
             try
             {
-                ResultWithError<X>? result = InvokeMethod<ResultWithError<X>, X>(ref ISingleWithError, new object[] { func });
+                ResultWithError<X>? result = await InvokeMethodAsync<ResultWithError<X>, X>(ref ISingleWithError, new object[] { func });
                 if (result == null)
                 {
                     result = new ResultWithError<X>();
@@ -1147,16 +1158,16 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public U? Single(Expression<Func<U, bool>> func)
+        public Task<U?> Single(Expression<Func<U, bool>> func)
         {
             return Single<U>(func);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public X? Single<X>(Expression<Func<X, bool>> func) where X : U
+        public async Task<X?> Single<X>(Expression<Func<X, bool>> func) where X : U
         {
-            List<X> where = Where(func);
+            List<X> where = await Where(func);
             if (where.Count > 0)
             {
                 return where[0];
@@ -1168,11 +1179,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        X IGenericDM.Single<X>(Expression<Func<X, bool>> func)
+#pragma warning disable CS8616 // Nullability of reference types in return type doesn't match implemented member.
+        async Task<X> IGenericDM.Single<X>(Expression<Func<X, bool>> func)
+#pragma warning restore CS8616 // Nullability of reference types in return type doesn't match implemented member.
         {
             try
             {
-                X? result = InvokeMethod<X?, X>(ref ISingle, new object[] { func }, false);
+                X? result = await InvokeMethodAsync<X?, X>(ref ISingle, new object[] { func }, false);
                 if (result == null)
                 {
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
@@ -1218,20 +1231,20 @@ namespace AventusSharp.Data.Manager
         #endregion
 
         #region Exist
-        public ResultWithError<bool> ExistWithError(Expression<Func<U, bool>> func)
+        public Task<ResultWithError<bool>> ExistWithError(Expression<Func<U, bool>> func)
         {
             return CreateExist<U>().Where(func).RunWithError();
         }
-        public ResultWithError<bool> ExistWithError<X>(Expression<Func<X, bool>> func) where X : U
+        public Task<ResultWithError<bool>> ExistWithError<X>(Expression<Func<X, bool>> func) where X : U
         {
             return CreateExist<X>().Where(func).RunWithError();
         }
         private MethodInfo? IExistWithError = null;
-        ResultWithError<bool> IGenericDM.ExistWithError<X>(Expression<Func<X, bool>> func)
+        async Task<ResultWithError<bool>> IGenericDM.ExistWithError<X>(Expression<Func<X, bool>> func)
         {
             try
             {
-                ResultWithError<bool>? result = InvokeMethod<ResultWithError<bool>, X>(ref IExistWithError, new object[] { func }, false);
+                ResultWithError<bool>? result = await InvokeMethodAsync<ResultWithError<bool>, X>(ref IExistWithError, [func], false);
                 if (result == null)
                 {
                     result = new ResultWithError<bool>();
@@ -1253,18 +1266,18 @@ namespace AventusSharp.Data.Manager
                 return result;
             }
         }
-        public bool Exist(Expression<Func<U, bool>> func)
+        public Task<bool> Exist(Expression<Func<U, bool>> func)
         {
             return CreateExist<U>().Where(func).Run();
         }
-        public bool Exist<X>(Expression<Func<X, bool>> func) where X : U
+        public Task<bool> Exist<X>(Expression<Func<X, bool>> func) where X : U
         {
             return CreateExist<X>().Where(func).Run();
         }
         private MethodInfo? IExist = null;
-        bool IGenericDM.Exist<X>(Expression<Func<X, bool>> func)
+        Task<bool> IGenericDM.Exist<X>(Expression<Func<X, bool>> func)
         {
-            return InvokeMethod<bool, X>(ref IExist, new object[] { func }, false);
+            return InvokeMethodAsync<bool, X>(ref IExist, [func], false);
         }
         #endregion
 
@@ -1273,37 +1286,38 @@ namespace AventusSharp.Data.Manager
         public event OnCreatedHandler<U> OnCreated;
 
         #region List
-        protected abstract VoidWithError BulkCreateLogic<X>(List<X> values, bool withId) where X : U;
-        protected abstract ResultWithError<List<X>> CreateLogic<X>(List<X> values) where X : U;
-        protected virtual List<GenericError> CanCreate<X>(List<X> values) where X : U
+        protected abstract Task<VoidWithError> BulkCreateLogic<X>(List<X> values, bool withId) where X : U;
+        protected abstract Task<ResultWithError<List<X>>> CreateLogic<X>(List<X> values) where X : U;
+        protected virtual Task<List<GenericError>> CanCreate<X>(List<X> values) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeCreate<X>(List<X> values, List<GenericError> errors) where X : U
+        private async Task WrapperBeforeCreate<X>(List<X> values, List<GenericError> errors) where X : U
         {
             try
             {
-                errors.AddRange(BeforeCreateWithError(values));
-                BeforeCreate(values);
+                errors.AddRange(await BeforeCreateWithError(values));
+                await BeforeCreate(values);
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeCreateWithError<X>(List<X> values) where X : U
+        protected virtual Task<List<GenericError>> BeforeCreateWithError<X>(List<X> values) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeCreate<X>(List<X> values) where X : U
+        protected virtual Task BeforeCreate<X>(List<X> values) where X : U
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterCreate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        private async Task WrapperAfterCreate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterCreateWithError(values, result));
-                AfterCreate(values, result);
+                result.Errors.AddRange(await AfterCreateWithError(values, result));
+                await AfterCreate(values, result);
             }
             catch (Exception e)
             {
@@ -1311,49 +1325,50 @@ namespace AventusSharp.Data.Manager
             }
         }
 
-        protected virtual List<GenericError> AfterCreateWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        protected virtual Task<List<GenericError>> AfterCreateWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterCreate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        protected virtual Task AfterCreate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
+            return Task.CompletedTask;
         }
 
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<X>> CreateWithError<X>(List<X> values) where X : U
+        public async Task<ResultWithError<List<X>>> CreateWithError<X>(List<X> values) where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
-            List<GenericError> errors = CanCreate(values);
+            List<GenericError> errors = await CanCreate(values);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 return result;
             }
-            WrapperBeforeCreate(values, errors);
+            await WrapperBeforeCreate(values, errors);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 return result;
             }
-            result = CreateLogic(values);
-            WrapperAfterCreate(values, result);
+            result = await CreateLogic(values);
+            await WrapperAfterCreate(values, result);
             OnCreated?.Invoke(TransformResult<X, U>(result));
             return result;
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<List<X>> IGenericDM.CreateWithError<X>(List<X> values)
+        async Task<ResultWithError<List<X>>> IGenericDM.CreateWithError<X>(List<X> values)
         {
             try
             {
                 ResultWithError<List<X>> result = new();
 
                 List<U> valuesTemp = TransformList<X, U>(values);
-                ResultWithError<List<U>>? resultTemp = CreateWithError(valuesTemp);
+                ResultWithError<List<U>>? resultTemp = await CreateWithError(valuesTemp);
                 if (resultTemp != null)
                 {
                     if (resultTemp.Result is List<U> castedList)
@@ -1386,19 +1401,19 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public VoidWithError BulkCreateWithError<X>(List<X> values, bool withId = false) where X : U
+        public Task<VoidWithError> BulkCreateWithError<X>(List<X> values, bool withId = false) where X : U
         {
             return BulkCreateLogic(values, withId);
         }
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        VoidWithError IGenericDM.BulkCreateWithError<X>(List<X> values, bool withId)
+        async Task<VoidWithError> IGenericDM.BulkCreateWithError<X>(List<X> values, bool withId)
         {
             try
             {
                 List<U> valuesTemp = TransformList<X, U>(values);
-                return BulkCreateWithError(valuesTemp, withId);
+                return await BulkCreateWithError(valuesTemp, withId);
             }
             catch (Exception e)
             {
@@ -1418,9 +1433,9 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<X> Create<X>(List<X> values) where X : U
+        public async Task<List<X>> Create<X>(List<X> values) where X : U
         {
-            ResultWithError<List<X>> result = CreateWithError(values);
+            ResultWithError<List<X>> result = await CreateWithError(values);
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -1431,13 +1446,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        List<X> IGenericDM.Create<X>(List<X> values)
+        async Task<List<X>> IGenericDM.Create<X>(List<X> values)
         {
             try
             {
                 List<X> result = new();
                 List<U> valuesTemp = TransformList<X, U>(values);
-                List<U>? resultTemp = InvokeMethod<List<U>, U>(ref ICreateList, new object[] { valuesTemp });
+                List<U>? resultTemp = await InvokeMethodAsync<List<U>, U>(ref ICreateList, new object[] { valuesTemp });
                 if (resultTemp != null)
                 {
                     return TransformList<U, X>(resultTemp);
@@ -1454,20 +1469,20 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public bool BulkCreate<X>(List<X> values, bool withId = false) where X : U
+        public async Task<bool> BulkCreate<X>(List<X> values, bool withId = false) where X : U
         {
-            return BulkCreateWithError(values, withId).Success;
+            return (await BulkCreateWithError(values, withId)).Success;
         }
         private MethodInfo? IBulkCreateList = null;
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        bool IGenericDM.BulkCreate<X>(List<X> values, bool withId)
+        async Task<bool> IGenericDM.BulkCreate<X>(List<X> values, bool withId)
         {
             try
             {
                 List<U> valuesTemp = TransformList<X, U>(values);
-                bool? resultTemp = InvokeMethod<bool, U>(ref IBulkCreateList, new object[] { valuesTemp, withId });
+                bool? resultTemp = await InvokeMethodAsync<bool, U>(ref IBulkCreateList, new object[] { valuesTemp, withId });
                 return resultTemp ?? false;
             }
             catch (Exception e)
@@ -1483,10 +1498,10 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<X> CreateWithError<X>(X value) where X : U
+        public async Task<ResultWithError<X>> CreateWithError<X>(X value) where X : U
         {
             ResultWithError<X> result = new();
-            ResultWithError<List<X>> resultList = CreateWithError(new List<X>() { value });
+            ResultWithError<List<X>> resultList = await CreateWithError(new List<X>() { value });
             result.Errors = resultList.Errors;
             if (resultList.Result?.Count > 0)
             {
@@ -1502,14 +1517,14 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<X> IGenericDM.CreateWithError<X>(X value)
+        async Task<ResultWithError<X>> IGenericDM.CreateWithError<X>(X value)
         {
             try
             {
                 ResultWithError<X> result = new();
                 if (value is U)
                 {
-                    ResultWithError<U>? resultTemp = InvokeMethod<ResultWithError<U>, U>(ref ICreateWithError, new object[] { value });
+                    ResultWithError<U>? resultTemp = await InvokeMethodAsync<ResultWithError<U>, U>(ref ICreateWithError, new object[] { value });
                     if (resultTemp != null)
                     {
                         if (resultTemp.Result is X casted)
@@ -1544,9 +1559,9 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public X? Create<X>(X value) where X : U
+        public async Task<X?> Create<X>(X value) where X : U
         {
-            ResultWithError<X> result = CreateWithError(value);
+            ResultWithError<X> result = await CreateWithError(value);
             if (result.Success)
             {
                 return result.Result;
@@ -1557,13 +1572,15 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        X IGenericDM.Create<X>(X value)
+#pragma warning disable CS8616 // Nullability of reference types in return type doesn't match implemented member.
+        async Task<X> IGenericDM.Create<X>(X value)
+#pragma warning restore CS8616 // Nullability of reference types in return type doesn't match implemented member.
         {
             try
             {
                 if (value is U)
                 {
-                    U? result = InvokeMethod<U, U>(ref ICreate, new object[] { value });
+                    U? result = await InvokeMethodAsync<U, U>(ref ICreate, new object[] { value });
                     if (result is X resultCasted)
                     {
                         return resultCasted;
@@ -1590,71 +1607,73 @@ namespace AventusSharp.Data.Manager
         public event OnUpdatedHandler<U> OnUpdated;
 
         #region List
-        protected abstract ResultWithError<List<X>> UpdateLogic<X>(List<X> values) where X : U;
-        protected virtual List<GenericError> CanUpdate<X>(List<X> values) where X : U
+        protected abstract Task<ResultWithError<List<X>>> UpdateLogic<X>(List<X> values) where X : U;
+        protected virtual Task<List<GenericError>> CanUpdate<X>(List<X> values) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeUpdate<X>(List<X> values, List<GenericError> errors) where X : U
+        private async Task WrapperBeforeUpdate<X>(List<X> values, List<GenericError> errors) where X : U
         {
             try
             {
-                errors.AddRange(BeforeUpdateWithError(values));
-                BeforeUpdate(values);
+                errors.AddRange(await BeforeUpdateWithError(values));
+               await BeforeUpdate(values);
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeUpdateWithError<X>(List<X> values) where X : U
+        protected virtual Task<List<GenericError>> BeforeUpdateWithError<X>(List<X> values) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeUpdate<X>(List<X> values) where X : U
+        protected virtual Task BeforeUpdate<X>(List<X> values) where X : U
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterUpdate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        private async Task WrapperAfterUpdate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterUpdateWithError(values, result));
-                AfterUpdate(values, result);
+                result.Errors.AddRange(await AfterUpdateWithError(values, result));
+                await AfterUpdate(values, result);
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> AfterUpdateWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        protected virtual Task<List<GenericError>> AfterUpdateWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterUpdate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        protected virtual Task AfterUpdate<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
+            return Task.CompletedTask;
         }
 
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<X>> UpdateWithError<X>(List<X> values) where X : U
+        public async Task<ResultWithError<List<X>>> UpdateWithError<X>(List<X> values) where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
-            List<GenericError> errors = CanUpdate(values);
+            List<GenericError> errors = await CanUpdate(values);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 return result;
             }
-            WrapperBeforeUpdate(values, errors);
+            await WrapperBeforeUpdate(values, errors);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 return result;
             }
-            result = UpdateLogic(values);
-            WrapperAfterUpdate(values, result);
+            result = await UpdateLogic(values);
+            await WrapperAfterUpdate(values, result);
             OnUpdated?.Invoke(TransformResult<X, U>(result));
             return result;
         }
@@ -1662,13 +1681,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<List<X>> IGenericDM.UpdateWithError<X>(List<X> values)
+        async Task<ResultWithError<List<X>>> IGenericDM.UpdateWithError<X>(List<X> values)
         {
             try
             {
                 ResultWithError<List<X>> result = new();
                 List<U> valuesTemp = TransformList<X, U>(values);
-                ResultWithError<List<U>>? resultTemp = InvokeMethod<ResultWithError<List<U>>, U>(ref IUpdateListWithError, new object[] { valuesTemp });
+                ResultWithError<List<U>>? resultTemp = await InvokeMethodAsync<ResultWithError<List<U>>, U>(ref IUpdateListWithError, new object[] { valuesTemp });
                 if (resultTemp != null)
                 {
                     if (resultTemp.Result is List<U> castedList)
@@ -1700,9 +1719,9 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<X> Update<X>(List<X> values) where X : U
+        public async Task<List<X>> Update<X>(List<X> values) where X : U
         {
-            ResultWithError<List<X>> result = UpdateWithError(values);
+            ResultWithError<List<X>> result = await UpdateWithError(values);
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -1713,12 +1732,12 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        List<X> IGenericDM.Update<X>(List<X> values)
+        async Task<List<X>> IGenericDM.Update<X>(List<X> values)
         {
             try
             {
                 List<U> valuesTemp = TransformList<X, U>(values);
-                List<U>? result = InvokeMethod<List<U>, U>(ref IUpdateList, new object[] { valuesTemp });
+                List<U>? result = await InvokeMethodAsync<List<U>, U>(ref IUpdateList, new object[] { valuesTemp });
                 if (result != null)
                 {
                     return TransformList<U, X>(result);
@@ -1740,10 +1759,10 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<X> UpdateWithError<X>(X value) where X : U
+        public async Task<ResultWithError<X>> UpdateWithError<X>(X value) where X : U
         {
             ResultWithError<X> result = new();
-            ResultWithError<List<X>> resultList = UpdateWithError(new List<X>() { value });
+            ResultWithError<List<X>> resultList = await UpdateWithError(new List<X>() { value });
             result.Errors = resultList.Errors;
             if (resultList.Result?.Count > 0)
             {
@@ -1759,14 +1778,14 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<X> IGenericDM.UpdateWithError<X>(X value)
+        async Task<ResultWithError<X>> IGenericDM.UpdateWithError<X>(X value)
         {
             try
             {
                 ResultWithError<X> result = new();
                 if (value is U)
                 {
-                    ResultWithError<U>? resultTemp = InvokeMethod<ResultWithError<U>, U>(ref IUpdateWithError, new object[] { value });
+                    ResultWithError<U>? resultTemp = await InvokeMethodAsync<ResultWithError<U>, U>(ref IUpdateWithError, new object[] { value });
                     if (resultTemp != null)
                     {
                         if (resultTemp.Result is X castedItem)
@@ -1799,9 +1818,9 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public X? Update<X>(X value) where X : U
+        public async Task<X?> Update<X>(X value) where X : U
         {
-            ResultWithError<X> result = UpdateWithError(value);
+            ResultWithError<X> result = await UpdateWithError(value);
             if (result.Success)
             {
                 return result.Result;
@@ -1812,13 +1831,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        X IGenericDM.Update<X>(X value)
+        async Task<X> IGenericDM.Update<X>(X value)
         {
             try
             {
                 if (value is U)
                 {
-                    U? result = InvokeMethod<U, U>(ref IUpdate, new object[] { value });
+                    U? result = await InvokeMethodAsync<U, U>(ref IUpdate, new object[] { value });
                     if (result is X casted)
                     {
                         return casted;
@@ -1845,54 +1864,56 @@ namespace AventusSharp.Data.Manager
         public event OnDeletedHandler<U> OnDeleted;
 
         #region List
-        protected abstract ResultWithError<List<X>> DeleteLogic<X>(List<X> values) where X : U;
-        protected virtual List<GenericError> CanDelete<X>(List<X> values) where X : U
+        protected abstract Task<ResultWithError<List<X>>> DeleteLogic<X>(List<X> values) where X : U;
+        protected virtual Task<List<GenericError>> CanDelete<X>(List<X> values) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        private void WrapperBeforeDelete<X>(List<X> values, List<GenericError> errors) where X : U
+        private async Task WrapperBeforeDelete<X>(List<X> values, List<GenericError> errors) where X : U
         {
             try
             {
-                errors.AddRange(BeforeDeleteWithError(values));
-                BeforeDelete(values);
+                errors.AddRange(await BeforeDeleteWithError(values));
+                await BeforeDelete(values);
             }
             catch (Exception e)
             {
                 errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> BeforeDeleteWithError<X>(List<X> values) where X : U
+        protected virtual Task<List<GenericError>> BeforeDeleteWithError<X>(List<X> values) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void BeforeDelete<X>(List<X> values) where X : U
+        protected virtual Task BeforeDelete<X>(List<X> values) where X : U
         {
+            return Task.CompletedTask;
         }
-        private void WrapperAfterDelete<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        private async Task WrapperAfterDelete<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
             try
             {
-                result.Errors.AddRange(AfterDeleteWithError(values, result));
-                AfterDelete(values, result);
+                result.Errors.AddRange(await AfterDeleteWithError(values, result));
+                await AfterDelete(values, result);
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
             }
         }
-        protected virtual List<GenericError> AfterDeleteWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        protected virtual Task<List<GenericError>> AfterDeleteWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
-            return new List<GenericError>();
+            return Task.FromResult(new List<GenericError>());
         }
-        protected virtual void AfterDelete<X>(List<X> values, ResultWithError<List<X>> result) where X : U
+        protected virtual Task AfterDelete<X>(List<X> values, ResultWithError<List<X>> result) where X : U
         {
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<List<X>> DeleteWithError<X>(List<X> values) where X : U
+        public async Task<ResultWithError<List<X>>> DeleteWithError<X>(List<X> values) where X : U
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
             if (values.Count == 0)
@@ -1900,20 +1921,20 @@ namespace AventusSharp.Data.Manager
                 result.Result = values;
                 return result;
             }
-            List<GenericError> errors = CanDelete(values);
+            List<GenericError> errors = await CanDelete(values);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 return result;
             }
-            WrapperBeforeDelete(values, errors);
+            await WrapperBeforeDelete(values, errors);
             if (errors.Count > 0)
             {
                 result.Errors = errors;
                 return result;
             }
-            result = DeleteLogic(values);
-            WrapperAfterDelete(values, result);
+            result = await DeleteLogic(values);
+            await WrapperAfterDelete(values, result);
             OnDeleted?.Invoke(TransformResult<X, U>(result));
             return result;
         }
@@ -1921,13 +1942,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<List<X>> IGenericDM.DeleteWithError<X>(List<X> values)
+        async Task<ResultWithError<List<X>>> IGenericDM.DeleteWithError<X>(List<X> values)
         {
             try
             {
                 ResultWithError<List<X>> result = new();
                 List<U> valuesTemp = TransformList<X, U>(values);
-                ResultWithError<List<U>>? resultTemp = InvokeMethod<ResultWithError<List<U>>, U>(ref IDeleteListWithError, new object[] { valuesTemp });
+                ResultWithError<List<U>>? resultTemp = await InvokeMethodAsync<ResultWithError<List<U>>, U>(ref IDeleteListWithError, new object[] { valuesTemp });
                 if (resultTemp != null)
                 {
                     if (resultTemp.Result is List<U> castedList)
@@ -1959,9 +1980,9 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public List<X> Delete<X>(List<X> values) where X : U
+        public async Task<List<X>> Delete<X>(List<X> values) where X : U
         {
-            ResultWithError<List<X>> result = DeleteWithError(values);
+            ResultWithError<List<X>> result = await DeleteWithError(values);
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -1972,12 +1993,12 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        List<X> IGenericDM.Delete<X>(List<X> values)
+        async Task<List<X>> IGenericDM.Delete<X>(List<X> values)
         {
             try
             {
                 List<U> valuesTemp = TransformList<X, U>(values);
-                List<U>? result = InvokeMethod<List<U>, U>(ref IDeleteList, new object[] { valuesTemp });
+                List<U>? result = await InvokeMethodAsync<List<U>, U>(ref IDeleteList, new object[] { valuesTemp });
                 if (result != null)
                 {
                     return TransformList<U, X>(result);
@@ -1996,10 +2017,10 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public ResultWithError<X> DeleteWithError<X>(X value) where X : U
+        public async Task<ResultWithError<X>> DeleteWithError<X>(X value) where X : U
         {
             ResultWithError<X> result = new();
-            ResultWithError<List<X>> resultList = DeleteWithError(new List<X>() { value });
+            ResultWithError<List<X>> resultList = await DeleteWithError(new List<X>() { value });
             result.Errors = resultList.Errors;
             if (resultList.Result?.Count > 0)
             {
@@ -2015,14 +2036,14 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        ResultWithError<X> IGenericDM.DeleteWithError<X>(X value)
+        async Task<ResultWithError<X>> IGenericDM.DeleteWithError<X>(X value)
         {
             try
             {
                 ResultWithError<X> result = new();
                 if (value is U)
                 {
-                    ResultWithError<U>? resultTemp = InvokeMethod<ResultWithError<U>, U>(ref IDeleteWithError, new object[] { value });
+                    ResultWithError<U>? resultTemp = await InvokeMethodAsync<ResultWithError<U>, U>(ref IDeleteWithError, new object[] { value });
                     if (resultTemp != null)
                     {
                         if (resultTemp.Result is X castedItem)
@@ -2055,9 +2076,9 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public X? Delete<X>(X value) where X : U
+        public async Task<X?> Delete<X>(X value) where X : U
         {
-            ResultWithError<X> result = DeleteWithError(value);
+            ResultWithError<X> result = await DeleteWithError(value);
             if (result.Success)
             {
                 return result.Result;
@@ -2068,13 +2089,13 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        X IGenericDM.Delete<X>(X value)
+        async Task<X> IGenericDM.Delete<X>(X value)
         {
             try
             {
                 if (value is U)
                 {
-                    U? result = InvokeMethod<U, U>(ref IDelete, new object[] { value });
+                    U? result = await InvokeMethodAsync<U, U>(ref IDelete, new object[] { value });
                     if (result is X casted)
                     {
                         return casted;
@@ -2097,9 +2118,8 @@ namespace AventusSharp.Data.Manager
         #endregion
 
         #region Transaction
-        protected abstract SemaphoreSlim getTransactionLocker();
-        protected abstract TransactionContext? getTransactionContext();
-        protected abstract void setTransactionContext(TransactionContext? context);
+        protected abstract TransactionContext? getTransactionScope();
+        protected abstract void setTransactionScope(TransactionContext? context);
         /// <summary>
         /// Run a function inside a transaction that ll be commit if no error otherwise rollback
         /// </summary>
@@ -2107,9 +2127,9 @@ namespace AventusSharp.Data.Manager
         /// <param name="defaultValue"></param>
         /// <param name="action"></param>
         /// <returns></returns>
-        public ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action)
+        public async Task<ResultWithError<Y>> RunInsideTransaction<Y>(Y? defaultValue, Func<Task<ResultWithError<Y>>> action)
         {
-            ResultWithError<TransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            ResultWithError<TransactionContext> transactionResult = (await BeginTransaction()).ToGeneric();
             if (!transactionResult.Success || transactionResult.Result == null)
             {
                 ResultWithError<Y> resultError = new()
@@ -2119,15 +2139,15 @@ namespace AventusSharp.Data.Manager
                 };
                 return resultError;
             }
-            ResultWithError<Y> resultTemp = action();
+            ResultWithError<Y> resultTemp = await action();
             if (resultTemp.Success)
             {
-                ResultWithError<bool> commitResult = transactionResult.Result.Commit();
+                ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
                 resultTemp.Errors.AddRange(commitResult.Errors);
             }
             else
             {
-                ResultWithError<bool> rollbackResult = transactionResult.Result.Rollback();
+                ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
             return resultTemp;
@@ -2138,7 +2158,7 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="Y"></typeparam>
         /// <param name="action"></param>
         /// <returns></returns>
-        public ResultWithError<Y> RunInsideTransaction<Y>(Func<ResultWithError<Y>> action)
+        public Task<ResultWithError<Y>> RunInsideTransaction<Y>(Func<Task<ResultWithError<Y>>> action)
         {
             return RunInsideTransaction<Y>(default, action);
         }
@@ -2147,9 +2167,9 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        public VoidWithError RunInsideTransaction(Func<VoidWithError> action)
+        public async Task<VoidWithError> RunInsideTransaction(Func<Task<VoidWithError>> action)
         {
-            ResultWithError<TransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            ResultWithError<TransactionContext> transactionResult = (await BeginTransaction()).ToGeneric();
             if (!transactionResult.Success || transactionResult.Result == null)
             {
                 VoidWithError resultError = new()
@@ -2158,56 +2178,45 @@ namespace AventusSharp.Data.Manager
                 };
                 return resultError;
             }
-            VoidWithError resultTemp = action();
+            VoidWithError resultTemp = await action();
             if (resultTemp.Success)
             {
-                ResultWithError<bool> commitResult = transactionResult.Result.Commit();
-                if (commitResult.Result)
-                {
-                    setTransactionContext(null);
-                }
+                ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
                 resultTemp.Errors.AddRange(commitResult.Errors);
             }
             else
             {
-                ResultWithError<bool> rollbackResult = transactionResult.Result.Rollback();
-                setTransactionContext(null);
+                ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
             return resultTemp;
         }
 
-        protected abstract ResultWithError<TransactionContext> BeginTransactionContext();
-        protected abstract void EndTransactionContext();
-        protected ResultWithError<TransactionContext> BeginTransaction()
+        protected abstract Task<ResultWithError<TransactionContext>> BeginTransactionScope();
+        protected abstract Task EndTransactionScope();
+        protected async Task<ResultWithError<TransactionContext>> BeginTransaction()
         {
             ResultWithError<TransactionContext> result = new();
-            var locker = getTransactionLocker();
             try
             {
-                lock (locker)
+
+                TransactionContext? transactionContext = getTransactionScope();
+                if (transactionContext == null)
                 {
-                    locker.WaitAsync().GetAwaiter().GetResult();
-                    TransactionContext? transactionContext = getTransactionContext();
-                    if (transactionContext == null)
+                    await result.RunAsync(() => BeginTransactionScope());
+                    if (result.Success && result.Result != null)
                     {
-                        result.Run(() => BeginTransactionContext());
-                        if (result.Success && result.Result != null)
-                        {
-                            setTransactionContext(result.Result);
-                        }
-                        else
-                        {
-                            locker.Release();
-                            return result;
-                        }
+                        setTransactionScope(result.Result);
                     }
                     else
                     {
-                        transactionContext.count++;
-                        result.Result = transactionContext;
+                        return result;
                     }
-                    locker.Release();
+                }
+                else
+                {
+                    transactionContext.count++;
+                    result.Result = transactionContext;
                 }
             }
             catch (Exception e)
@@ -2219,23 +2228,12 @@ namespace AventusSharp.Data.Manager
             return result;
         }
 
-        protected void EndTransaction()
+        protected async Task EndTransaction()
         {
-            if (getTransactionContext() != null)
+            if (getTransactionScope() != null)
             {
-                EndTransactionContext();
-                setTransactionContext(null);
-            }
-        }
-
-        protected void RunInsideLocker(Action fct)
-        {
-            SemaphoreSlim locker = getTransactionLocker();
-            lock (locker)
-            {
-                locker.WaitAsync().GetAwaiter().GetResult();
-                fct();
-                locker.Release();
+                await EndTransactionScope();
+                setTransactionScope(null);
             }
         }
 
@@ -2303,15 +2301,98 @@ namespace AventusSharp.Data.Manager
                             if (GenericDM<T, U>.IsSameParameters(methodType.GetParameters(), types))
                             {
                                 X? result = (X?)methodType.Invoke(this, parameters);
-                                methodSaved = method;
                                 return result;
                             }
                         }
                         else
                         {
                             X? result = (X?)methodType.Invoke(this, parameters);
-                            methodSaved = method;
                             return result;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        if (mustThrow)
+                        {
+                            PrintErrors(e);
+#pragma warning disable CA2200 // Rethrow to preserve stack details
+                            throw e;
+#pragma warning restore CA2200 // Rethrow to preserve stack details
+                        }
+                    }
+                }
+            }
+
+            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
+        }
+
+        protected Task<X?> InvokeMethodAsync<X, Y>(ref MethodInfo? methodSaved, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
+        {
+            if (methodSaved != null)
+            {
+                Type YType = typeof(Y);
+                MethodInfo methodType = methodSaved.MakeGenericMethod(YType);
+                object? result = methodType.Invoke(this, parameters);
+                if (result is Task<X?> task)
+                {
+                    return task;
+                }
+                return Task.FromResult((X?)result);
+            }
+            bool mustThrow = false;
+            parameters ??= Array.Empty<object>();
+            List<Type> types = new();
+            foreach (object param in parameters)
+            {
+                Type type = param.GetType();
+                if (param is Expression exp && type.IsGenericType)
+                {
+                    Type[] t = exp.Type.GetGenericArguments();
+                    Type fctType = t.Length switch
+                    {
+                        1 => typeof(Func<>),
+                        2 => typeof(Func<,>),
+                        _ => throw new NotImplementedException()
+                    };
+                    fctType = fctType.MakeGenericType(t);
+                    type = typeof(Expression<>).MakeGenericType(fctType);
+                }
+                types.Add(type);
+            }
+
+            MethodInfo[] methods = this.GetType().GetMethods();
+            foreach (MethodInfo method in methods)
+            {
+                if (method.Name == name && method.IsGenericMethod)
+                {
+                    try
+                    {
+                        Type YType = typeof(Y);
+                        MethodInfo methodType = method.MakeGenericMethod(YType);
+                        mustThrow = true;
+                        // it ll fail if Generic constraint are different but we can't deal it properly inside code so let the compiler do the job
+                        if (checkSameParam)
+                        {
+                            if (GenericDM<T, U>.IsSameParameters(methodType.GetParameters(), types))
+                            {
+                                object? result = methodType.Invoke(this, parameters);
+                                methodSaved = method;
+                                if (result is Task<X?> task)
+                                {
+                                    return task;
+                                }
+                                return Task.FromResult((X?)result);
+                            }
+                        }
+                        else
+                        {
+                            object? result = methodType.Invoke(this, parameters);
+                            methodSaved = method;
+                            if (result is Task<X?> task)
+                            {
+                                return task;
+                            }
+                            return Task.FromResult((X?)result);
                         }
                     }
                     catch (Exception e)
@@ -2367,12 +2448,14 @@ namespace AventusSharp.Data.Manager
                         {
                             if (GenericDM<T, U>.IsSameParameters(methodType.GetParameters(), types))
                             {
-                                return (X?)methodType.Invoke(this, parameters);
+                                X? result = (X?)methodType.Invoke(this, parameters);
+                                return result;
                             }
                         }
                         else
                         {
-                            return (X?)methodType.Invoke(this, parameters);
+                            X? result = (X?)methodType.Invoke(this, parameters);
+                            return result;
                         }
                     }
                     catch (Exception e)
@@ -2390,6 +2473,77 @@ namespace AventusSharp.Data.Manager
 
             throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found").GetException();
         }
+        protected Task<X?> InvokeMethodAsync<X>(Type YType, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
+        {
+            bool mustThrow = false;
+            parameters ??= Array.Empty<object>();
+            List<Type> types = new();
+            foreach (object param in parameters)
+            {
+                Type type = param.GetType();
+                if (param is Expression exp && type.IsGenericType)
+                {
+                    Type[] t = exp.Type.GetGenericArguments();
+                    Type fctType = t.Length switch
+                    {
+                        1 => typeof(Func<>),
+                        2 => typeof(Func<,>),
+                        _ => throw new NotImplementedException()
+                    };
+                    fctType = fctType.MakeGenericType(t);
+                    type = typeof(Expression<>).MakeGenericType(fctType);
+                }
+                types.Add(type);
+            }
+
+            MethodInfo[] methods = this.GetType().GetMethods();
+            foreach (MethodInfo method in methods)
+            {
+                if (method.Name == name && method.IsGenericMethod)
+                {
+                    try
+                    {
+                        MethodInfo methodType = method.MakeGenericMethod(YType);
+                        // it ll fail if Generic constraint are different but we can't deal it properly inside code so let the compiler do the job
+                        mustThrow = true;
+                        if (checkSameParam)
+                        {
+                            if (GenericDM<T, U>.IsSameParameters(methodType.GetParameters(), types))
+                            {
+                                object? result = methodType.Invoke(this, parameters);
+                                if (result is Task<X?> task)
+                                {
+                                    return task;
+                                }
+                                return Task.FromResult((X?)result);
+                            }
+                        }
+                        else
+                        {
+                            object? result = methodType.Invoke(this, parameters);
+                            if (result is Task<X?> task)
+                            {
+                                return task;
+                            }
+                            return Task.FromResult((X?)result);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        if (mustThrow)
+                        {
+                            PrintErrors(e);
+#pragma warning disable CA2200 // Rethrow to preserve stack details
+                            throw e;
+#pragma warning restore CA2200 // Rethrow to preserve stack details
+                        }
+                    }
+                }
+            }
+
+            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found").GetException();
+        }
+
 
         protected void InvokeMethodVoid<Y>(ref MethodInfo? methodSaved, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
         {
@@ -2436,14 +2590,14 @@ namespace AventusSharp.Data.Manager
                         {
                             if (GenericDM<T, U>.IsSameParameters(methodType.GetParameters(), types))
                             {
-                                methodType.Invoke(this, parameters);
+                                object? result = methodType.Invoke(this, parameters);
                                 methodSaved = method;
                                 return;
                             }
                         }
                         else
                         {
-                            methodType.Invoke(this, parameters);
+                            object? result = methodType.Invoke(this, parameters);
                             methodSaved = method;
                             return;
                         }
@@ -2463,6 +2617,87 @@ namespace AventusSharp.Data.Manager
 
             throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
         }
+        protected Task InvokeMethodTask<Y>(ref MethodInfo? methodSaved, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
+        {
+            if (methodSaved != null)
+            {
+                Type YType = typeof(Y);
+                MethodInfo methodType = methodSaved.MakeGenericMethod(YType);
+                methodType.Invoke(this, parameters);
+                return Task.CompletedTask;
+            }
+            bool mustThrow = false;
+            parameters ??= Array.Empty<object>();
+            List<Type> types = new();
+            foreach (object param in parameters)
+            {
+                Type type = param.GetType();
+                if (param is Expression exp && type.IsGenericType)
+                {
+                    Type[] t = exp.Type.GetGenericArguments();
+                    Type fctType = t.Length switch
+                    {
+                        1 => typeof(Func<>),
+                        2 => typeof(Func<,>),
+                        _ => throw new NotImplementedException()
+                    };
+                    fctType = fctType.MakeGenericType(t);
+                    type = typeof(Expression<>).MakeGenericType(fctType);
+                }
+                types.Add(type);
+            }
+
+            MethodInfo[] methods = this.GetType().GetMethods();
+            foreach (MethodInfo method in methods)
+            {
+                if (method.Name == name && method.IsGenericMethod)
+                {
+                    try
+                    {
+                        Type YType = typeof(Y);
+                        MethodInfo methodType = method.MakeGenericMethod(YType);
+                        // it ll fail if Generic constraint are different but we can't deal it properly inside code so let the compiler do the job
+                        mustThrow = true;
+                        if (checkSameParam)
+                        {
+                            if (GenericDM<T, U>.IsSameParameters(methodType.GetParameters(), types))
+                            {
+                                object? result = methodType.Invoke(this, parameters);
+                                methodSaved = method;
+                                if (result is Task task)
+                                {
+                                    return task;
+                                }
+                                return Task.CompletedTask;
+                            }
+                        }
+                        else
+                        {
+                            object? result = methodType.Invoke(this, parameters);
+                            methodSaved = method;
+                            if (result is Task task)
+                            {
+                                return task;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        if (mustThrow)
+                        {
+                            PrintErrors(e);
+#pragma warning disable CA2200 // Rethrow to preserve stack details
+                            throw e;
+#pragma warning restore CA2200 // Rethrow to preserve stack details
+                        }
+                    }
+                }
+            }
+
+            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
+        }
+
         private static bool IsSameParameters(ParameterInfo[] parameterInfos, List<Type> types)
         {
             if (parameterInfos.Length == types.Count)

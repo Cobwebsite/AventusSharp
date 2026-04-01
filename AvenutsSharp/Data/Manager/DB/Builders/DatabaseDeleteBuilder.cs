@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace AventusSharp.Data.Manager.DB.Builders
@@ -38,9 +39,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
         }
 
 
-        public List<T>? Run()
+        public async Task<List<T>?> Run()
         {
-            ResultWithError<List<T>> result = RunWithError();
+            ResultWithError<List<T>> result = await RunWithError();
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -48,13 +49,13 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return null;
         }
 
-        public ResultWithError<List<T>> RunWithError()
+        public async Task<ResultWithError<List<T>>> RunWithError()
         {
-            ResultWithError<List<T>> result = queryBuilder.RunWithError().ToGeneric();
+            ResultWithError<List<T>> result = (await queryBuilder.RunWithError()).ToGeneric();
 
             if (result.Success && result.Result != null)
             {
-                VoidWithError resultTemp = Storage.DeleteFromBuilder(this, result.Result);
+                VoidWithError resultTemp = await Storage.DeleteFromBuilder(this, result.Result);
                 if (resultTemp.Success && DM is IDatabaseDM databaseDM)
                 {
                     if (NeedDeleteField)

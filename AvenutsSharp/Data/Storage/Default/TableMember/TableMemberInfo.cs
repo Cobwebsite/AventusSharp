@@ -14,6 +14,7 @@ using ValidationResult = AventusSharp.Data.Attributes.ValidationResult;
 using Org.BouncyCastle.Asn1.Cms;
 using Attribute = System.Attribute;
 using System.Data.SqlTypes;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {
@@ -66,7 +67,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         }
 
 
-        public List<GenericError> IsValid(object? o, object? rootValue, StorableAction action)
+        public async Task<List<GenericError>> IsValid(object? o, object? rootValue, StorableAction action)
         {
             List<GenericError> errors = new();
             IStorable? storable = null;
@@ -77,7 +78,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             ValidationContext context = new(Name, MemberType, ReflectedType, TableInfo, action, storable);
             foreach (var validationAttribute in ValidationAttributes)
             {
-                ValidationResult result = validationAttribute.IsValid(o, context);
+                ValidationResult result = await validationAttribute.IsValid(o, context);
                 errors.AddRange(result.Errors);
             }
 

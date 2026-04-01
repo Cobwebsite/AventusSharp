@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using CsvHelper;
@@ -28,23 +29,23 @@ public record CSVImporterConfig<X> : CsvConfiguration
 }
 public class CSVImporter
 {
-    public static VoidWithError Import<X>(string path) where X : IStorable
+    public static Task<VoidWithError> Import<X>(string path) where X : IStorable
     {
         return Import<X>(path, new CSVImporterConfig<X>(CultureInfo.InvariantCulture));
     }
-    public static VoidWithError Import<X>(string path, CSVImporterConfig<X> config) where X : IStorable
+    public static Task<VoidWithError> Import<X>(string path, CSVImporterConfig<X> config) where X : IStorable
     {
         return _import<X>(path, config, false);
     }
-    public static VoidWithError BulkImport<X>(string path) where X : IStorable
+    public static Task<VoidWithError> BulkImport<X>(string path) where X : IStorable
     {
         return BulkImport<X>(path, new CSVImporterConfig<X>(CultureInfo.InvariantCulture));
     }
-    public static VoidWithError BulkImport<X>(string path, CSVImporterConfig<X> config) where X : IStorable
+    public static Task<VoidWithError> BulkImport<X>(string path, CSVImporterConfig<X> config) where X : IStorable
     {
         return _import<X>(path, config, true);
     }
-    private static VoidWithError _import<X>(string path, CSVImporterConfig<X> config, bool bulk) where X : IStorable
+    private static async Task<VoidWithError> _import<X>(string path, CSVImporterConfig<X> config, bool bulk) where X : IStorable
     {
         VoidWithError result = new();
         if (!File.Exists(path))
@@ -54,7 +55,7 @@ public class CSVImporter
         }
 
         IGenericDM dm = GenericDM.Get<X>();
-        result.Run(() => dm.RunInsideTransaction(() =>
+        await result.RunAsync(() => dm.RunInsideTransaction(async () =>
         {
             VoidWithError result = new();
             try
@@ -109,7 +110,7 @@ public class CSVImporter
                         records.Add(record);
                         if (records.Count == config.BufferSize)
                         {
-                            result.Run(() => dm.BulkCreateWithError(records, config.WithId));
+                            await result.RunAsync(() => dm.BulkCreateWithError(records, config.WithId));
                             if (!result.Success)
                             {
                                 return result;
@@ -122,12 +123,12 @@ public class CSVImporter
                     {
                         if (bulk || config.WithId)
                         {
-                            result.Run(() => dm.BulkCreateWithError(records, config.WithId));
+                            await result.RunAsync(() => dm.BulkCreateWithError(records, config.WithId));
 
                         }
                         else
                         {
-                            result.Run(() => dm.CreateWithError(records));
+                            await result.RunAsync(() => dm.CreateWithError(records));
                         }
                     }
                 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.DB
 {
@@ -260,10 +261,10 @@ namespace AventusSharp.Data.Manager.DB
             }
         }
 
-        public List<GenericError> IsValueValid(StorableAction action)
+        public async Task<List<GenericError>> IsValueValid(StorableAction action)
         {
             TableMemberInfo memberInfo = MembersList[^1];
-            return memberInfo.IsValid(Value, RootValue, action);
+            return await memberInfo.IsValid(Value, RootValue, action);
         }
 
     }

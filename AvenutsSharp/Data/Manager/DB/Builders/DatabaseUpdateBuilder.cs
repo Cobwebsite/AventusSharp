@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.DB.Builders
 {
@@ -66,9 +67,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
         }
 
 
-        public List<T>? Run(T item)
+        public async Task<List<T>?> Run(T item)
         {
-            ResultWithError<List<T>> result = RunWithError(item);
+            ResultWithError<List<T>> result = await RunWithError(item);
             if (result.Success && result.Result != null)
             {
                 return result.Result;
@@ -76,13 +77,13 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return null;
         }
 
-        public ResultWithError<List<T>> RunWithError(T item)
+        public async Task<ResultWithError<List<T>>> RunWithError(T item)
         {
             ResultWithError<List<T>> result = new();
-            ResultWithError<List<int>> resultTemp = Storage.UpdateFromBuilder(this, item);
+            ResultWithError<List<int>> resultTemp = await Storage.UpdateFromBuilder(this, item);
             if (resultTemp.Success && resultTemp.Result != null)
             {
-                ResultWithError<List<T>> resultQuery = DM.GetByIdsWithError<T>(resultTemp.Result);
+                ResultWithError<List<T>> resultQuery = await DM.GetByIdsWithError<T>(resultTemp.Result);
                 if (resultQuery.Success && resultQuery.Result != null)
                 {
                     // update data in cache
@@ -111,14 +112,14 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return result;
         }
 
-        public T? Single(T item)
+        public async Task<T?> Single(T item)
         {
-            return SingleWithError(item).Result;
+            return (await SingleWithError(item)).Result;
         }
-        public ResultWithError<T> SingleWithError(T item)
+        public async Task<ResultWithError<T>> SingleWithError(T item)
         {
             ResultWithError<T> result = new();
-            ResultWithError<List<T>> resultTemp = RunWithError(item);
+            ResultWithError<List<T>> resultTemp = await RunWithError(item);
 
             if (resultTemp.Success && resultTemp.Result != null)
             {
@@ -178,7 +179,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
             // if (lastMemberInfo is ITableMemberInfoSqlWritable writable)
             // {
             //     string name = lastAlias + "." + lastMemberInfo.SqlName;
-                
+
             //     UpdateParamsInfo[name] = new ParamsInfo()
             //     {
             //         DbType = writable.SqlType,

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Attributes
 {
@@ -25,14 +26,14 @@ namespace AventusSharp.Data.Attributes
         {
             this.Msg = msg;
         }
-        public override ValidationResult IsValid(object? value, ValidationContext context)
+        public override Task<ValidationResult> IsValid(object? value, ValidationContext context)
         {
             if(value == null)
             {
                 string msg = this.Msg == "" ? $"The field {context.FieldName} is required." : this.Msg;
-                return new ValidationResult(msg, context.FieldName);
+                return Task.FromResult(new ValidationResult(msg, context.FieldName));
             }
-            return ValidationResult.Success;
+            return Task.FromResult(ValidationResult.Success);
         }
     }
 }

@@ -20,25 +20,25 @@ namespace AventusSharp.Data.Manager
         /// Executes the query and returns a list of results.
         /// </summary>
         /// <returns>A list of type <typeparamref name="T"/>.</returns>
-        public List<T> Run();
+        public Task<List<T>> Run();
 
         /// <summary>
         /// Executes the query and returns a result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
-        public ResultWithError<List<T>> RunWithError();
+        public Task<ResultWithError<List<T>>> RunWithError();
 
         /// <summary>
         /// Executes the query and returns a single result.
         /// </summary>
         /// <returns>A single <typeparamref name="T"/> object, or null if no result is found.</returns>
-        public T? Single();
+        public Task<T?> Single();
 
         /// <summary>
         /// Executes the query and returns a single result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a single <typeparamref name="T"/> object.</returns>
-        public ResultWithError<T> SingleWithError();
+        public Task<ResultWithError<T>> SingleWithError();
 
         /// <summary>
         /// Adds a condition to the query using the provided expression.
@@ -287,7 +287,7 @@ namespace AventusSharp.Data.Manager
     public interface IQueryBuilderPreparedInstance
     {
         public IQueryBuilderPreparedInstance SetVariables(Action<Action<string, object>> define);
-        public IResultWithError RunWithError();
+        public Task<IResultWithError> RunWithError();
     }
     public class QueryBuilderPreparedInstance<T> : IQueryBuilderPreparedInstance
     {
@@ -328,9 +328,9 @@ namespace AventusSharp.Data.Manager
         /// Executes the query and returns a list of results.
         /// </summary>
         /// <returns>A list of type <typeparamref name="T"/>.</returns>
-        public List<T> Run()
+        public async Task<List<T>> Run()
         {
-            List<T> result = builder.Run();
+            List<T> result = await builder.Run();
             prepared.Done();
             return result;
         }
@@ -338,23 +338,23 @@ namespace AventusSharp.Data.Manager
         /// Executes the query and returns a result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
-        public ResultWithError<List<T>> RunWithError()
+        public async Task<ResultWithError<List<T>>> RunWithError()
         {
-            ResultWithError<List<T>> result = builder.RunWithError();
+            ResultWithError<List<T>> result = await builder.RunWithError();
             prepared.Done();
             return result;
         }
-        IResultWithError IQueryBuilderPreparedInstance.RunWithError()
+        async Task<IResultWithError> IQueryBuilderPreparedInstance.RunWithError()
         {
-            return RunWithError();
+            return await RunWithError();
         }
         /// <summary>
         /// Executes the query and returns a single result.
         /// </summary>
         /// <returns>A single <typeparamref name="T"/> object, or null if no result is found.</returns>
-        public T? Single()
+        public async Task<T?> Single()
         {
-            T? result = builder.Single();
+            T? result = await builder.Single();
             prepared.Done();
             return result;
         }
@@ -362,9 +362,9 @@ namespace AventusSharp.Data.Manager
         /// Executes the query and returns a single result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a single <typeparamref name="T"/> object.</returns>
-        public ResultWithError<T> SingleWithError()
+        public async Task<ResultWithError<T>> SingleWithError()
         {
-            ResultWithError<T> result = builder.SingleWithError();
+            ResultWithError<T> result = await builder.SingleWithError();
             prepared.Done();
             return result;
         }

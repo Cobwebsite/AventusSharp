@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Mysql
 {
@@ -46,7 +47,7 @@ namespace AventusSharp.Data.Storage.Mysql
         {
             return MigrationProvider;
         }
-        public override VoidWithError ConnectWithError()
+        public override async Task<VoidWithError> ConnectWithError()
         {
             VoidWithError result = new();
             try
@@ -54,7 +55,7 @@ namespace AventusSharp.Data.Storage.Mysql
                 IsConnectedOneTime = true;
                 using (DbConnection connection = GetConnection())
                 {
-                    connection.Open();
+                    await connection.OpenAsync();
                     IsConnectedOneTime = true;
                 }
             }
@@ -77,7 +78,7 @@ namespace AventusSharp.Data.Storage.Mysql
                             {
                                 useDatabase = false;
                                 connection.Open();
-                                Execute("CREATE DATABASE " + database + ";").Print();
+                                (await Execute("CREATE DATABASE " + database + ";")).Print();
                                 useDatabase = true;
                             }
                             ;
@@ -138,11 +139,11 @@ namespace AventusSharp.Data.Storage.Mysql
             return new MySqlParameter();
         }
 
-        public override ResultWithError<bool> ResetStorage()
+        public override async Task<ResultWithError<bool>> ResetStorage()
         {
             ResultWithError<bool> result = new();
             string sql = "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') as query FROM information_schema.tables WHERE table_schema = '" + this.database + "'; ";
-            ResultWithError<List<Dictionary<string, string?>>> queryResult = Query(sql);
+            ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
             if (!queryResult.Success || queryResult.Result == null)
             {
                 result.Errors.AddRange(queryResult.Errors);
@@ -156,7 +157,7 @@ namespace AventusSharp.Data.Storage.Mysql
             }
             dropAllCmd += "SET FOREIGN_KEY_CHECKS = 1;";
 
-            VoidWithError executeResult = Execute(dropAllCmd);
+            VoidWithError executeResult = await Execute(dropAllCmd);
             if (!executeResult.Success)
             {
                 result.Errors.AddRange(executeResult.Errors);

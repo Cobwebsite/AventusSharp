@@ -3,6 +3,7 @@ using AventusSharp.Tools;
 using MySqlX.XDevAPI.Common;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace AventusSharp.Data.Attributes
@@ -10,7 +11,7 @@ namespace AventusSharp.Data.Attributes
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public abstract class ValidationAttribute : System.Attribute
     {
-        public abstract ValidationResult IsValid(object? value, ValidationContext context);
+        public abstract Task<ValidationResult> IsValid(object? value, ValidationContext context);
     }
 
     public class ValidationContext

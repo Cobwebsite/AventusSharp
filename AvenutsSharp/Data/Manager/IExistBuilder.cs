@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
+using System.Threading.Tasks;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Manager
@@ -16,13 +17,13 @@ namespace AventusSharp.Data.Manager
         /// Executes the existence check and returns a boolean indicating if the item exists.
         /// </summary>
         /// <returns>True if the item exists, otherwise false.</returns>
-        public bool Run();
+        public Task<bool> Run();
 
         /// <summary>
         /// Executes the existence check and returns a result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a boolean indicating existence (true or false).</returns>
-        public ResultWithError<bool> RunWithError();
+        public Task<ResultWithError<bool>> RunWithError();
 
         /// <summary>
         /// Adds a condition to the existence check using the provided expression.
@@ -102,9 +103,9 @@ namespace AventusSharp.Data.Manager
         /// Executes the Exist and returns a list of results.
         /// </summary>
         /// <returns>A list of type <typeparamref name="T"/>.</returns>
-        public bool Run()
+        public async Task<bool> Run()
         {
-            bool result = builder.Run();
+            bool result = await builder.Run();
             prepared.Done();
             return result;
         }
@@ -112,9 +113,9 @@ namespace AventusSharp.Data.Manager
         /// Executes the Exist and returns a result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
-        public ResultWithError<bool> RunWithError()
+        public async Task<ResultWithError<bool>> RunWithError()
         {
-            ResultWithError<bool> result = builder.RunWithError();
+            ResultWithError<bool> result = await builder.RunWithError();
             prepared.Done();
             return result;
         }

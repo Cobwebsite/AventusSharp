@@ -18,6 +18,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Default
 {
@@ -70,6 +71,7 @@ namespace AventusSharp.Data.Storage.Default
 
 
     }
+
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {
         protected string host { get => credentials.host; }
@@ -82,8 +84,12 @@ namespace AventusSharp.Data.Storage.Default
 
         protected bool addCreatedAndUpdatedDate;
         private bool linksCreated;
-        private DbTransactionContext? transactionContext;
-        private SemaphoreSlim locker = new SemaphoreSlim(1, 1);
+        private AsyncLocal<DbTransactionContext?> _transactionScope = new();
+        private DbTransactionContext? transactionScope
+        {
+            get => _transactionScope.Value;
+            set => _transactionScope.Value = transactionScope;
+        }
         public bool IsConnectedOneTime { get; protected set; }
         public bool Debug { get; set; }
 
@@ -110,17 +116,17 @@ namespace AventusSharp.Data.Storage.Default
         }
 
         #region connection
-        public bool Connect()
+        public async Task<bool> Connect()
         {
-            return ConnectWithError().Success;
+            return (await ConnectWithError()).Success;
         }
-        public virtual VoidWithError ConnectWithError()
+        public virtual async Task<VoidWithError> ConnectWithError()
         {
             VoidWithError result = new();
             try
             {
                 using DbConnection connection = GetConnection();
-                connection.Open();
+                await connection.OpenAsync();
                 IsConnectedOneTime = true;
             }
             catch (Exception e)
@@ -130,18 +136,18 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
-        public abstract ResultWithError<bool> ResetStorage();
+        public abstract Task<ResultWithError<bool>> ResetStorage();
         public abstract DbConnection GetConnection();
         public abstract ResultWithDataError<DbCommand> CreateCmd(string sql);
         public abstract DbParameter GetDbParameter();
-        public void Close()
+        public async Task Close()
         {
             try
             {
-                if (transactionContext != null)
+                if (transactionScope != null)
                 {
-                    transactionContext.Rollback();
-                    transactionContext.Dispose();
+                    await transactionScope.Rollback();
+                    await transactionScope.DisposeAsync();
                 }
             }
             catch (Exception e)
@@ -150,12 +156,12 @@ namespace AventusSharp.Data.Storage.Default
             }
         }
 
-        public VoidWithError Execute(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        public async Task<VoidWithError> Execute(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
             if (commandResult.Result != null)
             {
-                VoidWithError result = Execute(commandResult.Result, dataParameters: null, callerPath, callerNo);
+                VoidWithError result = await Execute(commandResult.Result, dataParameters: null, callerPath, callerNo);
                 commandResult.Result.Dispose();
                 return result;
             }
@@ -164,11 +170,11 @@ namespace AventusSharp.Data.Storage.Default
             return noCommand;
         }
 
-        public VoidWithError Execute(DbCommand command, Dictionary<string, object?> parameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        public Task<VoidWithError> Execute(DbCommand command, Dictionary<string, object?> parameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             return Execute(command, new List<Dictionary<string, object?>>() { parameters }, callerPath, callerNo);
         }
-        public VoidWithError Execute(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        public async Task<VoidWithError> Execute(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             VoidWithError result = new();
             if (ReadOnly && !command.CommandText.ToLower().StartsWith("select"))
@@ -178,119 +184,29 @@ namespace AventusSharp.Data.Storage.Default
             }
             try
             {
-                lock (locker)
+
+                if (transactionScope == null)
                 {
-                    if (transactionContext == null)
+                    return await RunInsideTransaction(async () =>
                     {
-                        return RunInsideTransaction(() =>
-                        {
-                            return Execute(command, dataParameters, callerPath, callerNo);
-                        });
-                    }
-
-                    locker.WaitAsync().GetAwaiter().GetResult();
-                    DbConnection? connection = transactionContext.Connection;
-                    if (connection == null)
-                    {
-                        result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, "The storage " + GetType().Name, " doesn't have a connection"));
-                        return result;
-                    }
-
-
-                    try
-                    {
-                        command.Transaction = transactionContext.transaction;
-                        command.Connection = connection;
-                        try
-                        {
-                            if (dataParameters != null)
-                            {
-                                foreach (Dictionary<string, object?> parameters in dataParameters)
-                                {
-                                    foreach (KeyValuePair<string, object?> parameter in parameters)
-                                    {
-                                        command.Parameters[parameter.Key].Value = parameter.Value;
-                                    }
-
-                                    printCommand(command.CommandText, parameters);
-                                    command.ExecuteNonQuery();
-                                }
-                            }
-                            else
-                            {
-                                printCommand(command.CommandText);
-                                command.ExecuteNonQuery();
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
-                    }
-                    finally
-                    {
-                    }
-                    locker.Release();
+                        return await Execute(command, dataParameters, callerPath, callerNo);
+                    });
                 }
-            }
-            catch (Exception e)
-            {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-            }
-            return result;
-        }
 
-        public ResultWithError<List<Dictionary<string, string?>>> Query(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
-        {
-            ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
-            if (commandResult.Result != null)
-            {
-                ResultWithError<List<Dictionary<string, string?>>> result = Query(commandResult.Result, null, callerPath, callerNo);
-                commandResult.Result.Dispose();
-                return result;
-            }
-            ResultWithError<List<Dictionary<string, string?>>> noCommand = new();
-            noCommand.Errors.AddRange(commandResult.Errors);
-            return noCommand;
-        }
-        public ResultWithError<List<Dictionary<string, string?>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
-        {
-            return Query(command, dataParameters, 0, callerPath, callerNo);
-        }
-        public ResultWithError<List<Dictionary<string, string?>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, int loop, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
-        {
-            ResultWithError<List<Dictionary<string, string?>>> result = new()
-            {
-                Result = new List<Dictionary<string, string?>>()
-            };
-            try
-            {
-                lock (locker)
+                DbConnection? connection = transactionScope.Connection;
+                if (connection == null)
                 {
-                    if (transactionContext == null)
-                    {
-                        return RunInsideTransaction(() =>
-                        {
-                            return Query(command, dataParameters, callerPath, callerNo);
-                        });
-                    }
+                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, "The storage " + GetType().Name, " doesn't have a connection"));
+                    return result;
+                }
 
-                    locker.WaitAsync().GetAwaiter().GetResult();
-                    DbConnection? connection = transactionContext.Connection;
-                    if (connection == null)
-                    {
-                        result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, "The storage " + GetType().Name, " doesn't have a connection"));
-                        return result;
-                    }
 
+                try
+                {
+                    command.Transaction = transactionScope.transaction;
+                    command.Connection = connection;
                     try
                     {
-                        command.Transaction = transactionContext.transaction;
-                        command.Connection = connection;
                         if (dataParameters != null)
                         {
                             foreach (Dictionary<string, object?> parameters in dataParameters)
@@ -301,38 +217,90 @@ namespace AventusSharp.Data.Storage.Default
                                 }
 
                                 printCommand(command.CommandText, parameters);
-
-                                using (IDataReader reader = command.ExecuteReader())
-                                {
-                                    while (reader.Read())
-                                    {
-                                        Dictionary<string, string?> temp = new();
-                                        for (int i = 0; i < reader.FieldCount; i++)
-                                        {
-                                            if (!temp.ContainsKey(reader.GetName(i)))
-                                            {
-                                                if (!reader.IsDBNull(i))
-                                                {
-                                                    string? valueString = reader.GetValue(i).ToString();
-                                                    valueString ??= "";
-                                                    temp.Add(reader.GetName(i), valueString);
-                                                }
-                                                else
-                                                {
-                                                    temp.Add(reader.GetName(i), null);
-                                                }
-                                            }
-                                        }
-                                        result.Result.Add(temp);
-                                    }
-                                    reader.Close();
-                                    reader.Dispose();
-                                }
+                                command.ExecuteNonQuery();
                             }
                         }
                         else
                         {
-                            printCommand(command.CommandText, null);
+                            printCommand(command.CommandText);
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                    }
+                }
+                catch (Exception e)
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                }
+                finally
+                {
+                }
+            }
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
+            return result;
+        }
+
+        public async Task<ResultWithError<List<Dictionary<string, string?>>>> Query(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
+            if (commandResult.Result != null)
+            {
+                ResultWithError<List<Dictionary<string, string?>>> result = await Query(commandResult.Result, null, callerPath, callerNo);
+                commandResult.Result.Dispose();
+                return result;
+            }
+            ResultWithError<List<Dictionary<string, string?>>> noCommand = new();
+            noCommand.Errors.AddRange(commandResult.Errors);
+            return noCommand;
+        }
+        public Task<ResultWithError<List<Dictionary<string, string?>>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            return Query(command, dataParameters, 0, callerPath, callerNo);
+        }
+        public async Task<ResultWithError<List<Dictionary<string, string?>>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, int loop, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            ResultWithError<List<Dictionary<string, string?>>> result = new()
+            {
+                Result = new List<Dictionary<string, string?>>()
+            };
+            try
+            {
+                if (transactionScope == null)
+                {
+                    return await RunInsideTransaction(async () =>
+                    {
+                        return await Query(command, dataParameters, callerPath, callerNo);
+                    });
+                }
+
+                DbConnection? connection = transactionScope.Connection;
+                if (connection == null)
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, "The storage " + GetType().Name, " doesn't have a connection"));
+                    return result;
+                }
+
+                try
+                {
+                    command.Transaction = transactionScope.transaction;
+                    command.Connection = connection;
+                    if (dataParameters != null)
+                    {
+                        foreach (Dictionary<string, object?> parameters in dataParameters)
+                        {
+                            foreach (KeyValuePair<string, object?> parameter in parameters)
+                            {
+                                command.Parameters[parameter.Key].Value = parameter.Value;
+                            }
+
+                            printCommand(command.CommandText, parameters);
+
                             using (IDataReader reader = command.ExecuteReader())
                             {
                                 while (reader.Read())
@@ -361,20 +329,42 @@ namespace AventusSharp.Data.Storage.Default
                             }
                         }
                     }
-                    catch (Exception e)
+                    else
                     {
-                        // The DataReader is still attach to the connection => not possible
-                        // If we rerun the function it seems to be ok
-                        if (e.Message.StartsWith("There is already an open DataReader") && loop < 5)
+                        printCommand(command.CommandText, null);
+                        using (IDataReader reader = command.ExecuteReader())
                         {
-                            locker.Release();
-                            return Query(command, dataParameters, loop + 1, callerPath, callerNo);
+                            while (reader.Read())
+                            {
+                                Dictionary<string, string?> temp = new();
+                                for (int i = 0; i < reader.FieldCount; i++)
+                                {
+                                    if (!temp.ContainsKey(reader.GetName(i)))
+                                    {
+                                        if (!reader.IsDBNull(i))
+                                        {
+                                            string? valueString = reader.GetValue(i).ToString();
+                                            valueString ??= "";
+                                            temp.Add(reader.GetName(i), valueString);
+                                        }
+                                        else
+                                        {
+                                            temp.Add(reader.GetName(i), null);
+                                        }
+                                    }
+                                }
+                                result.Result.Add(temp);
+                            }
+                            reader.Close();
+                            reader.Dispose();
                         }
-                        DataError error = new DataError(DataErrorCode.UnknowError, e.Message + "\nSQL: " + command.CommandText);
-                        error.Details.Add(command.CommandText);
-                        result.Errors.Add(error);
                     }
-                    locker.Release();
+                }
+                catch (Exception e)
+                {
+                    DataError error = new DataError(DataErrorCode.UnknowError, e.Message + "\nSQL: " + command.CommandText);
+                    error.Details.Add(command.CommandText);
+                    result.Errors.Add(error);
                 }
             }
             catch (Exception e)
@@ -385,38 +375,33 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
-        public ResultWithError<DbTransactionContext> BeginTransaction()
+        public async Task<ResultWithError<DbTransactionContext>> BeginTransaction()
         {
             ResultWithError<DbTransactionContext> result = new();
 
             try
             {
-                lock (locker)
+
+                if (transactionScope == null)
                 {
-                    locker.WaitAsync().GetAwaiter().GetResult();
-                    if (transactionContext == null)
+                    DbConnection connection = GetConnection();
+                    try
                     {
-                        DbConnection connection = GetConnection();
-                        try
-                        {
-                            connection.Open();
-                        }
-                        catch
-                        {
-                            result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, "The storage " + GetType().Name + "(" + ToString() + ") can't connect to the database"));
-                            locker.Release();
-                            return result;
-                        }
-                        DbTransaction transaction = connection.BeginTransaction();
-                        transactionContext = new DbTransactionContext(transaction, EndTransaction, RunInsideLocker);
-                        result.Result = transactionContext;
+                        await connection.OpenAsync();
                     }
-                    else
+                    catch
                     {
-                        transactionContext.count++;
-                        result.Result = transactionContext;
+                        result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, "The storage " + GetType().Name + "(" + ToString() + ") can't connect to the database"));
+                        return result;
                     }
-                    locker.Release();
+                    DbTransaction transaction = await connection.BeginTransactionAsync();
+                    transactionScope = new DbTransactionContext(transaction, EndTransaction);
+                    result.Result = transactionScope;
+                }
+                else
+                {
+                    transactionScope.count++;
+                    result.Result = transactionScope;
                 }
             }
             catch (Exception e)
@@ -428,37 +413,26 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
-        protected void EndTransaction()
+        protected async Task EndTransaction()
         {
-            if (transactionContext != null)
+            if (transactionScope != null)
             {
-                transactionContext.transaction.Dispose();
-                if (transactionContext.transaction.Connection != null)
+                await transactionScope.transaction.DisposeAsync();
+                if (transactionScope.transaction.Connection != null)
                 {
-                    transactionContext.transaction.Connection.Dispose();
+                    await transactionScope.transaction.Connection.DisposeAsync();
                 }
-                transactionContext = null;
+                transactionScope = null;
             }
         }
 
-        protected void RunInsideLocker(Action fct)
-        {
-            lock (locker)
-            {
-                locker.WaitAsync().GetAwaiter().GetResult();
-                fct();
-                locker.Release();
-            }
-        }
-
-        public SemaphoreSlim getTransactionLocker() => locker;
-        public TransactionContext? getTransactionContext() => transactionContext;
-        public void setTransactionContext(TransactionContext? context)
+        public TransactionContext? getTransactionScope() => transactionScope;
+        public void setTransactionScope(TransactionContext? context)
         {
             if (context == null)
-                transactionContext = null;
+                transactionScope = null;
             else if (context is DbTransactionContext dbTransactionContext)
-                transactionContext = dbTransactionContext;
+                transactionScope = dbTransactionContext;
 
         }
 
@@ -657,7 +631,7 @@ namespace AventusSharp.Data.Storage.Default
             GrabValue
         }
         protected abstract object? TransformValueForFct(ParamsInfo paramsInfo);
-        protected ResultWithError<List<Dictionary<string, string?>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
+        protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
         {
             List<GenericError> errors = new();
 
@@ -739,7 +713,7 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         parameterInfo.Key.Value = null;
                     }
-                    errors.AddRange(parameterInfo.Key.IsValueValid(action));
+                    errors.AddRange(await parameterInfo.Key.IsValueValid(action));
 
                 }
                 parametersValue["@" + parameterInfo.Key.Name] = TransformValueForFct(parameterInfo.Key);
@@ -789,14 +763,14 @@ namespace AventusSharp.Data.Storage.Default
 
                 combinaisons(0, new());
 
-                queryResult = Query(cmd, parametersFinal);
+                queryResult = await Query(cmd, parametersFinal);
             }
             cmd.Dispose();
             return queryResult;
 
         }
 
-        protected VoidWithError BulkQueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, List<IStorable> items)
+        protected async Task<VoidWithError> BulkQueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, List<IStorable> items)
         {
             List<GenericError> errors = new();
 
@@ -839,7 +813,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             parameterInfo.Key.Value = null;
                         }
-                        errors.AddRange(parameterInfo.Key.IsValueValid(action));
+                        errors.AddRange(await parameterInfo.Key.IsValueValid(action));
 
                     }
                     parametersValue["@" + parameterInfo.Key.Name + "__" + i] = TransformValueForFct(parameterInfo.Key);
@@ -876,7 +850,7 @@ namespace AventusSharp.Data.Storage.Default
 
                 combinaisons(0, new());
 
-                queryResult = Execute(cmd, parametersFinal);
+                queryResult = await Execute(cmd, parametersFinal);
             }
             cmd.Dispose();
             return queryResult;
@@ -885,7 +859,7 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Get
         protected abstract DatabaseQueryBuilderInfo PrepareSQLForQuery<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable;
-        public ResultWithError<List<X>> QueryFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable
+        public async Task<ResultWithError<List<X>>> QueryFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable
         {
             ResultWithError<List<X>> result = new();
 
@@ -895,7 +869,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             string sql = queryBuilder.info.Sql;
 
-            ResultWithError<List<Dictionary<string, string?>>> queryResult = QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
+            ResultWithError<List<Dictionary<string, string?>>> queryResult = await QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
             result.Errors.AddRange(queryResult.Errors);
             if (queryResult.Success && queryResult.Result != null)
             {
@@ -1133,7 +1107,7 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Exist
         protected abstract DatabaseExistBuilderInfo PrepareSQLForExist<X>(DatabaseExistBuilder<X> queryBuilder) where X : IStorable;
-        public ResultWithError<bool> ExistFromBuilder<X>(DatabaseExistBuilder<X> queryBuilder) where X : IStorable
+        public async Task<ResultWithError<bool>> ExistFromBuilder<X>(DatabaseExistBuilder<X> queryBuilder) where X : IStorable
         {
             ResultWithError<bool> result = new();
 
@@ -1143,7 +1117,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             string sql = queryBuilder.info.Sql;
 
-            ResultWithError<List<Dictionary<string, string?>>> queryResult = QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
+            ResultWithError<List<Dictionary<string, string?>>> queryResult = await QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
 
             result.Errors.AddRange(queryResult.Errors);
             if (queryResult.Success && queryResult.Result != null && queryResult.Result.Count > 0 && queryResult.Result[0].ContainsKey("nb"))
@@ -1158,7 +1132,7 @@ namespace AventusSharp.Data.Storage.Default
         #region Table
         protected abstract string PrepareSQLCreateTable(TableInfo table);
         protected abstract string PrepareSQLCreateIntermediateTable(TableMemberInfoSql tableMember);
-        public VoidWithError CreateTable(PyramidInfo pyramid, bool force)
+        public async Task<VoidWithError> CreateTable(PyramidInfo pyramid, bool force)
         {
             VoidWithError result = new();
             if (!pyramid.isForceInherit)
@@ -1167,7 +1141,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     if (allTableInfos.ContainsKey(pyramid.type))
                     {
-                        VoidWithError resultTemp = CreateTable(allTableInfos[pyramid.type]);
+                        VoidWithError resultTemp = await CreateTable(allTableInfos[pyramid.type]);
                         result.Errors.AddRange(resultTemp.Errors);
                     }
                     else
@@ -1180,22 +1154,22 @@ namespace AventusSharp.Data.Storage.Default
             {
                 foreach (PyramidInfo child in pyramid.children)
                 {
-                    VoidWithError resultTemp = CreateTable(child, force);
+                    VoidWithError resultTemp = await CreateTable(child, force);
                     result.Errors.AddRange(resultTemp.Errors);
                 }
             }
             return result;
         }
-        public VoidWithError CreateTable(TableInfo table)
+        public async Task<VoidWithError> CreateTable(TableInfo table)
         {
             VoidWithError result = new();
-            ResultWithError<bool> tableExist = TableExist(table);
+            ResultWithError<bool> tableExist = await TableExist(table);
             result.Errors.AddRange(tableExist.Errors);
 
             if (tableExist.Success && !tableExist.Result)
             {
                 string sql = PrepareSQLCreateTable(table);
-                VoidWithError resultTemp = Execute(sql);
+                VoidWithError resultTemp = await Execute(sql);
                 result.Errors.AddRange(resultTemp.Errors);
 
                 // create intermediate table
@@ -1206,23 +1180,23 @@ namespace AventusSharp.Data.Storage.Default
                 foreach (TableMemberInfoSql member in members)
                 {
                     intermediateQuery = PrepareSQLCreateIntermediateTable(member);
-                    VoidWithError resultTempInter = Execute(intermediateQuery);
+                    VoidWithError resultTempInter = await Execute(intermediateQuery);
                     result.Errors.AddRange(resultTempInter.Errors);
                 }
             }
             foreach (TableInfo child in table.Children)
             {
-                VoidWithError resultTemp = CreateTable(child);
+                VoidWithError resultTemp = await CreateTable(child);
                 result.Errors.AddRange(resultTemp.Errors);
             }
             return result;
         }
 
-        public ResultWithError<bool> TableExist(PyramidInfo pyramid)
+        public async Task<ResultWithError<bool>> TableExist(PyramidInfo pyramid)
         {
             if (allTableInfos.ContainsKey(pyramid.type))
             {
-                return TableExist(allTableInfos[pyramid.type]);
+                return await TableExist(allTableInfos[pyramid.type]);
             }
             ResultWithError<bool> result = new();
             result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "Can't find the type " + pyramid.type));
@@ -1230,15 +1204,15 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
         protected abstract string PrepareSQLTableExist(string table);
-        public ResultWithError<bool> TableExist(TableInfo table)
+        public Task<ResultWithError<bool>> TableExist(TableInfo table)
         {
             return TableExist(table.SqlTableName);
         }
-        public ResultWithError<bool> TableExist(string table)
+        public async Task<ResultWithError<bool>> TableExist(string table)
         {
             ResultWithError<bool> result = new();
             string sql = PrepareSQLTableExist(table);
-            ResultWithError<List<Dictionary<string, string?>>> queryResult = Query(sql);
+            ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
             result.Errors.AddRange(queryResult.Errors);
 
             if (queryResult.Success && queryResult.Result != null && queryResult.Result.Count == 1)
@@ -1250,21 +1224,21 @@ namespace AventusSharp.Data.Storage.Default
         }
 
         protected abstract string PrepareSQLTableRename(string oldName, string newName);
-        public ResultWithError<bool> TableRename(string oldName, string newName)
+        public async Task<ResultWithError<bool>> TableRename(string oldName, string newName)
         {
             ResultWithError<bool> result = new();
             string sql = PrepareSQLTableRename(oldName, newName);
-            result.Run(() => Execute(sql));
+            await result.RunAsync(() => Execute(sql));
             result.Result = result.Success;
             return result;
         }
 
         protected abstract string PrepareSQLTableDelete(string name);
-        public ResultWithError<bool> TableDelete(string name)
+        public async Task<ResultWithError<bool>> TableDelete(string name)
         {
             ResultWithError<bool> result = new();
             string sql = PrepareSQLTableDelete(name);
-            result.Run(() => Execute(sql));
+            await result.RunAsync(() => Execute(sql));
             result.Result = result.Success;
             return result;
         }
@@ -1273,7 +1247,7 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Create
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId) where X : IStorable;
-        public VoidWithError BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
+        public async Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
         {
             VoidWithError result = new();
             int bufferSize = 500;
@@ -1296,7 +1270,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
 
                     List<IStorable> storables = buffer.Select(p => (IStorable)p).ToList();
-                    VoidWithError createResult = BulkQueryGeneric(StorableAction.Create, sql, parametersCreate, storables);
+                    VoidWithError createResult = await BulkQueryGeneric(StorableAction.Create, sql, parametersCreate, storables);
 
                     if (!createResult.Success)
                     {
@@ -1310,7 +1284,7 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder) where X : IStorable;
-        public VoidWithError CreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, X item) where X : IStorable
+        public async Task<VoidWithError> CreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, X item) where X : IStorable
         {
             VoidWithError result = new();
             if (item == null)
@@ -1328,7 +1302,7 @@ namespace AventusSharp.Data.Storage.Default
 
             #region create
 
-            VoidWithError resultBefore = CheckAutoCUDBeforeCreate(createBuilder.info.ToCheckBefore, item);
+            VoidWithError resultBefore = await CheckAutoCUDBeforeCreate(createBuilder.info.ToCheckBefore, item);
             if (!resultBefore.Success)
             {
                 result.Errors.AddRange(resultBefore.Errors);
@@ -1351,7 +1325,7 @@ namespace AventusSharp.Data.Storage.Default
                     parametersCreate.Add(query.PrimaryToSet, QueryParameterType.Normal);
                 }
 
-                ResultWithError<List<Dictionary<string, string?>>> createResult = QueryGeneric(StorableAction.Create, sql, parametersCreate, item);
+                ResultWithError<List<Dictionary<string, string?>>> createResult = await QueryGeneric(StorableAction.Create, sql, parametersCreate, item);
 
                 if (!createResult.Success)
                 {
@@ -1367,7 +1341,7 @@ namespace AventusSharp.Data.Storage.Default
 
             if (result.Errors.Count == 0)
             {
-                VoidWithError resultReverse = CheckReverseLinkAfterCreate(createBuilder.info.ReverseMembers, item, id);
+                VoidWithError resultReverse = await CheckReverseLinkAfterCreate(createBuilder.info.ReverseMembers, item, id);
                 if (!resultReverse.Success)
                 {
                     result.Errors.AddRange(resultReverse.Errors);
@@ -1389,14 +1363,14 @@ namespace AventusSharp.Data.Storage.Default
         /// <param name="members"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        protected VoidWithError CheckAutoCUDBeforeCreate<X>(List<TableMemberInfoSql> members, X item) where X : IStorable
+        protected async Task<VoidWithError> CheckAutoCUDBeforeCreate<X>(List<TableMemberInfoSql> members, X item) where X : IStorable
         {
             VoidWithError result = new();
-            Func<IStorable, TableMemberInfoSql, bool> manageStorable = (storableLink, member) =>
+            Func<IStorable, TableMemberInfoSql, Task<bool>> manageStorable = async (storableLink, member) =>
             {
                 if (storableLink.Id == 0 && member.IsAutoCreate)
                 {
-                    List<GenericError> resultCreateTemp = storableLink.CreateWithError();
+                    List<GenericError> resultCreateTemp = await storableLink.CreateWithError();
                     if (resultCreateTemp.Count != 0)
                     {
                         result.Errors.AddRange(resultCreateTemp);
@@ -1405,7 +1379,7 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 else if (storableLink.Id != 0 && member.IsAutoUpdate)
                 {
-                    List<GenericError> resultUpdateTemp = storableLink.UpdateWithError();
+                    List<GenericError> resultUpdateTemp = await storableLink.UpdateWithError();
                     if (resultUpdateTemp.Count != 0)
                     {
                         result.Errors.AddRange(resultUpdateTemp);
@@ -1421,7 +1395,7 @@ namespace AventusSharp.Data.Storage.Default
                     object? o = member.GetValue(item);
                     if (o is IStorable storableLink)
                     {
-                        if (!manageStorable(storableLink, member))
+                        if (!await manageStorable(storableLink, member))
                         {
                             return result;
                         }
@@ -1436,7 +1410,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             if (itemLink is IStorable storableLink)
                             {
-                                if (!manageStorable(storableLink, member))
+                                if (!await manageStorable(storableLink, member))
                                 {
                                     return result;
                                 }
@@ -1449,7 +1423,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             if (itemLink.Value.Value is IStorable storableLink)
                             {
-                                if (!manageStorable(storableLink, member))
+                                if (!await manageStorable(storableLink, member))
                                 {
                                     return result;
                                 }
@@ -1469,15 +1443,15 @@ namespace AventusSharp.Data.Storage.Default
         /// <param name="item"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        protected VoidWithError CheckReverseLinkAfterCreate<X>(List<TableReverseMemberInfo> reverseMembers, X item, int id) where X : IStorable
+        protected async Task<VoidWithError> CheckReverseLinkAfterCreate<X>(List<TableReverseMemberInfo> reverseMembers, X item, int id) where X : IStorable
         {
             VoidWithError result = new();
-            Func<IStorable, TableReverseMemberInfo, bool> manageStorable = (reverseStorable, member) =>
+            Func<IStorable, TableReverseMemberInfo, Task<bool>> manageStorable = async (reverseStorable, member) =>
             {
                 if (reverseStorable.Id == 0 && member.IsAutoCreate)
                 {
                     member.SetReverseId(reverseStorable, id);
-                    List<GenericError> resultCreateTemp = reverseStorable.CreateWithError();
+                    List<GenericError> resultCreateTemp = await reverseStorable.CreateWithError();
                     if (resultCreateTemp.Count != 0)
                     {
                         result.Errors.AddRange(resultCreateTemp);
@@ -1487,7 +1461,7 @@ namespace AventusSharp.Data.Storage.Default
                 else if (member.IsAutoUpdate)
                 {
                     member.SetReverseId(reverseStorable, id);
-                    List<GenericError> resultUpdateTemp = reverseStorable.UpdateWithError();
+                    List<GenericError> resultUpdateTemp = await reverseStorable.UpdateWithError();
                     if (resultUpdateTemp.Count != 0)
                     {
                         result.Errors.AddRange(resultUpdateTemp);
@@ -1505,7 +1479,7 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         if (reverseItem is IStorable reverseStorable)
                         {
-                            if (!manageStorable(reverseStorable, reverseMember))
+                            if (!await manageStorable(reverseStorable, reverseMember))
                             {
                                 return result;
                             }
@@ -1514,7 +1488,7 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 else if (reverseO is IStorable reverseStorable)
                 {
-                    if (!manageStorable(reverseStorable, reverseMember))
+                    if (!await manageStorable(reverseStorable, reverseMember))
                     {
                         return result;
                     }
@@ -1526,7 +1500,7 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Update
         protected abstract DatabaseUpdateBuilderInfo PrepareSQLForUpdate<X>(DatabaseUpdateBuilder<X> updateBuilder) where X : IStorable;
-        public ResultWithError<List<int>> UpdateFromBuilder<X>(DatabaseUpdateBuilder<X> updateBuilder, X item) where X : IStorable
+        public async Task<ResultWithError<List<int>>> UpdateFromBuilder<X>(DatabaseUpdateBuilder<X> updateBuilder, X item) where X : IStorable
         {
             ResultWithError<List<int>> result = new()
             {
@@ -1556,7 +1530,7 @@ namespace AventusSharp.Data.Storage.Default
             }
 
             #region query elements that will be updated
-            ResultWithError<List<Dictionary<string, string?>>> queryResult = QueryGeneric(StorableAction.Read, updateInfo.QuerySql, parametersQuery);
+            ResultWithError<List<Dictionary<string, string?>>> queryResult = await QueryGeneric(StorableAction.Read, updateInfo.QuerySql, parametersQuery);
             List<int> list = new();
             if (!queryResult.Success)
             {
@@ -1574,14 +1548,15 @@ namespace AventusSharp.Data.Storage.Default
                 }
             }
 
-            CheckAutoCUDBeforeUpdate(updateInfo.ToCheckBefore, item, list, updateBuilder.DM, out List<IStorable> storableToDeleted);
+            List<IStorable> storableToDeleted = new List<IStorable>();
+            await CheckAutoCUDBeforeUpdate(updateInfo.ToCheckBefore, item, list, updateBuilder.DM, storableToDeleted);
 
             foreach (TableReverseMemberInfo reverseMember in updateInfo.ReverseMembers)
             {
                 Dictionary<int, IStorable> oldList = new Dictionary<int, IStorable>();
                 foreach (int id in list)
                 {
-                    ResultWithDataError<List<IStorable>> resultTemp = reverseMember.ReverseQuery(id);
+                    ResultWithDataError<List<IStorable>> resultTemp = await reverseMember.ReverseQuery(id);
                     if (resultTemp.Result != null)
                     {
                         foreach (IStorable itemTemp in resultTemp.Result)
@@ -1605,14 +1580,14 @@ namespace AventusSharp.Data.Storage.Default
                             {
                                 itemTemp.Id = 0;
                                 reverseMember.SetReverseId(itemTemp, id);
-                                itemTemp.Create();
+                                await itemTemp.Create();
                             }
                         }
                         else if (oldList.ContainsKey(itemTemp.Id))
                         {
                             if (reverseMember.IsAutoUpdate)
                             {
-                                itemTemp.Update();
+                                await itemTemp.Update();
                             }
                             oldList.Remove(itemTemp.Id);
                         }
@@ -1623,7 +1598,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     foreach (KeyValuePair<int, IStorable> missing in oldList)
                     {
-                        missing.Value.Delete();
+                        await missing.Value.Delete();
                     }
                 }
             }
@@ -1642,7 +1617,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     parametersUpdate.Add(parameterInfo, QueryParameterType.GrabValue);
                 }
-                ResultWithError<List<Dictionary<string, string?>>> updateResult = QueryGeneric(StorableAction.Update, query.Sql, parametersUpdate, item);
+                ResultWithError<List<Dictionary<string, string?>>> updateResult = await QueryGeneric(StorableAction.Update, query.Sql, parametersUpdate, item);
 
                 if (!updateResult.Success)
                 {
@@ -1656,7 +1631,7 @@ namespace AventusSharp.Data.Storage.Default
 
             foreach (IStorable storable in storableToDeleted)
             {
-                List<GenericError> resultError = storable.DeleteWithError();
+                List<GenericError> resultError = await storable.DeleteWithError();
                 if (resultError.Count != 0)
                 {
                     result.Errors.AddRange(resultError);
@@ -1686,10 +1661,9 @@ namespace AventusSharp.Data.Storage.Default
             }
         }
 
-        protected VoidWithError CheckAutoCUDBeforeUpdate<X>(List<TableMemberInfoSql> members, X item, List<int> listIdUpdate, IGenericDM DM, out List<IStorable> storableToDeleted) where X : IStorable
+        protected async Task<VoidWithError> CheckAutoCUDBeforeUpdate<X>(List<TableMemberInfoSql> members, X item, List<int> listIdUpdate, IGenericDM DM, List<IStorable> storableToDeleted) where X : IStorable
         {
             VoidWithError result = new VoidWithError();
-            storableToDeleted = new List<IStorable>();
             if (members.Count == 0)
             {
                 return result;
@@ -1717,18 +1691,18 @@ namespace AventusSharp.Data.Storage.Default
                 }
             }
             queryBuilder.Where(p => listIdUpdate.Contains(p.Id));
-            ResultWithError<List<X>> resultTemp = queryBuilder.RunWithError();
+            ResultWithError<List<X>> resultTemp = await queryBuilder.RunWithError();
             if (!resultTemp.Success || resultTemp.Result == null)
             {
                 result.Errors.AddRange(resultTemp.Errors);
                 return result;
             }
 
-            Func<IStorable, TableMemberInfoSql, Dictionary<int, IStorable>, bool> manageStorable = (currentStorable, member, oldValues) =>
+            Func<IStorable, TableMemberInfoSql, Dictionary<int, IStorable>, Task<bool>> manageStorable = async (currentStorable, member, oldValues) =>
             {
                 if (currentStorable.Id == 0 && member.IsAutoCreate)
                 {
-                    List<GenericError> resultError = currentStorable.CreateWithError();
+                    List<GenericError> resultError = await currentStorable.CreateWithError();
                     if (resultError.Count != 0)
                     {
                         result.Errors.AddRange(resultError);
@@ -1737,7 +1711,7 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 else if (member.IsAutoUpdate)
                 {
-                    List<GenericError> resultError = currentStorable.UpdateWithError();
+                    List<GenericError> resultError = await currentStorable.UpdateWithError();
                     if (resultError.Count != 0)
                     {
                         result.Errors.AddRange(resultError);
@@ -1769,7 +1743,7 @@ namespace AventusSharp.Data.Storage.Default
                     object? currentValue = member.GetValue(item);
                     if (currentValue is IStorable currentStorable)
                     {
-                        if (!manageStorable(currentStorable, member, oldValues))
+                        if (!await manageStorable(currentStorable, member, oldValues))
                         {
                             return result;
                         }
@@ -1820,7 +1794,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             if (itemLink is IStorable currentStorable)
                             {
-                                if (!manageStorable(currentStorable, member, oldValues))
+                                if (!await manageStorable(currentStorable, member, oldValues))
                                 {
                                     return result;
                                 }
@@ -1834,7 +1808,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             if (itemLink.Value.Value is IStorable currentStorable)
                             {
-                                if (!manageStorable(currentStorable, member, oldValues))
+                                if (!await manageStorable(currentStorable, member, oldValues))
                                 {
                                     return result;
                                 }
@@ -1857,7 +1831,7 @@ namespace AventusSharp.Data.Storage.Default
 
             return result;
         }
-        protected VoidWithError CheckReverseLinkBeforeUpdate<X>(List<TableReverseMemberInfo> reverseMembers, X item, List<int> listIdUpdate) where X : IStorable
+        protected async Task<VoidWithError> CheckReverseLinkBeforeUpdate<X>(List<TableReverseMemberInfo> reverseMembers, X item, List<int> listIdUpdate) where X : IStorable
         {
             listIdUpdate = listIdUpdate.ToList();
             VoidWithError result = new VoidWithError();
@@ -1866,7 +1840,7 @@ namespace AventusSharp.Data.Storage.Default
                 Dictionary<int, IStorable> oldList = new Dictionary<int, IStorable>();
                 foreach (int id in listIdUpdate)
                 {
-                    ResultWithDataError<List<IStorable>> resultTemp = reverseMember.ReverseQuery(id);
+                    ResultWithDataError<List<IStorable>> resultTemp = await reverseMember.ReverseQuery(id);
                     if (resultTemp.Result != null)
                     {
                         foreach (IStorable itemTemp in resultTemp.Result)
@@ -1890,7 +1864,7 @@ namespace AventusSharp.Data.Storage.Default
                             {
                                 itemTemp.Id = 0;
                                 reverseMember.SetReverseId(itemTemp, id);
-                                List<GenericError> resultTemp = itemTemp.CreateWithError();
+                                List<GenericError> resultTemp = await itemTemp.CreateWithError();
                                 if (resultTemp.Count != 0)
                                 {
                                     result.Errors.AddRange(resultTemp);
@@ -1902,7 +1876,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             if (reverseMember.IsAutoUpdate)
                             {
-                                List<GenericError> resultTemp = itemTemp.UpdateWithError();
+                                List<GenericError> resultTemp = await itemTemp.UpdateWithError();
                                 if (resultTemp.Count != 0)
                                 {
                                     result.Errors.AddRange(resultTemp);
@@ -1918,7 +1892,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     foreach (KeyValuePair<int, IStorable> missing in oldList)
                     {
-                        List<GenericError> resultTemp = missing.Value.DeleteWithError();
+                        List<GenericError> resultTemp = await missing.Value.DeleteWithError();
                         if (resultTemp.Count != 0)
                         {
                             result.Errors.AddRange(resultTemp);
@@ -1935,7 +1909,7 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Delete
         protected abstract DatabaseDeleteBuilderInfo PrepareSQLForDelete<X>(DatabaseDeleteBuilder<X> deleteBuilder) where X : IStorable;
-        public VoidWithError DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> deleteBuilder, List<X> elementsToDelete) where X : IStorable
+        public async Task<VoidWithError> DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> deleteBuilder, List<X> elementsToDelete) where X : IStorable
         {
             VoidWithError result = new();
             if (deleteBuilder.info == null)
@@ -1953,13 +1927,13 @@ namespace AventusSharp.Data.Storage.Default
                     parameterInfo.Value.Value = ids;
                     parametersDeleteNM.Add(parameterInfo.Value, QueryParameterType.Normal);
                 }
-                ResultWithError<List<Dictionary<string, string?>>> deleteResultNM = QueryGeneric(StorableAction.Delete, deleteNM.Key, parametersDeleteNM);
+                ResultWithError<List<Dictionary<string, string?>>> deleteResultNM = await QueryGeneric(StorableAction.Delete, deleteNM.Key, parametersDeleteNM);
             }
 
             // delete reverse
             foreach (TableReverseMemberInfo reverseMemberInfo in deleteBuilder.info.ReverseMembers)
             {
-                ResultWithDataError<List<IStorable>> resultTemp = reverseMemberInfo.ReverseQuery(ids);
+                ResultWithDataError<List<IStorable>> resultTemp = await reverseMemberInfo.ReverseQuery(ids);
                 if (!resultTemp.Success)
                 {
                     result.Errors.AddRange(resultTemp.Errors);
@@ -1977,7 +1951,7 @@ namespace AventusSharp.Data.Storage.Default
                     if (reverseMemberInfo.reverseMember != null && reverseMemberInfo.reverseMember.IsNullable)
                     {
                         reverseMemberInfo.reverseMember?.SetValue(item, null);
-                        List<GenericError> errorsTemp = item.UpdateWithError();
+                        List<GenericError> errorsTemp = await item.UpdateWithError();
                         if (errorsTemp.Count > 0)
                         {
                             result.Errors.AddRange(errorsTemp);
@@ -1986,7 +1960,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else
                     {
-                        List<GenericError> errorsTemp = item.DeleteWithError();
+                        List<GenericError> errorsTemp = await item.DeleteWithError();
                         if (errorsTemp.Count > 0)
                         {
                             result.Errors.AddRange(errorsTemp);
@@ -2007,7 +1981,7 @@ namespace AventusSharp.Data.Storage.Default
             }
 
             string sql = deleteBuilder.info.Sql;
-            ResultWithError<List<Dictionary<string, string?>>> deleteResult = QueryGeneric(StorableAction.Delete, sql, parametersDelete);
+            ResultWithError<List<Dictionary<string, string?>>> deleteResult = await QueryGeneric(StorableAction.Delete, sql, parametersDelete);
             if (!deleteResult.Success)
             {
                 result.Errors.AddRange(deleteResult.Errors);
@@ -2026,7 +2000,7 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Migration
-        public VoidWithError ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable
+        public async Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable
         {
             VoidWithError result = new VoidWithError();
             if (model.ModelAction == null)
@@ -2039,7 +2013,7 @@ namespace AventusSharp.Data.Storage.Default
                 if (!string.IsNullOrEmpty(model.OldName))
                 {
                     // changement du nom de la table
-                    result.Run(() => TableRename(model.OldName, TableInfo.GetSQLTableName(model.Type)));
+                    await result.RunAsync(() => TableRename(model.OldName, TableInfo.GetSQLTableName(model.Type)));
                 }
                 foreach (var member in model.Properties)
                 {
@@ -2054,7 +2028,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             else if (model.ModelAction == MigrationModelAction.Delete)
             {
-                result.Run(() => TableDelete(TableInfo.GetSQLTableName(model.Type)));
+                await result.RunAsync(() => TableDelete(TableInfo.GetSQLTableName(model.Type)));
                 // suppression de la table... peut etre enlever le fait de pouvoir chainer a ce moment
             }
             return new();
@@ -2128,9 +2102,9 @@ namespace AventusSharp.Data.Storage.Default
         /// <param name="defaultValue"></param>
         /// <param name="action"></param>
         /// <returns></returns>
-        public ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action)
+        public async Task<ResultWithError<Y>> RunInsideTransaction<Y>(Y? defaultValue, Func<Task<ResultWithError<Y>>> action)
         {
-            ResultWithError<DbTransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            ResultWithError<DbTransactionContext> transactionResult = (await BeginTransaction()).ToGeneric();
             if (!transactionResult.Success || transactionResult.Result == null)
             {
                 ResultWithError<Y> resultError = new()
@@ -2140,15 +2114,15 @@ namespace AventusSharp.Data.Storage.Default
                 };
                 return resultError;
             }
-            ResultWithError<Y> resultTemp = action();
+            ResultWithError<Y> resultTemp = await action();
             if (resultTemp.Success)
             {
-                ResultWithError<bool> commitResult = transactionResult.Result.Commit();
+                ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
                 resultTemp.Errors.AddRange(commitResult.Errors);
             }
             else
             {
-                ResultWithError<bool> rollbackResult = transactionResult.Result.Rollback();
+                ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
             return resultTemp;
@@ -2159,7 +2133,7 @@ namespace AventusSharp.Data.Storage.Default
         /// <typeparam name="Y"></typeparam>
         /// <param name="action"></param>
         /// <returns></returns>
-        public ResultWithError<Y> RunInsideTransaction<Y>(Func<ResultWithError<Y>> action)
+        public Task<ResultWithError<Y>> RunInsideTransaction<Y>(Func<Task<ResultWithError<Y>>> action)
         {
             return RunInsideTransaction<Y>(default, action);
         }
@@ -2168,9 +2142,9 @@ namespace AventusSharp.Data.Storage.Default
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        public VoidWithError RunInsideTransaction(Func<VoidWithError> action)
+        public async Task<VoidWithError> RunInsideTransaction(Func<Task<VoidWithError>> action)
         {
-            ResultWithError<DbTransactionContext> transactionResult = BeginTransaction().ToGeneric();
+            ResultWithError<DbTransactionContext> transactionResult = (await BeginTransaction()).ToGeneric();
             if (!transactionResult.Success || transactionResult.Result == null)
             {
                 VoidWithError resultError = new()
@@ -2179,20 +2153,15 @@ namespace AventusSharp.Data.Storage.Default
                 };
                 return resultError;
             }
-            VoidWithError resultTemp = action();
+            VoidWithError resultTemp = await action();
             if (resultTemp.Success)
             {
-                ResultWithError<bool> commitResult = transactionResult.Result.Commit();
-                if (commitResult.Result)
-                {
-                    transactionContext = null;
-                }
+                ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
                 resultTemp.Errors.AddRange(commitResult.Errors);
             }
             else
             {
-                ResultWithError<bool> rollbackResult = transactionResult.Result.Rollback();
-                transactionContext = null;
+                ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
             return resultTemp;
@@ -2228,25 +2197,25 @@ namespace AventusSharp.Data.Storage.Default
             get => transaction.Connection;
         }
 
-        public DbTransactionContext(DbTransaction transaction, Action endTransaction, Action<Action> runInsideLocker) : base(endTransaction, runInsideLocker)
+        public DbTransactionContext(DbTransaction transaction, Func<Task> endTransaction) : base(endTransaction)
         {
             this.transaction = transaction;
             if (transaction.Connection == null) throw new Exception("Transaction without connection");
         }
 
-        protected override void TransactionDispose()
+        protected override async Task TransactionDispose()
         {
-            transaction.Dispose();
+            await transaction.DisposeAsync();
         }
 
-        protected override void TransactionRollback()
+        protected override async Task TransactionRollback()
         {
-            transaction.Rollback();
+            await transaction.RollbackAsync();
         }
 
-        protected override void TransactionCommit()
+        protected override async Task TransactionCommit()
         {
-            transaction.Commit();
+            await transaction.CommitAsync();
         }
     }
 }

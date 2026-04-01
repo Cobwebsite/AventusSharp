@@ -10,6 +10,7 @@ using AventusSharp.Data.Manager.DB;
 using System.Data;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Migrations;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Mssql;
 
@@ -51,7 +52,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     {
         return MigrationProvider;
     }
-    public override VoidWithError ConnectWithError()
+    public override async Task<VoidWithError> ConnectWithError()
     {
         VoidWithError result = new();
         try
@@ -59,7 +60,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
             IsConnectedOneTime = true;
             using (DbConnection connection = GetConnection())
             {
-                connection.Open();
+                await connection.OpenAsync();
                 IsConnectedOneTime = true;
             }
         }
@@ -76,7 +77,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                         {
                             useDatabase = false;
                             connection.Open();
-                            Execute("CREATE DATABASE " + database + ";").Print();
+                            (await Execute("CREATE DATABASE " + database + ";")).Print();
                             useDatabase = true;
                         }
                         ;
@@ -131,7 +132,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         return new SqlParameter();
     }
 
-    public override ResultWithError<bool> ResetStorage()
+    public override async Task<ResultWithError<bool>> ResetStorage()
     {
         ResultWithError<bool> result = new();
 
@@ -139,7 +140,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                      "FROM INFORMATION_SCHEMA.TABLES " +
                      "WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_CATALOG = '" + this.database + "';";
 
-        ResultWithError<List<Dictionary<string, string?>>> queryResult = Query(sql);
+        ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
         if (!queryResult.Success || queryResult.Result == null)
         {
             result.Errors.AddRange(queryResult.Errors);
@@ -153,7 +154,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         }
         dropAllCmd += "EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';";
 
-        VoidWithError executeResult = Execute(dropAllCmd);
+        VoidWithError executeResult = await Execute(dropAllCmd);
         if (!executeResult.Success)
         {
             result.Errors.AddRange(executeResult.Errors);

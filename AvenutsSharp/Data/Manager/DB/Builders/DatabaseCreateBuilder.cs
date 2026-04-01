@@ -3,6 +3,7 @@ using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.DB.Builders
 {
@@ -54,10 +55,10 @@ namespace AventusSharp.Data.Manager.DB.Builders
             TableInfo = tableInfo;
         }
 
-        public ResultWithError<T> RunWithError(T item)
+        public async Task<ResultWithError<T>> RunWithError(T item)
         {
             ResultWithError<T> result = new();
-            VoidWithError resultTemp = Storage.CreateFromBuilder(this, item);
+            VoidWithError resultTemp = await Storage.CreateFromBuilder(this, item);
             if (resultTemp.Success)
             {
                 result.Result = item;
@@ -70,9 +71,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return result;
         }
 
-        public VoidWithError RunBulkWithError(List<T> items, bool withId)
+        public async Task<VoidWithError> RunBulkWithError(List<T> items, bool withId)
         {
-            VoidWithError result = Storage.BulkCreateFromBuilder(this, items, withId);
+            VoidWithError result = await Storage.BulkCreateFromBuilder(this, items, withId);
             DM.PrintErrors(result);
             return result;
         }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager
 {
@@ -16,13 +17,13 @@ namespace AventusSharp.Data.Manager
         /// Executes the delete operation and returns a list of deleted items.
         /// </summary>
         /// <returns>A list of deleted <typeparamref name="T"/> objects, or null if no items were deleted.</returns>
-        public List<T>? Run();
+        public Task<List<T>?> Run();
 
         /// <summary>
         /// Executes the delete operation and returns a result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a list of deleted <typeparamref name="T"/> objects.</returns>
-        public ResultWithError<List<T>> RunWithError();
+        public Task<ResultWithError<List<T>>> RunWithError();
 
         /// <summary>
         /// Adds a condition to the delete query using the provided expression.
@@ -103,9 +104,9 @@ namespace AventusSharp.Data.Manager
         /// Executes the query and returns a list of results.
         /// </summary>
         /// <returns>A list of type <typeparamref name="T"/>.</returns>
-        public List<T>? Run()
+        public async Task<List<T>?> Run()
         {
-            List<T>? result = builder.Run();
+            List<T>? result = await builder.Run();
             prepared.Done();
             return result;
         }
@@ -113,9 +114,9 @@ namespace AventusSharp.Data.Manager
         /// Executes the query and returns a result with error handling.
         /// </summary>
         /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
-        public ResultWithError<List<T>> RunWithError()
+        public async Task<ResultWithError<List<T>>> RunWithError()
         {
-            ResultWithError<List<T>> result = builder.RunWithError();
+            ResultWithError<List<T>> result = await builder.RunWithError();
             prepared.Done();
             return result;
         }

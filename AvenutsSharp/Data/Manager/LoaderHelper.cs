@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Tools;
@@ -12,7 +13,7 @@ namespace AventusSharp.Data.Manager;
 
 public class LoaderHelper
 {
-    public static ResultWithError<List<Y>> LoadDependances<X, Y>(ResultWithError<List<X>> from, Func<X, int> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
+    public static async Task<ResultWithError<List<Y>>> LoadDependances<X, Y>(ResultWithError<List<X>> from, Func<X, int> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
     {
         ResultWithError<List<Y>> result = new ResultWithError<List<Y>>();
         if (!from.Success || from.Result == null)
@@ -33,7 +34,7 @@ public class LoaderHelper
 
             if (ids.Count > 0)
             {
-                result = GenericDM.Get<Y>().WhereWithError<Y>(p => ids.Contains(p.Id));
+                result = await GenericDM.Get<Y>().WhereWithError<Y>(p => ids.Contains(p.Id));
                 if (result.Success && result.Result != null)
                 {
                     Dictionary<int, Y> dico = result.Result.ToDictionary(p => p.Id, p => p);
@@ -57,7 +58,7 @@ public class LoaderHelper
         return result;
     }
 
-    public static ResultWithError<List<Y>> LoadDependancesList<X, Y>(ResultWithError<List<X>> from, Func<X, List<int>> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
+    public static async Task<ResultWithError<List<Y>>> LoadDependancesList<X, Y>(ResultWithError<List<X>> from, Func<X, List<int>> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
     {
         ResultWithError<List<Y>> result = new ResultWithError<List<Y>>();
         if (!from.Success || from.Result == null)
@@ -81,7 +82,7 @@ public class LoaderHelper
 
             if (ids.Count > 0)
             {
-                result = GenericDM.Get<Y>().WhereWithError<Y>(p => ids.Contains(p.Id));
+                result = await GenericDM.Get<Y>().WhereWithError<Y>(p => ids.Contains(p.Id));
                 if (result.Success && result.Result != null)
                 {
                     Dictionary<int, Y> dico = result.Result.ToDictionary(p => p.Id, p => p);
@@ -108,21 +109,21 @@ public class LoaderHelper
         return result;
     }
 
-    public static VoidWithError LoadReverseLink<X, Y>(ResultWithError<List<X>> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
+    public static Task<VoidWithError> LoadReverseLink<X, Y>(ResultWithError<List<X>> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
     {
         string name = LambdaTranslator.ExtractName(expression);
         return LoadReverseLinkInternal<X, Y>(from, name);
     }
-    public static VoidWithError LoadReverseLink<X, Y>(List<X> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
+    public static Task<VoidWithError> LoadReverseLink<X, Y>(List<X> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
     {
         string name = LambdaTranslator.ExtractName(expression);
         return LoadReverseLinkInternalList<X, Y>(from, name);
     }
-    internal static VoidWithError LoadReverseLinkInternalList<X, Y>(List<X> from, string name) where X : IStorable where Y : IStorable
+    internal static Task<VoidWithError> LoadReverseLinkInternalList<X, Y>(List<X> from, string name) where X : IStorable where Y : IStorable
     {
         return LoadReverseLinkInternal<X, Y>(new ResultWithError<List<X>>() { Result = from }, name);
     }
-    internal static VoidWithError LoadReverseLinkInternal<X, Y>(ResultWithError<List<X>> from, string name) where X : IStorable where Y : IStorable
+    internal static async Task<VoidWithError> LoadReverseLinkInternal<X, Y>(ResultWithError<List<X>> from, string name) where X : IStorable where Y : IStorable
     {
         VoidWithError result = new VoidWithError();
         if (!from.Success || from.Result == null)
@@ -250,7 +251,7 @@ public class LoaderHelper
                     Expression e1 = Expression.Call(body, "Contains", Type.EmptyTypes, nameProperty);
                     Expression<Func<Y, bool>> lambda = (Expression<Func<Y, bool>>)Expression.Lambda(e1, argParam);
 
-                    ResultWithError<List<Y>> linkedElement = dmY.WhereWithError(lambda);
+                    ResultWithError<List<Y>> linkedElement = await dmY.WhereWithError(lambda);
                     if (linkedElement.Success && linkedElement.Result != null)
                     {
                         foreach (Y item in linkedElement.Result)

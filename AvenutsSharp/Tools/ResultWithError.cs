@@ -88,11 +88,11 @@ namespace AventusSharp.Tools
             return this;
         }
 
-        public VoidWithError<T> RunAsync(Func<Task<List<T>>> fct)
+        public async Task<VoidWithError<T>> RunAsync(Func<Task<List<T>>> fct)
         {
             if (Success)
             {
-                List<T> execResult = fct().GetAwaiter().GetResult();
+                List<T> execResult = await fct();
                 if (execResult.Count > 0)
                 {
                     Errors.AddRange(execResult);
@@ -100,11 +100,11 @@ namespace AventusSharp.Tools
             }
             return this;
         }
-        public VoidWithError<T> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<T>
+        public async Task<VoidWithError<T>> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<T>
         {
             if (Success)
             {
-                Y execResult = fct().GetAwaiter().GetResult();
+                Y execResult = await fct();
                 if (execResult.Errors.Count > 0)
                 {
                     Errors.AddRange(execResult.Errors);
@@ -130,11 +130,11 @@ namespace AventusSharp.Tools
             return default;
         }
 
-        public Y? ExtractAsync<Y>(Func<Task<ResultWithError<Y, T>>> fct)
+        public async Task<Y?> ExtractAsync<Y>(Func<Task<ResultWithError<Y, T>>> fct)
         {
             if (Success)
             {
-                ResultWithError<Y, T> execResult = fct().GetAwaiter().GetResult();
+                ResultWithError<Y, T> execResult = await fct();
                 if (execResult.Success && execResult.Result != null)
                 {
                     return execResult.Result;
@@ -163,14 +163,14 @@ namespace AventusSharp.Tools
             return this;
         }
 
-        public new VoidWithError RunAsync(Func<Task<List<GenericError>>> fct)
+        public new async Task<VoidWithError> RunAsync(Func<Task<List<GenericError>>> fct)
         {
-            base.RunAsync(fct);
+            await base.RunAsync(fct);
             return this;
         }
-        public new VoidWithError RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<GenericError>
+        public new async Task<VoidWithError> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<GenericError>
         {
-            base.RunAsync(fct);
+            await base.RunAsync(fct);
             return this;
         }
 
@@ -247,11 +247,11 @@ namespace AventusSharp.Tools
             return this;
         }
 
-        public new ResultWithError<T, U> RunAsync(Func<Task<List<U>>> fct)
+        public new async Task<ResultWithError<T, U>> RunAsync(Func<Task<List<U>>> fct)
         {
             if (Success)
             {
-                List<U> execResult = fct().GetAwaiter().GetResult();
+                List<U> execResult = await fct();
                 if (execResult.Count > 0)
                 {
                     Errors.AddRange(execResult);
@@ -259,11 +259,11 @@ namespace AventusSharp.Tools
             }
             return this;
         }
-        public new ResultWithError<T, U> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<U>
+        public new async Task<ResultWithError<T, U>> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<U>
         {
             if (Success)
             {
-                Y execResult = fct().GetAwaiter().GetResult();
+                Y execResult = await fct();
                 if (execResult.Errors.Count > 0)
                 {
                     Errors.AddRange(execResult.Errors);
@@ -292,14 +292,14 @@ namespace AventusSharp.Tools
             return this;
         }
 
-        public new ResultWithError<T> RunAsync(Func<Task<List<GenericError>>> fct)
+        public new async Task<ResultWithError<T>> RunAsync(Func<Task<List<GenericError>>> fct)
         {
-            base.RunAsync(fct);
+            await base.RunAsync(fct);
             return this;
         }
-        public new ResultWithError<T> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<GenericError>
+        public new async Task<ResultWithError<T>> RunAsync<Y>(Func<Task<Y>> fct) where Y : IWithError<GenericError>
         {
-            base.RunAsync(fct);
+            await base.RunAsync(fct);
             return this;
         }
 

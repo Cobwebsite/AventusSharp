@@ -10,6 +10,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.DB.Builders
 {
@@ -37,11 +38,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         }
 
-        public List<T> Run()
+        public async Task<List<T>> Run()
         {
-            return RunWithError().Result ?? new List<T>();
+            ResultWithError<List<T>> result = await RunWithError();
+            return result.Result ?? new List<T>();
         }
-        public ResultWithError<List<T>> RunWithError()
+        public async Task<ResultWithError<List<T>>> RunWithError()
         {
             if (Errors.Count > 0)
             {
@@ -51,20 +53,20 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 };
             }
             MergeScopeAndWhere();
-            var result = Storage.QueryFromBuilder(this);
+            var result = await Storage.QueryFromBuilder(this);
             DM.PrintErrors(result);
             return result;
 
         }
 
-        public T? Single()
+        public async Task<T?> Single()
         {
-            return SingleWithError().Result;
+            return (await SingleWithError()).Result;
         }
-        public ResultWithError<T> SingleWithError()
+        public async Task<ResultWithError<T>> SingleWithError()
         {
             ResultWithError<T> result = new ResultWithError<T>();
-            ResultWithError<List<T>> runResult = RunWithError();
+            ResultWithError<List<T>> runResult = await RunWithError();
             result.Errors = runResult.Errors;
             if (runResult.Result != null && runResult.Result.Count > 0)
             {

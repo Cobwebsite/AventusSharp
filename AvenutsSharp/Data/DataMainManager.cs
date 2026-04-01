@@ -902,7 +902,7 @@ namespace AventusSharp.Data
                     }
                 }
 
-                result.Run(() => MigrationManager.Run(searchingAssemblies));
+                await result.RunAsync(() => MigrationManager.Run(searchingAssemblies));
 
                 foreach (IGenericDM dm in genericDMs)
                 {

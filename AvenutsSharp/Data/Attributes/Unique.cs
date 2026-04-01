@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using Type = System.Type;
 
 namespace AventusSharp.Data.Attributes
@@ -11,7 +12,7 @@ namespace AventusSharp.Data.Attributes
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class Unique : ValidationAttribute
     {
-        protected Func<object, int, IResultWithError>? prepare;
+        protected Func<object, int, Task<IResultWithError>>? prepare;
         protected object? query;
         protected string message;
 
@@ -24,7 +25,7 @@ namespace AventusSharp.Data.Attributes
             this.message = message;
         }
 
-        public override ValidationResult IsValid(object? value, ValidationContext context)
+        public override async Task<ValidationResult> IsValid(object? value, ValidationContext context)
         {
             if (value == null) return ValidationResult.Success;
 
@@ -41,7 +42,7 @@ namespace AventusSharp.Data.Attributes
 
             if (prepare != null && query != null && context.Item != null)
             {
-                IResultWithError? resultWithError = prepare(value, context.Item.Id);
+                IResultWithError? resultWithError = await prepare(value, context.Item.Id);
                 if (resultWithError != null)
                 {
                     if (resultWithError.Errors.Count > 0)
@@ -112,9 +113,9 @@ namespace AventusSharp.Data.Attributes
             var prepared = whereWithParam.Invoke(query, new object[] { lambda });
             if (prepared is QueryBuilderPrepared<T> preparedQuery)
             {
-                prepare = (object value, int id) =>
+                prepare = async (object value, int id) =>
                 {
-                    return preparedQuery.New().SetVariables((define) =>
+                    return await preparedQuery.New().SetVariables((define) =>
                     {
                         define("value", value);
                         define("id", id);

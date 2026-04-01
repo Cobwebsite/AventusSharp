@@ -28,53 +28,53 @@ namespace AventusSharp.Data.Manager
         Task<VoidWithError> Init();
 
         #region Get
-        List<X> GetAll<X>() where X : notnull;
-        ResultWithError<List<X>> GetAllWithError<X>() where X : notnull;
+        Task<List<X>> GetAll<X>() where X : notnull;
+        Task<ResultWithError<List<X>>> GetAllWithError<X>() where X : notnull;
         IQueryBuilder<X> CreateQuery<X>() where X : notnull;
         IUpdateBuilder<X> CreateUpdate<X>() where X : notnull;
         IDeleteBuilder<X> CreateDelete<X>() where X : notnull;
         IExistBuilder<X> CreateExist<X>() where X : notnull;
 
-        object? GetById(int id);
-        X? GetById<X>(int id) where X : notnull;
-        ResultWithError<X> GetByIdWithError<X>(int id) where X : notnull;
+        Task<object?> GetById(int id);
+        Task<X?> GetById<X>(int id) where X : notnull;
+        Task<ResultWithError<X>> GetByIdWithError<X>(int id) where X : notnull;
 
-        List<X> GetByIds<X>(List<int> ids) where X : notnull;
-        ResultWithError<List<X>> GetByIdsWithError<X>(List<int> ids) where X : notnull;
+        Task<List<X>> GetByIds<X>(List<int> ids) where X : notnull;
+        Task<ResultWithError<List<X>>> GetByIdsWithError<X>(List<int> ids) where X : notnull;
 
-        List<X> Where<X>(Expression<Func<X, bool>> func) where X : notnull;
-        ResultWithError<List<X>> WhereWithError<X>(Expression<Func<X, bool>> func) where X : notnull;
+        Task<List<X>> Where<X>(Expression<Func<X, bool>> func) where X : notnull;
+        Task<ResultWithError<List<X>>> WhereWithError<X>(Expression<Func<X, bool>> func) where X : notnull;
 
-        bool Exist<X>(Expression<Func<X, bool>> func) where X : notnull;
-        ResultWithError<bool> ExistWithError<X>(Expression<Func<X, bool>> func) where X : notnull;
+        Task<bool> Exist<X>(Expression<Func<X, bool>> func) where X : notnull;
+        Task<ResultWithError<bool>> ExistWithError<X>(Expression<Func<X, bool>> func) where X : notnull;
 
 
-        X? Single<X>(Expression<Func<X, bool>> func) where X : notnull;
-        ResultWithError<X> SingleWithError<X>(Expression<Func<X, bool>> func) where X : notnull;
+        Task<X?> Single<X>(Expression<Func<X, bool>> func) where X : notnull;
+        Task<ResultWithError<X>> SingleWithError<X>(Expression<Func<X, bool>> func) where X : notnull;
         #endregion
 
         #region Create
-        List<X> Create<X>(List<X> values) where X : notnull, IStorable;
-        ResultWithError<List<X>> CreateWithError<X>(List<X> values) where X : notnull, IStorable;
-        bool BulkCreate<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
-        VoidWithError BulkCreateWithError<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
-        X? Create<X>(X value) where X : notnull, IStorable;
-        ResultWithError<X> CreateWithError<X>(X value) where X : notnull, IStorable;
+        Task<List<X>> Create<X>(List<X> values) where X : notnull, IStorable;
+        Task<ResultWithError<List<X>>> CreateWithError<X>(List<X> values) where X : notnull, IStorable;
+        Task<bool> BulkCreate<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
+        Task<VoidWithError> BulkCreateWithError<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
+        Task<X?> Create<X>(X value) where X : notnull, IStorable;
+        Task<ResultWithError<X>> CreateWithError<X>(X value) where X : notnull, IStorable;
 
         #endregion
 
         #region Update
-        List<X> Update<X>(List<X> values) where X : notnull, IStorable;
-        ResultWithError<List<X>> UpdateWithError<X>(List<X> values) where X : notnull, IStorable;
-        X Update<X>(X value) where X : notnull, IStorable;
-        ResultWithError<X> UpdateWithError<X>(X value) where X : notnull, IStorable;
+        Task<List<X>> Update<X>(List<X> values) where X : notnull, IStorable;
+        Task<ResultWithError<List<X>>> UpdateWithError<X>(List<X> values) where X : notnull, IStorable;
+        Task<X> Update<X>(X value) where X : notnull, IStorable;
+        Task<ResultWithError<X>> UpdateWithError<X>(X value) where X : notnull, IStorable;
         #endregion
 
         #region Delete
-        List<X> Delete<X>(List<X> values) where X : notnull, IStorable;
-        ResultWithError<List<X>> DeleteWithError<X>(List<X> values) where X : notnull, IStorable;
-        X Delete<X>(X value) where X : notnull, IStorable;
-        ResultWithError<X> DeleteWithError<X>(X value) where X : notnull, IStorable;
+        Task<List<X>> Delete<X>(List<X> values) where X : notnull, IStorable;
+        Task<ResultWithError<List<X>>> DeleteWithError<X>(List<X> values) where X : notnull, IStorable;
+        Task<X> Delete<X>(X value) where X : notnull, IStorable;
+        Task<ResultWithError<X>> DeleteWithError<X>(X value) where X : notnull, IStorable;
         #endregion
 
         void OnItemLoaded<X>(X item) where X : notnull, IStorable;
@@ -83,13 +83,13 @@ namespace AventusSharp.Data.Manager
 
         internal IMigrationProvider GetMigrationProvider();
 
-        VoidWithError ApplyMigration<X>(IMigrationModel model);
+        Task<VoidWithError> ApplyMigration<X>(IMigrationModel model);
 
 
         #region Transaction
-        ResultWithError<Y> RunInsideTransaction<Y>(Y? defaultValue, Func<ResultWithError<Y>> action);
-        ResultWithError<Y> RunInsideTransaction<Y>(Func<ResultWithError<Y>> action);
-        VoidWithError RunInsideTransaction(Func<VoidWithError> action);
+        Task<ResultWithError<Y>> RunInsideTransaction<Y>(Y? defaultValue, Func<Task<ResultWithError<Y>>> action);
+        Task<ResultWithError<Y>> RunInsideTransaction<Y>(Func<Task<ResultWithError<Y>>> action);
+        Task<VoidWithError> RunInsideTransaction(Func<Task<VoidWithError>> action);
 
         #endregion
     }
@@ -100,47 +100,47 @@ namespace AventusSharp.Data.Manager
         new ResultWithError<List<DataMemberInfo>> GetMembersInfo<X, Y>() where X : U;
 
         #region Get
-        new List<X> GetAll<X>() where X : U;
-        new ResultWithError<List<X>> GetAllWithError<X>() where X : U;
+        new Task<List<X>> GetAll<X>() where X : U;
+        new Task<ResultWithError<List<X>>> GetAllWithError<X>() where X : U;
         new IQueryBuilder<X>? CreateQuery<X>() where X : U;
         new IUpdateBuilder<X>? CreateUpdate<X>() where X : U;
 
-        new X? GetById<X>(int id) where X : U;
-        new ResultWithError<X> GetByIdWithError<X>(int id) where X : U;
+        new Task<X?> GetById<X>(int id) where X : U;
+        new Task<ResultWithError<X>> GetByIdWithError<X>(int id) where X : U;
 
-        new List<X>? GetByIds<X>(List<int> ids) where X : U;
-        new ResultWithError<List<X>> GetByIdsWithError<X>(List<int> id) where X : U;
+        new Task<List<X>?> GetByIds<X>(List<int> ids) where X : U;
+        new Task<ResultWithError<List<X>>> GetByIdsWithError<X>(List<int> id) where X : U;
 
-        new List<X> Where<X>(Expression<Func<X, bool>> func) where X : U;
-        new ResultWithError<List<X>> WhereWithError<X>(Expression<Func<X, bool>> func) where X : U;
+        new Task<List<X>> Where<X>(Expression<Func<X, bool>> func) where X : U;
+        new Task<ResultWithError<List<X>>> WhereWithError<X>(Expression<Func<X, bool>> func) where X : U;
 
-        new X? Single<X>(Expression<Func<X, bool>> func) where X : U;
-        new ResultWithError<X> SingleWithError<X>(Expression<Func<X, bool>> func) where X : U;
+        new Task<X?> Single<X>(Expression<Func<X, bool>> func) where X : U;
+        new Task<ResultWithError<X>> SingleWithError<X>(Expression<Func<X, bool>> func) where X : U;
         #endregion
 
         #region Create
-        new List<X> Create<X>(List<X> values) where X : U;
-        new ResultWithError<List<X>> CreateWithError<X>(List<X> values) where X : U;
-        new X? Create<X>(X value) where X : U;
-        new ResultWithError<X> CreateWithError<X>(X value) where X : U;
+        new Task<List<X>> Create<X>(List<X> values) where X : U;
+        new Task<ResultWithError<List<X>>> CreateWithError<X>(List<X> values) where X : U;
+        new Task<X?> Create<X>(X value) where X : U;
+        new Task<ResultWithError<X>> CreateWithError<X>(X value) where X : U;
 
         event OnCreatedHandler<U> OnCreated;
         #endregion
 
         #region Update
-        new List<X> Update<X>(List<X> values) where X : U;
-        new ResultWithError<List<X>> UpdateWithError<X>(List<X> values) where X : U;
-        new X? Update<X>(X value) where X : U;
-        new ResultWithError<X> UpdateWithError<X>(X value) where X : U;
+        new Task<List<X>> Update<X>(List<X> values) where X : U;
+        new Task<ResultWithError<List<X>>> UpdateWithError<X>(List<X> values) where X : U;
+        new Task<X?> Update<X>(X value) where X : U;
+        new Task<ResultWithError<X>> UpdateWithError<X>(X value) where X : U;
 
         event OnUpdatedHandler<U> OnUpdated;
         #endregion
 
         #region Delete
-        new List<X> Delete<X>(List<X> values) where X : U;
-        new ResultWithError<List<X>> DeleteWithError<X>(List<X> values) where X : U;
-        new X? Delete<X>(X value) where X : U;
-        new ResultWithError<X> DeleteWithError<X>(X value) where X : U;
+        new Task<List<X>> Delete<X>(List<X> values) where X : U;
+        new Task<ResultWithError<List<X>>> DeleteWithError<X>(List<X> values) where X : U;
+        new Task<X?> Delete<X>(X value) where X : U;
+        new Task<ResultWithError<X>> DeleteWithError<X>(X value) where X : U;
 
         event OnDeletedHandler<U> OnDeleted;
 

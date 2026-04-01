@@ -2,21 +2,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.Dummy
 {
     public class DummyDeleteBuilder<T> : IDeleteBuilder<T>
     {
-
-        public List<T>? Run()
+        public Task<List<T>?> Run()
         {
             throw new NotImplementedException();
         }
 
-        public ResultWithError<List<T>> RunWithError()
+        public Task<ResultWithError<List<T>>> RunWithError()
         {
             throw new NotImplementedException();
         }
+
         public IDeleteBuilder<T> Where(Expression<Func<T, bool>> func)
         {
             throw new NotImplementedException();
@@ -32,7 +33,27 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
+        Task<List<T>?> IDeleteBuilder<T>.Run()
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<ResultWithError<List<T>>> IDeleteBuilder<T>.RunWithError()
+        {
+            throw new NotImplementedException();
+        }
+
         void IDeleteBuilder<T>.SetVariableInternal(string name, object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        IDeleteBuilder<T> IDeleteBuilder<T>.Where(Expression<Func<T, bool>> func)
+        {
+            throw new NotImplementedException();
+        }
+
+        DeleteBuilderPrepared<T> IDeleteBuilder<T>.WhereWithParameters(Expression<Func<T, bool>> func)
         {
             throw new NotImplementedException();
         }

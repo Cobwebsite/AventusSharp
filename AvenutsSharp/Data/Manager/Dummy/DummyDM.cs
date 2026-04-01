@@ -29,7 +29,7 @@ namespace AventusSharp.Data.Manager.Dummy
             return new DummyUpdateBuilder<X>();
         }
 
-        protected override ResultWithError<List<X>> CreateLogic<X>(List<X> values)
+        protected override Task<ResultWithError<List<X>>> CreateLogic<X>(List<X> values)
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
             result.Result = new List<X>();
@@ -58,20 +58,20 @@ namespace AventusSharp.Data.Manager.Dummy
                 }
             }
 
-            return result;
+            return Task.FromResult(result);
         }
 
-        protected override VoidWithError BulkCreateLogic<X>(List<X> values, bool withId)
+        protected override Task<VoidWithError> BulkCreateLogic<X>(List<X> values, bool withId)
         {
             VoidWithError result = new();
             foreach (X x in values)
             {
                 Records[x.Id] = x;
             }
-            return result;
+            return Task.FromResult(result);;
         }
 
-        protected override ResultWithError<List<X>> DeleteLogic<X>(List<X> values)
+        protected override Task<ResultWithError<List<X>>> DeleteLogic<X>(List<X> values)
         {
             ResultWithError<List<X>> result = new ResultWithError<List<X>>();
             result.Result = new List<X>();
@@ -83,10 +83,10 @@ namespace AventusSharp.Data.Manager.Dummy
                     Records.Remove(x.Id);
                 }
             }
-            return result;
+            return Task.FromResult(result);;
         }
 
-        protected override ResultWithError<List<X>> GetAllLogic<X>()
+        protected override Task<ResultWithError<List<X>>> GetAllLogic<X>()
         {
             ResultWithError<List<X>> result = new()
             {
@@ -99,10 +99,10 @@ namespace AventusSharp.Data.Manager.Dummy
                     result.Result.Add(casted);
                 }
             }
-            return result;
+            return Task.FromResult(result);;
         }
 
-        protected override ResultWithError<X> GetByIdLogic<X>(int id)
+        protected override Task<ResultWithError<X>> GetByIdLogic<X>(int id)
         {
             ResultWithError<X> result = new();
             if (Records.ContainsKey(id) && Records[id] is X casted)
@@ -113,10 +113,10 @@ namespace AventusSharp.Data.Manager.Dummy
             {
                 result.Errors.Add(new DataError(DataErrorCode.ItemNoExistInsideStorage, "No item found with the key " + id + " as " + typeof(X).Name));
             }
-            return result;
+            return Task.FromResult(result);;
         }
 
-        protected override ResultWithError<List<X>> GetByIdsLogic<X>(List<int> ids)
+        protected override async Task<ResultWithError<List<X>>> GetByIdsLogic<X>(List<int> ids)
         {
             ResultWithError<List<X>> result = new()
             {
@@ -124,7 +124,7 @@ namespace AventusSharp.Data.Manager.Dummy
             };
             foreach (int id in ids)
             {
-                ResultWithError<X> resultTemp = GetByIdLogic<X>(id);
+                ResultWithError<X> resultTemp = await GetByIdLogic<X>(id);
                 if (resultTemp.Success && resultTemp.Result != null)
                 {
                     result.Result.Add(resultTemp.Result);
@@ -146,7 +146,7 @@ namespace AventusSharp.Data.Manager.Dummy
             return MigrationFactory.Make<DummyMigrationProvider>();
         }
         private readonly Dictionary<Type, object> savedUpdateQuery = new();
-        protected override ResultWithError<List<X>> UpdateLogic<X>(List<X> values)
+        protected override async Task<ResultWithError<List<X>>> UpdateLogic<X>(List<X> values)
         {
             ResultWithError<List<X>> result = new()
             {
@@ -162,7 +162,7 @@ namespace AventusSharp.Data.Manager.Dummy
                     savedUpdateQuery[type] = query.WhereWithParameters(p => p.Id == id);;
                 }
 
-                ResultWithError<List<X>> resultTemp = ((UpdateBuilderPrepared<X>)savedUpdateQuery[type]).New().Prepare(value.Id).RunWithError(value);
+                ResultWithError<List<X>> resultTemp = await ((UpdateBuilderPrepared<X>)savedUpdateQuery[type]).New().Prepare(value.Id).RunWithError(value);
                 if (resultTemp.Success && resultTemp.Result?.Count > 0)
                 {
                     result.Result.Add(resultTemp.Result[0]);
@@ -175,7 +175,7 @@ namespace AventusSharp.Data.Manager.Dummy
             return result;
         }
 
-        protected override ResultWithError<List<X>> WhereLogic<X>(Expression<Func<X, bool>> func)
+        protected override Task<ResultWithError<List<X>>> WhereLogic<X>(Expression<Func<X, bool>> func)
         {
             ResultWithError<List<X>> result = new()
             {
@@ -199,7 +199,7 @@ namespace AventusSharp.Data.Manager.Dummy
                     result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
                 }
             }
-            return result;
+            return Task.FromResult(result);
         }
 
         public override IExistBuilder<X> CreateExist<X>()
@@ -208,30 +208,31 @@ namespace AventusSharp.Data.Manager.Dummy
         }
 
         #region Transaction
-        private DummyTransactionContext? transactionContext;
+        private AsyncLocal<DummyTransactionContext?> _transactionScope = new();
+        private DummyTransactionContext? transactionScope
+        {
+            get => _transactionScope.Value;
+            set => _transactionScope.Value = transactionScope;
+        }
         private SemaphoreSlim locker = new SemaphoreSlim(1, 1);
-        protected override SemaphoreSlim getTransactionLocker()
+        protected override TransactionContext? getTransactionScope()
         {
-            return locker;
+            return transactionScope;
         }
-        protected override TransactionContext? getTransactionContext()
-        {
-            return transactionContext;
-        }
-        protected override void setTransactionContext(TransactionContext? context)
+        protected override void setTransactionScope(TransactionContext? context)
         {
             if (context == null)
-                transactionContext = null;
+                transactionScope = null;
             else if (context is DummyTransactionContext dummyTransactionContext)
-                transactionContext = dummyTransactionContext;
+                transactionScope = dummyTransactionContext;
         }
-        protected override ResultWithError<TransactionContext> BeginTransactionContext()
+        protected override Task<ResultWithError<TransactionContext>> BeginTransactionScope()
         {
-            return new();
+            return Task.FromResult(new ResultWithError<TransactionContext>());
         }
-        protected override void EndTransactionContext()
+        protected override Task EndTransactionScope()
         {
-            
+            return Task.CompletedTask;
         }
         #endregion
 

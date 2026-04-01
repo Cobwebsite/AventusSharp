@@ -12,43 +12,43 @@ namespace AventusSharp.Routes
     {
         [HttpGet]
         [Route("api/[controller]")]
-        public IEnumerable<T> Index()
+        public async Task<IEnumerable<T>> Index()
         {
-            return Storable<T>.GetAll();
+            return await Storable<T>.GetAll();
         }
 
         [HttpGet]
         [Route("api/[controller]/{id}")]
-        public T? GetById(int id)
+        public async Task<T?> GetById(int id)
         {
-            return Storable<T>.GetById(id);
+            return await Storable<T>.GetById(id);
         }
 
         [HttpPost]
         [Route("api/[controller]")]
-        public T? AddFromJSON([FromBody] T body)
+        public async Task<T?> AddFromJSON([FromBody] T body)
         {
-            T? result = Storable<T>.Create(body);
+            T? result = await Storable<T>.Create(body);
             return result;
         }
 
         [HttpPut]
         [Route("api/[controller]/{id}")]
-        public T? Update(int id, [FromBody] T body)
+        public async Task<T?> Update(int id, [FromBody] T body)
         {
             body.Id = id;
-            T? result = Storable<T>.Update(body);
+            T? result = await Storable<T>.Update(body);
             return result;
         }
 
         [HttpDelete]
         [Route("api/[controller]/{id}")]
-        public T? Delete(int id)
+        public async Task<T?> Delete(int id)
         {
-            T? item = Storable<T>.GetById(id);
+            T? item = await Storable<T>.GetById(id);
             if (item != null)
             {
-                Storable<T>.Delete(item);
+                await Storable<T>.Delete(item);
             }
             return item;
         }

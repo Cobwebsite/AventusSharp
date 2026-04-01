@@ -3,6 +3,7 @@ using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.DB.Builders
 {
@@ -35,9 +36,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
             WhereGenericWithParameters(func);
             return new(this);
         }
-        public bool Run()
+        public async Task<bool> Run()
         {
-            ResultWithError<bool> result = Storage.ExistFromBuilder(this);
+            ResultWithError<bool> result = await Storage.ExistFromBuilder(this);
             if (result.Success)
             {
                 return result.Result;
@@ -45,9 +46,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return false;
         }
 
-        public ResultWithError<bool> RunWithError()
+        public async Task<ResultWithError<bool>> RunWithError()
         {
-            ResultWithError<bool> result = Storage.ExistFromBuilder(this);
+            ResultWithError<bool> result = await Storage.ExistFromBuilder(this);
             DM.PrintErrors(result);
             return result;
         }

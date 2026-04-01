@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading.Tasks;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using CsvHelper;
@@ -31,11 +32,11 @@ public record CSVExporterConfig<X> : CsvConfiguration
 }
 public class CSVExporter
 {
-    public static VoidWithError ExportAll<X>(string path) where X : IStorable
+    public static Task<VoidWithError> ExportAll<X>(string path) where X : IStorable
     {
         return ExportAll<X>(path, new CSVExporterConfig<X>(CultureInfo.InvariantCulture));
     }
-    public static VoidWithError ExportAll<X>(string path, CSVExporterConfig<X> config) where X : IStorable
+    public static async Task<VoidWithError> ExportAll<X>(string path, CSVExporterConfig<X> config) where X : IStorable
     {
         VoidWithError result = new();
         IGenericDM dm = GenericDM.Get<X>();
@@ -47,7 +48,7 @@ public class CSVExporter
             IQueryBuilder<X> query = dm.CreateQuery<X>();
             query.Limit(config.BufferSize);
             query.Offset(i * config.BufferSize);
-            ResultWithError<List<X>> queryResult = query.RunWithError();
+            ResultWithError<List<X>> queryResult = await query.RunWithError();
             if (queryResult.Success && queryResult.Result != null)
             {
                 if (queryResult.Result.Count == 0) break;

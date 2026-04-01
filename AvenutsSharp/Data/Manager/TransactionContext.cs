@@ -1,11 +1,12 @@
 
 using System;
+using System.Threading.Tasks;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Manager;
 
 
-public abstract class TransactionContext : IDisposable
+public abstract class TransactionContext : IAsyncDisposable, IDisposable
 {
 
 
@@ -13,46 +14,41 @@ public abstract class TransactionContext : IDisposable
 
 
     public int count;
-    private Action<Action> _runInsideLocker;
-    private Action _endTransaction;
+    private Func<Task> _endTransaction;
 
-    public TransactionContext(Action endTransaction, Action<Action> runInsideLocker)
+    public TransactionContext(Func<Task> endTransaction)
     {
         _endTransaction = endTransaction;
-        _runInsideLocker = runInsideLocker;
         count = 1;
     }
 
-    public ResultWithError<bool> Commit()
+    public async Task<ResultWithError<bool>> Commit()
     {
         ResultWithError<bool> result = new ResultWithError<bool>();
-        _runInsideLocker(() =>
+
+        if (isEnded)
         {
-            if (isEnded)
-            {
-                result.Result = false;
-                return;
-            }
-            count--;
-            if (count <= 0)
-            {
-                isEnded = true;
-                result = _Commit();
-                return;
-            }
             result.Result = false;
-        });
+            return result;
+        }
+        count--;
+        if (count <= 0)
+        {
+            isEnded = true;
+            return await _Commit();
+        }
+        result.Result = false;
         return result;
     }
 
-    private ResultWithError<bool> _Commit()
+    private async Task<ResultWithError<bool>> _Commit()
     {
         ResultWithError<bool> result = new();
         try
         {
-            TransactionCommit();
+            await TransactionCommit();
             result.Result = true;
-            _endTransaction();
+            await _endTransaction();
         }
         catch (Exception e)
         {
@@ -62,30 +58,28 @@ public abstract class TransactionContext : IDisposable
     }
 
 
-    public ResultWithError<bool> Rollback()
+    public async Task<ResultWithError<bool>> Rollback()
     {
         ResultWithError<bool> result = new ResultWithError<bool>();
-        _runInsideLocker(() =>
+
+        if (isEnded)
         {
-            if (isEnded)
-            {
-                result.Result = false;
-                return;
-            }
-            isEnded = true;
-            result = _Rollback();
-        });
+            result.Result = false;
+            return result;
+        }
+        isEnded = true;
+        result = await _Rollback();
         return result;
     }
 
-    private ResultWithError<bool> _Rollback()
+    private async Task<ResultWithError<bool>> _Rollback()
     {
         ResultWithError<bool> result = new();
         try
         {
-            TransactionRollback();
+            await TransactionRollback();
             result.Result = true;
-            _endTransaction();
+            await _endTransaction();
         }
         catch (Exception e)
         {
@@ -94,13 +88,19 @@ public abstract class TransactionContext : IDisposable
         return result;
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await _Rollback();
+        await TransactionDispose();
+    }
     public void Dispose()
     {
-        _Rollback();
-        TransactionDispose();
+        DisposeAsync().GetAwaiter().GetResult();
     }
 
-    protected abstract void TransactionDispose();
-    protected abstract void TransactionRollback();
-    protected abstract void TransactionCommit();
+    protected abstract Task TransactionDispose();
+    protected abstract Task TransactionRollback();
+    protected abstract Task TransactionCommit();
+
+    
 }

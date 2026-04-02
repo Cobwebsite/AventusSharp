@@ -88,7 +88,7 @@ namespace AventusSharp.Data.Storage.Default
         private DbTransactionContext? transactionScope
         {
             get => _transactionScope.Value;
-            set => _transactionScope.Value = transactionScope;
+            set => _transactionScope.Value = value;
         }
         public bool IsConnectedOneTime { get; protected set; }
         public bool Debug { get; set; }
@@ -395,8 +395,7 @@ namespace AventusSharp.Data.Storage.Default
                         return result;
                     }
                     DbTransaction transaction = await connection.BeginTransactionAsync();
-                    transactionScope = new DbTransactionContext(transaction, EndTransaction);
-                    result.Result = transactionScope;
+                    result.Result = new DbTransactionContext(transaction, EndTransaction);
                 }
                 else
                 {
@@ -2114,6 +2113,7 @@ namespace AventusSharp.Data.Storage.Default
                 };
                 return resultError;
             }
+            transactionScope = transactionResult.Result;
             ResultWithError<Y> resultTemp = await action();
             if (resultTemp.Success)
             {
@@ -2153,6 +2153,7 @@ namespace AventusSharp.Data.Storage.Default
                 };
                 return resultError;
             }
+            transactionScope = transactionResult.Result;
             VoidWithError resultTemp = await action();
             if (resultTemp.Success)
             {

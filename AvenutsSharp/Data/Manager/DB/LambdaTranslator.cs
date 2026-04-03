@@ -901,17 +901,17 @@ namespace AventusSharp.Data.Manager.DB
         private readonly List<string> Pathes = new();
 
         private static LambdaToPath? instance;
-        private static readonly Mutex Mutex = new();
+        private static readonly SemaphoreSlim mutex = new(1,1);
 
 
         public static string Translate(Expression expression)
         {
-            Mutex.WaitOne();
+            mutex.Wait();
             instance ??= new LambdaToPath();
             instance.Pathes.Clear();
             instance.Visit(expression);
             string result = string.Join(".", instance.Pathes);
-            Mutex.ReleaseMutex();
+            mutex.Release();
             return result;
         }
 

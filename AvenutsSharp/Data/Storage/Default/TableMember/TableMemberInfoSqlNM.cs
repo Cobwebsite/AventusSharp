@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {
@@ -182,7 +183,11 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
 
             object? objItem = GetByIds?.Invoke(LinkDM, new object[] { ids });
-
+            if(objItem is Task task)
+            {
+                task.Wait();
+                objItem = objItem.GetType().GetProperty("Result")?.GetValue(objItem);
+            }
             SetValue(obj, objItem);
         }
 

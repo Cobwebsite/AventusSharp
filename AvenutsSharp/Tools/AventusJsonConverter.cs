@@ -67,8 +67,8 @@ namespace AventusSharp.Tools
             {
                 return;
             }
-            lock (value)
-            {
+            // lock (value)
+            // {
                 Type type = value.GetType();
                 if (type.IsPrimitive || TypeTools.IsPrimitiveType(type))
                 {
@@ -190,7 +190,7 @@ namespace AventusSharp.Tools
                     jo.WriteTo(writer);
                 }
             }
-        }
+        // }
 
 
         private static JsonSerializer? _cloneConverter;

@@ -214,7 +214,6 @@ namespace AventusSharp.Data.Manager.Dummy
             get => _transactionScope.Value;
             set => _transactionScope.Value = transactionScope;
         }
-        private SemaphoreSlim locker = new SemaphoreSlim(1, 1);
         protected override TransactionContext? getTransactionScope()
         {
             return transactionScope;

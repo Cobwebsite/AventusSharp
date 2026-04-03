@@ -914,6 +914,11 @@ namespace AventusSharp.Data.Storage.Default
                                 MethodInfo? methodGeneric = method.MakeGenericMethod(reverse.ReflectedType, reverse.ReverseLinkType);
                                 IList casted = objs.ToListOfType(reverse.ReflectedType);
                                 var obj = methodGeneric.Invoke(null, [casted, reverse.Name]);
+                                if (obj is Task task)
+                                {
+                                    task.Wait();
+                                    obj = obj.GetType().GetProperty("Result")?.GetValue(obj);
+                                }
                                 if (obj is VoidWithError objVoid)
                                 {
                                     result.Errors.AddRange(objVoid.Errors);

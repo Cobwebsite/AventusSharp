@@ -45,12 +45,12 @@ namespace AventusSharp.Data.Manager
 
     public class ExistBuilderPrepared<T>
     {
-        private Mutex mutex;
+        private SemaphoreSlim mutex;
         private IExistBuilder<T> builder;
         public ExistBuilderPrepared(IExistBuilder<T> builder)
         {
             this.builder = builder;
-            mutex = new();
+            mutex = new(1,1);
         }
 
         /// <summary>
@@ -59,13 +59,13 @@ namespace AventusSharp.Data.Manager
         /// <returns></returns>
         public ExistBuilderPreparedInstance<T> New()
         {
-            mutex.WaitOne();
+            mutex.Wait();
             return new ExistBuilderPreparedInstance<T>(builder, this);
         }
 
         internal void Done()
         {
-            mutex.ReleaseMutex();
+            mutex.Release();
         }
     }
     public class ExistBuilderPreparedInstance<T>

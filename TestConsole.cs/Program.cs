@@ -20,7 +20,7 @@ using TestConsole.cs.Data.Abstract;
 
 
 
-StorageContainer.Init();
+await StorageContainer.Init();
 
 DataMainManager.Configure(config =>
 {
@@ -219,7 +219,7 @@ PersonHuman maxime = new()
     //     //}
     // }
 };
-PersonHuman.Create(maxime);
+await PersonHuman.Create(maxime);
 //PersonHuman benjamin = new() { firstname = "Benjamin", lastname = "Bétrisey" };
 //benjamin.Create();
 
@@ -227,7 +227,7 @@ PersonHuman.Create(maxime);
 StorageContainer.storage1.Debug = true;
 DateTime datetime = new DateTime(1995, 06, 16);
 string firstname = "Maxime";
-PersonHuman.WhereWithError(p => p.firstname.ToLower() == firstname.ToLower());
+await PersonHuman.WhereWithError(p => p.firstname.ToLower() == firstname.ToLower());
 //PersonHuman.GetAll();
 //Cat felix = new()
 //{

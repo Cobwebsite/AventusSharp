@@ -325,7 +325,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, "erreur for field " + Name).Print();
+                new DataError(DataErrorCode.UnknowError, "erreur for field " + Name + " on " + ReflectedType?.Name).Print();
                 new DataError(DataErrorCode.UnknowError, e).Print();
             }
         }

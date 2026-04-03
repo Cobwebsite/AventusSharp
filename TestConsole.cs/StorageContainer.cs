@@ -13,13 +13,13 @@ namespace TestConsole.cs
         public static MySQLStorage storage1;
         public static MySQLStorage storage2;
 
-        public static void Init()
+        public static async Task Init()
         {
-            CreateStorage1();
-            CreateStorage2();
+            await CreateStorage1();
+            await CreateStorage2();
         }
 
-        private static void CreateStorage1()
+        private static async Task CreateStorage1()
         {
             MySQLStorage storage = new(new StorageCredentials(
                 host: "localhost",
@@ -28,19 +28,19 @@ namespace TestConsole.cs
                 password: ""
             ));
 
-            if (!storage.Connect())
+            if (!await storage.Connect())
             {
                 Console.WriteLine("Error during connection");
                 throw new Exception();
             }
-            storage.ResetStorage();
+            await storage.ResetStorage();
 
             // storage.Debug = true;
 
             storage1 = storage;
         }
 
-        private static void CreateStorage2()
+        private static async Task CreateStorage2()
         {
             MySQLStorage storage = new(new StorageCredentials(
                 host: "localhost",
@@ -49,12 +49,12 @@ namespace TestConsole.cs
                 password: ""
             ));
 
-            if (!storage.Connect())
+            if (!await storage.Connect())
             {
                 Console.WriteLine("Error during connection");
                 throw new Exception();
             }
-            storage.ResetStorage();
+            await storage.ResetStorage();
 
             storage.Debug = true;
 

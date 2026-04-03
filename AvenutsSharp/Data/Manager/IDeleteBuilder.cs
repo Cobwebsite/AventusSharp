@@ -45,12 +45,12 @@ namespace AventusSharp.Data.Manager
 
     public class DeleteBuilderPrepared<T>
     {
-        private Mutex mutex;
+        private SemaphoreSlim mutex;
         private IDeleteBuilder<T> builder;
         public DeleteBuilderPrepared(IDeleteBuilder<T> builder)
         {
             this.builder = builder;
-            mutex = new();
+            mutex = new(1,1);
         }
 
         /// <summary>
@@ -59,13 +59,13 @@ namespace AventusSharp.Data.Manager
         /// <returns></returns>
         public DeleteBuilderPreparedInstance<T> New()
         {
-            mutex.WaitOne();
+            mutex.Wait();
             return new DeleteBuilderPreparedInstance<T>(builder, this);
         }
 
         internal void Done()
         {
-            mutex.ReleaseMutex();
+            mutex.Release();
         }
 
     }

@@ -68,12 +68,12 @@ namespace AventusSharp.Data.Manager
 
      public class UpdateBuilderPrepared<T>
     {
-        private Mutex mutex;
+        private SemaphoreSlim mutex;
         private IUpdateBuilder<T> builder;
         public UpdateBuilderPrepared(IUpdateBuilder<T> builder)
         {
             this.builder = builder;
-            mutex = new();
+            mutex = new(1,1);
         }
 
         /// <summary>
@@ -82,13 +82,13 @@ namespace AventusSharp.Data.Manager
         /// <returns></returns>
         public UpdateBuilderPreparedInstance<T> New()
         {
-            mutex.WaitOne();
+            mutex.Wait();
             return new UpdateBuilderPreparedInstance<T>(builder, this);
         }
 
         internal void Done()
         {
-            mutex.ReleaseMutex();
+            mutex.Release();
         }
 
 

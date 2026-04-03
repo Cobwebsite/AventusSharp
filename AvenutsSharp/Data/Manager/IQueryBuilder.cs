@@ -146,12 +146,12 @@ namespace AventusSharp.Data.Manager
     }
     public class QueryBuilderPrepared<T> : IQueryBuilderPrepared
     {
-        private Mutex mutex;
+        private SemaphoreSlim mutex;
         private IQueryBuilder<T> builder;
         public QueryBuilderPrepared(IQueryBuilder<T> builder)
         {
             this.builder = builder;
-            mutex = new();
+            mutex = new(1,1);
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace AventusSharp.Data.Manager
         /// <returns></returns>
         public QueryBuilderPreparedInstance<T> New()
         {
-            mutex.WaitOne();
+            mutex.Wait();
             return new QueryBuilderPreparedInstance<T>(builder, this);
         }
 
@@ -171,7 +171,7 @@ namespace AventusSharp.Data.Manager
 
         internal void Done()
         {
-            mutex.ReleaseMutex();
+            mutex.Release();
         }
 
 

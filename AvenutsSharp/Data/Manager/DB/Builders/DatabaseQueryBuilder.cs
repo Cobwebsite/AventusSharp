@@ -239,7 +239,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
-        public IQueryBuilder<T> Include(Expression<Func<T, IStorable>> expression)
+        public IQueryBuilder<T> Include(Expression<Func<T, IStorable?>> expression)
         {
             IncludeGeneric(expression);
             return this;

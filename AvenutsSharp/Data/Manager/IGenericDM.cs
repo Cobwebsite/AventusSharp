@@ -77,7 +77,7 @@ namespace AventusSharp.Data.Manager
         Task<ResultWithError<X>> DeleteWithError<X>(X value) where X : notnull, IStorable;
         #endregion
 
-        void OnItemLoaded<X>(X item) where X : notnull, IStorable;
+        Task OnItemLoaded<X>(X item) where X : notnull, IStorable;
 
         internal void PrintErrors(IWithError withError);
 
@@ -144,7 +144,7 @@ namespace AventusSharp.Data.Manager
 
         event OnDeletedHandler<U> OnDeleted;
 
-        new void OnItemLoaded<X>(X item) where X : U;
+        new Task OnItemLoaded<X>(X item) where X : U;
         #endregion
 
     }

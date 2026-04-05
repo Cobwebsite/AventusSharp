@@ -1212,13 +1212,13 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <typeparam name="X"></typeparam>
         /// <param name="item"></param>
-        public virtual void OnItemLoaded<X>(X item) where X : U { }
+        public virtual async Task OnItemLoaded<X>(X item) where X : U { }
 
-        void IGenericDM.OnItemLoaded<X>(X item)
+        async Task IGenericDM.OnItemLoaded<X>(X item)
         {
             try
             {
-                InvokeMethodVoid<X>(ref IOnItemLoaded, new object[] { item });
+                await InvokeMethodTask<X>(ref IOnItemLoaded, new object[] { item });
             }
             catch (Exception e)
             {

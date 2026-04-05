@@ -24,7 +24,7 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
-        public IQueryBuilder<T> Include(Expression<Func<T, IStorable>> memberExpression)
+        public IQueryBuilder<T> Include(Expression<Func<T, IStorable?>> memberExpression)
         {
             throw new NotImplementedException();
         }

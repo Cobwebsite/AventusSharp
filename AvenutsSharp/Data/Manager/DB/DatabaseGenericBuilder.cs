@@ -583,7 +583,7 @@ namespace AventusSharp.Data.Manager.DB
         }
 
 
-        protected void IncludeGeneric(Expression<Func<T, IStorable>> expression)
+        protected void IncludeGeneric(Expression<Func<T, IStorable?>> expression)
         {
             // the strucutre must be Lambda => Convert? => (member x times)
             if (expression is LambdaExpression lambdaExpression)

@@ -884,7 +884,7 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         if (resultTemp.Result is X oCasted)
                         {
-                            queryBuilder.DM.OnItemLoaded(oCasted);
+                            await queryBuilder.DM.OnItemLoaded(oCasted);
                             result.Result.Add(oCasted);
                         }
                         else

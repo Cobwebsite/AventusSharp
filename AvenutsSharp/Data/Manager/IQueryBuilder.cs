@@ -105,7 +105,7 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="memberExpression">The expression representing the related object to include.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Include(Expression<Func<T, IStorable>> memberExpression);
+        public IQueryBuilder<T> Include(Expression<Func<T, IStorable?>> memberExpression);
 
         /// <summary>
         /// Limits the number of results returned by the query.
@@ -234,7 +234,7 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <param name="expression">The expression representing the related object to include.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public QueryBuilderPrepared<T> Include(Expression<Func<T, IStorable>> expression)
+        public QueryBuilderPrepared<T> Include(Expression<Func<T, IStorable?>> expression)
         {
             builder.Include(expression);
             return this;

@@ -177,7 +177,7 @@ namespace AventusSharp.Tools
 
         public Task<Y?> ExtractAsync<Y>(Func<Task<ResultWithError<Y>>> fct)
         {
-            
+
             return base.ExtractAsync<Y>(async () => await fct());
         }
 
@@ -319,6 +319,70 @@ namespace AventusSharp.Tools
     }
 
 
+    public static class WithErrorExtensions
+    {
+        public static async Task<VoidWithError<T>> RunAsync<T>(this Task<VoidWithError<T>> task, Func<Task<List<T>>> fct) where T : GenericError
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
 
+        public static async Task<VoidWithError<T>> RunAsync<T, Y>(this Task<VoidWithError<T>> task, Func<Task<Y>> fct) where T : GenericError where Y : IWithError<T>
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+
+        public static async Task<VoidWithError> RunAsync(this Task<VoidWithError> task, Func<Task<List<GenericError>>> fct)
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+        public static async Task<VoidWithError> RunAsync<Y>(this Task<VoidWithError> task, Func<Task<Y>> fct) where Y : IWithError<GenericError>
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+        public static async Task<ResultWithError<T, U>> RunAsync<T, U>(this Task<ResultWithError<T, U>> task, Func<Task<List<U>>> fct) where U : GenericError
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+
+        public static async Task<ResultWithError<T, U>> RunAsync<T, U, Y>(this Task<ResultWithError<T, U>> task, Func<Task<Y>> fct) where U : GenericError where Y : IWithError<U>
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+
+        public static async Task<ResultWithError<T>> RunAsync<T>(this Task<ResultWithError<T>> task, Func<Task<List<GenericError>>> fct)
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+
+        public static async Task<ResultWithError<T>> RunAsync<T, Y>(this Task<ResultWithError<T>> task, Func<Task<Y>> fct) where Y : IWithError<GenericError>
+        {
+            var result = await task;
+            return await result.RunAsync(fct);
+        }
+
+        public static async Task<Y?> ExtractAsync<T, Y>(this Task<VoidWithError<T>> task, Func<Task<ResultWithError<Y, T>>> fct) where T : GenericError
+        {
+            var result = await task;
+            return await result.ExtractAsync(fct);
+        }
+        public static async Task<Y?> ExtractAsync<T, Y>(this Task<VoidWithError> task, Func<Task<ResultWithError<Y>>> fct)
+        {
+            var result = await task;
+            return await result.ExtractAsync(fct);
+        }
+
+        public static async Task<Y?> ExtractAsync<T, Y>(this Task<ResultWithError<T>> task, Func<Task<ResultWithError<Y>>> fct)
+        {
+            var result = await task;
+            return await result.ExtractAsync(fct);
+        }
+    }
 
 }

@@ -1,0 +1,32 @@
+import { VoidWithError, ResultWithError } from '../Tools/ResultWithError.lib.avt';
+
+namespace SSE {
+
+	export enum SSEErrorCode {
+		UnknowError,
+		CantDefineAssembly,
+		ConfigError,
+		MultipleMainEndpoint,
+		CantGetValueFromBody,
+		NoEndPoint
+	}
+
+	@Convertible()
+	export class SSEError extends Aventus.GenericError<typeof SSEErrorCode>  {
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.SSE.SSEError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class VoidWithSSEError extends VoidWithError<SSEError>  {
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.SSE.VoidWithSSEError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class ResultWithSSEError<T> extends ResultWithError<T, SSEError>  {
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.SSE.ResultWithSSEError, AventusSharp"; }
+	}
+
+}

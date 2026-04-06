@@ -415,7 +415,7 @@ namespace AventusSharp.Routes
                                     string value = match.Groups[parameter.positionUrl + 1].Value;
                                     try
                                     {
-                                        param[parameter.positionCSharp] = Convert.ChangeType(value, parameter.type);
+                                        param[parameter.positionCSharp] = System.Convert.ChangeType(value, parameter.type);
                                     }
                                     catch (Exception)
                                     {

@@ -84,6 +84,7 @@ namespace AventusSharp.Tools
         {
             return (T)CreateNewObj(typeof(T));
         }
+        
 
         public static ResultWithDataError<Type> GetTypeDataObject(string fullname)
         {

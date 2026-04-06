@@ -94,7 +94,7 @@ namespace RAM {
             if(fromList) {
                 return;
             }
-            let response = await this.routes.Create({ item });
+            let response = await this.routes.Create({ request: item });
             if(response.success && response.result) {
                 result.result = this.getObjectForRam(response.result);
             }
@@ -121,7 +121,7 @@ namespace RAM {
             if(fromList) {
                 return;
             }
-            let response = await this.routes.Update(item.Id, { item });
+            let response = await this.routes.Update(item.Id, { request: item });
             if(response.success && response.result) {
                 result.result = this.getObjectForRam(response.result);
             }

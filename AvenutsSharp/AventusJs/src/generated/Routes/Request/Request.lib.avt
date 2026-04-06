@@ -1,0 +1,9 @@
+import { SharpClass } from '../../../Data/SharpClass.lib.avt';
+
+namespace Routes.Request {
+
+	export abstract class Request extends SharpClass  {
+
+	}
+
+}

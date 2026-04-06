@@ -10,7 +10,7 @@
 			],
 			"compile": [
 				{
-					// "package": "D:\\Aventus\\Aventus\\lib\\Aventus@Sharp.package.avt",
+					"package": "D:\\Aventus\\Aventus\\lib\\Aventus@Sharp.package.avt",
 					"outputNpm": {
 						"npmName": "@aventusjs/sharp",
 						"path": "../../../npmPackage/AventusSharp_npm"

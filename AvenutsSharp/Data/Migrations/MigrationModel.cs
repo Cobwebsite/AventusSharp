@@ -133,13 +133,22 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         return result;
     }
 
-    public MigrationProperty<T, U> RenameProperty<U>(string name)
+    public MigrationProperty<T, object> RemoveProperty(string name)
     {
-        var result = GetOrCreateProperty<U>(name);
-        // result.Name
-        // result.ChangePropertyAction(MigrationPropertyAction.Update);
+        return RemoveProperty<object>(name);
+    }
+    public MigrationProperty<T, U> RenameProperty<U>(string currentName, string newName)
+    {
+        var result = GetOrCreateProperty<U>(newName);
+        result.ChangePropertyAction(MigrationPropertyAction.Update);
+        result.SetOldName(currentName);
         return result;
     }
+    public MigrationProperty<T, object> RenameProperty(string currentName, string newName)
+    {
+        return RenameProperty<object>(currentName, newName);
+    }
+   
 
     public MigrationProperty<T, int> AddPrimary(string name)
     {

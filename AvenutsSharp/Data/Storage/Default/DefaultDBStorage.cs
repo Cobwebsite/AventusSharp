@@ -2037,34 +2037,44 @@ namespace AventusSharp.Data.Storage.Default
         public async Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable
         {
             VoidWithError result = new VoidWithError();
+            Action checkMember = () =>
+            {
+                foreach (KeyValuePair<string, IMigrationProperty> member in model.Properties)
+                {
+                    if (member.Value.PropertyAction == MigrationPropertyAction.Update && member.Value.OldName != null)
+                    {
+                        // TODO: rename colonne
+                    }
+                    else if (member.Value.PropertyAction == MigrationPropertyAction.Delete)
+                    {
+                        // TODO: drop colonne
+                    }
+                    else if (member.Value.PropertyAction == MigrationPropertyAction.Create)
+                    {
+                        // TODO: add colonne
+                        // check si la colonne existe, si c'est le cas il faut faire attention aux attributes
+                    }
+                }
+            };
             if (model.ModelAction == null)
             {
-                // changement dans la table
-                // check des champs
+                checkMember();
             }
             else if (model.ModelAction == MigrationModelAction.Update)
             {
                 if (!string.IsNullOrEmpty(model.OldName))
                 {
-                    // changement du nom de la table
                     await result.RunAsync(() => TableRename(model.OldName, TableInfo.GetSQLTableName(model.Type)));
                 }
-                foreach (var member in model.Properties)
-                {
-                    // if(member.)
-                }
-                // attention a check quand meme les champs apres
+                checkMember();
             }
             else if (model.ModelAction == MigrationModelAction.Create)
             {
-                // création de la table
                 await result.RunAsync(() => CreateTable(model));
-                // check des champs
             }
             else if (model.ModelAction == MigrationModelAction.Delete)
             {
                 await result.RunAsync(() => TableDelete(TableInfo.GetSQLTableName(model.Type)));
-                // suppression de la table... peut etre enlever le fait de pouvoir chainer a ce moment
             }
             return new();
         }

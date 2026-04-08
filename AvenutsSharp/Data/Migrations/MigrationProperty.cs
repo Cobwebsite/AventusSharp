@@ -35,19 +35,22 @@ public enum MigrationPropertyAction { Create, Update, Delete }
 public interface IMigrationProperty
 {
     public string Name { get; }
+    public string? OldName { get; }
     public Type Parent { get; }
     public Type Type { get; }
     public MigrationPropertyOptions Options { get; }
+     public MigrationPropertyAction? PropertyAction { get; }
 }
 public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
 {
     public string Name { get; private set; }
+    public string? OldName { get; private set; }
     public Type Parent => typeof(T);
     public Type Type => typeof(U);
     private MigrationModel<T> Table { get; set; }
     protected MigrationPropertyOptions<U> Options { get; set; }
 
-    private MigrationPropertyAction? PropertyAction { get; set; }
+    public MigrationPropertyAction? PropertyAction { get; private set; }
 
     MigrationPropertyOptions IMigrationProperty.Options => Options;
 
@@ -67,6 +70,10 @@ public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
     internal void SetOptions(MigrationPropertyOptions<U> options)
     {
         Options = options;
+    }
+    internal void SetOldName(string oldName)
+    {
+        OldName = oldName;
     }
     internal void ChangePropertyAction(MigrationPropertyAction action)
     {
@@ -114,5 +121,23 @@ public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
     public MigrationModel<T> AddTimestamp()
     {
         return Table.AddTimestamp();
+    }
+
+    public MigrationProperty<T, X> RenameProperty<X>(string currentName, string newName)
+    {
+       return Table.RenameProperty<X>(currentName, newName);
+    }
+    public MigrationProperty<T, object> RenameProperty(string currentName, string newName)
+    {
+       return Table.RenameProperty<object>(currentName, newName);
+    }
+
+    public MigrationProperty<T, X> RemoveProperty<X>(string name)
+    {
+       return Table.RemoveProperty<X>(name);
+    }
+     public MigrationProperty<T, object> RemoveProperty(string name)
+    {
+       return Table.RemoveProperty<object>(name);
     }
 }

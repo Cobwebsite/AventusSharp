@@ -1,0 +1,145 @@
+using AventusSharp.Data.Storage.Default;
+using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Data.Storage.Mysql.Tools;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace AventusSharp.Data.Storage.Mysql.Queries;
+
+public class AddColumn
+{
+    public static List<string> PrepareSQL(TableInfo table, MySQLStorage storage)
+    {
+        List<string> result = new();
+        List<string> schema = new();
+        List<string> primaryConstraint = new();
+        List<string> foreignConstraint = new();
+        List<string> uniqueConstraint = new();
+        List<string> indexConstraint = new();
+
+        Dictionary<string, Dictionary<string, List<TableMemberInfoSql>>> primariesByClass = new();
+
+        foreach (TableMemberInfoSql member in table.Members)
+        {
+            if (member is ITableMemberInfoSqlWritable memberWritable)
+            {
+                string typeTxt = storage.GetSqlColumnType(memberWritable.SqlType, member);
+                string schemaProp = "\tADD `" + member.SqlName + "` " + typeTxt;
+                if (!member.IsNullable)
+                {
+                    schemaProp += " NOT NULL";
+                }
+                if (member.IsPrimary)
+                {
+                    schemaProp += " PRIMARY KEY";
+                }
+                if (member.IsAutoIncrement)
+                {
+                    schemaProp += " AUTO_INCREMENT";
+                }
+                if (member.DefaultValue != null)
+                {
+                    if (memberWritable.SqlType == System.Data.DbType.String)
+                    {
+                        schemaProp += " DEFAULT '" + member.DefaultValue + "'";
+                    }
+                    else
+                    {
+                        schemaProp += " DEFAULT " + member.DefaultValue;
+                    }
+                }
+                schema.Add(schemaProp);
+
+                if (member.IsPrimary)
+                {
+                    primaryConstraint.Add("`" + member.SqlName + "`");
+                }
+
+                if (member.IsUnique)
+                {
+                    string constraintName = "UC_" + member.SqlName + "_" + table.SqlTableName;
+                    uniqueConstraint.Add("\tADD CONSTRAINT `" + constraintName + "` UNIQUE (`" + member.SqlName + "`)");
+                }
+                else if (member.IsIndex)
+                {
+                    string constraintName = "IND_" + member.SqlName + "_" + table.SqlTableName;
+                    indexConstraint.Add($"\tCREATE INDEX `{constraintName}` ON `{table.SqlTableName}` (`{member.SqlName}`)");
+                }
+
+            }
+            if (member is ITableMemberInfoSqlLinkSingle memberLink)
+            {
+                if (memberLink.TableLinked != null)
+                {
+                    if (!primariesByClass.ContainsKey(memberLink.TableLinked.SqlTableName))
+                    {
+                        primariesByClass[memberLink.TableLinked.SqlTableName] = new Dictionary<string, List<TableMemberInfoSql>>();
+                    }
+                    if (!primariesByClass[memberLink.TableLinked.SqlTableName].ContainsKey(member.Name))
+                    {
+                        primariesByClass[memberLink.TableLinked.SqlTableName][member.Name] = new List<TableMemberInfoSql>();
+                    }
+                    primariesByClass[memberLink.TableLinked.SqlTableName][member.Name].Add(member);
+                }
+                else
+                {
+                    // TODO code external link
+                }
+            }
+        }
+
+        foreach (KeyValuePair<string, Dictionary<string, List<TableMemberInfoSql>>> primary in primariesByClass)
+        {
+            foreach (KeyValuePair<string, List<TableMemberInfoSql>> pri in primary.Value)
+            {
+                bool deleteOnCascade = pri.Value.FirstOrDefault(p => p.IsDeleteOnCascade) != null;
+                bool deleteSetNull = pri.Value.FirstOrDefault(p => p.IsDeleteSetNull) != null;
+                string constraintName = "FK_" + string.Join("_", pri.Value.Select(field => field.SqlName)) + "_" + table.SqlTableName + "_" + primary.Key;
+                constraintName = Utils.CheckConstraint(constraintName);
+                string foreignKey = string.Join(", ", pri.Value.Select(field => "`" + field.SqlName + "`"));
+                string foreignTable = string.Join(", ", pri.Value.Select(field => "`" + ((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName + "`"));
+                string constraintProp = "\tADD CONSTRAINT `" + constraintName + "` FOREIGN KEY (" + foreignKey + ") REFERENCES `" + primary.Key + "` (" + foreignTable + ")";
+                if (deleteOnCascade)
+                {
+                    // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
+                    constraintProp += " ON DELETE CASCADE";
+                }
+                else if (deleteSetNull)
+                {
+                    // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
+                    constraintProp += " ON DELETE SET NULL";
+                }
+                foreignConstraint.Add(constraintProp);
+            }
+
+        }
+
+
+        if (schema.Count > 0)
+        {
+            result.Add($"ALTER TABLE `{table.SqlTableName}` " + string.Join(",", schema));
+        }
+        if (primaryConstraint.Count > 0)
+        {
+            string joinedPrimary = string.Join(",", primaryConstraint);
+            string sql2 = $"ALTER TABLE `{table.SqlTableName}` ADD CONSTRAINT `PK_" + table.SqlTableName + "` PRIMARY KEY (" + joinedPrimary + ")";
+            result.Add(sql2);
+        }
+        if (uniqueConstraint.Count > 0)
+        {
+            string sql2 = $"ALTER TABLE `{table.SqlTableName}` " + string.Join(",", schema);
+            result.Add(sql2);
+        }
+        if (indexConstraint.Count > 0)
+        {
+            result.AddRange(indexConstraint);
+        }
+        if(foreignConstraint.Count > 0)
+        {
+            string sql2 = $"ALTER TABLE `{table.SqlTableName}` " + string.Join(",", foreignConstraint);
+            result.Add(sql2);
+        }
+
+        return result;
+    }
+}

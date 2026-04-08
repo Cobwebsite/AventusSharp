@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using AventusSharp.Tools.Attributes;
+using Converter = System.Convert;
 
 namespace AventusSharp.Tools
 {
@@ -21,7 +22,7 @@ namespace AventusSharp.Tools
                 {
                     string? envValue = Environment.GetEnvironmentVariable(envName.Name);
                     Type valueType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-                    object? convertedValue = envValue != null ? Convert.ChangeType(envValue, valueType) : null;
+                    object? convertedValue = envValue != null ? Converter.ChangeType(envValue, valueType) : null;
                     property.SetValue(config, convertedValue);
                 }
             }
@@ -34,7 +35,7 @@ namespace AventusSharp.Tools
                 {
                     string? envValue = Environment.GetEnvironmentVariable(envName.Name);
                     Type valueType = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
-                    object? convertedValue = envValue != null ? Convert.ChangeType(envValue, valueType) : null;
+                    object? convertedValue = envValue != null ? Converter.ChangeType(envValue, valueType) : null;
                     field.SetValue(config, convertedValue);
                 }
             }

@@ -1,9 +1,13 @@
+using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 
 namespace AventusSharp.Routes.Response;
 
 [Export]
-public class Resource
+public abstract class Resource
 {
-
+    public void AutoBind(object source)
+    {
+        Binder.AutoBind(this, source);
+    }
 }

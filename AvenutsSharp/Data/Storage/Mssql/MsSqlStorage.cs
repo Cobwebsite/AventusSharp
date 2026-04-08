@@ -166,7 +166,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     }
 
     #region table
-    protected override string PrepareSQLCreateTable(TableInfo table)
+    protected override List<string> PrepareSQLCreateTable(TableInfo table)
     {
         return Queries.CreateTable.GetQuery(table, this);
     }

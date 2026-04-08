@@ -182,7 +182,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             return new VoidWithDataError();
         }
-        private VoidWithDataError PrepareMembers(TableMemberInfo? temp)
+        internal VoidWithDataError PrepareMembers(TableMemberInfo? temp)
         {
 
             if (temp is TableMemberInfoSql sqlMember)

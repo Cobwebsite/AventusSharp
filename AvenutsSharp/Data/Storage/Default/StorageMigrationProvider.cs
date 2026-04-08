@@ -8,7 +8,12 @@ using AventusSharp.Tools.Attributes;
 
 namespace AventusSharp.Data.Storage.Default;
 
-public abstract class StorageMigrationProvider<T> : MigrationProvider where T : DefaultDBStorage<T>
+public interface IStorageMigrationProvider
+{
+    public Task<ResultWithError<DbTransactionContext>> BeginTransaction();
+    public void setTransactionScope(DbTransactionContext? context);
+}
+public abstract class StorageMigrationProvider<T> : MigrationProvider, IStorageMigrationProvider where T : DefaultDBStorage<T>
 {
     private T _storage;
     private DbTransactionContext? _context;
@@ -47,14 +52,21 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
         return result;
     }
 
+    public Task<ResultWithError<DbTransactionContext>> BeginTransaction()
+    {
+        return _storage.BeginTransaction();
+    }
+    public void setTransactionScope(DbTransactionContext? context)
+    {
+        _context = context;
+        _storage.setTransactionScope(context);
+    }
+
+
+
     public override async Task BeforeUp(VoidWithError voidWithError)
     {
-        ResultWithError<DbTransactionContext> transactionQuery = await _storage.BeginTransaction();
-        if (transactionQuery.Success && transactionQuery.Result != null)
-        {
-            _context = transactionQuery.Result;
-        }
-        voidWithError.Errors.AddRange(transactionQuery.Errors);
+
     }
 
     public override async Task AfterUp(VoidWithError voidWithError)
@@ -64,6 +76,7 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider where T : 
             if (voidWithError.Success)
             {
                 ResultWithError<bool> commitQuery = await _context.Commit();
+                var test = _storage.getTransactionScope();
                 voidWithError.Errors.AddRange(commitQuery.Errors);
             }
             else

@@ -9,7 +9,7 @@ namespace AventusSharp.Data.Storage.Mssql.Queries;
 
 internal class CreateTable
 {
-    public static string GetQuery(TableInfo table, MsSqlStorage storage)
+    public static List<string> GetQuery(TableInfo table, MsSqlStorage storage)
     {
         string sql = "CREATE TABLE [" + table.SqlTableName + "] (\r\n";
 
@@ -17,6 +17,7 @@ internal class CreateTable
         List<string> primaryConstraint = new();
         List<string> foreignConstraint = new();
         List<string> uniqueConstraint = new();
+        List<string> indexConstraint = new();
         string separator = ",\r\n";
 
         // key is sql_table_name
@@ -36,6 +37,17 @@ internal class CreateTable
                 {
                     schemaProp += " IDENTITY(1,1)";
                 }
+                if (member.DefaultValue != null)
+                {
+                    if (memberWritable.SqlType == System.Data.DbType.String)
+                    {
+                        schemaProp += " DEFAULT '" + member.DefaultValue + "'";
+                    }
+                    else
+                    {
+                        schemaProp += " DEFAULT " + member.DefaultValue;
+                    }
+                }
                 schema.Add(schemaProp);
 
                 if (member.IsPrimary)
@@ -47,6 +59,11 @@ internal class CreateTable
                 {
                     string constraintName = "UC_" + member.SqlName + "_" + table.SqlTableName;
                     uniqueConstraint.Add("\tCONSTRAINT [" + constraintName + "] UNIQUE ([" + member.SqlName + "])");
+                }
+                else if (member.IsIndex)
+                {
+                    string constraintName = "IND_" + member.SqlName + "_" + table.SqlTableName;
+                    indexConstraint.Add($"CREATE INDEX {constraintName} ON [{table.SqlTableName}] ([{member.SqlName}])");
                 }
             }
 
@@ -117,7 +134,12 @@ internal class CreateTable
             sql += string.Join(separator, uniqueConstraint);
         }
         sql += ")";
-        return sql;
+        List<string> result = [sql];
+        if (indexConstraint.Count > 0)
+        {
+            result.AddRange(indexConstraint);
+        }
+        return result;
     }
 
 

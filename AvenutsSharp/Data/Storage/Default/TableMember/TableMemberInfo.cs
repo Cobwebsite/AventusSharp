@@ -15,6 +15,7 @@ using Org.BouncyCastle.Asn1.Cms;
 using Attribute = System.Attribute;
 using System.Data.SqlTypes;
 using System.Threading.Tasks;
+using AventusSharp.Data.Migrations;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {
@@ -56,6 +57,11 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public TableMemberInfo(MemberInfo? memberInfo, TableInfo tableInfo) : this(tableInfo)
         {
             this.memberInfo = memberInfo;
+            ParseAttributes();
+        }
+        public TableMemberInfo(IMigrationProperty property, TableInfo tableInfo) : this(tableInfo)
+        {
+            memberInfo = new MigrationMember(property);
             ParseAttributes();
         }
 
@@ -196,6 +202,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 {
                     type = propertyInfo.PropertyType;
                 }
+                else if (memberInfo is MigrationMember migrationInfo)
+                {
+                    type = migrationInfo.PropertyType;
+                }
                 if (type != null)
                 {
                     if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -222,6 +232,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 else if (memberInfo is PropertyInfo propertyInfo)
                 {
                     return propertyInfo.PropertyType;
+                }
+                else if (memberInfo is MigrationMember migrationInfo)
+                {
+                    return migrationInfo.PropertyType;
                 }
                 throw new Exception("No type for field??");
             }
@@ -266,6 +280,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 {
                     return propertyInfo.GetCustomAttributes(inherit).ToList();
 
+                }
+                else if (memberInfo is MigrationMember migrationInfo)
+                {
+                    return migrationInfo.GetCustomAttributes(inherit).ToList();
                 }
             }
             catch (Exception e)
@@ -345,6 +363,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 {
 
                     return propertyInfo.ReflectedType;
+                }
+                else if (memberInfo is MigrationMember migrationInfo)
+                {
+                    return migrationInfo.ReflectedType;
                 }
                 return null;
 

@@ -2139,6 +2139,7 @@ namespace AventusSharp.Data.Manager
                 };
                 return resultError;
             }
+            setTransactionScope(transactionResult.Result);
             ResultWithError<Y> resultTemp = await action();
             if (resultTemp.Success)
             {
@@ -2150,6 +2151,7 @@ namespace AventusSharp.Data.Manager
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
+            setTransactionScope(null);
             return resultTemp;
         }
         /// <summary>
@@ -2178,6 +2180,7 @@ namespace AventusSharp.Data.Manager
                 };
                 return resultError;
             }
+            setTransactionScope(transactionResult.Result);
             VoidWithError resultTemp = await action();
             if (resultTemp.Success)
             {
@@ -2189,6 +2192,7 @@ namespace AventusSharp.Data.Manager
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
+            setTransactionScope(null);
             return resultTemp;
         }
 
@@ -2204,14 +2208,6 @@ namespace AventusSharp.Data.Manager
                 if (transactionContext == null)
                 {
                     await result.RunAsync(() => BeginTransactionScope());
-                    if (result.Success && result.Result != null)
-                    {
-                        setTransactionScope(result.Result);
-                    }
-                    else
-                    {
-                        return result;
-                    }
                 }
                 else
                 {

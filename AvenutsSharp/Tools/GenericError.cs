@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+using Converter = System.Convert;
 
 namespace AventusSharp.Tools
 {
@@ -80,12 +79,12 @@ namespace AventusSharp.Tools
     {
         public new T Code { get; set; }
 
-        public GenericError(T code, string message, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0) : base((int)Convert.ChangeType(code, typeof(int)), message, callerPath, callerNo)
+        public GenericError(T code, string message, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0) : base((int)Converter.ChangeType(code, typeof(int)), message, callerPath, callerNo)
         {
             this.Code = code;
         }
 
-        public GenericError(T code, Exception exception, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0) : base((int)Convert.ChangeType(code, typeof(int)), exception, callerPath, callerNo)
+        public GenericError(T code, Exception exception, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0) : base((int)Converter.ChangeType(code, typeof(int)), exception, callerPath, callerNo)
         {
             Code = code;
         }

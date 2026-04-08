@@ -3,11 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using AventusSharp.Data.Manager;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
-using SQLitePCL;
 
 namespace AventusSharp.Data.Migrations;
 
@@ -75,6 +73,14 @@ public abstract class Migration : IMigration
         foreach (IMigrationProvider provider in providers)
         {
             await provider.BeforeUp(_currentError);
+            if (provider is IStorageMigrationProvider stProvider)
+            {
+                ResultWithError<DbTransactionContext> transactionQuery = await stProvider.BeginTransaction();
+                if (transactionQuery.Success && transactionQuery.Result != null)
+                {
+                    stProvider.setTransactionScope(transactionQuery.Result);
+                }
+            }
         }
 
         foreach (IMigrationModel migration in migrations)
@@ -85,6 +91,10 @@ public abstract class Migration : IMigration
         foreach (IMigrationProvider provider in providers)
         {
             await provider.AfterUp(_currentError);
+            if (provider is IStorageMigrationProvider stProvider)
+            {
+                stProvider.setTransactionScope(null);
+            }
         }
 
         if (_currentError.Success)
@@ -147,223 +157,3 @@ public abstract class Migration : IMigration
     }
 }
 
-public enum MigrationModelAction { Create, Update, Delete }
-public interface IMigrationModel
-{
-    internal MigrationModelAction? ModelAction { get; }
-    internal int Priority { get; set; }
-    internal string? OldName { get; set; }
-    internal Type Type { get; }
-    internal Dictionary<string, IMigrationProperty> Properties { get; }
-    internal Task<VoidWithError> Run();
-    internal ResultWithError<IMigrationProvider> GetProvider();
-}
-public class MigrationModel<T> : IMigrationModel where T : IStorable
-{
-    private MigrationModelAction? _modelAction;
-    internal MigrationModelAction? ModelAction
-    {
-        get => _modelAction;
-        set
-        {
-            _modelAction = value;
-        }
-    }
-    MigrationModelAction? IMigrationModel.ModelAction
-    {
-        get => _modelAction;
-    }
-    int IMigrationModel.Priority { get; set; }
-    string? IMigrationModel.OldName { get; set; }
-    internal Type Type { get => typeof(T); }
-    Type IMigrationModel.Type { get => Type; }
-
-    internal Dictionary<string, IMigrationProperty> Properties = new Dictionary<string, IMigrationProperty>();
-    Dictionary<string, IMigrationProperty> IMigrationModel.Properties => Properties;
-
-    internal void ChangeModelAction(MigrationModelAction action)
-    {
-        if (ModelAction == null)
-        {
-            ModelAction = action;
-        }
-        else if (ModelAction == MigrationModelAction.Create)
-        {
-            if (action == MigrationModelAction.Delete)
-            {
-                ModelAction = null;
-            }
-        }
-        else if (ModelAction == MigrationModelAction.Update)
-        {
-            if (action == MigrationModelAction.Delete)
-            {
-                ModelAction = action;
-            }
-        }
-        else if (ModelAction == MigrationModelAction.Delete)
-        {
-
-        }
-    }
-
-
-    private MigrationProperty<T, U> GetOrCreateProperty<U>(string name)
-    {
-        if (!Properties.ContainsKey(name))
-        {
-            Properties[name] = new MigrationProperty<T, U>(this, name, null);
-        }
-        if (Properties[name] is MigrationProperty<T, U> result)
-        {
-            return result;
-        }
-        throw new Exception("Impossible");
-    }
-
-    public MigrationProperty<T, U> AddProperty<U>(string name, MigrationPropertyOptions<U>? options = null)
-    {
-        var result = GetOrCreateProperty<U>(name);
-        result.ChangePropertyAction(MigrationPropertyAction.Create);
-        if (options != null)
-        {
-            result.SetOptions(options);
-        }
-        return result;
-    }
-
-    public MigrationProperty<T, U> RemoveProperty<U>(string name)
-    {
-        var result = GetOrCreateProperty<U>(name);
-        result.ChangePropertyAction(MigrationPropertyAction.Delete);
-        return result;
-    }
-
-    // public MigrationProperty<T, U> RenameProperty<U>(string name)
-    // {
-    //     var result = new MigrationProperty<T, U>(this, name, null);
-    //     return result;
-    // }
-
-    public MigrationProperty<T, int> AddPrimary(string name)
-    {
-        return AddProperty<int>(name, new()
-        {
-            AutoIncrement = true,
-            Primary = true,
-        });
-    }
-
-    private async Task<VoidWithError> _Run()
-    {
-        ResultWithError<IMigrationProvider> providerQuery = _GetProvider();
-        if (!providerQuery.Success || providerQuery.Result == null)
-        {
-            VoidWithError result = new()
-            {
-                Errors = providerQuery.Errors
-            };
-            return result;
-        }
-        return await providerQuery.Result.ApplyMigration<T>(this);
-    }
-
-    private ResultWithError<IMigrationProvider> _GetProvider()
-    {
-        ResultWithError<IMigrationProvider> result = new();
-        ResultWithError<IGenericDM> DMWithError = GenericDM.GetWithError<T>();
-        if (DMWithError.Success && DMWithError.Result != null)
-        {
-            result.Result = DMWithError.Result.GetMigrationProvider();
-        }
-        else
-        {
-            result.Errors = DMWithError.Errors;
-        }
-        return result;
-    }
-
-    ResultWithError<IMigrationProvider> IMigrationModel.GetProvider()
-    {
-        return _GetProvider();
-    }
-    async Task<VoidWithError> IMigrationModel.Run()
-    {
-        return await _Run();
-    }
-}
-
-public class MigrationPropertyOptions<T>
-{
-    public bool AutoIncrement { get; set; }
-    public bool Unique { get; set; }
-    public bool Primary { get; set; }
-    public bool Nullable { get; set; }
-    public bool Index { get; set; }
-    public T? Default { get; set; }
-}
-public enum MigrationPropertyAction { Create, Update, Delete }
-public interface IMigrationProperty { }
-public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
-{
-    private string Name { get; set; }
-    private MigrationModel<T> Table { get; set; }
-    private MigrationPropertyOptions<U> Options { get; set; }
-
-    private MigrationPropertyAction? PropertyAction { get; set; }
-
-
-    public MigrationProperty(MigrationModel<T> table, MigrationPropertyOptions<U>? options)
-    {
-        Table = table;
-        Name = typeof(T).Name; // Get type
-        Options = options ?? new();
-    }
-    public MigrationProperty(MigrationModel<T> table, string name, MigrationPropertyOptions<U>? options)
-    {
-        Table = table;
-        Name = name;
-        Options = options ?? new();
-    }
-
-    internal void SetOptions(MigrationPropertyOptions<U> options)
-    {
-        Options = options;
-    }
-    internal void ChangePropertyAction(MigrationPropertyAction action)
-    {
-        if (PropertyAction == null)
-        {
-            PropertyAction = action;
-        }
-        else if (PropertyAction == MigrationPropertyAction.Create)
-        {
-            if (action == MigrationPropertyAction.Delete)
-            {
-                PropertyAction = null;
-            }
-        }
-        else if (PropertyAction == MigrationPropertyAction.Update)
-        {
-            if (action == MigrationPropertyAction.Delete)
-            {
-                PropertyAction = action;
-            }
-        }
-        else if (PropertyAction == MigrationPropertyAction.Delete)
-        {
-
-        }
-    }
-
-
-    public MigrationProperty<T, X> AddProperty<X>(string name, MigrationPropertyOptions<X>? options = null)
-    {
-        return Table.AddProperty(name, options);
-    }
-    public MigrationProperty<T, int> AddPrimary<X>(string name)
-    {
-        return Table.AddPrimary(name);
-    }
-
-}

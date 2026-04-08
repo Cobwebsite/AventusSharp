@@ -5,6 +5,8 @@ using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
+using K4os.Compression.LZ4.Internal;
+using MySqlX.XDevAPI.Relational;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -217,13 +219,13 @@ namespace AventusSharp.Data.Storage.Default
                                 }
 
                                 printCommand(command.CommandText, parameters);
-                                command.ExecuteNonQuery();
+                                await command.ExecuteNonQueryAsync();
                             }
                         }
                         else
                         {
                             printCommand(command.CommandText);
-                            command.ExecuteNonQuery();
+                            await command.ExecuteNonQueryAsync();
                         }
                     }
                     catch (Exception e)
@@ -301,7 +303,7 @@ namespace AventusSharp.Data.Storage.Default
 
                             printCommand(command.CommandText, parameters);
 
-                            using (IDataReader reader = command.ExecuteReader())
+                            using (IDataReader reader = await command.ExecuteReaderAsync())
                             {
                                 while (reader.Read())
                                 {
@@ -332,7 +334,7 @@ namespace AventusSharp.Data.Storage.Default
                     else
                     {
                         printCommand(command.CommandText, null);
-                        using (IDataReader reader = command.ExecuteReader())
+                        using (IDataReader reader = await command.ExecuteReaderAsync())
                         {
                             while (reader.Read())
                             {
@@ -421,7 +423,6 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     await transactionScope.transaction.Connection.DisposeAsync();
                 }
-                transactionScope = null;
             }
         }
 
@@ -1134,7 +1135,7 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Table
-        protected abstract string PrepareSQLCreateTable(TableInfo table);
+        protected abstract List<string> PrepareSQLCreateTable(TableInfo table);
         protected abstract string PrepareSQLCreateIntermediateTable(TableMemberInfoSql tableMember);
         public async Task<VoidWithError> CreateTable(PyramidInfo pyramid, bool force)
         {
@@ -1172,9 +1173,11 @@ namespace AventusSharp.Data.Storage.Default
 
             if (tableExist.Success && !tableExist.Result)
             {
-                string sql = PrepareSQLCreateTable(table);
-                VoidWithError resultTemp = await Execute(sql);
-                result.Errors.AddRange(resultTemp.Errors);
+                List<string> sqls = PrepareSQLCreateTable(table);
+                foreach (string sql in sqls)
+                {
+                    await result.RunAsync(() => Execute(sql));
+                }
 
                 // create intermediate table
                 List<TableMemberInfoSql> members = table.Members.Where
@@ -1184,18 +1187,45 @@ namespace AventusSharp.Data.Storage.Default
                 foreach (TableMemberInfoSql member in members)
                 {
                     intermediateQuery = PrepareSQLCreateIntermediateTable(member);
-                    VoidWithError resultTempInter = await Execute(intermediateQuery);
-                    result.Errors.AddRange(resultTempInter.Errors);
+                    await result.RunAsync(() => Execute(intermediateQuery));
                 }
             }
             foreach (TableInfo child in table.Children)
             {
-                VoidWithError resultTemp = await CreateTable(child);
-                result.Errors.AddRange(resultTemp.Errors);
+                await result.RunAsync(() => CreateTable(child));
             }
             return result;
         }
+        public async Task<VoidWithError> CreateTable(IMigrationModel migration)
+        {
+            VoidWithError result = new();
+            bool tableExist = await result.ExtractAsync(() => TableExist(TableInfo.GetSQLTableName(migration.Type)));
+            if (tableExist || !result.Success) return result;
 
+            TableInfo table = new TableInfo(migration.Type);
+            foreach (KeyValuePair<string, IMigrationProperty> pair in migration.Properties)
+            {
+                var property = pair.Value;
+                TableMemberInfoSql member;
+                if (property is IMigrationPropertyRef propertyRef)
+                {
+                    member = new TableMemberInfoSql1N(propertyRef, table);
+                }
+                else
+                {
+                    member = new TableMemberInfoSqlBasic(property, table);
+                }
+                result.Run(() => table.PrepareMembers(member).ToGeneric());
+                table.AddMember(member);
+            }
+            List<string> sqls = PrepareSQLCreateTable(table);
+            foreach (string sql in sqls)
+            {
+                await result.RunAsync(() => Execute(sql));
+            }
+
+            return result;
+        }
         public async Task<ResultWithError<bool>> TableExist(PyramidInfo pyramid)
         {
             if (allTableInfos.ContainsKey(pyramid.type))
@@ -2023,11 +2053,12 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     // if(member.)
                 }
-                // attentio a check quand meme les champs apres
+                // attention a check quand meme les champs apres
             }
             else if (model.ModelAction == MigrationModelAction.Create)
             {
                 // création de la table
+                await result.RunAsync(() => CreateTable(model));
                 // check des champs
             }
             else if (model.ModelAction == MigrationModelAction.Delete)
@@ -2130,6 +2161,7 @@ namespace AventusSharp.Data.Storage.Default
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
+            transactionScope = null;
             return resultTemp;
         }
         /// <summary>
@@ -2170,6 +2202,7 @@ namespace AventusSharp.Data.Storage.Default
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
             }
+            transactionScope = null;
             return resultTemp;
         }
 

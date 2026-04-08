@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Linq;
 using System.Collections;
 using AventusSharp.Data.Manager;
+using AventusSharp.Data.Migrations;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
 {
@@ -224,6 +225,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 IsNullable = isNullable;
             }
         }
+        public TableMemberInfoSql(IMigrationProperty property, TableInfo tableInfo) : base(property, tableInfo) { }
 
         #region SQL
 
@@ -297,6 +299,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public bool IsDeleteSetNull { get; protected set; }
         public bool IsUpdatable { get; internal set; } = true;
         public bool IsUnique { get; internal set; }
+        public bool IsIndex { get; protected set; }
+        public object? DefaultValue { get; protected set; }
 
         private string _sqlName = "";
         public string SqlName
@@ -389,6 +393,15 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 SqlName = attrSqlName.Name;
                 return true;
+            }
+            if (attribute is Attributes.Index)
+            {
+                IsIndex = true;
+                return true;
+            }
+            if (attribute is Attributes.Default df)
+            {
+                DefaultValue = df.Value;
             }
             return false;
         }

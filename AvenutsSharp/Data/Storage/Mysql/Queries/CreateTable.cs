@@ -9,7 +9,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
 {
     internal class CreateTable
     {
-        public static string GetQuery(TableInfo table, MySQLStorage storage)
+        public static List<string> GetQuery(TableInfo table, MySQLStorage storage)
         {
             string sql = "CREATE TABLE `" + table.SqlTableName + "` (\r\n";
 
@@ -17,6 +17,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             List<string> primaryConstraint = new();
             List<string> foreignConstraint = new();
             List<string> uniqueConstraint = new();
+            List<string> indexConstraint = new();
             string separator = ",\r\n";
 
             // key is sql_table_name
@@ -24,7 +25,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
 
             foreach (TableMemberInfoSql member in table.Members)
             {
-                if(member is ITableMemberInfoSqlWritable memberWritable)
+                if (member is ITableMemberInfoSqlWritable memberWritable)
                 {
                     string typeTxt = storage.GetSqlColumnType(memberWritable.SqlType, member);
                     string schemaProp = "\t`" + member.SqlName + "` " + typeTxt;
@@ -35,6 +36,17 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     if (member.IsAutoIncrement)
                     {
                         schemaProp += " AUTO_INCREMENT";
+                    }
+                    if (member.DefaultValue != null)
+                    {
+                        if (memberWritable.SqlType == System.Data.DbType.String)
+                        {
+                            schemaProp += " DEFAULT '" + member.DefaultValue + "'";
+                        }
+                        else
+                        {
+                            schemaProp += " DEFAULT " + member.DefaultValue;
+                        }
                     }
                     schema.Add(schemaProp);
 
@@ -48,9 +60,15 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                         string constraintName = "UC_" + member.SqlName + "_" + table.SqlTableName;
                         uniqueConstraint.Add("\tCONSTRAINT `" + constraintName + "` UNIQUE (`" + member.SqlName + "`)");
                     }
+                    else if (member.IsIndex)
+                    {
+                        string constraintName = "IND_" + member.SqlName + "_" + table.SqlTableName;
+                        indexConstraint.Add("\tINDEX `" + constraintName + "` (`" + member.SqlName + "`)");
+                    }
+
                 }
 
-                if(member is ITableMemberInfoSqlLinkSingle memberLink)
+                if (member is ITableMemberInfoSqlLinkSingle memberLink)
                 {
                     if (memberLink.TableLinked != null)
                     {
@@ -88,7 +106,8 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                         // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
                         constraintProp += " ON DELETE CASCADE";
                     }
-                    else if(deleteSetNull) {
+                    else if (deleteSetNull)
+                    {
                         // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
                         constraintProp += " ON DELETE SET NULL";
                     }
@@ -115,8 +134,13 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 sql += separator;
                 sql += string.Join(separator, uniqueConstraint);
             }
+            if (indexConstraint.Count > 0)
+            {
+                sql += separator;
+                sql += string.Join(separator, indexConstraint);
+            }
             sql += ")";
-            return sql;
+            return [sql];
         }
 
 

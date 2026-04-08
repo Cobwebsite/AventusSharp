@@ -233,9 +233,18 @@ namespace AventusSharp.Routes
             return (await Storable<T>.DeleteWithError(ids)).ToGeneric();
         }
 
-        protected abstract T ConvertRequest(HttpContext context, U item);
-        protected abstract R ConvertResource(HttpContext context, T item);
-        protected abstract S ConvertResourceDetails(HttpContext context, T item);
+        protected virtual T ConvertRequest(HttpContext context, U item)
+        {
+            return Binder.AutoBind<T>(item);
+        }
+        protected virtual R ConvertResource(HttpContext context, T item)
+        {
+            return Binder.AutoBind<R>(item);
+        }
+        protected virtual S ConvertResourceDetails(HttpContext context, T item)
+        {
+            return Binder.AutoBind<S>(item);
+        }
 
     }
 

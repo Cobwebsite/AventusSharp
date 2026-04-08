@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
 using System;
 using System.Data;
@@ -16,6 +17,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public TableMemberInfoSqlBasic(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
         }
+        public TableMemberInfoSqlBasic(IMigrationProperty property, TableInfo tableInfo) : base(property, tableInfo) {}
 
         public override VoidWithDataError PrepareForSQL()
         {

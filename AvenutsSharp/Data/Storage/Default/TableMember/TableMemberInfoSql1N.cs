@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+﻿using AventusSharp.Data.Migrations;
+using AventusSharp.Tools;
 using System;
 using System.Data;
 using System.Reflection;
@@ -15,6 +16,14 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public TableMemberInfoSql1N(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
         }
+        public TableMemberInfoSql1N(IMigrationPropertyRef property, TableInfo tableInfo) : base(property, tableInfo)
+        {
+            TableLinked = new TableInfo(property.Type);
+            var member = new TableMemberInfoSqlBasic(new MigrationMemberId(property.Parent, property.Options.KeyName ?? "Id", property.Options.KeyKind), tableInfo, false);
+            TableLinked.AddMember(member);
+            TableLinked.PrepareMembers(member);
+        }
+
 
         public override VoidWithDataError PrepareForSQL()
         {

@@ -22,6 +22,7 @@ namespace AventusSharp.Data.Manager.DB
         public IDBStorage Storage { get; }
         public List<X> RemoveRecordsItems<X>(List<int> ids) where X : IStorable;
         public List<X> RemoveRecordsItems<X>(List<X> items) where X : IStorable;
+        public bool IsSameStorage(IGenericDM? dm);
     }
 
     public class SimpleDatabaseDM<U> : DatabaseDM<SimpleDatabaseDM<U>, U> where U : IStorable
@@ -103,6 +104,15 @@ namespace AventusSharp.Data.Manager.DB
                 }
                 throw new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name).GetException();
             }
+        }
+
+        public bool IsSameStorage(IGenericDM? dm)
+        {
+            if(dm is IDatabaseDM databaseDM)
+            {
+                return databaseDM.Storage == Storage;
+            }
+            return false;
         }
 
         #region Config

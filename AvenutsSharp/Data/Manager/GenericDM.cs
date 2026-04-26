@@ -365,45 +365,6 @@ namespace AventusSharp.Data.Manager
 
         #endregion
 
-        #region Migration
-        protected async Task<VoidWithError> ApplyMigration(MigrationModel<U> model)
-        {
-            VoidWithError result = new();
-            Console.WriteLine(model.ToString());
-            // TODO
-            return result;
-        }
-        private MethodInfo? IApplyMigration = null;
-        async Task<VoidWithError> IGenericDM.ApplyMigration<X>(IMigrationModel model)
-        {
-            try
-            {
-                VoidWithError? result = await InvokeMethodAsync<VoidWithError, X>(ref IApplyMigration, [model]);
-                if (result == null)
-                {
-                    result = new VoidWithError();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method ApplyMigration"));
-                }
-                return result;
-            }
-            catch (Exception e)
-            {
-                VoidWithError result = new();
-                if (e is AventusException aventusException)
-                {
-                    result.Errors.Add(aventusException.Error);
-                }
-                else
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-                }
-                return result;
-            }
-
-        }
-
-        #endregion
-
         #region generic query
         public abstract IQueryBuilder<X> CreateQuery<X>() where X : U;
 

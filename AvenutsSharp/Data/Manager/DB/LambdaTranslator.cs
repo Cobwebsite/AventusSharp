@@ -19,7 +19,29 @@ namespace AventusSharp.Data.Manager.DB
         public IDBStorage Storage { get; }
         public Dictionary<string, ParamsInfo> WhereParamsInfo { get; }
         public Dictionary<string, DatabaseBuilderInfo> InfoByPath { get; }
-        public void LoadLinks(List<string> pathSplitted, List<Type> types, bool addLinksToMembers);
+
+        public LambdaIncludeResult LambdaInclude(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, bool addToMembers);
+        public LambdaIncludeResult LambdaInclude(List<LambdaStep> lambdaParts, List<LambdaExpression>? fields, bool addToMembers);
+    }
+
+    public class LambdaStep
+    {
+        public static List<LambdaStep> Create(List<string> pathes, List<Type> types)
+        {
+            List<LambdaStep> steps = new List<LambdaStep>();
+            for (int i = 0; i < pathes.Count; i++)
+            {
+                steps.Add(new LambdaStep()
+                {
+                    Name = pathes[i],
+                    Type = types[i]
+                });
+            }
+            return steps;
+        }
+        public required string Name { get; set; }
+        public required Type Type { get; set; }
+        public List<WhereGroupFctSqlEnum>? Transformators { get; set; }
     }
 
     public class LambdaTranslator
@@ -31,7 +53,7 @@ namespace AventusSharp.Data.Manager.DB
 
             if (node.Arguments.Count > 0)
             {
-                return node.Arguments[0].Type; // souvent "this" pour une extension
+                return node.Arguments[0].Type;
             }
             throw new Exception("Impossible to extract type");
         }
@@ -54,6 +76,190 @@ namespace AventusSharp.Data.Manager.DB
 
             throw new Exception("Impossible to extract Name");
         }
+
+        public static List<string> ExtractNames(LambdaExpression lambdaExpression)
+        {
+            Expression? exp = lambdaExpression.Body;
+            List<string> names = new List<string>();
+
+            if (lambdaExpression.Body is UnaryExpression convertExpression)
+            {
+                exp = convertExpression.Operand;
+            }
+            while (exp is MemberExpression memberExpression)
+            {
+                names.Insert(0, memberExpression.Member.Name);
+                exp = memberExpression.Expression;
+                if (exp is UnaryExpression convertExpression2)
+                {
+                    exp = convertExpression2.Operand;
+                }
+            }
+            return names;
+        }
+        public static List<LambdaStep> ExtractPart(LambdaExpression lambdaExpression)
+        {
+            Expression? exp = lambdaExpression.Body;
+            List<LambdaStep> result = new List<LambdaStep>();
+
+            if (lambdaExpression.Body is UnaryExpression convertExpression)
+            {
+                exp = convertExpression.Operand;
+            }
+
+            while (exp != null)
+            {
+                bool hasFound = false;
+                List<WhereGroupFctSqlEnum>? transformators = null;
+                while (exp is MethodCallExpression callExpression)
+                {
+                    hasFound = true;
+                    WhereGroupFctSqlEnum? _fct = LambdaTranslator.GetFctSql(callExpression);
+                    if (_fct is WhereGroupFctSqlEnum fct)
+                    {
+                        if (transformators == null) transformators = new();
+                        transformators.Add(fct);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("Can't find a method for " + callExpression.Method.Name + " on type " + LambdaTranslator.ExtractType(callExpression));
+                    }
+                    if (callExpression.Object != null)
+                    {
+                        exp = callExpression.Object;
+                    }
+                    else if (callExpression.Arguments.Count > 0)
+                    {
+                        exp = callExpression.Arguments[0];
+                    }
+                    else
+                    {
+                        exp = null;
+                    }
+                }
+
+                if (exp is UnaryExpression convertExpression3)
+                {
+                    exp = convertExpression3.Operand;
+                }
+
+                while (exp is MemberExpression memberExpression)
+                {
+                    hasFound = true;
+                    Type? type = memberExpression.Type;
+                    if (type == null)
+                        throw new Exception("The lambda expression has a null type inside => impossible");
+                    result.Insert(0, new()
+                    {
+                        Name = memberExpression.Member.Name,
+                        Type = type,
+                        Transformators = transformators
+                    });
+                    exp = memberExpression.Expression;
+                    if (exp is UnaryExpression convertExpression2)
+                    {
+                        exp = convertExpression2.Operand;
+                    }
+                }
+
+                if (!hasFound)
+                {
+                    exp = null;
+                }
+            }
+
+            return result;
+        }
+        public static LambdaExpression MergePart<T>(List<LambdaStep> steps)
+        {
+            ParameterExpression parameter = Expression.Parameter(typeof(T), "p");
+            Expression current = parameter;
+
+            foreach (var step in steps)
+            {
+                current = Expression.PropertyOrField(current, step.Name);
+            }
+
+            return Expression.Lambda(current, parameter);
+        }
+        public static LambdaExpression LambdaMerge(LambdaExpression baseExpression, LambdaExpression fieldExpression)
+        {
+            Expression baseBody = baseExpression.Body;
+
+            if (baseBody is UnaryExpression unary) baseBody = unary.Operand;
+
+            ParameterReplacer parameterReplacer = new ParameterReplacer(fieldExpression.Parameters[0], baseBody);
+            Expression newBody = parameterReplacer.Visit(fieldExpression.Body);
+
+            return Expression.Lambda(newBody, baseExpression.Parameters);
+        }
+        public static List<DataMemberInfo> ExtractMembers(LambdaExpression lambdaExpression)
+        {
+            Expression? exp = lambdaExpression.Body;
+            List<DataMemberInfo> result = new List<DataMemberInfo>();
+
+            if (lambdaExpression.Body is UnaryExpression convertExpression)
+            {
+                exp = convertExpression.Operand;
+            }
+
+            while (exp != null)
+            {
+                bool hasFound = false;
+                List<WhereGroupFctSqlEnum>? transformators = null;
+                while (exp is MethodCallExpression callExpression)
+                {
+                    hasFound = true;
+                    WhereGroupFctSqlEnum? _fct = LambdaTranslator.GetFctSql(callExpression);
+                    if (_fct is WhereGroupFctSqlEnum fct)
+                    {
+                        if (transformators == null) transformators = new();
+                        transformators.Add(fct);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("Can't find a method for " + callExpression.Method.Name + " on type " + LambdaTranslator.ExtractType(callExpression));
+                    }
+                    if (callExpression.Object != null)
+                    {
+                        exp = callExpression.Object;
+                    }
+                    else if (callExpression.Arguments.Count > 0)
+                    {
+                        exp = callExpression.Arguments[0];
+                    }
+                    else
+                    {
+                        exp = null;
+                    }
+                }
+
+                if (exp is UnaryExpression convertExpression3)
+                {
+                    exp = convertExpression3.Operand;
+                }
+
+                while (exp is MemberExpression memberExpression)
+                {
+                    hasFound = true;
+
+                    result.Insert(0, new(memberExpression.Member));
+                    exp = memberExpression.Expression;
+                    if (exp is UnaryExpression convertExpression2)
+                    {
+                        exp = convertExpression2.Operand;
+                    }
+                }
+
+                if (!hasFound)
+                {
+                    exp = null;
+                }
+            }
+
+            return result;
+        }
+
         public static WhereGroupFctSqlEnum? GetFctSql(MethodCallExpression node)
         {
             string methodName = node.Method.Name;
@@ -97,6 +303,11 @@ namespace AventusSharp.Data.Manager.DB
         }
 
     }
+    public class TranslateResult
+    {
+        public required List<IWhereRootGroup> Wheres { get; set; }
+        public required bool IsExternal { get; set; }
+    }
     public class LambdaTranslator<T> : ExpressionVisitor
     {
         private static List<Type> _dateTypes = new List<Type>() { typeof(DateTime), typeof(Datetime), typeof(Date) };
@@ -115,6 +326,7 @@ namespace AventusSharp.Data.Manager.DB
         private List<Expression?> tree = new List<Expression?>();
 
         private bool nextGroupNegate = false;
+        private bool isExternal = false;
 
         private bool canSimplify
         {
@@ -158,13 +370,18 @@ namespace AventusSharp.Data.Manager.DB
 
         }
 
-        public List<IWhereRootGroup> Translate(Expression expression)
+        public TranslateResult Translate(Expression expression)
         {
+            isExternal = false;
             queryGroups = new List<IWhereRootGroup>();
             queryGroupsBase = new List<IWhereRootGroup>();
             Visit(expression);
 
-            return queryGroupsBase;
+            return new TranslateResult()
+            {
+                IsExternal = isExternal,
+                Wheres = queryGroupsBase
+            };
         }
 
         [return: NotNullIfNotNull("node")]
@@ -507,46 +724,53 @@ namespace AventusSharp.Data.Manager.DB
             {
                 if (onParameter)
                 {
-                    databaseBuilder.LoadLinks(pathes, types, false);
-                    string fullPath = string.Join(".", pathes.SkipLast(1));
-
-                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = databaseBuilder.InfoByPath[fullPath].GetTableMemberInfoAndAlias(m.Member.Name);
-                    if (memberInfo.Key != null)
+                    List<LambdaStep> steps = LambdaStep.Create(pathes, types);
+                    LambdaIncludeResult lambdaResult = databaseBuilder.LambdaInclude(steps, null, false);
+                    if (lambdaResult.IsExternal)
                     {
-                        foreach (WhereGroupFctSqlEnum sqlFct in sqlFcts)
+                        isExternal = true;
+                    }
+                    else
+                    {
+                        string fullPath = string.Join(".", pathes.SkipLast(1));
+                        KeyValuePair<TableMemberInfoSql?, string> memberInfo = databaseBuilder.InfoByPath[fullPath].GetTableMemberInfoAndAlias(m.Member.Name);
+                        if (memberInfo.Key != null)
                         {
-                            AddToParentGroup(new WhereGroupFctSql(sqlFct));
-                            WhereGroup newGroup = new();
-                            AddToParentGroup(newGroup);
-                            currentGroup = newGroup;
-                            queryGroups.Add(newGroup);
-                        }
-                        WhereGroupField field = new(memberInfo.Value, memberInfo.Key);
-                        if (memberInfo.Key.MemberType == typeof(bool))
-                        {
-                            WhereGroupSingleBool newGroup = new(memberInfo.Value, memberInfo.Key);
-                            if (nextGroupNegate)
+                            foreach (WhereGroupFctSqlEnum sqlFct in sqlFcts)
                             {
-                                newGroup.negate = true;
-                                nextGroupNegate = false;
+                                AddToParentGroup(new WhereGroupFctSql(sqlFct));
+                                WhereGroup newGroup = new();
+                                AddToParentGroup(newGroup);
+                                currentGroup = newGroup;
+                                queryGroups.Add(newGroup);
                             }
-                            if (queryGroups.Count == 0)
+                            WhereGroupField field = new(memberInfo.Value, memberInfo.Key);
+                            if (memberInfo.Key.MemberType == typeof(bool))
                             {
-                                queryGroupsBase.Add(newGroup);
+                                WhereGroupSingleBool newGroup = new(memberInfo.Value, memberInfo.Key);
+                                if (nextGroupNegate)
+                                {
+                                    newGroup.negate = true;
+                                    nextGroupNegate = false;
+                                }
+                                if (queryGroups.Count == 0)
+                                {
+                                    queryGroupsBase.Add(newGroup);
+                                }
+                                else
+                                {
+                                    AddToParentGroup(newGroup);
+                                }
                             }
                             else
                             {
-                                AddToParentGroup(newGroup);
+                                AddToParentGroup(field);
                             }
-                        }
-                        else
-                        {
-                            AddToParentGroup(field);
-                        }
-                        foreach (WhereGroupFctSqlEnum sqlFct in sqlFcts)
-                        {
-                            queryGroups.RemoveAt(queryGroups.Count - 1);
-                            currentGroup = queryGroups.LastOrDefault();
+                            foreach (WhereGroupFctSqlEnum sqlFct in sqlFcts)
+                            {
+                                queryGroups.RemoveAt(queryGroups.Count - 1);
+                                currentGroup = queryGroups.LastOrDefault();
+                            }
                         }
                     }
                 }
@@ -901,7 +1125,7 @@ namespace AventusSharp.Data.Manager.DB
         private readonly List<string> Pathes = new();
 
         private static LambdaToPath? instance;
-        private static readonly SemaphoreSlim mutex = new(1,1);
+        private static readonly SemaphoreSlim mutex = new(1, 1);
 
 
         public static string Translate(Expression expression)
@@ -1019,5 +1243,22 @@ namespace AventusSharp.Data.Manager.DB
 
         }
 
+    }
+
+    internal class ParameterReplacer : ExpressionVisitor
+    {
+        private readonly ParameterExpression _parameter;
+        private readonly Expression _replacement;
+
+        public ParameterReplacer(ParameterExpression parameter, Expression replacement)
+        {
+            _parameter = parameter;
+            _replacement = replacement;
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return node == _parameter ? _replacement : node;
+        }
     }
 }

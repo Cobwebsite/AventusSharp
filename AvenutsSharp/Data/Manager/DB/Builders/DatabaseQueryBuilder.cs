@@ -209,7 +209,13 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return prepared;
         }
 
-        public IQueryBuilder<T> Field<U>(Expression<Func<T, U>> expression)
+        public IQueryBuilder<T> Field<U>(Expression<Func<T, U?>> expression)
+        {
+            FieldGeneric(expression);
+            return this;
+        }
+
+        public IQueryBuilder<T> Field(LambdaExpression expression)
         {
             FieldGeneric(expression);
             return this;
@@ -221,27 +227,53 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
-        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U>> expression)
+        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U?>> expression)
         {
             IgnoreGeneric(expression);
             return this;
         }
 
-        public IQueryBuilder<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort)
+        public IQueryBuilder<T> Ignore(LambdaExpression expression)
+        {
+            IgnoreGeneric(expression);
+            return this;
+        }
+
+        public IQueryBuilder<T> Sort<U>(Expression<Func<T, U?>> expression, Sort? sort)
+        {
+            SortGeneric(expression, sort ?? DB.Sort.ASC);
+            return this;
+        }
+        public IQueryBuilder<T> Sort(LambdaExpression expression, Sort? sort)
         {
             SortGeneric(expression, sort ?? DB.Sort.ASC);
             return this;
         }
 
-        public IQueryBuilder<T> Group<U>(Expression<Func<T, U>> expression)
+        public IQueryBuilder<T> Group<U>(Expression<Func<T, U?>> expression)
+        {
+            GroupGeneric(expression);
+            return this;
+        }
+        public IQueryBuilder<T> Group(LambdaExpression expression)
         {
             GroupGeneric(expression);
             return this;
         }
 
-        public IQueryBuilder<T> Include(Expression<Func<T, IStorable?>> expression)
+        public IQueryBuilder<T> Include<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
         {
-            IncludeGeneric(expression);
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>());
+            return this;
+        }
+        public IQueryBuilder<T> Include<Y>(Expression<Func<T, List<Y>?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>());
+            return this;
+        }
+        IQueryBuilder<T> IQueryBuilder<T>.Include(LambdaExpression expression, List<LambdaExpression>? fields)
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>());
             return this;
         }
 

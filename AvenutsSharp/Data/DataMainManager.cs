@@ -55,14 +55,33 @@ namespace AventusSharp.Data
             }
             return type.Name.Split('`')[0];
         };
-        /// <summary>
-        /// Define if Aventus have to create models
-        /// </summary>
-        public bool AutoCreateModel { get; set; } = true;
+
         /// <summary>
         /// Define config for migration
         /// </summary>
         public DataManagerConfigMigration Migration = new();
+
+        /// <summary>
+        /// Define if Aventus have to create models instead of using migrations
+        /// </summary>
+        public bool AutoCreateModel { get; set; } = true;
+        /// <summary>
+        /// Define if links must be auto read by default
+        /// </summary>
+        public bool AutoReadLink { get; set; }
+        /// <summary>
+        /// Define if links must be auto read by default
+        /// </summary>
+        public bool AutoCreateLink { get; set; }
+        /// <summary>
+        /// Define if links must be auto read by default
+        /// </summary>
+        public bool AutoUpdateLink { get; set; }
+        /// <summary>
+        /// Define if links must be auto read by default
+        /// </summary>
+        public bool AutoDeleteLink { get; set; }
+
         public DataManagerConfig()
         {
         }

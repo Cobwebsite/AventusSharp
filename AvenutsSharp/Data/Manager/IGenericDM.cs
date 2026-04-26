@@ -83,8 +83,6 @@ namespace AventusSharp.Data.Manager
 
         internal IMigrationProvider GetMigrationProvider();
 
-        Task<VoidWithError> ApplyMigration<X>(IMigrationModel model);
-
 
         #region Transaction
         Task<ResultWithError<Y>> RunInsideTransaction<Y>(Y? defaultValue, Func<Task<ResultWithError<Y>>> action);

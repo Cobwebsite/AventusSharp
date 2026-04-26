@@ -35,7 +35,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             get
             {
                 string? result = TableInfo.Primary == null ? null : TableInfo.SqlTableName + "_" + TableInfo.Primary.SqlName;
-                if(result != null) {
+                if (result != null)
+                {
                     result = result.Replace(".", "_");
                 }
                 return result;
@@ -109,8 +110,14 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         private IGenericDM? LinkDM;
         private MethodInfo? GetByIds;
 
+        public override bool IsAutoCreate { get; protected set; } = DataMainManager.Config.AutoCreateLink;
+        public override bool IsAutoUpdate { get; protected set; } = DataMainManager.Config.AutoUpdateLink;
+        public override bool IsAutoDelete { get; protected set; } = DataMainManager.Config.AutoDeleteLink;
+        public override bool IsAutoRead { get; protected set; } = DataMainManager.Config.AutoReadLink;
+
         public TableMemberInfoSqlNM(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
+            
         }
 
         public override VoidWithDataError PrepareForSQL()
@@ -183,7 +190,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
 
             object? objItem = GetByIds?.Invoke(LinkDM, new object[] { ids });
-            if(objItem is Task task)
+            if (objItem is Task task)
             {
                 task.Wait();
                 objItem = objItem.GetType().GetProperty("Result")?.GetValue(objItem);

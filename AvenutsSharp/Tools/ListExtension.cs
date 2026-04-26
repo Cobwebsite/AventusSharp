@@ -6,6 +6,10 @@ namespace AventusSharp.Tools;
 
 public static class ListExtension
 {
+    public static List<Y> ConvertList<Y>(this IList value)
+    {
+        return value.ToList<Y>();
+    }
     public static List<Y> ToList<Y>(this IList value)
     {
         List<Y> result = new();

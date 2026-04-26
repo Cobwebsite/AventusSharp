@@ -873,14 +873,13 @@ namespace AventusSharp.Data.Storage.Default
             result.Errors.AddRange(queryResult.Errors);
             if (queryResult.Success && queryResult.Result != null)
             {
-                Dictionary<TableReverseMemberInfo, List<object>> reverseLinks = new();
                 result.Result = new List<X>();
                 DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
 
                 for (int i = 0; i < queryResult.Result.Count; i++)
                 {
                     Dictionary<string, string?> itemFields = queryResult.Result[i];
-                    ResultWithDataError<object> resultTemp = CreateObject(baseInfo, itemFields, reverseLinks);
+                    ResultWithDataError<object> resultTemp = CreateObject(baseInfo, itemFields, false);
                     if (resultTemp.Success && resultTemp.Result != null)
                     {
                         if (resultTemp.Result is X oCasted)
@@ -900,44 +899,15 @@ namespace AventusSharp.Data.Storage.Default
 
                 }
 
-                if (reverseLinks.Count > 0)
+                foreach(var subquery in queryBuilder.SubQueries)
                 {
-                    MethodInfo? method = typeof(LoaderHelper).GetMethod("LoadReverseLinkInternalList", BindingFlags.Static | BindingFlags.NonPublic);
-                    if (method != null)
-                    {
-                        foreach (KeyValuePair<TableReverseMemberInfo, List<object>> pairReverse in reverseLinks)
-                        {
-                            TableReverseMemberInfo reverse = pairReverse.Key;
-                            List<object> objs = pairReverse.Value;
-
-                            if (reverse.ReverseLinkType != null && objs.Count > 0 && reverse.ReflectedType != null)
-                            {
-                                MethodInfo? methodGeneric = method.MakeGenericMethod(reverse.ReflectedType, reverse.ReverseLinkType);
-                                IList casted = objs.ToListOfType(reverse.ReflectedType);
-                                var obj = methodGeneric.Invoke(null, [casted, reverse.Name]);
-                                if (obj is Task task)
-                                {
-                                    task.Wait();
-                                    obj = obj.GetType().GetProperty("Result")?.GetValue(obj);
-                                }
-                                if (obj is VoidWithError objVoid)
-                                {
-                                    result.Errors.AddRange(objVoid.Errors);
-                                }
-                            }
-                        }
-
-                    }
-                }
-                foreach (TableReverseMemberInfo reverse in baseInfo.ReverseLinks)
-                {
-
+                    await result.RunAsync(() => subquery.Value.Run(result.Result));
                 }
             }
 
             return result;
         }
-        protected ResultWithDataError<object> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields, Dictionary<TableReverseMemberInfo, List<object>> reverseLinks)
+        protected ResultWithDataError<object> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields, bool allowNull)
         {
             ResultWithDataError<object> result = new ResultWithDataError<object>();
             string rootAlias = info.Alias;
@@ -975,6 +945,7 @@ namespace AventusSharp.Data.Storage.Default
                 o = TypeTools.CreateNewObj(info.TableInfo.Type);
             }
 
+            bool hasValue = false;
             // TODO : optimize this method by storing needed values
             foreach (KeyValuePair<TableMemberInfoSql, DatabaseBuilderInfoMember> member in info.Members)
             {
@@ -985,6 +956,8 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     if (memberInfo is TableMemberInfoSqlBasic || memberInfo is TableMemberInfoSql1NInt || memberInfo is CustomTableMember)
                     {
+                        if (itemFields[key] != null)
+                            hasValue = true;
                         memberInfo.ApplySqlValue(o, itemFields[key]);
                     }
                     else if (memberInfo is TableMemberInfoSql1N memberInfo1N)
@@ -995,15 +968,25 @@ namespace AventusSharp.Data.Storage.Default
                             {
                                 string idValue = itemFields[key] ?? string.Empty;
                                 object? oTemp = memberInfo1N.TableLinked?.DM?.GetById(int.Parse(idValue));
+                                if (oTemp != null)
+                                    hasValue = true;
                                 memberInfo.SetValue(o, oTemp);
                             }
                             else if (info.joins.ContainsKey(memberInfo))
                             {
                                 // loaded from the query
-                                ResultWithDataError<object> oTemp = CreateObject(info.joins[memberInfo], itemFields, reverseLinks);
-                                if (oTemp.Success && oTemp.Result != null)
+                                ResultWithDataError<object> oTemp = CreateObject(info.joins[memberInfo], itemFields, memberInfo.IsNullable);
+                                if (oTemp.Success)
                                 {
-                                    memberInfo.SetValue(o, oTemp.Result);
+                                    if (oTemp.Result != null)
+                                    {
+                                        memberInfo.SetValue(o, oTemp.Result);
+                                        hasValue = true;
+                                    }
+                                    else if (memberInfo.IsNullable)
+                                        memberInfo.SetValue(o, null);
+                                    else
+                                        result.Errors.Add(new DataError(DataErrorCode.WrongType, "The property " + memberInfo.Name + " is not null but receiving a null from the db"));
                                 }
                                 else
                                 {
@@ -1018,24 +1001,25 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else if (memberInfo is TableMemberInfoSqlNMInt tableMemberInfoSqlNMInt)
                     {
+                        if (itemFields[key] != null)
+                            hasValue = true;
                         tableMemberInfoSqlNMInt.ApplySqlValue(o, itemFields[key]);
                     }
                     else if (memberInfo is TableMemberInfoSqlNM tableMemberInfoSqlNM)
                     {
+                        if (itemFields[key] != null)
+                            hasValue = true;
                         tableMemberInfoSqlNM.ApplySqlValue(o, itemFields[key]);
                     }
                 }
             }
 
-            // TODO : change it to make only one DB request based on the list
-            foreach (TableReverseMemberInfo reverse in info.ReverseLinks)
+            if (!hasValue && allowNull)
             {
-                if (!reverseLinks.ContainsKey(reverse))
-                {
-                    reverseLinks[reverse] = new();
-                }
-                reverseLinks[reverse].Add(o);
+                result.Result = null;
+                return result;
             }
+            
             result.Result = o;
             return result;
         }
@@ -1069,7 +1053,7 @@ namespace AventusSharp.Data.Storage.Default
             {
                 foreach (TableMemberInfoSql member in tableInfo.Members)
                 {
-                    if (!member.IsAutoRead)
+                    if (!member.IsAutoRead && !queryBuilder.Included.Contains(member))
                     {
                         continue;
                     }
@@ -1082,7 +1066,9 @@ namespace AventusSharp.Data.Storage.Default
                             {
                                 path.Add(member.Name);
                                 types.Add(member.MemberType);
-                                queryBuilder.LoadLinks(path, types, true);
+
+                                List<LambdaStep> steps = LambdaStep.Create(path, types);
+                                queryBuilder.LambdaInclude(steps, null, true);
                                 path.RemoveAt(path.Count - 1);
                                 types.RemoveAt(types.Count - 1);
                             }

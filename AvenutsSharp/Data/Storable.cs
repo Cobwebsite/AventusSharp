@@ -66,7 +66,7 @@ namespace AventusSharp.Data
                 st.Debug = true;
             }
         }
-        
+
         [Primary, AutoIncrement]
         public virtual int Id { get; set; }
 
@@ -521,6 +521,30 @@ namespace AventusSharp.Data
             return new List<DataError>();
         }
 
+        #region Load Dependances
+
+        /// <summary>
+        /// Allow to load the a real object from an id on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="fct">The field with the int (Id of the element to load)</param>
+        /// <param name="set">Set to add the object to the item</param>
+        /// <returns></returns>
+        public async Task<ResultWithError<Y>> LoadObjectFromId<Y>(Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        {
+            if (this is T t)
+            {
+                return await LoadObjectFromId(t, fct, set);
+            }
+            return new ResultWithError<Y>()
+            {
+                Errors = new()
+                {
+                    new DataError(DataErrorCode.WrongType, "Element " + GetType() + " isn't a " + typeof(T).Name + ". This should be impossible")
+                }
+            };
+        }
+
         /// <summary>
         /// Allow to load the a real object from an id on the same element
         /// </summary>
@@ -529,10 +553,43 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the int (Id of the element to load)</param>
         /// <param name="set">Set to add the object to the item</param>
         /// <returns></returns>
-        public static Task<ResultWithError<List<Y>>> LoadDependances<Y>(List<T>? from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        public static Task<ResultWithError<List<Y>>> LoadObjectFromId<Y>(List<T>? from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
-            return LoadDependances(realFrom, fct, set);
+            return LoadObjectFromId(realFrom, fct, set);
+        }
+
+        /// <summary>
+        /// Allow to load the a real object from an id on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the int (Id of the element to load)</param>
+        /// <param name="set">Set to add the object to the item</param>
+        /// <returns></returns>
+        public static async Task<ResultWithError<Y>> LoadObjectFromId<Y>(T from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        {
+            ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = new List<T> { from } };
+            ResultWithError<List<Y>> resultTemp = await LoadObjectFromId(realFrom, fct, set);
+            ResultWithError<Y> result = new()
+            {
+                Result = resultTemp.Result != null && resultTemp.Result.Count > 0 ? resultTemp.Result[0] : default,
+                Errors = resultTemp.Errors
+            };
+            return result;
+        }
+
+        /// <summary>
+        /// Allow to load the a real object from an id on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the int (Id of the element to load)</param>
+        /// <param name="set">Set to add the object to the item</param>
+        /// <returns></returns>
+        public static async Task<ResultWithError<List<Y>>> LoadObjectFromId<Y>(ResultWithError<List<T>> from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        {
+            return await LoaderHelper.LoadObjectFromId(from, fct, set);
         }
         /// <summary>
         /// Allow to load the a real object from an id on the same element
@@ -542,11 +599,45 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the int (Id of the element to load)</param>
         /// <param name="set">Set to add the object to the item</param>
         /// <returns></returns>
-        public static async Task<ResultWithError<List<Y>>> LoadDependances<Y>(ResultWithError<List<T>> from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
+        public static async Task<ResultWithError<Y>> LoadObjectFromId<Y>(ResultWithError<T> from, Func<T, int> fct, Action<T, Y> set) where Y : IStorable
         {
-            return await LoaderHelper.LoadDependances(from, fct, set);
+            ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>()
+            {
+                Errors = from.Errors,
+                Result = from.Result != null ? new List<T> { from.Result } : null
+            };
+            ResultWithError<List<Y>> resultTemp = await LoadObjectFromId(realFrom, fct, set);
+            ResultWithError<Y> result = new()
+            {
+                Result = resultTemp.Result != null && resultTemp.Result.Count > 0 ? resultTemp.Result[0] : default,
+                Errors = resultTemp.Errors
+            };
+            return result;
         }
 
+
+        /// <summary>
+        /// Allow to load the list of real object from a list of ids on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="fct">The field with the List of int</param>
+        /// <param name="set">Set to add the object to the list</param>
+        /// <returns></returns>
+        public async Task<ResultWithError<List<Y>>> LoadObjectsFromIds<Y>(Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        {
+            if (this is T t)
+            {
+                return await LoadObjectsFromIds(t, fct, set);
+            }
+            return new ResultWithError<List<Y>>()
+            {
+                Errors = new()
+                {
+                    new DataError(DataErrorCode.WrongType, "Element " + GetType() + " isn't a " + typeof(T).Name + ". This should be impossible")
+                }
+            };
+
+        }
         /// <summary>
         /// Allow to load the list of real object from a list of ids on the same element
         /// </summary>
@@ -555,10 +646,10 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the List of int</param>
         /// <param name="set">Set to add the object to the list</param>
         /// <returns></returns>
-        public static Task<ResultWithError<List<Y>>> LoadDependancesList<Y>(List<T>? from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        public static Task<ResultWithError<List<Y>>> LoadObjectsFromIds<Y>(List<T>? from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
         {
             ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
-            return LoadDependancesList(realFrom, fct, set);
+            return LoadObjectsFromIds(realFrom, fct, set);
         }
         /// <summary>
         /// Allow to load the list of real object from a list of ids on the same element
@@ -568,34 +659,79 @@ namespace AventusSharp.Data
         /// <param name="fct">The field with the List of int</param>
         /// <param name="set">Set to add the object to the list</param>
         /// <returns></returns>
-        public static async Task<ResultWithError<List<Y>>> LoadDependancesList<Y>(ResultWithError<List<T>> from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        public static Task<ResultWithError<List<Y>>> LoadObjectsFromIds<Y>(T from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
         {
-            return await LoaderHelper.LoadDependancesList(from, fct, set);
+            ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = new List<T> { from } };
+            return LoadObjectsFromIds(realFrom, fct, set);
+        }
+        /// <summary>
+        /// Allow to load the list of real object from a list of ids on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the List of int</param>
+        /// <param name="set">Set to add the object to the list</param>
+        /// <returns></returns>
+        public static async Task<ResultWithError<List<Y>>> LoadObjectsFromIds<Y>(ResultWithError<List<T>> from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        {
+            return await LoaderHelper.LoadObjectsFromIds(from, fct, set);
+        }
+        /// <summary>
+        /// Allow to load the list of real object from a list of ids on the same element
+        /// </summary>
+        /// <typeparam name="Y"></typeparam>
+        /// <param name="from">Items to augment</param>
+        /// <param name="fct">The field with the List of int</param>
+        /// <param name="set">Set to add the object to the list</param>
+        /// <returns></returns>
+        public static async Task<ResultWithError<List<Y>>> LoadObjectsFromIds<Y>(ResultWithError<T> from, Func<T, List<int>> fct, Action<T, Y> set) where Y : IStorable
+        {
+            ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>()
+            {
+                Errors = from.Errors,
+                Result = from.Result != null ? new List<T> { from.Result } : null
+            };
+            return await LoaderHelper.LoadObjectsFromIds(realFrom, fct, set);
+        }
+        #endregion
+
+        #region Load
+        public Task<VoidWithError> Load(Expression<Func<T, object?>> expression)
+        {
+            return Load([expression]);
+        }
+        public async Task<VoidWithError> Load(List<Expression<Func<T, object?>>> expressions)
+        {
+            if (this is T that)
+            {
+                return await Load([that], expressions);
+            }
+            return new VoidWithError()
+            {
+                Errors = new()
+                {
+                    new DataError(DataErrorCode.WrongType, "Element " + GetType() + " isn't a " + typeof(T).Name + ". This should be impossible")
+                }
+            };
         }
 
-        /// <summary>
-        /// Allow to load a member of type List marked ReverseLink
-        /// </summary>
-        /// <typeparam name="Y"></typeparam>
-        /// <param name="from">List of objects with the member</param>
-        /// <param name="expression">The member the need to be loaded</param>
-        /// <returns></returns>
-        public static Task<VoidWithError> LoadReverseLink<Y>(List<T>? from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
+        public static Task<VoidWithError> Load(List<T> from, Expression<Func<T, object?>> expression)
         {
-            ResultWithError<List<T>> realFrom = new ResultWithError<List<T>>() { Result = from };
-            return LoadReverseLink(realFrom, expression);
+            return Load(from, [expression]);
         }
-        /// <summary>
-        /// Allow to load a member of type List marked ReverseLink
-        /// </summary>
-        /// <typeparam name="Y"></typeparam>
-        /// <param name="from">List of objects with the member</param>
-        /// <param name="expression">The member the need to be loaded</param>
-        /// <returns></returns>
-        public static Task<VoidWithError> LoadReverseLink<Y>(ResultWithError<List<T>> from, Expression<Func<T, List<Y>>> expression) where Y : IStorable
+        public static Task<VoidWithError> Load(List<T> from, List<Expression<Func<T, object?>>> expressions)
         {
-            return LoaderHelper.LoadReverseLink(from, expression);
+            return Load(new ResultWithError<List<T>>() { Result = from }, expressions);
         }
+        public static Task<VoidWithError> Load(ResultWithError<List<T>> from, Expression<Func<T, object?>> expression)
+        {
+            return Load(from, [expression]);
+        }
+        public static Task<VoidWithError> Load(ResultWithError<List<T>> from, List<Expression<Func<T, object?>>> expressions)
+        {
+            return LoaderHelper.LoadInternal(from, expressions);
+        }
+        #endregion
     }
 
 

@@ -471,13 +471,13 @@ namespace AventusSharp.Routes
                 object? o = routerInfo.action.Invoke(routerInfo.router, param);
                 if (o is Task task)
                 {
-                    task.Wait();
+                    await (dynamic)task;
                     if (!o.GetType().IsGenericType)
                     {
                         context.Response.StatusCode = 204;
                         return;
                     }
-                    o = o.GetType().GetProperty("Result")?.GetValue(o);
+                    o = ((dynamic)task).Result;
                 }
 
                 if (o is IResponse response)

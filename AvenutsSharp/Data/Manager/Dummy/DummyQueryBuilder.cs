@@ -9,25 +9,51 @@ namespace AventusSharp.Data.Manager.Dummy
 {
     public class DummyQueryBuilder<T> : IQueryBuilder<T>
     {
+        public IQueryBuilder<T> Field<U>(Expression<Func<T, U?>> memberExpression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> Field(LambdaExpression memberExpression)
+        {
+            throw new NotImplementedException();
+        }
 
         public IQueryBuilder<T> Fields()
         {
             throw new NotImplementedException();
         }
-        public IQueryBuilder<T> Field<U>(Expression<Func<T, U>> memberExpression)
+
+        public IQueryBuilder<T> Group<U>(Expression<Func<T, U?>> expression)
         {
             throw new NotImplementedException();
         }
 
-        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U>> memberExpression)
+        public IQueryBuilder<T> Group(LambdaExpression expression)
         {
             throw new NotImplementedException();
         }
 
-        public IQueryBuilder<T> Include(Expression<Func<T, IStorable?>> memberExpression)
+        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U?>> memberExpression)
         {
             throw new NotImplementedException();
         }
+
+        public IQueryBuilder<T> Ignore(LambdaExpression memberExpression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> Include<Y>(Expression<Func<T, Y?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> Include<Y>(Expression<Func<T, List<Y>?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+        
 
         public IQueryBuilder<T> Limit(int? limit)
         {
@@ -35,11 +61,6 @@ namespace AventusSharp.Data.Manager.Dummy
         }
 
         public IQueryBuilder<T> Offset(int? offset)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IQueryBuilder<T> Prepare(params object[] objects)
         {
             throw new NotImplementedException();
         }
@@ -54,11 +75,6 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
-        public IQueryBuilder<T> SetVariable(string name, object value)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<T?> Single()
         {
             throw new NotImplementedException();
@@ -69,12 +85,12 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
-        public IQueryBuilder<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort)
+        public IQueryBuilder<T> Sort<U>(Expression<Func<T, U?>> expression, Sort? sort)
         {
             throw new NotImplementedException();
         }
 
-        public IQueryBuilder<T> Group<U>(Expression<Func<T, U>> expression)
+        public IQueryBuilder<T> Sort(LambdaExpression expression, Sort? sort)
         {
             throw new NotImplementedException();
         }
@@ -93,6 +109,7 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
+
         public IQueryBuilder<T> Where(string search, List<string> fields)
         {
             throw new NotImplementedException();
@@ -113,5 +130,10 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
+        IQueryBuilder<T> IQueryBuilder<T>.Include(LambdaExpression expression, List<LambdaExpression>? fields)
+        {
+            throw new NotImplementedException();
+        }
+        
     }
 }

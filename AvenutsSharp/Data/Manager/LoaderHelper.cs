@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Tools;
+using Microsoft.Net.Http.Headers;
 
 namespace AventusSharp.Data.Manager;
 
 
 public class LoaderHelper
 {
-    public static async Task<ResultWithError<List<Y>>> LoadDependances<X, Y>(ResultWithError<List<X>> from, Func<X, int> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
+
+    #region Load object from Id
+    public static async Task<ResultWithError<List<Y>>> LoadObjectFromId<X, Y>(ResultWithError<List<X>> from, Func<X, int> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
     {
         ResultWithError<List<Y>> result = new ResultWithError<List<Y>>();
         if (!from.Success || from.Result == null)
@@ -58,7 +61,7 @@ public class LoaderHelper
         return result;
     }
 
-    public static async Task<ResultWithError<List<Y>>> LoadDependancesList<X, Y>(ResultWithError<List<X>> from, Func<X, List<int>> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
+    public static async Task<ResultWithError<List<Y>>> LoadObjectsFromIds<X, Y>(ResultWithError<List<X>> from, Func<X, List<int>> fct, Action<X, Y> set) where X : IStorable where Y : IStorable
     {
         ResultWithError<List<Y>> result = new ResultWithError<List<Y>>();
         if (!from.Success || from.Result == null)
@@ -109,21 +112,10 @@ public class LoaderHelper
         return result;
     }
 
-    public static Task<VoidWithError> LoadReverseLink<X, Y>(ResultWithError<List<X>> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
-    {
-        string name = LambdaTranslator.ExtractName(expression);
-        return LoadReverseLinkInternal<X, Y>(from, name);
-    }
-    public static Task<VoidWithError> LoadReverseLink<X, Y>(List<X> from, Expression<Func<X, List<Y>>> expression) where X : IStorable where Y : IStorable
-    {
-        string name = LambdaTranslator.ExtractName(expression);
-        return LoadReverseLinkInternalList<X, Y>(from, name);
-    }
-    internal static Task<VoidWithError> LoadReverseLinkInternalList<X, Y>(List<X> from, string name) where X : IStorable where Y : IStorable
-    {
-        return LoadReverseLinkInternal<X, Y>(new ResultWithError<List<X>>() { Result = from }, name);
-    }
-    internal static async Task<VoidWithError> LoadReverseLinkInternal<X, Y>(ResultWithError<List<X>> from, string name) where X : IStorable where Y : IStorable
+    #endregion
+
+    #region Load
+    internal static async Task<VoidWithError> LoadInternal<X>(ResultWithError<List<X>> from, List<Expression<Func<X, object?>>> expressions) where X : IStorable
     {
         VoidWithError result = new VoidWithError();
         if (!from.Success || from.Result == null)
@@ -131,184 +123,64 @@ public class LoaderHelper
             result.Errors = from.Errors;
             return result;
         }
-        List<int> ids = new List<int>();
-        Dictionary<int, List<X>> elements = new();
-        foreach (X item in from.Result)
-        {
-            if (!ids.Contains(item.Id))
-            {
-                ids.Add(item.Id);
-                elements[item.Id] = new();
-            }
-            elements[item.Id].Add(item);
-        }
+        if (expressions.Count == 0) return result;
 
-        if (ids.Count > 0)
+        try
         {
             IGenericDM dmX = GenericDM.Get<X>();
-            IGenericDM dmY = GenericDM.Get<Y>();
-            ResultWithError<DataMemberInfo> memberXQuery = dmX.GetMemberInfo<X>(name);
-            if (memberXQuery.Result != null && memberXQuery.Success)
+            Dictionary<int, X> elements = from.Result.ToDictionary(p => p.Id, p => p);
+            List<int> ids = elements.Keys.ToList();
+
+            if (ids.Count > 0)
             {
-                ReverseLink? reverseLinkAttr = memberXQuery.Result.GetCustomAttribute<ReverseLink>();
-                if (reverseLinkAttr == null)
+                var query = dmX.CreateQuery<X>();
+                query.Field(p => p.Id);
+
+                List<List<DataMemberInfo>> fields = new();
+                foreach (var exp in expressions)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, "The field " + memberXQuery.Result.Name + " isn't a ReverseLink"));
-                    return result;
+                    fields.Add(LambdaTranslator.ExtractMembers(exp));
+                    query.Field(exp);
                 }
+                query.Where(p => ids.Contains(p.Id));
+                List<X>? resultTemp = await result.ExtractAsync(query.RunWithError);
+                if (resultTemp == null) return result;
 
-                string? reverseName = reverseLinkAttr.field;
-                DataMemberInfo? reverseMember = null;
-                if (reverseName != null)
+                foreach (X itemTemp in resultTemp)
                 {
-                    ResultWithError<DataMemberInfo> memberYQuery = dmY.GetMemberInfo<Y>(reverseName);
+                    if (!elements.ContainsKey(itemTemp.Id)) continue;
+                    X realItem = elements[itemTemp.Id];
 
-                    if (memberYQuery.Result != null && memberYQuery.Success)
+                    foreach (List<DataMemberInfo> fieldStep in fields)
                     {
-                        reverseMember = memberYQuery.Result;
-                    }
-                    else
-                    {
-                        result.Errors.AddRange(memberYQuery.Errors);
-                        result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The name " + reverseName + " can't be found on " + TypeTools.GetReadableName(typeof(Y))));
-                    }
-                }
-                else
-                {
-                    ResultWithError<List<DataMemberInfo>> membersYQuery = dmY.GetMembersInfo<Y, X>();
-                    if (membersYQuery.Result != null)
-                    {
-                        membersYQuery.Result = membersYQuery.Result.Where(p => p.GetCustomAttribute<NotInDB>() == null).ToList();
-                    }
-                    if (membersYQuery.Result != null && membersYQuery.Success)
-                    {
-                        if (membersYQuery.Result.Count > 1)
+                        object? o1 = realItem;
+                        object? o2 = itemTemp;
+                        for (int i = 0; i < fieldStep.Count; i++)
                         {
-                            result.Errors.Add(
-                                new DataError(
-                                    DataErrorCode.TooMuchMemberFound,
-                                    "Too much matching type " + TypeTools.GetReadableName(typeof(X)) + " on type " + TypeTools.GetReadableName(typeof(Y)) + ". Please define a name (" + string.Join(", ", membersYQuery.Result.Select(s => s.Name)) + ")"
-                                )
-                            );
-                        }
-                        else if (membersYQuery.Result.Count == 0)
-                        {
-                            membersYQuery = dmY.GetMembersInfo<Y, int>();
-                            if (membersYQuery.Result != null && membersYQuery.Success)
-                            {
-                                membersYQuery.Result = membersYQuery.Result.Where(p => p.GetCustomAttribute<ForeignKey<X>>() != null).ToList();
-                                if (membersYQuery.Result.Count > 1)
-                                {
-                                    result.Errors.Add(
-                                        new DataError(
-                                            DataErrorCode.TooMuchMemberFound,
-                                            "Too much matching type " + TypeTools.GetReadableName(typeof(X)) + " on type " + TypeTools.GetReadableName(typeof(Y)) + ". Please define a name (" + string.Join(", ", membersYQuery.Result.Select(s => s.Name)) + ")"
-                                        )
-                                    );
-                                }
-                                else if (membersYQuery.Result.Count == 0)
-                                {
-                                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The type " + TypeTools.GetReadableName(typeof(X)) + " can't be found on " + TypeTools.GetReadableName(typeof(Y))));
-                                }
-                                else
-                                {
-                                    reverseMember = membersYQuery.Result[0];
-                                }
-                            }
-                            else
-                            {
-                                result.Errors.AddRange(membersYQuery.Errors);
-                            }
-                        }
-                        else
-                        {
-                            reverseMember = membersYQuery.Result[0];
-                        }
-                    }
-                    else
-                    {
-                        result.Errors.AddRange(membersYQuery.Errors);
-                    }
-                }
+                            DataMemberInfo field = fieldStep[i];
+                            o2 = field.GetValue(o2);
+                            if (o2 == null) break;
 
-                if (reverseMember != null)
-                {
-                    ParameterExpression argParam = Expression.Parameter(typeof(Y), "t");
-                    Expression nameProperty = Expression.PropertyOrField(argParam, reverseMember.Name);
-                    Expression body;
-                    if (reverseMember.IsNullable)
-                    {
-                        List<int?> idsNull = ids.Select(p => (int?)p).ToList();
-                        Expression<Func<List<int?>>> idLambda = () => idsNull;
-                        body = idLambda.Body;
-                    }
-                    else
-                    {
-                        Expression<Func<List<int>>> idLambda = () => ids;
-                        body = idLambda.Body;
-                    }
-
-                    Expression e1 = Expression.Call(body, "Contains", Type.EmptyTypes, nameProperty);
-                    Expression<Func<Y, bool>> lambda = (Expression<Func<Y, bool>>)Expression.Lambda(e1, argParam);
-
-                    ResultWithError<List<Y>> linkedElement = await dmY.WhereWithError(lambda);
-                    if (linkedElement.Success && linkedElement.Result != null)
-                    {
-                        foreach (Y item in linkedElement.Result)
-                        {
-                            object? reverseItem = reverseMember.GetValue(item);
-                            List<X> elementList = new();
-                            if (reverseItem is int reverseId)
+                            object? o1Temp = field.GetValue(o1);
+                            if (o1Temp == null || i == fieldStep.Count - 1)
                             {
-                                elementList = elements[reverseId];
+                                field.SetValue(o1, o2);
+                                break;
                             }
-                            else if (reverseItem is IStorable reverseItem2)
-                            {
-                                elementList = elements[reverseItem2.Id];
-                            }
-                            foreach (X element in elementList)
-                            {
-                                object? list = memberXQuery.Result.GetValue(element);
-                                if (list is null)
-                                {
-                                    bool isList = memberXQuery.Result.Type?.GetInterfaces().Contains(typeof(IList)) ?? false;
-                                    if (isList)
-                                    {
-                                        list = Activator.CreateInstance(memberXQuery.Result.Type!);
-                                        memberXQuery.Result.SetValue(element, list);
-                                    }
-                                }
-                                if (list is IList Ilist)
-                                {
-                                    Ilist.Add(item);
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        memberXQuery.Result.SetValue(element, item);
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-                                    }
-                                }
-                            }
+                            o1 = o1Temp;
                         }
-                    }
-                    else
-                    {
-                        result.Errors.AddRange(linkedElement.Errors);
                     }
                 }
             }
-            else
-            {
-                result.Errors.AddRange(memberXQuery.Errors);
-            }
+        }
+        catch (Exception e)
+        {
+            result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
         }
 
         return result;
     }
+
+    #endregion
 
 }

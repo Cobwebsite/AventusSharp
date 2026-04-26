@@ -49,12 +49,15 @@ namespace AventusSharp.Data
         TooMuchMemberFound,
         TypeNotFound,
         ReverseLinkNotExist,
+        ReverseLinkExist,
         ErrorCreatingReverseQuery,
         LinkNotSet,
         MultipleProvidersNotSet,
         FileNotFound,
         PyramidNotFound,
-        IsReadOnly
+        IsReadOnly,
+        ReverseLinkNotPrepared,
+        ExternalStorageNotPrepared,
     }
 
 

@@ -117,54 +117,6 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             return result;
         }
 
-        public async Task<VoidWithDataError> ReverseLoadAndSet(IStorable o)
-        {
-            VoidWithDataError result = new();
-            if (TableLinked == null)
-            {
-                result.Errors.Add(new DataError(DataErrorCode.LinkNotSet, "The table linked isn't set => internal error : contact an admin"));
-                return result;
-            }
-            object? iresultTemp = GetType().GetMethod("_ReverseQuery", BindingFlags.NonPublic | BindingFlags.Instance)?.MakeGenericMethod(TableLinked.Type).Invoke(this, new object[] { o.Id });
-            if (iresultTemp is Task task)
-            {
-                task.Wait();
-                iresultTemp = o.GetType().GetProperty("Result")?.GetValue(iresultTemp);
-                if (iresultTemp is IResultWithError resultTemp)
-                {
-                    if (resultTemp.Errors.Count > 0)
-                    {
-                        foreach (var errorTemp in resultTemp.Errors)
-                        {
-                            if (errorTemp is DataError dataError)
-                            {
-                                result.Errors.Add(dataError);
-                            }
-                        }
-                        return result;
-                    }
-
-
-                    if (isSingle)
-                    {
-                        if (resultTemp.Result is IList list && list.Count > 0)
-                        {
-                            SetValue(o, list[0]);
-                        }
-                        else
-                        {
-                            SetValue(o, null);
-                        }
-                    }
-                    else
-                    {
-                        SetValue(o, resultTemp.Result);
-                    }
-                }
-            }
-
-            return result;
-        }
         public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(int Id)
         {
             ResultWithDataError<List<IStorable>> result = new();
@@ -297,27 +249,6 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
             }
             result.Result = elements.Select(p => p.Value).ToList();
-            return result;
-        }
-
-        private async Task<ResultWithDataError<List<X>>> _ReverseQuery<X>(int id) where X : IStorable
-        {
-            ResultWithDataError<List<X>> result = new ResultWithDataError<List<X>>();
-            ResultWithDataError<List<IStorable>> resultTemp = await ReverseQuery(id);
-            result.Result = new List<X>();
-            if (!resultTemp.Success || resultTemp.Result == null)
-            {
-                result.Errors.AddRange(resultTemp.Errors);
-                return result;
-            }
-
-            foreach (IStorable storable in resultTemp.Result)
-            {
-                if (storable is X converted)
-                {
-                    result.Result.Add(converted);
-                }
-            }
             return result;
         }
 

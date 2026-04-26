@@ -8,647 +8,624 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace AventusSharp.Data.Manager.DB
+namespace AventusSharp.Data.Manager.DB;
+
+public enum Sort
 {
-    public enum Sort
+    ASC,
+    DESC
+}
+public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
+{
+    public Dictionary<string, bool> AllMembersByPath = new Dictionary<string, bool>() { { "", true } };
+    public IDBStorage Storage { get; private set; }
+
+    public IGenericDM DM { get; private set; }
+
+    public Dictionary<string, DatabaseBuilderInfo> InfoByPath { get; set; } = new Dictionary<string, DatabaseBuilderInfo>();
+
+    public List<string> Aliases { get; set; } = new();
+    public Dictionary<Type, TableInfo> LoadedTableInfo { get; set; } = new Dictionary<Type, TableInfo>();
+    public List<IWhereRootGroup>? Wheres { get; set; } = null;
+    public bool ReplaceWhereByParameters { get; set; } = false;
+
+    public Dictionary<string, ParamsInfo> WhereParamsInfo { get; set; } = new Dictionary<string, ParamsInfo>(); // type is the type of the variable to use
+
+    public int? LimitSize { get; private set; } = null;
+    public int? OffsetSize { get; private set; } = null;
+    public List<SortInfo>? Sorting { get; private set; } = null;
+    public List<GroupInfo>? Groups { get; private set; } = null;
+
+    public WhereGroup? Scopes { get; set; }
+
+    public List<GenericError> Errors { get; private set; } = new List<GenericError>();
+
+    internal List<TableMemberInfoSql> Included { get; private set; } = new List<TableMemberInfoSql>();
+    internal Dictionary<string, DatabaseSubBuilder> SubQueries { get; private set; } = new();
+
+
+    public DatabaseGenericBuilder(IDBStorage storage, IGenericDM DM, Type? baseType = null) : base()
     {
-        ASC,
-        DESC
+        Storage = storage;
+        this.DM = DM;
+        // load basic info for the main class
+        if (baseType == null)
+        {
+            baseType = typeof(T);
+        }
+        TableInfo tableInfo = GetTableInfo(baseType);
+        LoadTable(tableInfo, "");
     }
-    public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
+
+    protected TableInfo GetTableInfo(Type u)
     {
-        public Dictionary<string, bool> AllMembersByPath = new Dictionary<string, bool>() { { "", true } };
-        public IDBStorage Storage { get; private set; }
-
-        public IGenericDM DM { get; private set; }
-
-        public Dictionary<string, DatabaseBuilderInfo> InfoByPath { get; set; } = new Dictionary<string, DatabaseBuilderInfo>();
-
-        public List<string> Aliases { get; set; } = new();
-        public Dictionary<Type, TableInfo> LoadedTableInfo { get; set; } = new Dictionary<Type, TableInfo>();
-        public List<IWhereRootGroup>? Wheres { get; set; } = null;
-        public bool ReplaceWhereByParameters { get; set; } = false;
-
-        public Dictionary<string, ParamsInfo> WhereParamsInfo { get; set; } = new Dictionary<string, ParamsInfo>(); // type is the type of the variable to use
-
-        public int? LimitSize { get; private set; } = null;
-        public int? OffsetSize { get; private set; } = null;
-        public List<SortInfo>? Sorting { get; private set; } = null;
-        public List<GroupInfo>? Groups { get; private set; } = null;
-
-        public WhereGroup? Scopes { get; set; }
-
-        public List<GenericError> Errors { get; private set; } = new List<GenericError>();
-
-
-        public DatabaseGenericBuilder(IDBStorage storage, IGenericDM DM, Type? baseType = null) : base()
+        if (LoadedTableInfo.ContainsKey(u))
         {
-            Storage = storage;
-            this.DM = DM;
-            // load basic info for the main class
-            if (baseType == null)
-            {
-                baseType = typeof(T);
-            }
-            TableInfo tableInfo = GetTableInfo(baseType);
-            LoadTable(tableInfo, "");
+            return LoadedTableInfo[u];
         }
 
-        protected TableInfo GetTableInfo(Type u)
+        TableInfo? tableInfo = Storage.GetTableInfo(u);
+        if (tableInfo != null)
         {
-            if (LoadedTableInfo.ContainsKey(u))
-            {
-                return LoadedTableInfo[u];
-            }
-
-            TableInfo? tableInfo = Storage.GetTableInfo(u);
-            if (tableInfo != null)
-            {
-                LoadedTableInfo.Add(u, tableInfo);
-                return tableInfo;
-            }
-            throw new Exception();
+            LoadedTableInfo.Add(u, tableInfo);
+            return tableInfo;
         }
-        public string CreateAlias(TableInfo tableInfo)
+        throw new Exception();
+    }
+    public string CreateAlias(TableInfo tableInfo)
+    {
+        return CreateAlias(tableInfo.Type);
+    }
+    public string CreateAlias(Type type)
+    {
+        string alias = string.Concat(type.Name.Where(c => char.IsUpper(c)));
+        if (alias.Length == 0)
         {
-            return CreateAlias(tableInfo.Type);
+            alias = type.Name[..2];
         }
-        public string CreateAlias(Type type)
+        int i = 1;
+        string baseAlias = alias;
+        while (Aliases.Contains(alias))
         {
-            string alias = string.Concat(type.Name.Where(c => char.IsUpper(c)));
-            if (alias.Length == 0)
-            {
-                alias = type.Name[..2];
-            }
-            int i = 1;
-            string baseAlias = alias;
-            while (Aliases.Contains(alias))
-            {
-                alias = baseAlias + i;
-                i++;
-            }
-            Aliases.Add(alias);
-            return alias;
+            alias = baseAlias + i;
+            i++;
         }
-        public string CreateAlias(TableInfo tableInfo1, TableInfo tableInfo2)
+        Aliases.Add(alias);
+        return alias;
+    }
+    public string CreateAlias(TableInfo tableInfo1, TableInfo tableInfo2)
+    {
+        return CreateAlias(tableInfo1.Type, tableInfo2.Type);
+    }
+    public string CreateAlias(Type type1, Type type2)
+    {
+        string alias1 = string.Concat(type1.Name.Where(c => char.IsUpper(c)));
+        if (alias1.Length == 0)
         {
-            return CreateAlias(tableInfo1.Type, tableInfo2.Type);
+            alias1 = type1.Name[..2];
         }
-        public string CreateAlias(Type type1, Type type2)
+        string alias2 = string.Concat(type2.Name.Where(c => char.IsUpper(c)));
+        if (alias2.Length == 0)
         {
-            string alias1 = string.Concat(type1.Name.Where(c => char.IsUpper(c)));
-            if (alias1.Length == 0)
-            {
-                alias1 = type1.Name[..2];
-            }
-            string alias2 = string.Concat(type2.Name.Where(c => char.IsUpper(c)));
-            if (alias2.Length == 0)
-            {
-                alias2 = type2.Name[..2];
-            }
-            int i = 1;
-            string baseAlias = alias1 + alias2;
-            string alias = alias1 + alias2;
-            while (Aliases.Contains(alias))
-            {
-                alias = baseAlias + i;
-                i++;
-            }
-            Aliases.Add(alias);
-            return alias;
+            alias2 = type2.Name[..2];
         }
-
-        protected DatabaseBuilderInfo LoadTable(TableInfo table, string path)
+        int i = 1;
+        string baseAlias = alias1 + alias2;
+        string alias = alias1 + alias2;
+        while (Aliases.Contains(alias))
         {
-            if (InfoByPath.ContainsKey(path))
+            alias = baseAlias + i;
+            i++;
+        }
+        Aliases.Add(alias);
+        return alias;
+    }
+
+    protected DatabaseBuilderInfo LoadTable(TableInfo table, string path)
+    {
+        if (InfoByPath.ContainsKey(path))
+        {
+            return InfoByPath[path];
+        }
+        string alias = CreateAlias(table);
+
+        DatabaseBuilderInfo info = new(alias, table);
+        InfoByPath[path] = info;
+
+        if (table.Scopes.Count > 0)
+        {
+            if (Scopes == null) Scopes = new();
+
+            LambdaTranslator<T> translator = new(this);
+            foreach (var scope in table.Scopes)
             {
-                return InfoByPath[path];
-            }
-            string alias = CreateAlias(table);
+                if (Scopes.Groups.Count > 0)
+                    Scopes.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
 
-            DatabaseBuilderInfo info = new(alias, table);
-            InfoByPath[path] = info;
-
-            if (table.Scopes.Count > 0)
-            {
-                if (Scopes == null) Scopes = new();
-
-                LambdaTranslator<T> translator = new(this);
-                foreach (var scope in table.Scopes)
+                var translateResult = translator.Translate(scope);
+                if (!translateResult.IsExternal)
                 {
-                    if (Scopes.Groups.Count > 0)
-                        Scopes.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
-                    Scopes.Groups.AddRange(translator.Translate(scope));
-                }
-            }
-
-            LoadParent(table, info);
-            LoadChildren(table, info, info.Children);
-            return info;
-        }
-        protected void LoadParent(TableInfo table, DatabaseBuilderInfo info)
-        {
-            if (table.Parent != null)
-            {
-                TableInfo parent = table.Parent;
-                string alias = CreateAlias(parent);
-                info.Parents[parent] = alias;
-                LoadParent(parent, info);
-            }
-        }
-        protected void LoadChildren(TableInfo table, DatabaseBuilderInfo info, List<DatabaseBuilderInfoChild> list)
-        {
-            foreach (TableInfo child in table.Children)
-            {
-                DatabaseBuilderInfoChild childInfo = new(CreateAlias(child), child);
-                list.Add(childInfo);
-                LoadChildren(child, info, childInfo.Children);
-            }
-        }
-
-        public void LoadLinks(List<string> pathSplitted, List<Type> types, bool addLinksToMembers)
-        {
-            string currentPath = "";
-            for (int i = 0; i < pathSplitted.Count; i++)
-            {
-                DatabaseBuilderInfo parentInfo = InfoByPath[currentPath];
-                if (types[i].GetInterfaces().Contains(typeof(IStorable)))
-                {
-                    if (i > 0)
-                    {
-                        currentPath += ".";
-                    }
-                    currentPath += pathSplitted[i];
-
-
-                    if (!InfoByPath.ContainsKey(currentPath))
-                    {
-                        KeyValuePair<TableMemberInfoSql?, string> memberInfo = parentInfo.GetTableMemberInfoAndAlias(pathSplitted[i]);
-                        if (memberInfo.Key != null)
-                        {
-
-                            DatabaseBuilderInfo currentTable = LoadTable(GetTableInfo(types[i]), currentPath);
-                            parentInfo.joins[memberInfo.Key] = currentTable;
-                            if (addLinksToMembers)
-                            {
-                                parentInfo.Members.Add(memberInfo.Key, new DatabaseBuilderInfoMember(memberInfo.Key, memberInfo.Value, Storage));
-                                if (i == pathSplitted.Count - 1)
-                                {
-                                    AllMembersByPath[currentPath] = true;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            throw new Exception("Can't query " + pathSplitted[i] + " on " + parentInfo.TableInfo.Type.Name);
-                        }
-                    }
-                    else if (addLinksToMembers)
-                    {
-                        KeyValuePair<TableMemberInfoSql?, string> memberInfo = parentInfo.GetTableMemberInfoAndAlias(pathSplitted[i]);
-                        if (memberInfo.Key != null && !parentInfo.Members.ContainsKey(memberInfo.Key))
-                        {
-                            parentInfo.Members.Add(memberInfo.Key, new DatabaseBuilderInfoMember(memberInfo.Key, memberInfo.Value, Storage));
-                            if (i == pathSplitted.Count - 1)
-                            {
-                                AllMembersByPath[currentPath] = true;
-                            }
-                        }
-                    }
+                    Scopes.Groups.AddRange(translateResult.Wheres);
                 }
                 else
                 {
-                    Type? listType = TableMemberInfoSql.IsListTypeUsable(types[i]);
-                    if (listType != null)
-                    {
-                        if (i > 0)
-                        {
-                            currentPath += ".";
-                        }
-                        currentPath += pathSplitted[i];
-
-                        if (!InfoByPath.ContainsKey(currentPath))
-                        {
-                            TableMemberInfoSql? memberInfo = parentInfo.GetTableMemberInfo(pathSplitted[i]);
-                            if (memberInfo is ITableMemberInfoSqlLinkMultiple multiple && multiple.TableLinked != null)
-                            {
-                                if (!parentInfo.joinsNM.ContainsKey(multiple))
-                                {
-                                    parentInfo.joinsNM.Add(multiple, CreateAlias(parentInfo.TableInfo, multiple.TableLinked));
-                                }
-                            }
-                            else
-                            {
-                                throw new Exception("Can't query " + pathSplitted[i] + " on " + parentInfo.TableInfo.Type.Name);
-                            }
-                        }
-                    }
+                    throw new NotImplementedException("Missing implementation to scope with external subquery");
                 }
             }
         }
 
-        protected void WhereGeneric(Expression<Func<T, bool>> expression)
+        LoadParent(table, info);
+        LoadChildren(table, info, info.Children);
+        return info;
+    }
+    protected void LoadParent(TableInfo table, DatabaseBuilderInfo info)
+    {
+        if (table.Parent != null)
         {
-            if (Wheres != null)
-            {
-                throw new Exception("Can't use twice the where action");
-            }
-            ReplaceWhereByParameters = false;
-            LambdaTranslator<T> translator = new(this);
-            Wheres = translator.Translate(expression);
+            TableInfo parent = table.Parent;
+            string alias = CreateAlias(parent);
+            info.Parents[parent] = alias;
+            LoadParent(parent, info);
         }
-        protected void WhereGenericWithParameters(Expression<Func<T, bool>> expression)
+    }
+    protected void LoadChildren(TableInfo table, DatabaseBuilderInfo info, List<DatabaseBuilderInfoChild> list)
+    {
+        foreach (TableInfo child in table.Children)
         {
-            if (Wheres != null)
-            {
-                throw new Exception("Can't use twice the where action");
-            }
-            ReplaceWhereByParameters = true;
-            LambdaTranslator<T> translator = new(this);
-            Wheres = translator.Translate(expression);
+            DatabaseBuilderInfoChild childInfo = new(CreateAlias(child), child);
+            list.Add(childInfo);
+            LoadChildren(child, info, childInfo.Children);
         }
-        protected void PrepareGeneric(params object[] objects)
+    }
+
+    protected void WhereGeneric(Expression<Func<T, bool>> expression)
+    {
+        if (Wheres != null)
         {
-            List<ParamsInfo> toSet = WhereParamsInfo.Values.ToList();
-            foreach (object obj in objects)
+            throw new Exception("Can't use twice the where action");
+        }
+        ReplaceWhereByParameters = false;
+        LambdaTranslator<T> translator = new(this);
+        TranslateResult translateResult = translator.Translate(expression);
+        if (!translateResult.IsExternal)
+        {
+            Wheres = translateResult.Wheres;
+        }
+        else
+        {
+            // TODO ignore in sub query
+            throw new NotImplementedException("Missing implementation to where external subquery");
+        }
+    }
+    protected void WhereGenericWithParameters(Expression<Func<T, bool>> expression)
+    {
+        if (Wheres != null)
+        {
+            throw new Exception("Can't use twice the where action");
+        }
+        ReplaceWhereByParameters = true;
+        LambdaTranslator<T> translator = new(this);
+        TranslateResult translateResult = translator.Translate(expression);
+        if (!translateResult.IsExternal)
+        {
+            Wheres = translateResult.Wheres;
+        }
+        else
+        {
+            // TODO ignore in sub query
+            throw new NotImplementedException("Missing implementation to where external subquery");
+        }
+    }
+    protected void PrepareGeneric(params object[] objects)
+    {
+        List<ParamsInfo> toSet = WhereParamsInfo.Values.ToList();
+        foreach (object obj in objects)
+        {
+            foreach (ParamsInfo info in toSet)
             {
-                foreach (ParamsInfo info in toSet)
+                if (obj.GetType() == info.TypeLvl0)
+                {
+                    info.SetValue(obj);
+                    OnVariableSet(info, obj);
+                    toSet.Remove(info);
+                    // set by order first
+                    break;
+                }
+            }
+        }
+        if (toSet.Count > 0)
+        {
+            List<ParamsInfo> toSetClone = toSet.ToList();
+            foreach (ParamsInfo info in toSetClone)
+            {
+                foreach (object obj in objects)
                 {
                     if (obj.GetType() == info.TypeLvl0)
                     {
                         info.SetValue(obj);
                         OnVariableSet(info, obj);
                         toSet.Remove(info);
-                        // set by order first
+                        // set if same variable used by multiple params
                         break;
                     }
                 }
             }
             if (toSet.Count > 0)
             {
-                List<ParamsInfo> toSetClone = toSet.ToList();
-                foreach (ParamsInfo info in toSetClone)
-                {
-                    foreach (object obj in objects)
-                    {
-                        if (obj.GetType() == info.TypeLvl0)
-                        {
-                            info.SetValue(obj);
-                            OnVariableSet(info, obj);
-                            toSet.Remove(info);
-                            // set if same variable used by multiple params
-                            break;
-                        }
-                    }
-                }
-                if (toSet.Count > 0)
-                {
-                    throw new Exception("Can't found a value to set for variables : " + string.Join(", ", toSet.Select(t => t.Name)));
-                }
+                throw new Exception("Can't found a value to set for variables : " + string.Join(", ", toSet.Select(t => t.Name)));
             }
         }
+    }
 
-        protected virtual void OnVariableSet(ParamsInfo param, object fromObject)
-        {
+    protected virtual void OnVariableSet(ParamsInfo param, object fromObject)
+    {
 
-        }
-        protected void SetVariableGeneric(string name, object value)
+    }
+    protected void SetVariableGeneric(string name, object value)
+    {
+        foreach (KeyValuePair<string, ParamsInfo> paramInfo in WhereParamsInfo)
         {
-            foreach (KeyValuePair<string, ParamsInfo> paramInfo in WhereParamsInfo)
+            if (paramInfo.Value.IsNameSimilar(name))
             {
-                if (paramInfo.Value.IsNameSimilar(name))
-                {
-                    paramInfo.Value.SetValue(value);
-                    OnVariableSet(paramInfo.Value, value);
-                }
+                paramInfo.Value.SetValue(value);
+                OnVariableSet(paramInfo.Value, value);
             }
         }
-        protected void FieldsGeneric()
+    }
+    protected void FieldsGeneric()
+    {
+        string fullPath = "";
+        if (AllMembersByPath[fullPath])
         {
-            string fullPath = "";
+            Storage.LoadAllTableFieldsQuery(InfoByPath[fullPath].TableInfo, InfoByPath[fullPath].Alias, InfoByPath[fullPath], new List<string>(), new List<Type>(), this);
+            AllMembersByPath[fullPath] = false;
+        }
+    }
+    protected string FieldGeneric<X>(Expression<Func<T, X>> expression)
+    {
+        return FieldGeneric((LambdaExpression)expression);
+    }
+    protected string FieldGeneric(LambdaExpression lambdaExpression)
+    {
+        LambdaIncludeResult lambdaResult = LambdaInclude(
+            lambdaExpression,
+            fields: null,
+            addToMembers: true
+        );
+        return string.Join(".", lambdaResult.Steps.Select(p => p.Name));
+    }
+    protected string IgnoreGeneric<X>(Expression<Func<T, X>> expression)
+    {
+        return IgnoreGeneric((LambdaExpression)expression);
+    }
+    protected string IgnoreGeneric(LambdaExpression lambdaExpression)
+    {
+
+        LambdaIncludeResult lambdaResult = LambdaInclude(
+            lambdaExpression,
+            fields: null,
+            addToMembers: false
+        );
+
+        string fullPath = string.Join(".", lambdaResult.Steps.SkipLast(1).Select(p => p.Name));
+        string lastName = lambdaResult.Steps.Last().Name;
+        if (!lambdaResult.IsExternal)
+        {
             if (AllMembersByPath[fullPath])
             {
                 Storage.LoadAllTableFieldsQuery(InfoByPath[fullPath].TableInfo, InfoByPath[fullPath].Alias, InfoByPath[fullPath], new List<string>(), new List<Type>(), this);
                 AllMembersByPath[fullPath] = false;
             }
-        }
-        protected string FieldGeneric<X>(Expression<Func<T, X>> expression)
-        {
-            // TODO add WhereGroupFctSqlEnum management to get for example lowercase
-            // the strucutre must be Lambda => Convert? => (member x times)
-            if (expression is LambdaExpression lambdaExpression)
+            if (InfoByPath.ContainsKey(fullPath))
             {
-                Expression? exp = lambdaExpression.Body;
-                if (lambdaExpression.Body is UnaryExpression convertExpression)
+                KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(lastName);
+                if (memberInfo.Key != null)
                 {
-                    exp = convertExpression.Operand;
-                }
-
-                List<WhereGroupFctSqlEnum>? transformators = null;
-
-                while (exp is MethodCallExpression callExpression)
-                {
-                    WhereGroupFctSqlEnum? _fct = LambdaTranslator.GetFctSql(callExpression);
-                    if (_fct is WhereGroupFctSqlEnum fct)
+                    if (InfoByPath[fullPath].Members.ContainsKey(memberInfo.Key))
                     {
-                        if (transformators == null) transformators = new();
-                        transformators.Add(fct);
+                        InfoByPath[fullPath].Members.Remove(memberInfo.Key);
                     }
-                    else
-                    {
-                        throw new NotImplementedException("Can't find a method for " + callExpression.Method.Name + " on type " + LambdaTranslator.ExtractType(callExpression));
-                    }
-                    if (callExpression.Object != null)
-                    {
-                        exp = callExpression.Object;
-                    }
-                    else if (callExpression.Arguments.Count > 0)
-                    {
-                        exp = callExpression.Arguments[0];
-                    }
-                    else
-                    {
-                        exp = null;
-                    }
-                }
-
-
-
-                if (exp is MemberExpression memberExpression)
-                {
-                    List<Type> types = new();
-                    List<string> names = new();
-
-                    types.Insert(0, memberExpression.Type);
-                    names.Insert(0, memberExpression.Member.Name);
-
-                    Expression? temp = memberExpression.Expression;
-                    while (temp is MemberExpression temp2)
-                    {
-                        types.Insert(0, temp2.Type);
-                        names.Insert(0, temp2.Member.Name);
-                        temp = temp2.Expression;
-                    }
-
-                    LoadLinks(names, types, false);
-
-                    string fullPath = string.Join(".", names.SkipLast(1));
-                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
-                    if (memberInfo.Key != null)
-                    {
-                        AllMembersByPath[fullPath] = false;
-
-                        if (memberInfo.Key is ITableMemberInfoSqlLink)
-                        {
-                            AllMembersByPath[string.Join(".", names)] = true;
-                        }
-                        InfoByPath[fullPath].Members[memberInfo.Key] = new DatabaseBuilderInfoMember(memberInfo.Key, memberInfo.Value, Storage, transformators);
-                    }
-                    else
-                    {
-                        // if we can't find the members info maybe it's a reverse link
-                        TableReverseMemberInfo? reversMemberInfo = InfoByPath[fullPath].GetReverseTableMemberInfo(memberExpression.Member.Name);
-                        if (reversMemberInfo != null && !InfoByPath[fullPath].ReverseLinks.Contains(reversMemberInfo))
-                        {
-                            InfoByPath[fullPath].ReverseLinks.Add(reversMemberInfo);
-                        }
-                    }
-                    return fullPath != "" ? fullPath + "." + memberExpression.Member.Name : memberExpression.Member.Name;
                 }
             }
-
-            throw new Exception();
         }
-        protected string IgnoreGeneric<X>(Expression<Func<T, X>> expression)
+        else
         {
-            // TODO add WhereGroupFctSqlEnum management to get for example lowercase
-            // the strucutre must be Lambda => Convert? => (member x times)
-            if (expression is LambdaExpression lambdaExpression)
+            // TODO ignore in sub query
+            throw new NotImplementedException("Missing implementation to ignore in subquery");
+        }
+
+
+        return fullPath != "" ? fullPath + "." + lastName : lastName;
+
+    }
+    protected void SortGeneric<X>(Expression<Func<T, X>> expression, Sort sort)
+    {
+        SortGeneric((LambdaExpression)expression, sort);
+
+    }
+    protected void SortGeneric(LambdaExpression lambdaExpression, Sort sort)
+    {
+
+        if (Sorting == null)
+        {
+            Sorting = new List<SortInfo>();
+        }
+
+        LambdaIncludeResult lambdaResult = LambdaInclude(
+            lambdaExpression,
+            fields: null,
+            addToMembers: false
+        );
+        if (!lambdaResult.IsExternal)
+        {
+            string fullPath = string.Join(".", lambdaResult.Steps.SkipLast(1).Select(p => p.Name));
+            string lastName = lambdaResult.Steps.Last().Name;
+            KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(lastName);
+            if (memberInfo.Key != null)
             {
-                Expression exp = lambdaExpression.Body;
-                if (lambdaExpression.Body is UnaryExpression convertExpression)
-                {
-                    exp = convertExpression.Operand;
-                }
-
-                if (exp is MemberExpression memberExpression)
-                {
-                    List<Type> types = new();
-                    List<string> names = new();
-
-                    types.Insert(0, memberExpression.Type);
-                    names.Insert(0, memberExpression.Member.Name);
-
-                    Expression? temp = memberExpression.Expression;
-                    while (temp is MemberExpression temp2)
-                    {
-                        types.Insert(0, temp2.Type);
-                        names.Insert(0, temp2.Member.Name);
-                        temp = temp2.Expression;
-                    }
-
-
-                    LoadLinks(names, types, false);
-
-                    string fullPath = string.Join(".", names.SkipLast(1));
-                    if (AllMembersByPath[fullPath])
-                    {
-                        Storage.LoadAllTableFieldsQuery(InfoByPath[fullPath].TableInfo, InfoByPath[fullPath].Alias, InfoByPath[fullPath], new List<string>(), new List<Type>(), this);
-                        AllMembersByPath[fullPath] = false;
-                    }
-                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
-                    if (memberInfo.Key != null)
-                    {
-                        if (InfoByPath[fullPath].Members.ContainsKey(memberInfo.Key))
-                        {
-                            InfoByPath[fullPath].Members.Remove(memberInfo.Key);
-                        }
-                    }
-                    else
-                    {
-                        // // if we can't find the members info maybe it's a reverse link
-                        // TableReverseMemberInfo? reversMemberInfo = InfoByPath[fullPath].GetReverseTableMemberInfo(memberExpression.Member.Name);
-                        // if (reversMemberInfo != null && !InfoByPath[fullPath].ReverseLinks.Contains(reversMemberInfo))
-                        // {
-                        //     InfoByPath[fullPath].ReverseLinks.Add(reversMemberInfo);
-                        // }
-                    }
-                    return fullPath != "" ? fullPath + "." + memberExpression.Member.Name : memberExpression.Member.Name;
-                }
+                Sorting.Add(new SortInfo(memberInfo.Key, memberInfo.Value, sort));
             }
-
-            throw new Exception();
-        }
-        protected void SortGeneric<X>(Expression<Func<T, X>> expression, Sort sort)
-        {
-            // TODO add WhereGroupFctSqlEnum management to get for example lowercase
-            // the strucutre must be Lambda => Convert? => (member x times)
-            if (expression is LambdaExpression lambdaExpression)
+            else
             {
-                if (Sorting == null)
-                {
-                    Sorting = new List<SortInfo>();
-                }
-                Expression exp = lambdaExpression.Body;
-                if (lambdaExpression.Body is UnaryExpression convertExpression)
-                {
-                    exp = convertExpression.Operand;
-                }
-
-                if (exp is MemberExpression memberExpression)
-                {
-                    List<Type> types = new();
-                    List<string> names = new();
-
-                    types.Insert(0, memberExpression.Type);
-                    names.Insert(0, memberExpression.Member.Name);
-
-                    Expression? temp = memberExpression.Expression;
-                    while (temp is MemberExpression temp2)
-                    {
-                        types.Insert(0, temp2.Type);
-                        names.Insert(0, temp2.Member.Name);
-                        temp = temp2.Expression;
-                    }
-
-                    LoadLinks(names, types, false);
-
-                    string fullPath = string.Join(".", names.SkipLast(1));
-                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
-                    if (memberInfo.Key != null)
-                    {
-                        Sorting.Add(new SortInfo(memberInfo.Key, memberInfo.Value, sort));
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                    return;
-                }
+                throw new Exception("This kind of sort should be impossible");
             }
-
-            throw new Exception();
         }
-
-
-        protected void GroupGeneric<X>(Expression<Func<T, X>> expression)
+        else
         {
-            // TODO add WhereGroupFctSqlEnum management to get for example lowercase
-            // the strucutre must be Lambda => Convert? => (member x times)
-            if (expression is LambdaExpression lambdaExpression)
-            {
-                if (Groups == null)
-                {
-                    Groups = new();
-                }
-                Expression exp = lambdaExpression.Body;
-                if (lambdaExpression.Body is UnaryExpression convertExpression)
-                {
-                    exp = convertExpression.Operand;
-                }
-
-                if (exp is MemberExpression memberExpression)
-                {
-                    List<Type> types = new();
-                    List<string> names = new();
-
-                    types.Insert(0, memberExpression.Type);
-                    names.Insert(0, memberExpression.Member.Name);
-
-                    Expression? temp = memberExpression.Expression;
-                    while (temp is MemberExpression temp2)
-                    {
-                        types.Insert(0, temp2.Type);
-                        names.Insert(0, temp2.Member.Name);
-                        temp = temp2.Expression;
-                    }
-
-                    LoadLinks(names, types, false);
-
-                    string fullPath = string.Join(".", names.SkipLast(1));
-                    KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(memberExpression.Member.Name);
-                    if (memberInfo.Key != null)
-                    {
-                        Groups.Add(new GroupInfo(memberInfo.Key, memberInfo.Value));
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                    return;
-                }
-            }
-
-            throw new Exception();
-        }
-
-
-        protected void IncludeGeneric(Expression<Func<T, IStorable?>> expression)
-        {
-            // the strucutre must be Lambda => Convert? => (member x times)
-            if (expression is LambdaExpression lambdaExpression)
-            {
-                Expression exp = lambdaExpression.Body;
-                if (lambdaExpression.Body is UnaryExpression convertExpression)
-                {
-                    exp = convertExpression.Operand;
-                }
-
-                if (exp is MemberExpression memberExpression)
-                {
-                    List<Type> types = new();
-                    List<string> names = new();
-
-                    types.Insert(0, memberExpression.Type);
-                    names.Insert(0, memberExpression.Member.Name);
-
-                    Expression? temp = memberExpression.Expression;
-                    while (temp is MemberExpression temp2)
-                    {
-                        types.Insert(0, temp2.Type);
-                        names.Insert(0, temp2.Member.Name);
-                        temp = temp2.Expression;
-                    }
-
-                    LoadLinks(names, types, false);
-                    return;
-                }
-            }
-            throw new Exception();
-        }
-
-        protected void LimitGeneric(int? limit)
-        {
-            LimitSize = limit;
-        }
-
-        protected void OffsetGeneric(int? offset)
-        {
-            OffsetSize = offset;
-        }
-
-        public bool MustLoadMembers(List<string> path)
-        {
-            string mergedPath = string.Join(".", path);
-            return AllMembersByPath.ContainsKey(mergedPath) && AllMembersByPath[mergedPath] == true;
-        }
-
-        protected void MergeScopeAndWhere()
-        {
-            if (Scopes == null) return;
-
-            if (Wheres == null)
-            {
-                Wheres = new List<IWhereRootGroup>() { Scopes };
-                return;
-            }
-
-            var group = new WhereGroup();
-            group.Groups.AddRange(Scopes);
-            group.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
-            group.Groups.AddRange(Wheres);
-            Wheres = new List<IWhereRootGroup>() { group };
-
+            // TODO : add sort after loading
+            throw new NotImplementedException("Missing implementation to sort after loading");
         }
     }
+
+    protected void GroupGeneric<X>(Expression<Func<T, X>> expression)
+    {
+        GroupGeneric((LambdaExpression)expression);
+    }
+    protected void GroupGeneric(LambdaExpression lambdaExpression)
+    {
+
+        if (Groups == null)
+        {
+            Groups = new();
+        }
+
+        LambdaIncludeResult lambdaResult = LambdaInclude(
+           lambdaExpression,
+           fields: null,
+           addToMembers: false
+       );
+
+        if (!lambdaResult.IsExternal)
+        {
+            string fullPath = string.Join(".", lambdaResult.Steps.SkipLast(1).Select(p => p.Name));
+            string lastName = lambdaResult.Steps.Last().Name;
+            KeyValuePair<TableMemberInfoSql?, string> memberInfo = InfoByPath[fullPath].GetTableMemberInfoAndAlias(lastName);
+            if (memberInfo.Key != null)
+            {
+                Groups.Add(new GroupInfo(memberInfo.Key, memberInfo.Value));
+            }
+            else
+            {
+                throw new Exception("This kind of group should be impossible");
+            }
+        }
+        else
+        {
+            // TODO : add sort after loading
+            throw new NotImplementedException("Missing implementation to group after loading");
+        }
+
+    }
+
+    protected void IncludeGeneric<Y>(Expression<Func<T, Y?>> expression, List<LambdaExpression>? fields) where Y : IStorable
+    {
+        IncludeGeneric((LambdaExpression)expression, fields);
+    }
+    protected void IncludeGeneric(LambdaExpression lambdaExpression, List<LambdaExpression>? fields)
+    {
+        LambdaIncludeResult lambdaResult = LambdaInclude(
+           lambdaExpression,
+           fields: fields,
+           addToMembers: true
+        );
+
+        string fullPath = string.Join(".", lambdaResult.Steps.SkipLast(1).Select(p => p.Name));
+        string lastName = lambdaResult.Steps.Last().Name;
+
+        if (InfoByPath.ContainsKey(fullPath))
+        {
+            TableMemberInfoSql? memberInfo = InfoByPath[fullPath].GetTableMemberInfo(lastName);
+            if (memberInfo != null)
+            {
+                Included.Add(memberInfo);
+            }
+        }
+    }
+
+    public LambdaIncludeResult LambdaInclude(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, bool addToMembers)
+    {
+        List<LambdaStep> lambdaParts = LambdaTranslator.ExtractPart(lambdaExpression);
+        return LambdaInclude(lambdaParts, fields, addToMembers);
+    }
+    public LambdaIncludeResult LambdaInclude(List<LambdaStep> lambdaParts, List<LambdaExpression>? fields, bool addToMembers)
+    {
+        bool isExternal = false;
+        DatabaseBuilderInfo parentInfo = InfoByPath[""];
+        string fullPath = "";
+        for (int i = 0; i < lambdaParts.Count; i++)
+        {
+            LambdaStep lambdaPart = lambdaParts[i];
+            Type? listType = TableMemberInfoSql.IsListTypeUsable(lambdaPart.Type);
+            if (lambdaPart.Type.GetInterfaces().Contains(typeof(IStorable)) || listType != null)
+            {
+                string parentPath = fullPath;
+                if (i > 0)
+                {
+                    fullPath += ".";
+                }
+                fullPath += lambdaPart.Name;
+
+                TableMemberInfoSql? memberInfoLink = parentInfo.GetTableMemberInfo(lambdaPart.Name);
+                if (memberInfoLink != null)
+                {
+                    if (DM is IDatabaseDM databaseDM && databaseDM.IsSameStorage(memberInfoLink.DM))
+                    {
+                        if (memberInfoLink is ITableMemberInfoSqlLinkMultiple multiple && multiple.TableLinked != null)
+                        {
+                            if (!parentInfo.joinsNM.ContainsKey(multiple))
+                            {
+                                parentInfo.joinsNM.Add(multiple, CreateAlias(parentInfo.TableInfo, multiple.TableLinked));
+                            }
+                        }
+                        else if (!InfoByPath.ContainsKey(fullPath))
+                        {
+                            KeyValuePair<TableMemberInfoSql?, string> memberInfoWithAlias = parentInfo.GetTableMemberInfoAndAlias(lambdaPart.Name);
+                            if (memberInfoWithAlias.Key != null)
+                            {
+                                DatabaseBuilderInfo currentTable = LoadTable(GetTableInfo(lambdaPart.Type), fullPath);
+                                parentInfo.joins[memberInfoWithAlias.Key] = currentTable;
+                                if (addToMembers)
+                                {
+                                    parentInfo.Members.Add(memberInfoWithAlias.Key, new DatabaseBuilderInfoMember(memberInfoWithAlias.Key, memberInfoWithAlias.Value, Storage));
+                                    AllMembersByPath[fullPath] = i == lambdaParts.Count - 1;
+                                }
+                            }
+                        }
+                        else if (addToMembers && fields != null && i == lambdaParts.Count - 1)
+                        {
+                            LambdaExpression baseExp = LambdaTranslator.MergePart<T>(lambdaParts);
+                            foreach (var field in fields)
+                            {
+                                FieldGeneric(LambdaTranslator.LambdaMerge(baseExp, field));
+                            }
+                        }
+                        parentInfo = InfoByPath[fullPath];
+                    }
+                    else
+                    {
+                        isExternal = true;
+                        List<string> namesTemp = new List<string>();
+                        for (; i < lambdaParts.Count; i++)
+                        {
+                            namesTemp.Add(lambdaParts[i].Name);
+                        }
+                        if (SubQueries.ContainsKey(fullPath))
+                        {
+                            SubQueries[fullPath].ExtendExternalStorage(namesTemp, fields);
+                        }
+                        else
+                        {
+                            DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, lambdaPart.Type);
+                            VoidWithError prepareInfo = subQuery.PrepareExternalStorage(namesTemp, fields);
+                            if (prepareInfo.Success)
+                            {
+                                SubQueries.Add(fullPath, subQuery);
+                            }
+                            else
+                            {
+                                throw prepareInfo.Errors[0].GetException();
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                TableReverseMemberInfo? reverseInfo = parentInfo.GetReverseTableMemberInfo(lambdaPart.Name);
+                if (reverseInfo != null)
+                {
+                    isExternal = true;
+                    List<string> namesTemp = new List<string>();
+                    for (; i < lambdaParts.Count; i++)
+                    {
+                        namesTemp.Add(lambdaParts[i].Name);
+                    }
+
+                    if (SubQueries.ContainsKey(fullPath))
+                    {
+                        SubQueries[fullPath].ExtendReverseLink(namesTemp, fields);
+                    }
+                    else
+                    {
+                        DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, lambdaPart.Type);
+                        VoidWithError prepareInfo = subQuery.PrepareReverseLink(namesTemp, fields);
+                        if (prepareInfo.Success)
+                        {
+                            SubQueries.Add(fullPath, subQuery);
+                        }
+                        else
+                        {
+                            throw prepareInfo.Errors[0].GetException();
+                        }
+                    }
+                    continue;
+                }
+
+                throw new Exception("How can a IStorable not be in the table. Send your Lambda to an admin");
+            }
+
+            // add to field
+            KeyValuePair<TableMemberInfoSql?, string> memberInfo = parentInfo.GetTableMemberInfoAndAlias(lambdaPart.Name);
+            if (memberInfo.Key != null)
+            {
+                if (addToMembers)
+                {
+                    AllMembersByPath[fullPath] = false;
+                    parentInfo.Members[memberInfo.Key] = new DatabaseBuilderInfoMember(memberInfo.Key, memberInfo.Value, Storage, lambdaPart.Transformators);
+                }
+                continue;
+            }
+
+            throw new Exception("Can't understand what you mean for the query");
+
+        }
+
+        LambdaIncludeResult result = new LambdaIncludeResult()
+        {
+            Steps = lambdaParts,
+            IsExternal = isExternal
+        };
+
+        return result;
+    }
+
+    protected void LimitGeneric(int? limit)
+    {
+        LimitSize = limit;
+    }
+
+    protected void OffsetGeneric(int? offset)
+    {
+        OffsetSize = offset;
+    }
+
+    public bool MustLoadMembers(List<string> path)
+    {
+        string mergedPath = string.Join(".", path);
+        return AllMembersByPath.ContainsKey(mergedPath) && AllMembersByPath[mergedPath] == true;
+    }
+
+    protected void MergeScopeAndWhere()
+    {
+        if (Scopes == null) return;
+
+        if (Wheres == null)
+        {
+            Wheres = new List<IWhereRootGroup>() { Scopes };
+            return;
+        }
+
+        var group = new WhereGroup();
+        group.Groups.AddRange(Scopes);
+        group.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
+        group.Groups.AddRange(Wheres);
+        Wheres = new List<IWhereRootGroup>() { group };
+
+    }
+}
+
+
+public class LambdaIncludeResult
+{
+    public required List<LambdaStep> Steps { get; set; }
+    public required bool IsExternal { get; set; }
 }

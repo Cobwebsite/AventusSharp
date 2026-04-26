@@ -13,8 +13,14 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public DbType SqlType { get; protected set; } = DbType.Int32;
 
 
+        public override bool IsAutoCreate { get; protected set; } = DataMainManager.Config.AutoCreateLink;
+        public override bool IsAutoUpdate { get; protected set; } = DataMainManager.Config.AutoUpdateLink;
+        public override bool IsAutoDelete { get; protected set; } = DataMainManager.Config.AutoDeleteLink;
+        public override bool IsAutoRead { get; protected set; } = DataMainManager.Config.AutoReadLink;
+
         public TableMemberInfoSql1N(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
+
         }
         public TableMemberInfoSql1N(IMigrationPropertyRef property, TableInfo tableInfo) : base(property, tableInfo)
         {

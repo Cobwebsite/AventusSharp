@@ -73,7 +73,14 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="U">The type of the field to include.</typeparam>
         /// <param name="memberExpression">The expression representing the field to include.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Field<U>(Expression<Func<T, U>> memberExpression);
+        public IQueryBuilder<T> Field<U>(Expression<Func<T, U?>> memberExpression);
+
+        /// <summary>
+        /// Specifies a field to be included in the query results.
+        /// </summary>
+        /// <param name="memberExpression">The field to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Field(LambdaExpression memberExpression);
 
         /// <summary>
         /// Specifies a field to be excluded from the query results.
@@ -81,7 +88,14 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="U">The type of the field to exclude.</typeparam>
         /// <param name="memberExpression">The expression representing the field to exclude.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U>> memberExpression);
+        public IQueryBuilder<T> Ignore<U>(Expression<Func<T, U?>> memberExpression);
+
+        /// <summary>
+        /// Specifies a field to be excluded from the query results.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the field to exclude.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Ignore(LambdaExpression memberExpression);
 
         /// <summary>
         /// Specifies sorting for the query based on the provided expression and sorting order.
@@ -90,7 +104,15 @@ namespace AventusSharp.Data.Manager
         /// <param name="expression">The field to sort by.</param>
         /// <param name="sort">The sorting order (ascending or descending).</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort);
+        public IQueryBuilder<T> Sort<U>(Expression<Func<T, U?>> expression, Sort? sort);
+
+        /// <summary>
+        /// Specifies sorting for the query based on the provided expression and sorting order.
+        /// </summary>
+        /// <param name="expression">The field to sort by.</param>
+        /// <param name="sort">The sorting order (ascending or descending).</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Sort(LambdaExpression expression, Sort? sort);
 
         /// <summary>
         /// Specifies grouping for the query based on the provided expression.
@@ -98,14 +120,36 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="U">The type of the field to group by.</typeparam>
         /// <param name="expression">The field to group by.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Group<U>(Expression<Func<T, U>> expression);
+        public IQueryBuilder<T> Group<U>(Expression<Func<T, U?>> expression);
+
+        /// <summary>
+        /// Specifies grouping for the query based on the provided expression.
+        /// </summary>
+        /// <param name="expression">The field to group by.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Group(LambdaExpression expression);
 
         /// <summary>
         /// Includes a related object in the query.
         /// </summary>
         /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="fields">The fields to include.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public IQueryBuilder<T> Include(Expression<Func<T, IStorable?>> memberExpression);
+        public IQueryBuilder<T> Include<Y>(Expression<Func<T, Y?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> Include<Y>(Expression<Func<T, List<Y>?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        internal IQueryBuilder<T> Include(LambdaExpression memberExpression, List<LambdaExpression>? fields = null);
 
         /// <summary>
         /// Limits the number of results returned by the query.
@@ -181,7 +225,17 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="U">The type of the field to include.</typeparam>
         /// <param name="expression">The expression representing the field to include.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public QueryBuilderPrepared<T> Field<U>(Expression<Func<T, U>> expression)
+        public QueryBuilderPrepared<T> Field<U>(Expression<Func<T, U?>> expression)
+        {
+            builder.Field(expression);
+            return this;
+        }
+        /// <summary>
+        /// Specifies a field to be included in the query results.
+        /// </summary>
+        /// <param name="expression">The expression representing the field to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public QueryBuilderPrepared<T> Field(LambdaExpression expression)
         {
             builder.Field(expression);
             return this;
@@ -201,7 +255,7 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="U">The type of the field to exclude.</typeparam>
         /// <param name="expression">The expression representing the field to exclude.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public QueryBuilderPrepared<T> Ignore<U>(Expression<Func<T, U>> expression)
+        public QueryBuilderPrepared<T> Ignore<U>(Expression<Func<T, U?>> expression)
         {
             builder.Ignore(expression);
             return this;
@@ -213,7 +267,7 @@ namespace AventusSharp.Data.Manager
         /// <param name="expression">The field to sort by.</param>
         /// <param name="sort">The sorting order (ascending or descending).</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public QueryBuilderPrepared<T> Sort<U>(Expression<Func<T, U>> expression, Sort? sort)
+        public QueryBuilderPrepared<T> Sort<U>(Expression<Func<T, U?>> expression, Sort? sort)
         {
             builder.Sort(expression, sort ?? DB.Sort.ASC);
             return this;
@@ -224,21 +278,30 @@ namespace AventusSharp.Data.Manager
         /// <typeparam name="U">The type of the field to group by.</typeparam>
         /// <param name="expression">The field to group by.</param>
         /// <returns>The current query builder instance for method chaining.</returns>
-        public QueryBuilderPrepared<T> Group<U>(Expression<Func<T, U>> expression)
+        public QueryBuilderPrepared<T> Group<U>(Expression<Func<T, U?>> expression)
         {
             builder.Group(expression);
             return this;
         }
-        /// <summary>
-        /// Includes a related object in the query.
-        /// </summary>
-        /// <param name="expression">The expression representing the related object to include.</param>
-        /// <returns>The current query builder instance for method chaining.</returns>
-        public QueryBuilderPrepared<T> Include(Expression<Func<T, IStorable?>> expression)
+
+        public QueryBuilderPrepared<T> Include<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null)  where Y : IStorable
         {
-            builder.Include(expression);
+            builder.Include(expression, fields?.ConvertList<LambdaExpression>());
             return this;
         }
+
+        public QueryBuilderPrepared<T> Include<Y>(Expression<Func<T, List<Y>?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.Include(expression, fields?.ConvertList<LambdaExpression>());
+            return this;
+        }
+
+        internal QueryBuilderPrepared<T> Include(LambdaExpression expression, List<LambdaExpression>? fields)
+        {
+            builder.Include(expression, fields);
+            return this;
+        }
+
         /// <summary>
         /// Limits the number of results returned by the query.
         /// </summary>

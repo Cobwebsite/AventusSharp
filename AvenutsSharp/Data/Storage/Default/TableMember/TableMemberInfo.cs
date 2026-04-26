@@ -94,10 +94,10 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
         #region attributes 
 
-        public bool IsAutoCreate { get; protected set; } = true;
-        public bool IsAutoUpdate { get; protected set; } = true;
-        public bool IsAutoDelete { get; protected set; } = true;
-        public bool IsAutoRead { get; protected set; } = true;
+        public virtual bool IsAutoCreate { get; protected set; } = true;
+        public virtual bool IsAutoUpdate { get; protected set; } = true;
+        public virtual bool IsAutoDelete { get; protected set; } = true;
+        public virtual bool IsAutoRead { get; protected set; } = true;
         public bool NotInDB { get; protected set; } = false;
 
 

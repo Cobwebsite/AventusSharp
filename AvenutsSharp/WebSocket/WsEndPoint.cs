@@ -254,14 +254,14 @@ namespace AventusSharp.WebSocket
                         object? o = routeInfo.action.Invoke(routeInfo.router, param);
                         if (o is Task task)
                         {
-                            task.Wait();
+                            await (dynamic)task;
                             if (!o.GetType().IsGenericType)
                             {
                                 _event = new EmptyEvent();
                             }
                             else
                             {
-                                o = o.GetType().GetProperty("Result")?.GetValue(o);
+                                o = ((dynamic)task).Result;
                             }
                         }
                         if (_event == null)

@@ -313,6 +313,7 @@ namespace CSharpToTypescript.Container
         private List<string?> listReturnsWithoutErrors = new();
         private Type? typeContainer;
         private string overrideTxt = "";
+        private bool addFormData;
 
         public bool AvoidResultError
         {
@@ -344,6 +345,15 @@ namespace CSharpToTypescript.Container
             {
                 canBeAdded = false;
                 return;
+            }
+            Attribute? addFormDataAttr = method.GetCustomAttribute(typeof(AddFormData));
+            if (addFormDataAttr != null)
+            {
+                addFormData = ((AddFormData)addFormDataAttr).Value;
+            }
+            else
+            {
+                addFormData = ProjectManager.Config.httpRouter.addFormData;
             }
             if (methodSymbol.IsOverride)
             {
@@ -780,7 +790,12 @@ namespace CSharpToTypescript.Container
                     i++;
                 }
 
-                parametersUrlAndType[bodyKey] = "{ " + string.Join(", ", parametersBodyAndType.Select(p => p.Key + ": " + p.Value)) + " } | FormData";
+                parametersUrlAndType[bodyKey] = "{ " + string.Join(", ", parametersBodyAndType.Select(p => p.Key + ": " + p.Value)) + " }";
+
+                if (addFormData)
+                {
+                    parametersUrlAndType[bodyKey] += " | FormData";
+                }
             }
 
             string @params = string.Join(", ", parametersUrlAndType.Select(p => p.Key + ": " + p.Value));

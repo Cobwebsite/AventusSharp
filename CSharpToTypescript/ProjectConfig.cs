@@ -81,6 +81,7 @@ namespace CSharpToTypescript
         public string? parentFile;
         [JsonProperty("namespace")]
         public string? _namespace = "Routes";
+        public bool addFormData = false;
 
         public DefaultUrlConfig defaultUrl = new();
     }

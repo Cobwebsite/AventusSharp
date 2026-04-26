@@ -2,10 +2,8 @@ import { SharpClass } from '../../../Data/SharpClass.lib.avt';
 
 namespace Routes.Response {
 
-	@Convertible()
-	export class Resource extends SharpClass  {
-		/** Fullname of the class */
-		public static get Fullname(): string { return "AventusSharp.Routes.Response.Resource, AventusSharp"; }
+	export abstract class Resource extends SharpClass  {
+		
 	}
 
 }

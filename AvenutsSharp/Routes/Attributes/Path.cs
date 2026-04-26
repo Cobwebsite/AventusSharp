@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace AventusSharp.Routes.Attributes
 {
 
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class Path : Attribute
     {
         public string pattern { get; private set; }

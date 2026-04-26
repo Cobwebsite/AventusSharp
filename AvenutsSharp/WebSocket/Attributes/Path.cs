@@ -2,7 +2,7 @@
 
 namespace AventusSharp.WebSocket.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true)]
     public class Path : Attribute
     {
         public string pattern { get; private set; }

@@ -80,6 +80,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
     private QueryBuilderPrepared<Y>? ReverseLinkQuery;
     private DataMemberInfo? ReverseLinkMemberX;
     private DataMemberInfo? ReverseLinkReverseMember;
+    private bool ReverseLinkReverseMemberNullable;
     private async Task<VoidWithError> RunReverseLink(List<X> items)
     {
         VoidWithError result = new VoidWithError();
@@ -99,7 +100,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         }
 
         var query = ReverseLinkQuery.New();
-        if (ReverseLinkReverseMember.IsNullable)
+        if (ReverseLinkReverseMemberNullable)
         {
             List<int?> ids = elements.Keys.Select(p => (int?)p).ToList();
             query.Prepare(ids);
@@ -256,9 +257,20 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
             {
                 ReverseLinkReverseMember = reverseMember;
                 ParameterExpression argParam = Expression.Parameter(typeof(Y), "t");
-                Expression nameProperty = Expression.PropertyOrField(argParam, reverseMember.Name);
+                Expression nameProperty;
+                ReverseLinkReverseMemberNullable = reverseMember.IsNullable;
+                if (TypeTools.IsPrimitiveType(reverseMember.Type))
+                {
+                    nameProperty = Expression.PropertyOrField(argParam, reverseMember.Name);
+                }
+                else
+                {
+                    Expression temp = Expression.PropertyOrField(argParam, reverseMember.Name);
+                    nameProperty = Expression.PropertyOrField(temp, Storable.Id);
+                    ReverseLinkReverseMemberNullable = false;
+                }
                 Expression body;
-                if (reverseMember.IsNullable)
+                if (ReverseLinkReverseMemberNullable)
                 {
                     List<int?> ids = new List<int?>();
                     Expression<Func<List<int?>>> idLambda = () => ids;
@@ -280,6 +292,10 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                     // do it only if its the last elements
                     ParameterExpression argParamReverse = Expression.Parameter(typeof(Y), "t");
                     Expression namePropertyReverse = Expression.PropertyOrField(argParamReverse, reverseMember.Name);
+                    if (!TypeTools.IsPrimitiveType(reverseMember.Type))
+                    {
+                        namePropertyReverse = Expression.PropertyOrField(namePropertyReverse, Storable.Id);
+                    }
                     LambdaExpression lambdaReverse = Expression.Lambda(namePropertyReverse, argParamReverse);
                     query.Field(lambdaReverse);
 
@@ -287,6 +303,14 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                     {
                         query.Field(field);
                     }
+                }
+                else if (fields == null && names.Count == 1 && !TypeTools.IsPrimitiveType(reverseMember.Type))
+                {
+                    ParameterExpression argParamReverse = Expression.Parameter(typeof(Y), "t");
+                    Expression namePropertyReverse = Expression.PropertyOrField(argParamReverse, reverseMember.Name);
+                    namePropertyReverse = Expression.PropertyOrField(namePropertyReverse, Storable.Id);
+                    LambdaExpression lambdaReverse = Expression.Lambda(namePropertyReverse, argParamReverse);
+                    query.Field(lambdaReverse);
                 }
                 if (names.Count > 1)
                 {

@@ -515,7 +515,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                         }
                         else
                         {
-                            DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, lambdaPart.Type);
+                            DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, listType ?? lambdaPart.Type);
                             VoidWithError prepareInfo = subQuery.PrepareExternalStorage(namesTemp, fields);
                             if (prepareInfo.Success)
                             {
@@ -546,7 +546,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                     }
                     else
                     {
-                        DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, lambdaPart.Type);
+                        DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, listType ?? lambdaPart.Type);
                         VoidWithError prepareInfo = subQuery.PrepareReverseLink(namesTemp, fields);
                         if (prepareInfo.Success)
                         {

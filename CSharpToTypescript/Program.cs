@@ -9,8 +9,6 @@ if (args.Length >= 1)
     if(config != null)
     {
         config.Prepare(configPath);
-        Console.WriteLine(config.csProj);
-        Console.WriteLine(config.outputPath);
         await new ProjectManager().Init(config);
     }
     else

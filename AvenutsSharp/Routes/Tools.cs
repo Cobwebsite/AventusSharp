@@ -6,7 +6,7 @@ namespace AventusSharp.Routes
 {
     public static class Tools
     {
-        public static string GetDefaultMethodUrl(MethodInfo method, DefaultUrlConfig? config)
+        public static string GetDefaultMethodUrl(MethodInfo method, DefaultUrlConfig? config, string prefix)
         {
             string defaultName = method.Name.Split("`")[0].ToLower();
             if (defaultName == "index")
@@ -30,7 +30,10 @@ namespace AventusSharp.Routes
 
                 string final = string.Join("/", splitted);
 
-                defaultName = final + defaultName;
+                defaultName = final + prefix + defaultName;
+            }
+            else {
+                defaultName = prefix + defaultName;
             }
 
             return defaultName;

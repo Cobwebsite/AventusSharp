@@ -228,7 +228,7 @@ namespace CSharpToTypescript.Container
                 }
                 else
                 {
-                    urlPattern = AventusSharp.Routes.Tools.GetDefaultMethodUrl(method, ProjectManager.Config.httpRouter.defaultUrl);
+                    urlPattern = AventusSharp.Routes.Tools.GetDefaultMethodUrl(method, ProjectManager.Config.httpRouter.defaultUrl, prefix ?? "");
                 }
                 ParseFunctions(urlPattern, fcts);
             }
@@ -511,7 +511,7 @@ namespace CSharpToTypescript.Container
             }
             if (route == "")
             {
-                string defaultName = AventusSharp.Routes.Tools.GetDefaultMethodUrl(method, ProjectManager.Config.httpRouter.defaultUrl);
+                string defaultName = AventusSharp.Routes.Tools.GetDefaultMethodUrl(method, ProjectManager.Config.httpRouter.defaultUrl, parent.prefix ?? "");
                 ParseRoute(defaultName, @params);
             }
             bool hasBody = false;

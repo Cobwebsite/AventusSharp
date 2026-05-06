@@ -142,6 +142,11 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
     public override async Task<ResultWithError<bool>> ResetStorage()
     {
         ResultWithError<bool> result = new();
+        if (AventusExtension.IsExportCommand)
+        {
+            result.Result = true;
+            return result;
+        }
 
         string sql = "SELECT 'DROP TABLE IF EXISTS \"' || tablename || '\" CASCADE;' as query " +
                      "FROM pg_tables WHERE schemaname = 'public';";

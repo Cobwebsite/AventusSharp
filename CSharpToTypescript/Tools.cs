@@ -1,5 +1,7 @@
 ﻿using AventusSharp.Data;
+using AventusSharp.Routes;
 using AventusSharp.Tools.Attributes;
+using AventusSharp.WebSocket;
 using CSharpToTypescript.Container;
 using Microsoft.CodeAnalysis;
 using System;
@@ -89,7 +91,7 @@ namespace CSharpToTypescript
             return finalPathToImport;
         }
 
-        public static string GetFullName(ISymbol type)
+        public static string GetFullName(this ISymbol type)
         {
             List<string> parentNames = new List<string>();
             ISymbol t = type;
@@ -104,7 +106,7 @@ namespace CSharpToTypescript
             }
             return type.ContainingNamespace.ToString() + "." + type.Name;
         }
-        
+
         public static bool Is<X>(INamedTypeSymbol type, bool avoidInterface = false, bool avoidBaseAssembly = false)
         {
             bool result;
@@ -205,6 +207,7 @@ namespace CSharpToTypescript
             string fullName = string.IsNullOrEmpty(type.Namespace) ? type.Name : type.Namespace + "." + type.Name;
             ITypeSymbol? typeSymbol = ProjectManager.Compilation.GetTypeByMetadataName(fullName ?? "");
 
+
             if (typeSymbol == null)
             {
                 throw new Exception("impossbile");
@@ -273,6 +276,43 @@ namespace CSharpToTypescript
                 }
             }
             throw new Exception("impossible to load the method " + methodSymbol.Name + " from " + @class.Name);
+        }
+        public static MethodInfo? GetMethodInfo(string methodName, List<string> @params, Type @class)
+        {
+            List<MethodInfo> methods = @class.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ToList();
+            foreach (MethodInfo method in methods)
+            {
+                if (method.Name == methodName)
+                {
+                    ParameterInfo[] methodParams = method.GetParameters();
+                    if (methodParams.Length == @params.Count)
+                    {
+                        bool allSame = true;
+                        for (int i = 0; i < methodParams.Length; i++)
+                        {
+                            Type paramType = methodParams[i].ParameterType;
+                            if (paramType.FullName!.ToString() != @params[i])
+                            {
+                                allSame = false;
+                                break;
+                            }
+                        }
+                        if (allSame)
+                        {
+                            return method;
+                        }
+                    }
+                }
+            }
+            throw new Exception("impossible to load the method " + methodName + " from " + @class.Name);
+        }
+        public static MethodInfo? GetMethodInfo(RouteExposeHttp methodSymbol, Type @class)
+        {
+            return GetMethodInfo(methodSymbol.MethodName, methodSymbol.Params, @class);
+        }
+        public static MethodInfo? GetMethodInfo(WsExpose methodSymbol, Type @class)
+        {
+            return GetMethodInfo(methodSymbol.MethodName, methodSymbol.Params, @class);
         }
 
         public static PropertyInfo GetPropertyInfo(IPropertySymbol memberSymbol, Type @class)
@@ -397,5 +437,6 @@ namespace CSharpToTypescript
 
             return fullName == fullName2;
         }
+
     }
 }

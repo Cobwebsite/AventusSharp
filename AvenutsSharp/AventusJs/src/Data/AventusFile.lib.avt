@@ -8,7 +8,7 @@ namespace Data.CustomTableMembers {
 		 * Get the unique type for the data. Define it as the namespace + class name
 		 */
 		public get $type(): string {
-			return this.constructor['Fullname'];
+			return (this.constructor as any)['Fullname'];
 		}
         
         /**

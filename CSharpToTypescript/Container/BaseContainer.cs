@@ -154,6 +154,17 @@ namespace CSharpToTypescript.Container
             }
             return result;
         }
+        public static string GetAccessibility(MethodInfo info)
+        {
+            string access = info.IsPublic ? "public " :
+                    info.IsPrivate ? "private " :
+                    info.IsFamily ? "protected " :
+                    info.IsAssembly ? "internal " :
+                    info.IsFamilyOrAssembly ? "protected internal " :
+                    info.IsFamilyAndAssembly ? "private protected " : "";
+
+            return $"{access}{(info.IsStatic ? "static " : "")}";
+        }
         protected string GetDocumentation(ISymbol type)
         {
             List<string> result = new List<string>();
@@ -222,7 +233,7 @@ namespace CSharpToTypescript.Container
                 if (general != current)
                 {
                     // need to load file
-                    if (!unresolved.Contains(type) && Tools.GetFullName(type) != typeof(IStorable).FullName)
+                    if (!unresolved.Contains(type) && type.GetFullName() != typeof(IStorable).FullName)
                     {
                         unresolved.Add(type);
                     }
@@ -329,11 +340,11 @@ namespace CSharpToTypescript.Container
         public string GetVariantTypeName(ISymbol type, int depth, bool genericExtendsConstraint, string name, out bool isFull)
         {
             isFull = false;
-            string fullName = Tools.GetFullName(type);
+            string fullName = type.GetFullName();
             bool isNullable = false;
             if (fullName == "System.Nullable" && type is INamedTypeSymbol namedTypeSymbol)
             {
-                fullName = Tools.GetFullName(namedTypeSymbol.TypeArguments[0]);
+                fullName = namedTypeSymbol.TypeArguments[0].GetFullName();
                 isNullable = true;
             }
             string result = name;

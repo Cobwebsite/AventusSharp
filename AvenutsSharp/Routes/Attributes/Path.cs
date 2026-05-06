@@ -10,6 +10,11 @@ namespace AventusSharp.Routes.Attributes
         public string pattern { get; private set; }
         public Path(string pattern)
         {
+            if (pattern.StartsWith("°"))
+            {
+                this.pattern = pattern;
+                return;
+            }
             if (!pattern.StartsWith("/"))
             {
                 pattern = "/" + pattern;

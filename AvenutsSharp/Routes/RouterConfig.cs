@@ -25,6 +25,10 @@ namespace AventusSharp.Routes
         /// Define the regex to match the route based on various info
         /// </summary>
         public Func<string, Dictionary<string, RouterParameterInfo>, Type, MethodInfo, Regex>? transformPattern;
+        /// <summary>
+        /// Transform only the path. If you want full overriding the route, use transformPattern
+        /// </summary>
+        public Func<string, Dictionary<string, RouterParameterInfo>, Type, MethodInfo, string>? transformPath;
 
         public DefaultUrlConfig defaultUrl = new();
         /// <summary>

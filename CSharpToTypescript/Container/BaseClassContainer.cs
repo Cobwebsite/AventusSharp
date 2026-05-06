@@ -35,7 +35,7 @@ namespace CSharpToTypescript.Container
         {
             Type[] types = ProjectManager.Config.compiledAssembly?.GetTypes() ?? [];
             matchingTypes = new() { realType };
-            string fullNameBase = Tools.GetFullName(type);
+            string fullNameBase = type.GetFullName();
             foreach (Type t in types)
             {
                 if (t.FullName != null && (t.FullName.StartsWith(fullNameBase + "`") || t.FullName == fullNameBase) && !t.Name.StartsWith("<"))
@@ -174,7 +174,7 @@ namespace CSharpToTypescript.Container
             List<string> extends = new List<string>();
             List<string> implements = new List<string>();
             List<string> implementsName = new();
-            string fullName = Tools.GetFullName(type);
+            string fullName = type.GetFullName();
             if (isInterface)
             {
                 Dictionary<string, int> extendsNameInterface = new();
@@ -188,7 +188,7 @@ namespace CSharpToTypescript.Container
                     }
                     foreach (INamedTypeSymbol @interface in typeSymbol.Interfaces)
                     {
-                        if (Tools.GetFullName(@interface) == fullName)
+                        if (@interface.GetFullName() == fullName)
                         {
                             continue;
                         }
@@ -227,7 +227,7 @@ namespace CSharpToTypescript.Container
                     }
                     foreach (INamedTypeSymbol @interface in typeSymbol.Interfaces)
                     {
-                        if (Tools.GetFullName(@interface) == fullName)
+                        if (@interface.GetFullName() == fullName)
                         {
                             continue;
                         }
@@ -243,7 +243,7 @@ namespace CSharpToTypescript.Container
                     }
                 }
 
-                if (type.BaseType != null && type.BaseType.Name != "Object" && Tools.GetFullName(type.BaseType) != fullName)
+                if (type.BaseType != null && type.BaseType.Name != "Object" && type.BaseType.GetFullName() != fullName)
                 {
                     if (IsValidExtendsClass(type.BaseType))
                     {
@@ -473,7 +473,7 @@ namespace CSharpToTypescript.Container
             if (IsConvertible)
             {
 
-                string typeName = "\"" + Tools.GetFullName(type) + ", " + type.ContainingAssembly.Name + "\"";
+                string typeName = "\"" + type.GetFullName() + ", " + type.ContainingAssembly.Name + "\"";
                 Type? realType = Tools.GetCompiledType(type.BaseType);
                 AddTxt("/** Fullname of the class */", result);
                 if (realType != null && !realType.IsInterface && !realType.IsAbstract && realType != typeof(object) && extends.Count > 0)

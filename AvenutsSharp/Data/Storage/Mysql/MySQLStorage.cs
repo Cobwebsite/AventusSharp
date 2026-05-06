@@ -142,6 +142,11 @@ namespace AventusSharp.Data.Storage.Mysql
         public override async Task<ResultWithError<bool>> ResetStorage()
         {
             ResultWithError<bool> result = new();
+            if (AventusExtension.IsExportCommand)
+            {
+                result.Result = true;
+                return result;
+            }
             string sql = "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') as query FROM information_schema.tables WHERE table_schema = '" + this.database + "'; ";
             ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
             if (!queryResult.Success || queryResult.Result == null)

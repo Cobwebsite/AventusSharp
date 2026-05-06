@@ -1,11 +1,15 @@
 ﻿
+using AventusSharp.Routes;
+using AventusSharp.WebSocket;
 using CSharpToTypescript.Container;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Project = Microsoft.CodeAnalysis.Project;
 
 namespace CSharpToTypescript
@@ -55,17 +59,24 @@ namespace CSharpToTypescript
                     LoadNamespace(rootNamespace, result);
                 }
                 FileToWrite.WriteAll();
+
             }
+                // Directory.Delete(Config.outputDir, true);
         }
 
         private bool Build()
         {
+            string tempOutputDir = Path.Combine(Path.GetTempPath(), "AventusBuild_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempOutputDir);
+
             // Start the child process.
             Process p = new Process();
             // Redirect the output stream of the child process.
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
-            string cmd = "build " + Config.csProj + " --no-dependencies -v m";
+            p.StartInfo.CreateNoWindow = true;
+
+            string cmd = $"build \"{Config.csProj}\" -v m -o \"{tempOutputDir}\" -nologo";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 p.StartInfo.FileName = "cmd.exe";
@@ -80,38 +91,121 @@ namespace CSharpToTypescript
             // Read the output stream first and then wait.
             string output = p.StandardOutput.ReadToEnd();
             p.WaitForExit();
-            List<string> splitted = output.Split("\n").ToList();
-            if (splitted.Count < 4)
-            {
-                Console.WriteLine("The build result seems to be wrong. Please send the result below to an admin");
-                Console.WriteLine(output);
-                Console.WriteLine("splitted count : " + splitted.Count);
-                return false;
-            }
-            string nbErrors = splitted[splitted.Count - 4];
-            if (!nbErrors.Contains("0"))
+
+            if (p.ExitCode != 0)
             {
                 Console.WriteLine(output);
                 return false;
             }
-            string outputPath = "";
-            for (int i = splitted.Count - 1; i >= 0; i--)
-            {
-                if (splitted[i].Contains("->"))
-                {
-                    outputPath = splitted[i].Split("->")[1].Trim();
-                }
-            }
-            if (outputPath == "")
+            string assemblyName = Path.GetFileNameWithoutExtension(Config.csProj) + ".dll";
+            string outputPath = Path.Combine(tempOutputDir, assemblyName);
+
+            if (!File.Exists(outputPath))
             {
                 Console.WriteLine(output);
                 return false;
             }
-            List<string> outputSplitted = outputPath.Split(Path.DirectorySeparatorChar).ToList();
-            outputSplitted.RemoveAt(outputSplitted.Count - 1);
-            Config.outputDir = string.Join(Path.DirectorySeparatorChar, outputSplitted);
+
+            if (Config.httpRouter.useCompiledDll || Config.wsEndpoint.useCompiledDll)
+            {
+                LoadHttpRoute(outputPath);
+            }
+            Config.outputDir = tempOutputDir;
             Config.compiledAssembly = Assembly.LoadFrom(outputPath);
             return true;
+        }
+
+        private void LoadHttpRoute(string dll)
+        {
+            Process p = new Process();
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+            p.StartInfo.CreateNoWindow = true;
+
+            string cmd = $"\"{dll}\" --export-info";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                p.StartInfo.FileName = "cmd.exe";
+                p.StartInfo.Arguments = "/C dotnet " + cmd;
+            }
+            else
+            {
+                p.StartInfo.FileName = "dotnet";
+                p.StartInfo.Arguments = cmd;
+            }
+
+            p.Start();
+            string output = p.StandardOutput.ReadToEnd();
+            p.WaitForExit();
+
+            if (p.ExitCode != 0)
+            {
+                Console.WriteLine(p.StandardError.ReadToEnd());
+                Console.WriteLine(output);
+                return;
+            }
+
+            string patternHttp = @"(?<=--- Routes HTTP ---\s+)(.*?)(?=\s+-------------------)";
+
+            Match matchHttp = Regex.Match(output, patternHttp, RegexOptions.Singleline);
+
+            if (matchHttp.Success)
+            {
+                string jsonClean = matchHttp.Value.Trim();
+                try
+                {
+                    List<RouteExposeHttp>? result = JsonConvert.DeserializeObject<List<RouteExposeHttp>>(jsonClean);
+                    if (result != null)
+                    {
+                        Dictionary<string, List<RouteExposeHttp>> routesHttp = new Dictionary<string, List<RouteExposeHttp>>();
+                        foreach (RouteExposeHttp routeExpose in result)
+                        {
+                            if (!routesHttp.ContainsKey(routeExpose.ClassName))
+                            {
+                                routesHttp[routeExpose.ClassName] = new();
+                            }
+                            routesHttp[routeExpose.ClassName].Add(routeExpose);
+                        }
+                        Config.routesHttp = routesHttp;
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"Parsing error for http route : {ex.Message}");
+                }
+            }
+        
+            string patternWs = @"(?<=--- Routes HTTP ---\s+)(.*?)(?=\s+-------------------)";
+
+            Match matchWs = Regex.Match(output, patternWs, RegexOptions.Singleline);
+
+            if (matchWs.Success)
+            {
+                string jsonClean = matchWs.Value.Trim();
+                try
+                {
+                    List<WsExpose>? result = JsonConvert.DeserializeObject<List<WsExpose>>(jsonClean);
+                    if (result != null)
+                    {
+                        Dictionary<string, List<WsExpose>> routesWs = new Dictionary<string, List<WsExpose>>();
+                        foreach (WsExpose routeExpose in result)
+                        {
+                            if (!routesWs.ContainsKey(routeExpose.ClassName))
+                            {
+                                routesWs[routeExpose.ClassName] = new();
+                            }
+                            routesWs[routeExpose.ClassName].Add(routeExpose);
+                        }
+                        Config.routesWs = routesWs;
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"Parsing error for ws route : {ex.Message}");
+                }
+            }
+        
         }
 
         private void LoadNamespace(INamespaceSymbol @namespace, List<INamedTypeSymbol> result)

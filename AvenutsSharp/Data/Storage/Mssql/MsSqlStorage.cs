@@ -83,7 +83,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                         ;
 
 
-                        
+
                         SqlConnectionStringBuilder builderFull = GetStringBuilder(true);
                         using (DbConnection connection = new SqlConnection(builderFull.ConnectionString))
                         {
@@ -135,6 +135,11 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     public override async Task<ResultWithError<bool>> ResetStorage()
     {
         ResultWithError<bool> result = new();
+        if (AventusExtension.IsExportCommand)
+        {
+            result.Result = true;
+            return result;
+        }
 
         string sql = "SELECT 'DROP TABLE [' + TABLE_NAME + '];' as query " +
                      "FROM INFORMATION_SCHEMA.TABLES " +

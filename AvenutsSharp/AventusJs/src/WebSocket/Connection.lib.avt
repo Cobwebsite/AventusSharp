@@ -167,8 +167,9 @@ namespace WebSocket {
         }
 
         protected jsonReplacer(key: string, value: any) {
-            if(this[key] instanceof Date) {
-                return Aventus.DateConverter.converter.toString(this[key]);
+            const t = this as any;
+            if(t[key] instanceof Date) {
+                return Aventus.DateConverter.converter.toString(t[key]);
             }
             return value;
         }

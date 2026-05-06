@@ -41,7 +41,7 @@ namespace CSharpToTypescript
             {
                 foreach (BaseContainer container in file.types)
                 {
-                    if (Tools.GetFullName(symbol) == Tools.GetFullName(container.type))
+                    if (symbol.GetFullName() == container.type.GetFullName())
                     {
                         return container;
                     }

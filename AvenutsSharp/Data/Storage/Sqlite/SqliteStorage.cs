@@ -99,6 +99,11 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
     public override async Task<ResultWithError<bool>> ResetStorage()
     {
         ResultWithError<bool> result = new();
+        if (AventusExtension.IsExportCommand)
+        {
+            result.Result = true;
+            return result;
+        }
 
         // Récupérer toutes les tables existantes
         string sql = "SELECT 'DROP TABLE IF EXISTS \"' || name || '\";' AS query " +

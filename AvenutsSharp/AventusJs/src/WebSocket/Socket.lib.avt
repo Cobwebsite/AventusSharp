@@ -95,7 +95,7 @@ namespace WebSocket {
         }
 
 
-        public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
+        public send(data: BufferSource | Blob | string): void {
             this.socket.send(data);
         }
 

@@ -36,7 +36,7 @@ namespace RAM {
         }
 
         protected addEventsBindings() {
-            const autoListen = this.listenOnStart(); 
+            const autoListen = this.listenOnStart();
 
             this.routes.events.GetAll.onTrigger.add(this.otherGetAll, this);
             if(autoListen.GetAll) {
@@ -121,7 +121,7 @@ namespace RAM {
         }
 
         @BindThis()
-        protected async otherGetAll(items: Aventus.ExtractFromError<T[]>, params: Aventus.UriParams, uid?: string) {
+        protected async otherGetAll(items: Aventus.ExtractFromError<T[]>, params: Aventus.UriParamsValue, uid?: string): Promise<void> {
             if(uid && this.otherGetAllLocked[uid]) return;
 
             for(let item of items) {
@@ -154,7 +154,7 @@ namespace RAM {
         }
 
         @BindThis()
-        protected async otherGetById(item: Aventus.ExtractFromError<T>, params: Aventus.UriParams, uid?: string) {
+        protected async otherGetById(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherGetByIdLocked[uid]) return;
 
             let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
@@ -210,7 +210,7 @@ namespace RAM {
 
         //#region create
         @BindThis()
-        protected async otherCreateItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParams, uid?: string) {
+        protected async otherCreateItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherCreateItemLocked[uid]) return;
 
             let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
@@ -237,7 +237,7 @@ namespace RAM {
         }
 
         @BindThis()
-        protected async otherCreateList(items: Aventus.ExtractFromError<T[]>, params: Aventus.UriParams, uid?: string) {
+        protected async otherCreateList(items: Aventus.ExtractFromError<T[]>, params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherCreateListLocked[uid]) return;
 
             for(let item of items) {
@@ -268,7 +268,7 @@ namespace RAM {
 
         //#region update
         @BindThis()
-        protected async otherUpdateItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParams, uid?: string) {
+        protected async otherUpdateItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherUpdateItemLocked[uid]) return;
 
             let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
@@ -296,7 +296,7 @@ namespace RAM {
         }
 
         @BindThis()
-        protected async otherUpdateList(items: T[], params: Aventus.UriParams, uid?: string) {
+        protected async otherUpdateList(items: T[], params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherUpdateListLocked[uid]) return;
 
             for(let item of items) {
@@ -327,7 +327,7 @@ namespace RAM {
 
         //#region delete
         @BindThis()
-        protected otherDeleteItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParams, uid?: string) {
+        protected otherDeleteItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherDeleteItemLocked[uid]) return;
 
             let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
@@ -353,7 +353,7 @@ namespace RAM {
         }
 
         @BindThis()
-        protected otherDeleteList(items: T[], params: Aventus.UriParams, uid?: string) {
+        protected otherDeleteList(items: T[], params: Aventus.UriParamsValue, uid?: string) {
             if(uid && this.otherDeleteListLocked[uid]) return;
 
             for(let item of items) {

@@ -11,6 +11,7 @@ using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace AventusSharp.Routes
 {
@@ -185,7 +186,7 @@ namespace AventusSharp.Routes
                                 try
                                 {
                                     Regex regex = transformPattern(urlPattern, @params, t, method);
-                                    RouteInfo info = new RouteInfo(regex, methodType, method, routerInstances[t], parameters.Length, middlewares);
+                                    RouteInfo info = new RouteInfo(regex, methodType, method, routerInstances[t], parameters.Length, middlewares, urlPattern);
                                     info.parameters = @params;
 
 
@@ -216,6 +217,28 @@ namespace AventusSharp.Routes
             return result.ToGeneric();
         }
 
+        public static void PrintForExport()
+        {
+            if (routesInfo.Count == 0) return;
+
+            Console.WriteLine("--- Routes HTTP ---");
+            List<RouteExposeHttp> expose = new List<RouteExposeHttp>();
+            foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
+            {
+                expose.Add(new RouteExposeHttp()
+                {
+                    Method = routeInfo.Value.method,
+                    BaseUrl = routeInfo.Value.baseUrl,
+                    Pattern = routeInfo.Value.pattern.ToString(),
+                    MethodName = routeInfo.Value.action.Name,
+                    ClassName = routeInfo.Value.action.ReflectedType!.FullName!,
+                    Params = routeInfo.Value.parameters.Select(p => p.Value.type.FullName!).ToList()
+                });
+
+            }
+            Console.WriteLine(JsonConvert.SerializeObject(expose));
+            Console.WriteLine("-------------------");
+        }
         public static void Inject(object o)
         {
             injected[o.GetType()] = o;
@@ -244,6 +267,10 @@ namespace AventusSharp.Routes
             }
             urlPattern = ReplaceParams(urlPattern, @params);
             urlPattern = ReplaceFunction(urlPattern, t);
+            if (config.transformPath != null)
+            {
+                urlPattern = config.transformPath(urlPattern, @params, t, methodInfo);
+            }
             Regex regex = PrepareRegex(urlPattern);
             return regex;
         }

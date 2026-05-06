@@ -23,10 +23,11 @@ namespace CSharpToTypescript
         public bool exportWsRouteByDefault = true;
         public bool exportErrorsByDefault = true;
 
-
         private string? _basedir;
         public Assembly? compiledAssembly;
         public string outputDir = "";
+        public Dictionary<string, List<RouteExposeHttp>> routesHttp = new();
+        public Dictionary<string, List<WsExpose>> routesWs = new();
         public string baseDir
         {
             get
@@ -66,13 +67,14 @@ namespace CSharpToTypescript
             }
             return url;
         }
-        
+
     }
 
     #region http
 
     public class ProjectConfigHttpRouter
     {
+        public bool useCompiledDll = false;
         public bool createRouter = false;
         public string routerName = "GeneratedRouter";
         public string uri = "";
@@ -88,6 +90,7 @@ namespace CSharpToTypescript
 
     public class ProjectConfigWsEndpoint
     {
+        public bool useCompiledDll = false;
         public string prefix = "";
         public string? host;
         public int? port;

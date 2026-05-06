@@ -9,6 +9,7 @@ namespace AventusSharp.Routes
 {
     public class RouteInfo
     {
+        public string baseUrl;
         public Regex pattern;
         public MethodType method;
         public MethodInfo action;
@@ -21,8 +22,9 @@ namespace AventusSharp.Routes
             get => pattern.ToString() + "||" + method.ToString();
         }
 
-        public RouteInfo(Regex pattern, MethodType method, MethodInfo action, IRouter router, int nbParamsFunction, List<Middleware> middlewares)
+        public RouteInfo(Regex pattern, MethodType method, MethodInfo action, IRouter router, int nbParamsFunction, List<Middleware> middlewares, string baseUrl)
         {
+            this.baseUrl = baseUrl;
             this.pattern = pattern;
             this.method = method;
             this.action = action;

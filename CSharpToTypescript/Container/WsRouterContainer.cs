@@ -43,14 +43,116 @@ namespace CSharpToTypescript.Container
         {
             this.fileName = fileName;
 
-            foreach (ISymbol symbol in type.GetMembers())
+            if (ProjectManager.Config.wsEndpoint.useCompiledDll)
             {
-
-                if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && !methodSymbol.IsExtern && !methodSymbol.IsStatic)
+                if (ProjectManager.Config.routesWs.ContainsKey(type.GetFullName()))
                 {
-                    WsRouteContainer routeTemp = new WsRouteContainer(methodSymbol, realType, this);
-                    if (routeTemp.canBeAdded)
-                        routes.Add(routeTemp);
+                    foreach (WsExpose methodExpose in ProjectManager.Config.routesWs[type.GetFullName()])
+                    {
+                        bool found = false;
+                        foreach (ISymbol symbol in type.GetMembers())
+                        {
+                            if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && !methodSymbol.IsExtern && !methodSymbol.IsStatic)
+                            {
+
+                                if (methodExpose.MethodName == methodSymbol.Name)
+                                {
+                                    if (methodExpose.Params.Count == methodSymbol.Parameters.Length)
+                                    {
+                                        bool allSame = true;
+                                        for (int i = 0; i < methodSymbol.Parameters.Length; i++)
+                                        {
+                                            Type? paramType = Type.GetType(methodExpose.Params[i]);
+                                            if (paramType != null && !paramType.Compare(methodSymbol.Parameters[i].Type))
+                                            {
+                                                allSame = false;
+                                                break;
+                                            }
+                                        }
+                                        if (allSame)
+                                        {
+                                            WsRouteContainer container = new WsRouteContainer(methodExpose, methodSymbol, realType, this);
+                                            found = true;
+                                            if (container.canBeAdded)
+                                            {
+                                                routes.Add(container);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                        if (!found)
+                        {
+                            MethodInfo? info = Tools.GetMethodInfo(methodExpose, this.realType);
+                            if (info == null)
+                            {
+                                // List<object> attrs = methodSymbol.GetCustomAttributes(true).ToList();
+                                Console.WriteLine("Can't found the method " + methodExpose.BaseUrl + " => " + methodExpose.ClassName + "." + methodExpose.MethodName);
+                            }
+                            else
+                            {
+                                WsRouteContainer container = new WsRouteContainer(null, info, realType, this);
+                                string route = container.route;
+                                Dictionary<string, string?> functions = container.functionResult;
+                                string pattern = @"\$\{this\.(.*?)\(\)\}";
+                                string finalRoute = Regex.Replace(route, pattern, match =>
+                                {
+                                    string functionName = match.Groups[1].Value;
+                                    if (functions.TryGetValue(functionName, out string? value))
+                                    {
+                                        return value ?? string.Empty;
+                                    }
+                                    return match.Value;
+                                }).ToLower();
+
+                                MatchCollection matches = Regex.Matches(finalRoute, @"\${(.*?)}");
+
+                                string realRoute = methodExpose.Pattern.Replace("\\/", "/");
+                                realRoute = realRoute.Substring(1, realRoute.Length - 2);
+                                int index = 0;
+                                realRoute = Regex.Replace(realRoute, @"\((.*?)\)", m =>
+                                {
+                                    if (index < matches.Count)
+                                    {
+                                        string variable = matches[index].Value;
+                                        index++;
+                                        return variable;
+                                    }
+                                    return m.Value;
+                                });
+
+                                // if (finalRoute != realRoute)
+                                // {
+                                //     string prefixTemp = realRoute.Replace(finalRoute, "");
+                                //     if (this.prefix == null)
+                                //     {
+                                //         this.prefix = prefixTemp;
+                                //         prefixForParent = true;
+                                //     }
+                                //     else if (this.prefix != prefixTemp)
+                                //     {
+                                //         Console.WriteLine("Different prefix, please contact an admin");
+                                //     }
+                                // }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (ISymbol symbol in type.GetMembers())
+                {
+
+                    if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && !methodSymbol.IsExtern && !methodSymbol.IsStatic)
+                    {
+                        WsRouteContainer routeTemp = new WsRouteContainer(methodSymbol, realType, this);
+                        if (routeTemp.canBeAdded)
+                            routes.Add(routeTemp);
+                    }
                 }
             }
             ParentCheck();
@@ -497,33 +599,82 @@ namespace CSharpToTypescript.Container
 
     internal class WsRouteContainer
     {
-        private IMethodSymbol methodSymbol;
+        private IMethodSymbol? methodSymbol;
         public bool canBeAdded = false;
         public string name = "";
-        public MethodInfo? method;
+        private MethodInfo? _method;
+        public MethodInfo method
+        {
+            get
+            {
+                if (_method == null) throw new Exception("Impossible");
+                return _method;
+            }
+        }
         private Type @class;
         public Dictionary<string, string> parametersBodyAndType = new();
         public Dictionary<string, string> parametersUrlAndType = new();
         public Dictionary<string, Func<string>> functionNeeded = new();
+        public Dictionary<string, string?> functionResult { get; set; } = new();
         private WsRouterContainer parent;
         public string route = "";
         public string routeEvent = "";
         public string returnType = "";
         private bool? listenOnBoot = null;
 
-        public WsRouteContainer(IMethodSymbol methodSymbol, Type @class, WsRouterContainer parent)
+        public WsRouteContainer(WsExpose methodExpose, IMethodSymbol methodSymbol, Type @class, WsRouterContainer parent) : this(methodSymbol, @class, parent)
+        {
+            if (!canBeAdded)
+                return;
+
+            Dictionary<string, string?> functions = functionResult;
+            string pattern = @"\$\{this\.(.*?)\(\)\}";
+            string finalRoute = Regex.Replace(route, pattern, match =>
+            {
+                string functionName = match.Groups[1].Value;
+                if (functions.TryGetValue(functionName, out string? value))
+                {
+                    return value ?? string.Empty;
+                }
+                return match.Value;
+            }).ToLower();
+
+            MatchCollection matches = Regex.Matches(finalRoute, @"\${(.*?)}");
+
+            string realRoute = methodExpose.Pattern.Replace("\\/", "/");
+            realRoute = realRoute.Substring(1, realRoute.Length - 2);
+            int index = 0;
+            realRoute = Regex.Replace(realRoute, @"\((.*?)\)", m =>
+            {
+                if (index < matches.Count)
+                {
+                    string variable = matches[index].Value;
+                    index++;
+                    return variable;
+                }
+                return m.Value;
+            });
+            route = realRoute;
+        }
+        public WsRouteContainer(IMethodSymbol methodSymbol, Type @class, WsRouterContainer parent) : this(methodSymbol, Tools.GetMethodInfo(methodSymbol, @class), @class, parent)
+        {
+            this.parent = parent;
+            this.@class = @class;
+
+        }
+        public WsRouteContainer(IMethodSymbol? methodSymbol, MethodInfo? methodTemp, Type @class, WsRouterContainer parent)
         {
             this.parent = parent;
             this.methodSymbol = methodSymbol;
             this.@class = @class;
-            this.name = methodSymbol.Name;
-            MethodInfo? methodTemp = Tools.GetMethodInfo(methodSymbol, @class);
+            if (methodTemp == null) return;
+            name = methodTemp.Name;
             if (methodTemp == null || !methodTemp.IsPublic)
             {
                 canBeAdded = false;
                 return;
             }
-            method = methodTemp;
+            _method = methodTemp;
             canBeAdded = true;
             LoadWsAttributes(methodTemp);
             if (!canBeAdded) return;
@@ -551,19 +702,19 @@ namespace CSharpToTypescript.Container
                     continue;
                 }
 
-                foreach (var parameter in methodSymbol.Parameters)
+                foreach (var parameter in method.GetParameters())
                 {
                     if (parameter.Name == pair.Key)
                     {
-                        if (knownParameters.Contains(parameter.Type.ToString() ?? ""))
+                        if (knownParameters.Contains(parameter.ParameterType.ToString() ?? ""))
                         {
                             continue;
                         }
-                        if (Tools.HasAttribute<NoExport>(parameter))
+                        if (parameter.GetCustomAttribute<NoExport>() != null)
                         {
                             continue;
                         }
-                        parametersBodyAndType.Add(pair.Key, parent.GetTypeName(parameter.Type));
+                        parametersBodyAndType.Add(pair.Key, parent.GetTypeName(parameter.ParameterType));
                     }
                 }
 
@@ -778,6 +929,7 @@ namespace CSharpToTypescript.Container
                                 };
 
                                 functionNeeded.Add(methodTemp.Name, getTxt);
+                                functionResult.Add(methodTemp.Name, o.ToString());
                             }
                         }
                     }
@@ -878,7 +1030,7 @@ namespace CSharpToTypescript.Container
 
             }
 
-            string fctDesc = BaseContainer.GetAccessibility(methodSymbol) + "async " + name + "(" + @params + "): " + resultType + " {";
+            string fctDesc = BaseContainer.GetAccessibility(method) + "async " + name + "(" + @params + "): " + resultType + " {";
 
             parent.AddTxtOpen(fctDesc, result);
 

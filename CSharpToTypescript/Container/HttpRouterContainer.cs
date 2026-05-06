@@ -39,17 +39,120 @@ namespace CSharpToTypescript.Container
         private List<HttpRouteContainer> routes = new List<HttpRouteContainer>();
         private Dictionary<string, Func<string>> additionalFcts = new();
         public string? prefix;
+        public bool prefixForParent = false;
         public HttpRouterContainer(INamedTypeSymbol type) : base(type)
         {
-            foreach (ISymbol symbol in type.GetMembers())
+            if (ProjectManager.Config.httpRouter.useCompiledDll)
             {
-
-                if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && !methodSymbol.IsExtern && !methodSymbol.IsStatic)
+                if (ProjectManager.Config.routesHttp.ContainsKey(type.GetFullName()))
                 {
-                    HttpRouteContainer container = new HttpRouteContainer(methodSymbol, realType, this);
-                    if (container.canBeAdded)
+                    foreach (RouteExposeHttp methodExpose in ProjectManager.Config.routesHttp[type.GetFullName()])
                     {
-                        routes.Add(container);
+                        bool found = false;
+                        foreach (ISymbol symbol in type.GetMembers())
+                        {
+                            if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && !methodSymbol.IsExtern && !methodSymbol.IsStatic)
+                            {
+
+                                if (methodExpose.MethodName == methodSymbol.Name)
+                                {
+                                    if (methodExpose.Params.Count == methodSymbol.Parameters.Length)
+                                    {
+                                        bool allSame = true;
+                                        for (int i = 0; i < methodSymbol.Parameters.Length; i++)
+                                        {
+                                            Type? paramType = Type.GetType(methodExpose.Params[i]);
+                                            if (paramType != null && !paramType.Compare(methodSymbol.Parameters[i].Type))
+                                            {
+                                                allSame = false;
+                                                break;
+                                            }
+                                        }
+                                        if (allSame)
+                                        {
+                                            HttpRouteContainer container = new HttpRouteContainer(methodExpose, methodSymbol, realType, this);
+                                            found = true;
+                                            if (container.canBeAdded)
+                                            {
+                                                routes.Add(container);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                        if (!found)
+                        {
+                            MethodInfo? info = Tools.GetMethodInfo(methodExpose, this.realType);
+                            if (info == null)
+                            {
+                                // List<object> attrs = methodSymbol.GetCustomAttributes(true).ToList();
+                                Console.WriteLine("Can't found the method " + methodExpose.BaseUrl + " => " + methodExpose.ClassName + "." + methodExpose.MethodName);
+                            }
+                            else
+                            {
+                                HttpRouteContainer container = new HttpRouteContainer(null, info, realType, this);
+                                string route = container.route;
+                                Dictionary<string, string?> functions = container.functionResult;
+                                string pattern = @"\$\{this\.(.*?)\(\)\}";
+                                string finalRoute = Regex.Replace(route, pattern, match =>
+                                {
+                                    string functionName = match.Groups[1].Value;
+                                    if (functions.TryGetValue(functionName, out string? value))
+                                    {
+                                        return value ?? string.Empty;
+                                    }
+                                    return match.Value;
+                                }).ToLower();
+
+                                MatchCollection matches = Regex.Matches(finalRoute, @"\${(.*?)}");
+
+                                string realRoute = methodExpose.Pattern.Replace("\\/", "/");
+                                realRoute = realRoute.Substring(1, realRoute.Length - 2);
+                                int index = 0;
+                                realRoute = Regex.Replace(realRoute, @"\((.*?)\)", m =>
+                                {
+                                    if (index < matches.Count)
+                                    {
+                                        string variable = matches[index].Value;
+                                        index++;
+                                        return variable;
+                                    }
+                                    return m.Value;
+                                });
+
+                                if (finalRoute != realRoute)
+                                {
+                                    string prefixTemp = realRoute.Replace(finalRoute, "");
+                                    if (this.prefix == null)
+                                    {
+                                        this.prefix = prefixTemp;
+                                        prefixForParent = true;
+                                    }
+                                    else if (this.prefix != prefixTemp)
+                                    {
+                                        Console.WriteLine("Different prefix, please contact an admin");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (ISymbol symbol in type.GetMembers())
+                {
+
+                    if (symbol is IMethodSymbol methodSymbol && methodSymbol.MethodKind != MethodKind.Constructor && !methodSymbol.IsExtern && !methodSymbol.IsStatic)
+                    {
+                        HttpRouteContainer container = new HttpRouteContainer(methodSymbol, realType, this);
+                        if (container.canBeAdded)
+                        {
+                            routes.Add(container);
+                        }
                     }
                 }
             }
@@ -290,7 +393,7 @@ namespace CSharpToTypescript.Container
 
     internal class HttpRouteContainer
     {
-        private IMethodSymbol methodSymbol;
+        public IMethodSymbol? methodSymbol;
         public bool canBeAdded = false;
         public string name = "";
         private MethodInfo? _method;
@@ -306,11 +409,11 @@ namespace CSharpToTypescript.Container
         private Type @class;
         public Dictionary<string, string> parametersBodyAndType = new();
         public Dictionary<string, string> parametersUrlAndType = new();
-        public Dictionary<string, Func<string>> functionNeeded = new();
+        public Dictionary<string, Func<string>> functionNeeded { get; set; } = new();
+        public Dictionary<string, string?> functionResult { get; set; } = new();
         private HttpRouterContainer parent;
         public string route = "";
         private List<string?> listReturns = new();
-        private List<string?> listReturnsWithoutErrors = new();
         private Type? typeContainer;
         private string overrideTxt = "";
         private bool addFormData;
@@ -323,16 +426,55 @@ namespace CSharpToTypescript.Container
             }
         }
 
-        public HttpRouteContainer(IMethodSymbol methodSymbol, Type @class, HttpRouterContainer parent)
+        public HttpRouteContainer(RouteExposeHttp methodExpose, IMethodSymbol methodSymbol, Type @class, HttpRouterContainer parent) : this(methodSymbol, @class, parent)
+        {
+            if (!canBeAdded)
+                return;
+
+            Dictionary<string, string?> functions = functionResult;
+            string pattern = @"\$\{this\.(.*?)\(\)\}";
+            string finalRoute = Regex.Replace(route, pattern, match =>
+            {
+                string functionName = match.Groups[1].Value;
+                if (functions.TryGetValue(functionName, out string? value))
+                {
+                    return value ?? string.Empty;
+                }
+                return match.Value;
+            }).ToLower();
+
+            MatchCollection matches = Regex.Matches(finalRoute, @"\${(.*?)}");
+
+            string realRoute = methodExpose.Pattern.Replace("\\/", "/");
+            realRoute = realRoute.Substring(1, realRoute.Length - 2);
+            int index = 0;
+            realRoute = Regex.Replace(realRoute, @"\((.*?)\)", m =>
+            {
+                if (index < matches.Count)
+                {
+                    string variable = matches[index].Value;
+                    index++;
+                    return variable;
+                }
+                return m.Value;
+            });
+            route = realRoute;
+        }
+        public HttpRouteContainer(IMethodSymbol methodSymbol, Type @class, HttpRouterContainer parent) : this(methodSymbol, Tools.GetMethodInfo(methodSymbol, @class), @class, parent)
         {
             this.parent = parent;
-            this.methodSymbol = methodSymbol;
             this.@class = @class;
-            this.name = methodSymbol.Name;
 
+        }
+        public HttpRouteContainer(IMethodSymbol? methodSymbol, MethodInfo? methodTemp, Type @class, HttpRouterContainer parent)
+        {
+            this.parent = parent;
+            this.@class = @class;
+            this.methodSymbol = methodSymbol;
+            if (methodTemp == null) return;
 
+            name = methodTemp.Name;
 
-            MethodInfo? methodTemp = Tools.GetMethodInfo(methodSymbol, @class);
             if (methodTemp == null || !methodTemp.IsPublic)
             {
                 canBeAdded = false;
@@ -355,7 +497,7 @@ namespace CSharpToTypescript.Container
             {
                 addFormData = ProjectManager.Config.httpRouter.addFormData;
             }
-            if (methodSymbol.IsOverride)
+            if (methodSymbol != null && methodSymbol.IsOverride)
             {
                 overrideTxt = "override ";
             }
@@ -375,26 +517,26 @@ namespace CSharpToTypescript.Container
                     continue;
                 }
 
-                foreach (var parameter in methodSymbol.Parameters)
+                foreach (var parameter in method.GetParameters())
                 {
                     if (parameter.Name == pair.Key)
                     {
-                        if (parameter.Type.ToString()?.StartsWith("Microsoft") == true)
+                        if (parameter.ParameterType.ToString()?.StartsWith("Microsoft") == true)
                         {
                             continue;
                         }
-                        if (Tools.HasAttribute<NoExport>(parameter))
+                        if (parameter.GetCustomAttribute<NoExport>() != null)
                         {
                             continue;
                         }
 
-                        if (parameter.Type.NullableAnnotation == NullableAnnotation.Annotated)
+                        if (parameter.ParameterType.IsNullable())
                         {
-                            parametersBodyAndType.Add(pair.Key + "?", parent.GetTypeName(parameter.Type).Replace("?", ""));
+                            parametersBodyAndType.Add(pair.Key + "?", parent.GetTypeName(parameter.ParameterType).Replace("?", ""));
                         }
                         else
                         {
-                            parametersBodyAndType.Add(pair.Key, parent.GetTypeName(parameter.Type));
+                            parametersBodyAndType.Add(pair.Key, parent.GetTypeName(parameter.ParameterType));
                         }
                     }
                 }
@@ -431,7 +573,7 @@ namespace CSharpToTypescript.Container
                     typeContainer = typeof(Json);
                 }
 
-                if (methodSymbol.DeclaringSyntaxReferences.Length > 0 && methodSymbol.DeclaringSyntaxReferences[0].GetSyntax() is MethodDeclarationSyntax methodSyntax)
+                if (methodSymbol?.DeclaringSyntaxReferences.Length > 0 && methodSymbol.DeclaringSyntaxReferences[0].GetSyntax() is MethodDeclarationSyntax methodSyntax)
                 {
                     if (methodSyntax.Body == null)
                     {
@@ -515,13 +657,13 @@ namespace CSharpToTypescript.Container
                 ParseRoute(defaultName, @params);
             }
             bool hasBody = false;
-            foreach (var parameter in this.methodSymbol.Parameters)
+            foreach (var parameter in method.GetParameters())
             {
-                if (parameter.Type.ToString()?.StartsWith("Microsoft") == true)
+                if (parameter.ParameterType.ToString()?.StartsWith("Microsoft") == true)
                 {
                     continue;
                 }
-                if (Tools.HasAttribute<NoExport>(parameter))
+                if (parameter.GetCustomAttribute<NoExport>() != null)
                 {
                     continue;
                 }
@@ -624,6 +766,7 @@ namespace CSharpToTypescript.Container
                                 };
 
                                 functionNeeded.Add(methodTemp.Name, getTxt);
+                                functionResult.Add(methodTemp.Name, o.ToString());
                             }
                         }
                     }
@@ -676,9 +819,29 @@ namespace CSharpToTypescript.Container
             {
                 if (returnStatement.Expression != null)
                 {
-                    if (returnStatement.Expression is BinaryExpressionSyntax)
+                    if (
+                        returnStatement.Expression is BinaryExpressionSyntax ||
+                        returnStatement.Expression.IsKind(SyntaxKind.TrueLiteralExpression) ||
+                        returnStatement.Expression.IsKind(SyntaxKind.FalseLiteralExpression)
+                    )
                     {
                         listReturns.Add("bool");
+                        return;
+                    }
+                    if (
+                        returnStatement.Expression.IsKind(SyntaxKind.StringLiteralExpression) ||
+                        returnStatement.Expression.IsKind(SyntaxKind.CharacterLiteralExpression) ||
+                        returnStatement.Expression.IsKind(SyntaxKind.Utf8StringLiteralExpression)
+                    )
+                    {
+                        listReturns.Add("string");
+                        return;
+                    }
+                    if (
+                        returnStatement.Expression.IsKind(SyntaxKind.NumericLiteralExpression)
+                    )
+                    {
+                        listReturns.Add("string");
                         return;
                     }
                     SymbolInfo temp = ProjectManager.Compilation.GetSemanticModel(node.SyntaxTree).GetSymbolInfo(returnStatement.Expression);
@@ -773,7 +936,7 @@ namespace CSharpToTypescript.Container
             }
             else
             {
-                Console.WriteLine("return type is " + argumentSymbol.Symbol?.GetType());
+                Console.WriteLine("return type for argument is " + argumentSymbol.Symbol?.GetType());
             }
         }
 
@@ -800,7 +963,12 @@ namespace CSharpToTypescript.Container
 
             string @params = string.Join(", ", parametersUrlAndType.Select(p => p.Key + ": " + p.Value));
 
-            string fctDesc = BaseContainer.GetAccessibility(methodSymbol) + overrideTxt + "async " + name + "(" + @params + "): $resultType {";
+            if (parent.prefixForParent && parent.prefix != null && route.StartsWith(parent.prefix))
+            {
+                route = route.Substring(parent.prefix.Length);
+            }
+
+            string fctDesc = BaseContainer.GetAccessibility(method) + overrideTxt + "async " + name + "(" + @params + "): $resultType {";
             string request = "const request = new Aventus.HttpRequest(`${this.getPrefix()}" + route + "`, Aventus.HttpMethod." + this.httpMethods[0].ToUpper() + ");";
             string body = "";
             string resultWithErrorType = parent.GetAventusTypeName("AventusSharp.Tools.ResultWithError");

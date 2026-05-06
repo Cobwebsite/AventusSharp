@@ -37,7 +37,7 @@ namespace CSharpToTypescript.Container
         {
             if (IsConvertible)
             {
-                string typeName = "\"" + Tools.GetFullName(type) + ", " + type.ContainingAssembly.Name + "\"";
+                string typeName = "\"" + type.GetFullName() + ", " + type.ContainingAssembly.Name + "\"";
                 Type? realType = Tools.GetCompiledType(type.BaseType);
                 AddTxt("/** Fullname of the class */", result);
                 if (

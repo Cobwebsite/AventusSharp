@@ -8,6 +8,7 @@ namespace AventusSharp.WebSocket
 {
     public class WebSocketRouteInfo
     {
+        public string baseUrl;
         public Regex pattern;
         public MethodInfo action;
         public IWsRouter router;
@@ -21,8 +22,9 @@ namespace AventusSharp.WebSocket
             get => pattern.ToString();
         }
 
-        public WebSocketRouteInfo(Regex pattern, MethodInfo action, IWsRouter router, int nbParamsFunction, ResponseTypeEnum eventType, Func<WsEndPoint, WebSocketConnection?, List<WebSocketConnection>>? customFct)
+        public WebSocketRouteInfo(string baseUrl, Regex pattern, MethodInfo action, IWsRouter router, int nbParamsFunction, ResponseTypeEnum eventType, Func<WsEndPoint, WebSocketConnection?, List<WebSocketConnection>>? customFct)
         {
+            this.baseUrl = baseUrl;
             this.pattern = pattern;
             this.action = action;
             this.router = router;

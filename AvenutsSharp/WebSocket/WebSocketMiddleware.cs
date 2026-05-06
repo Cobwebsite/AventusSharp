@@ -2,6 +2,7 @@
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -255,7 +256,7 @@ namespace AventusSharp.WebSocket
 
                         foreach (IWsEndPoint endpointType in infoMethod.endPoints)
                         {
-                            WebSocketRouteInfo info = new WebSocketRouteInfo(regex, method, routeInstances[t], parameters.Length, infoMethod.eventType, infoMethod.CustomFct);
+                            WebSocketRouteInfo info = new WebSocketRouteInfo(route, regex, method, routeInstances[t], parameters.Length, infoMethod.eventType, infoMethod.CustomFct);
                             info.parameters = @params;
 
                             if (endpointType is WsEndPoint _class)
@@ -282,6 +283,30 @@ namespace AventusSharp.WebSocket
 
                 }
             }
+        }
+
+        public static void PrintForExport()
+        {
+            if (endPointInstances.Count == 0) return;
+
+            Console.WriteLine("--- Routes WS ---");
+            List<WsExpose> expose = new List<WsExpose>();
+            foreach (KeyValuePair<string, WsEndPoint> endpointInfo in endPointInstances)
+            {
+                foreach (var routeInfo in endpointInfo.Value.routesInfo)
+                {
+                    expose.Add(new WsExpose()
+                    {
+                        BaseUrl = routeInfo.Value.baseUrl,
+                        Pattern = routeInfo.Value.pattern.ToString(),
+                        MethodName = routeInfo.Value.action.Name,
+                        ClassName = routeInfo.Value.action.ReflectedType!.FullName!,
+                        Params = routeInfo.Value.parameters.Select(p => p.Value.type.FullName!).ToList()
+                    });
+                }
+            }
+            Console.WriteLine(JsonConvert.SerializeObject(expose));
+            Console.WriteLine("-------------------");
         }
 
         internal static WebSocketAttributeAnalyze PrepareAttributes(IEnumerable<object> attrs, string prefix)

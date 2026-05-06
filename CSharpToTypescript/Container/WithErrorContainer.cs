@@ -30,12 +30,12 @@ namespace CSharpToTypescript.Container
 
         public WithErrorContainer(INamedTypeSymbol type) : base(type)
         {
-            if (Tools.GetFullName(this.type) == typeof(VoidWithError).FullName)
+            if (this.type.GetFullName() == typeof(VoidWithError).FullName)
             {
                 isPasserel = true;
                 isVoid = true;
             }
-            else if (Tools.GetFullName(this.type) == typeof(ResultWithError<>).FullName?.Split("`")[0])
+            else if (this.type.GetFullName() == typeof(ResultWithError<>).FullName?.Split("`")[0])
             {
                 isPasserel = true;
             }

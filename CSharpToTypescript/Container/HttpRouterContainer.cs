@@ -825,7 +825,7 @@ namespace CSharpToTypescript.Container
                         returnStatement.Expression.IsKind(SyntaxKind.FalseLiteralExpression)
                     )
                     {
-                        listReturns.Add("bool");
+                        listReturns.Add("boolean");
                         return;
                     }
                     if (
@@ -841,7 +841,7 @@ namespace CSharpToTypescript.Container
                         returnStatement.Expression.IsKind(SyntaxKind.NumericLiteralExpression)
                     )
                     {
-                        listReturns.Add("string");
+                        listReturns.Add("number");
                         return;
                     }
                     SymbolInfo temp = ProjectManager.Compilation.GetSemanticModel(node.SyntaxTree).GetSymbolInfo(returnStatement.Expression);

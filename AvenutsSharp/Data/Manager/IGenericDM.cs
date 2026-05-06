@@ -31,6 +31,7 @@ namespace AventusSharp.Data.Manager
         Task<List<X>> GetAll<X>() where X : notnull;
         Task<ResultWithError<List<X>>> GetAllWithError<X>() where X : notnull;
         IQueryBuilder<X> CreateQuery<X>() where X : notnull;
+        ICreateBuilder<X> CreateCreate<X>() where X : notnull;
         IUpdateBuilder<X> CreateUpdate<X>() where X : notnull;
         IDeleteBuilder<X> CreateDelete<X>() where X : notnull;
         IExistBuilder<X> CreateExist<X>() where X : notnull;

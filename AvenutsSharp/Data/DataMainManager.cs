@@ -182,26 +182,25 @@ namespace AventusSharp.Data
 
         public static Task<VoidWithError> Init()
         {
-            List<Assembly> searchingAssemblies = new();
-            Assembly? assembly = Assembly.GetEntryAssembly();
-            if (assembly != null)
-            {
-                searchingAssemblies.Add(assembly);
-            }
+            List<Assembly?> searchingAssemblies = [Assembly.GetEntryAssembly()];
             return Init(searchingAssemblies);
         }
-        public static Task<VoidWithError> Init(Assembly assembly)
+        public static Task<VoidWithError> Init(Assembly? assembly)
         {
-            List<Assembly> searchingAssemblies = new();
-            if (assembly != null)
-            {
-                searchingAssemblies.Add(assembly);
-            }
+            List<Assembly?> searchingAssemblies = [assembly];
             return Init(searchingAssemblies);
         }
 
-        public static async Task<VoidWithError> Init(List<Assembly> assemblies)
+        public static async Task<VoidWithError> Init(List<Assembly?> assemblies)
         {
+            List<Assembly> assembliesFilter = new();
+            foreach (Assembly? assembly in assemblies)
+            {
+                if (assembly is not null)
+                {
+                    assembliesFilter.Add(assembly);
+                }
+            }
             if (!registerDone)
             {
                 configureAction(Config);
@@ -213,7 +212,7 @@ namespace AventusSharp.Data
                 registerDone = true;
             }
 
-            if (MergeAssemblies(assemblies) == 0)
+            if (MergeAssemblies(assembliesFilter) == 0)
             {
                 return new VoidWithError();
             }

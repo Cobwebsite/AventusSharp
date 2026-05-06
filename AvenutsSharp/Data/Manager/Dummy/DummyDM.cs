@@ -233,6 +233,11 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             return Task.CompletedTask;
         }
+
+        public override ICreateBuilder<X> CreateCreate<X>()
+        {
+            throw new NotImplementedException();
+        }
         #endregion
 
     }

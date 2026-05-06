@@ -17,7 +17,8 @@
 					}
 				}
 			],
-			"hideWarnings": true
+			"hideWarnings": true,
+			"disabled": true
 		}
 	]
 }

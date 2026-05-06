@@ -29,6 +29,13 @@ namespace AventusSharp.Data.Manager
         public Task<ResultWithError<List<T>>> RunWithError();
 
         /// <summary>
+        /// Executes the query and execut the action on each items
+        /// Use this if you have a lot of data
+        /// </summary>
+        /// <returns>A ResultWithError containing a list of <typeparamref name="T"/>.</returns>
+        public Task<VoidWithError> RunStreamWithError(Func<T, Task<VoidWithError>> action);
+
+        /// <summary>
         /// Executes the query and returns a single result.
         /// </summary>
         /// <returns>A single <typeparamref name="T"/> object, or null if no result is found.</returns>
@@ -195,7 +202,7 @@ namespace AventusSharp.Data.Manager
         public QueryBuilderPrepared(IQueryBuilder<T> builder)
         {
             this.builder = builder;
-            mutex = new(1,1);
+            mutex = new(1, 1);
         }
 
         /// <summary>
@@ -284,7 +291,7 @@ namespace AventusSharp.Data.Manager
             return this;
         }
 
-        public QueryBuilderPrepared<T> Include<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null)  where Y : IStorable
+        public QueryBuilderPrepared<T> Include<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
         {
             builder.Include(expression, fields?.ConvertList<LambdaExpression>());
             return this;

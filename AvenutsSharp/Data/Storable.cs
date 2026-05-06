@@ -82,6 +82,10 @@ namespace AventusSharp.Data
         {
             return GenericDM.Get<T>().CreateQuery<T>();
         }
+        public static ICreateBuilder<T> StartCreate()
+        {
+            return GenericDM.Get<T>().CreateCreate<T>();
+        }
         public static IUpdateBuilder<T> StartUpdate()
         {
             return GenericDM.Get<T>().CreateUpdate<T>();

@@ -23,6 +23,7 @@ namespace AventusSharp.Data.Storage.Default
         public VoidWithDataError AddPyramid(PyramidInfo pyramid);
         public TableInfo? GetTableInfo(Type type);
         public Task<ResultWithError<List<X>>> QueryFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable;
+        public Task<VoidWithError> QueryStreamFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder, Func<X, Task<VoidWithError>> action) where X : IStorable;
         public Task<ResultWithError<bool>> ExistFromBuilder<X>(DatabaseExistBuilder<X> queryBuilder) where X : IStorable;
         public Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> queryBuilder, List<X> items, bool withId) where X : IStorable;
         public Task<VoidWithError> CreateFromBuilder<X>(DatabaseCreateBuilder<X> queryBuilder, X item) where X : IStorable;

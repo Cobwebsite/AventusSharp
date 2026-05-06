@@ -59,6 +59,22 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         }
 
+        public async Task<VoidWithError> RunStreamWithError(Func<T, Task<VoidWithError>> action)
+        {
+            if (Errors.Count > 0)
+            {
+                return new VoidWithError()
+                {
+                    Errors = Errors
+                };
+            }
+            MergeScopeAndWhere();
+            VoidWithError result = await Storage.QueryStreamFromBuilder(this, action);
+            DM.PrintErrors(result);
+            return result;
+
+        }
+
         public async Task<T?> Single()
         {
             return (await SingleWithError()).Result;

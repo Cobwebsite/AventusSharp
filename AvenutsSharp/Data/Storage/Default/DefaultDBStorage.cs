@@ -215,7 +215,7 @@ namespace AventusSharp.Data.Storage.Default
                             {
                                 foreach (KeyValuePair<string, object?> parameter in parameters)
                                 {
-                                    command.Parameters[parameter.Key].Value = parameter.Value;
+                                    command.Parameters[parameter.Key].Value = parameter.Value ?? DBNull.Value;
                                 }
 
                                 printCommand(command.CommandText, parameters);
@@ -248,6 +248,83 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
+        public async Task<VoidWithError> ExecuteNoTransaction(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
+            if (commandResult.Result != null)
+            {
+                VoidWithError result = await ExecuteNoTransaction(commandResult.Result, dataParameters: null, callerPath, callerNo);
+                commandResult.Result.Dispose();
+                return result;
+            }
+            VoidWithError noCommand = new();
+            noCommand.Errors.AddRange(commandResult.Errors);
+            return noCommand;
+        }
+
+        public Task<VoidWithError> ExecuteNoTransaction(DbCommand command, Dictionary<string, object?> parameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            return ExecuteNoTransaction(command, new List<Dictionary<string, object?>>() { parameters }, callerPath, callerNo);
+        }
+        public async Task<VoidWithError> ExecuteNoTransaction(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            VoidWithError result = new();
+            if (ReadOnly && !command.CommandText.ToLower().StartsWith("select"))
+            {
+                result.Errors.Add(new DataError(DataErrorCode.IsReadOnly, "Can't execute the command " + command.CommandText + " because the connection is readonly"));
+                return result;
+            }
+            try
+            {
+                DbConnection connection = GetConnection();
+                await connection.OpenAsync();
+
+                try
+                {
+                    command.Connection = connection;
+                    try
+                    {
+                        if (dataParameters != null)
+                        {
+                            foreach (Dictionary<string, object?> parameters in dataParameters)
+                            {
+                                foreach (KeyValuePair<string, object?> parameter in parameters)
+                                {
+                                    command.Parameters[parameter.Key].Value = parameter.Value ?? DBNull.Value;
+                                }
+
+                                printCommand(command.CommandText, parameters);
+                                await command.ExecuteNonQueryAsync();
+                            }
+                        }
+                        else
+                        {
+                            printCommand(command.CommandText);
+                            await command.ExecuteNonQueryAsync();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                    }
+                }
+                catch (Exception e)
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                }
+                finally
+                {
+                    await connection.CloseAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
+            return result;
+        }
+
+
         public async Task<ResultWithError<List<Dictionary<string, string?>>>> Query(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
@@ -261,23 +338,43 @@ namespace AventusSharp.Data.Storage.Default
             noCommand.Errors.AddRange(commandResult.Errors);
             return noCommand;
         }
-        public Task<ResultWithError<List<Dictionary<string, string?>>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
-        {
-            return Query(command, dataParameters, 0, callerPath, callerNo);
-        }
-        public async Task<ResultWithError<List<Dictionary<string, string?>>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, int loop, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        public async Task<ResultWithError<List<Dictionary<string, string?>>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithError<List<Dictionary<string, string?>>> result = new()
             {
                 Result = new List<Dictionary<string, string?>>()
             };
+            await QueryStream(command, dataParameters, (line) =>
+            {
+                result.Result.Add(line);
+                return Task.FromResult(new VoidWithError());
+            });
+            return result;
+        }
+
+        public async Task<VoidWithError> QueryStream(string sql, Func<Dictionary<string, string?>, Task<VoidWithError>> action, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
+            if (commandResult.Result != null)
+            {
+                VoidWithError result = await QueryStream(commandResult.Result, null, action, callerPath, callerNo);
+                commandResult.Result.Dispose();
+                return result;
+            }
+            VoidWithError noCommand = new();
+            noCommand.Errors.AddRange(commandResult.Errors);
+            return noCommand;
+        }
+        public async Task<VoidWithError> QueryStream(DbCommand command, List<Dictionary<string, object?>>? dataParameters, Func<Dictionary<string, string?>, Task<VoidWithError>> action, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            VoidWithError result = new();
             try
             {
                 if (transactionScope == null)
                 {
                     return await RunInsideTransaction(async () =>
                     {
-                        return await Query(command, dataParameters, callerPath, callerNo);
+                        return await QueryStream(command, dataParameters, action, callerPath, callerNo);
                     });
                 }
 
@@ -298,7 +395,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             foreach (KeyValuePair<string, object?> parameter in parameters)
                             {
-                                command.Parameters[parameter.Key].Value = parameter.Value;
+                                command.Parameters[parameter.Key].Value = parameter.Value ?? DBNull.Value;
                             }
 
                             printCommand(command.CommandText, parameters);
@@ -324,7 +421,7 @@ namespace AventusSharp.Data.Storage.Default
                                             }
                                         }
                                     }
-                                    result.Result.Add(temp);
+                                    await result.RunAsync(() => action(temp));
                                 }
                                 reader.Close();
                                 reader.Dispose();
@@ -355,7 +452,7 @@ namespace AventusSharp.Data.Storage.Default
                                         }
                                     }
                                 }
-                                result.Result.Add(temp);
+                                await result.RunAsync(() => action(temp));
                             }
                             reader.Close();
                             reader.Dispose();
@@ -376,6 +473,7 @@ namespace AventusSharp.Data.Storage.Default
 
             return result;
         }
+
 
         public async Task<ResultWithError<DbTransactionContext>> BeginTransaction()
         {
@@ -631,8 +729,10 @@ namespace AventusSharp.Data.Storage.Default
             GrabValue
         }
         protected abstract object? TransformValueForFct(ParamsInfo paramsInfo);
-        protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
+
+        protected async Task<VoidWithError> PrepareGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item, Func<DbCommand, List<Dictionary<string, object?>>, Task<VoidWithError>> run)
         {
+            VoidWithError result = new();
             List<GenericError> errors = new();
 
             if (item != null)
@@ -641,15 +741,11 @@ namespace AventusSharp.Data.Storage.Default
             }
             if (errors.Count > 0)
             {
-                ResultWithError<List<Dictionary<string, string?>>> queryResultTemp = new()
-                {
-                    Result = new List<Dictionary<string, string?>>()
-                };
                 foreach (DataError error in errors)
                 {
-                    queryResultTemp.Errors.Add(error);
+                    result.Errors.Add(error);
                 }
-                return queryResultTemp;
+                return result;
             }
 
             string sqlToExecute = sql;
@@ -663,6 +759,7 @@ namespace AventusSharp.Data.Storage.Default
                     for (int i = 0; i < list.Count; i++)
                     {
                         paramNames.Add("@" + parameterInfo.Key.Name + "_" + i);
+
                         parametersToUse.Add(new ParamsInfo()
                         {
                             DbType = parameterInfo.Key.DbType,
@@ -679,7 +776,6 @@ namespace AventusSharp.Data.Storage.Default
                     parametersToUse.Add(parameterInfo.Key, parameterInfo.Value);
                 }
             }
-            ResultWithError<List<Dictionary<string, string?>>> result = new();
             ResultWithDataError<DbCommand> cmdResult = CreateCmd(sqlToExecute);
             result.Errors.AddRange(cmdResult.Errors);
             if (!result.Success || cmdResult.Result == null)
@@ -718,16 +814,11 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 parametersValue["@" + parameterInfo.Key.Name] = TransformValueForFct(parameterInfo.Key);
             }
-            ResultWithError<List<Dictionary<string, string?>>> queryResult;
             if (errors.Count > 0)
             {
-                queryResult = new ResultWithError<List<Dictionary<string, string?>>>
-                {
-                    Result = new List<Dictionary<string, string?>>()
-                };
                 foreach (DataError error in errors)
                 {
-                    queryResult.Errors.Add(error);
+                    result.Errors.Add(error);
                 }
             }
             else
@@ -763,12 +854,173 @@ namespace AventusSharp.Data.Storage.Default
 
                 combinaisons(0, new());
 
-                queryResult = await Query(cmd, parametersFinal);
+                await run(cmd, parametersFinal);
             }
             cmd.Dispose();
-            return queryResult;
+            return result;
 
         }
+
+        protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
+        {
+            ResultWithError<List<Dictionary<string, string?>>> result = new ResultWithError<List<Dictionary<string, string?>>>();
+            await PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
+            {
+                result = await Query(cmd, parametersFinal);
+                return new VoidWithError();
+            });
+            return result;
+        }
+        protected async Task<VoidWithError> QueryStreamGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item, Func<Dictionary<string, string?>, Task<VoidWithError>> transform)
+        {
+            VoidWithError result = new VoidWithError();
+            await PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
+            {
+                result = await QueryStream(cmd, parametersFinal, transform);
+                return new VoidWithError();
+            });
+            return result;
+        }
+        // protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
+        // {
+        //     List<GenericError> errors = new();
+
+        //     if (item != null)
+        //     {
+        //         errors.AddRange(item.IsValid(action));
+        //     }
+        //     if (errors.Count > 0)
+        //     {
+        //         ResultWithError<List<Dictionary<string, string?>>> queryResultTemp = new()
+        //         {
+        //             Result = new List<Dictionary<string, string?>>()
+        //         };
+        //         foreach (DataError error in errors)
+        //         {
+        //             queryResultTemp.Errors.Add(error);
+        //         }
+        //         return queryResultTemp;
+        //     }
+
+        //     string sqlToExecute = sql;
+        //     Dictionary<ParamsInfo, QueryParameterType> parametersToUse = new();
+        //     // check if parameters list
+        //     foreach (KeyValuePair<ParamsInfo, QueryParameterType> parameterInfo in parameters)
+        //     {
+        //         if (parameterInfo.Key.Value is IList list)
+        //         {
+        //             List<string> paramNames = new();
+        //             for (int i = 0; i < list.Count; i++)
+        //             {
+        //                 paramNames.Add("@" + parameterInfo.Key.Name + "_" + i);
+
+        //                 parametersToUse.Add(new ParamsInfo()
+        //                 {
+        //                     DbType = parameterInfo.Key.DbType,
+        //                     MembersList = parameterInfo.Key.MembersList,
+        //                     Name = parameterInfo.Key.Name + "_" + i,
+        //                     TypeLvl0 = parameterInfo.Key.TypeLvl0,
+        //                     Value = list[i],
+        //                 }, parameterInfo.Value);
+        //             }
+        //             sqlToExecute = sqlToExecute.Replace("@" + parameterInfo.Key.Name, "(" + string.Join(",", paramNames) + ")");
+        //         }
+        //         else
+        //         {
+        //             parametersToUse.Add(parameterInfo.Key, parameterInfo.Value);
+        //         }
+        //     }
+        //     ResultWithError<List<Dictionary<string, string?>>> result = new();
+        //     ResultWithDataError<DbCommand> cmdResult = CreateCmd(sqlToExecute);
+        //     result.Errors.AddRange(cmdResult.Errors);
+        //     if (!result.Success || cmdResult.Result == null)
+        //     {
+        //         return result;
+        //     }
+        //     DbCommand cmd = cmdResult.Result;
+        //     Dictionary<string, object?> parametersValue = new();
+        //     foreach (KeyValuePair<ParamsInfo, QueryParameterType> parameterInfo in parametersToUse)
+        //     {
+        //         DbParameter parameter = GetDbParameter();
+        //         parameter.ParameterName = "@" + parameterInfo.Key.Name;
+        //         parameter.DbType = parameterInfo.Key.DbType;
+        //         cmd.Parameters.Add(parameter);
+        //         if (parameterInfo.Value == QueryParameterType.GrabValue)
+        //         {
+        //             if (Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)UpdatedDate$") || Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)CreatedDate$"))
+        //             {
+        //                 parameterInfo.Key.Value = DateTime.Now;
+        //                 if (item != null)
+        //                 {
+        //                     parameterInfo.Key.SetCurrentValueOnObject(item);
+        //                 }
+        //             }
+        //             else if (item != null)
+        //             {
+        //                 parameterInfo.Key.TypeLvl0 = item.GetType();
+        //                 parameterInfo.Key.SetValue(item);
+        //             }
+        //             else
+        //             {
+        //                 parameterInfo.Key.Value = null;
+        //             }
+        //             errors.AddRange(await parameterInfo.Key.IsValueValid(action));
+
+        //         }
+        //         parametersValue["@" + parameterInfo.Key.Name] = TransformValueForFct(parameterInfo.Key);
+        //     }
+        //     ResultWithError<List<Dictionary<string, string?>>> queryResult;
+        //     if (errors.Count > 0)
+        //     {
+        //         queryResult = new ResultWithError<List<Dictionary<string, string?>>>
+        //         {
+        //             Result = new List<Dictionary<string, string?>>()
+        //         };
+        //         foreach (DataError error in errors)
+        //         {
+        //             queryResult.Errors.Add(error);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         //write all combinaisons if one of the parameter is a list
+        //         List<Dictionary<string, object?>> parametersFinal = new();
+
+        //         Action<int, Dictionary<string, object?>> combinaisons = (int i, Dictionary<string, object?> current) => { };
+        //         combinaisons = (int i, Dictionary<string, object?> current) =>
+        //         {
+        //             if (i == parametersValue.Count)
+        //             {
+        //                 parametersFinal.Add(current);
+        //                 return;
+        //             }
+        //             KeyValuePair<string, object?> parameterValue = parametersValue.ElementAt(i);
+
+        //             if (parameterValue.Value is IList enumerable)
+        //             {
+        //                 foreach (object o in enumerable)
+        //                 {
+        //                     Dictionary<string, object?> clone = current.ToDictionary(t => t.Key, t => t.Value);
+        //                     clone.Add(parameterValue.Key, o);
+        //                     combinaisons(i + 1, clone);
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 current.Add(parameterValue.Key, parameterValue.Value);
+        //                 combinaisons(i + 1, current);
+        //             }
+        //         };
+
+        //         combinaisons(0, new());
+
+        //         queryResult = await Query(cmd, parametersFinal);
+        //     }
+        //     cmd.Dispose();
+        //     return queryResult;
+
+        // }
+
 
         protected async Task<VoidWithError> BulkQueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, List<IStorable> items)
         {
@@ -899,7 +1151,7 @@ namespace AventusSharp.Data.Storage.Default
 
                 }
 
-                foreach(var subquery in queryBuilder.SubQueries)
+                foreach (var subquery in queryBuilder.SubQueries)
                 {
                     await result.RunAsync(() => subquery.Value.Run(result.Result));
                 }
@@ -907,6 +1159,36 @@ namespace AventusSharp.Data.Storage.Default
 
             return result;
         }
+        public async Task<VoidWithError> QueryStreamFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder, Func<X, Task<VoidWithError>> action) where X : IStorable
+        {
+
+            if (queryBuilder.info == null)
+            {
+                queryBuilder.info = PrepareSQLForQuery(queryBuilder);
+            }
+            string sql = queryBuilder.info.Sql;
+
+            DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
+            VoidWithError queryResult = await QueryStreamGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal), null, (ligne) =>
+            {
+                VoidWithError result = new VoidWithError();
+                object? objectTemp = result.Extract(() => CreateObject(baseInfo, ligne, false).ToGeneric());
+                if (objectTemp != null)
+                {
+                    if (objectTemp is X oCasted)
+                    {
+                        action(oCasted);
+                    }
+                    else
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible to cast " + objectTemp.GetType().Name + " into " + typeof(X).Name));
+                    }
+                }
+                return Task.FromResult(result);
+            });
+            return queryResult;
+        }
+
         protected ResultWithDataError<object> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields, bool allowNull)
         {
             ResultWithDataError<object> result = new ResultWithDataError<object>();
@@ -1019,7 +1301,7 @@ namespace AventusSharp.Data.Storage.Default
                 result.Result = null;
                 return result;
             }
-            
+
             result.Result = o;
             return result;
         }

@@ -33,7 +33,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
     }
 
-    public class DatabaseCreateBuilder<T> where T : IStorable
+    public class DatabaseCreateBuilder<T> : ICreateBuilder<T> where T : IStorable
     {
         public IDBStorage Storage { get; private set; }
         public IGenericDM DM { get; private set; }
@@ -55,6 +55,15 @@ namespace AventusSharp.Data.Manager.DB.Builders
             TableInfo = tableInfo;
         }
 
+
+        public async Task<T?> Run(T item)
+        {
+            VoidWithError result = new();
+            T? resultItem = await result.ExtractAsync(() => RunWithError(item));
+            DM.PrintErrors(result);
+            return resultItem;
+        }
+
         public async Task<ResultWithError<T>> RunWithError(T item)
         {
             ResultWithError<T> result = new();
@@ -70,6 +79,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
             DM.PrintErrors(result);
             return result;
         }
+
 
         public async Task<VoidWithError> RunBulkWithError(List<T> items, bool withId)
         {

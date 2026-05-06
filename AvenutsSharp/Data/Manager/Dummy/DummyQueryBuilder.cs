@@ -75,6 +75,11 @@ namespace AventusSharp.Data.Manager.Dummy
             throw new NotImplementedException();
         }
 
+        public Task<VoidWithError> RunStreamWithError(Func<T, Task<VoidWithError>> action)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<T?> Single()
         {
             throw new NotImplementedException();

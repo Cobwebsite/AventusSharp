@@ -1,10 +1,10 @@
-// using AventusSharp.Data.Storage.Default;
+using AventusSharp.Data.Storage.Default;
 
-// namespace AventusSharp.Data.Storage.Sqlite;
+namespace AventusSharp.Data.Storage.Sqlite;
 
-// public class SqliteMigrationProvider : StorageMigrationProvider<SqliteStorage>
-// {
-//     public SqliteMigrationProvider(SqliteStorage storage) : base(storage)
-//     {
-//     }
-// }
+public class SqliteMigrationProvider : StorageMigrationProvider<SqliteStorage>
+{
+    public SqliteMigrationProvider(SqliteStorage storage) : base(storage)
+    {
+    }
+}

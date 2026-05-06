@@ -484,7 +484,10 @@ namespace AventusSharp.Data.Manager.DB
         #endregion
 
         #region Create
-
+        public override ICreateBuilder<X> CreateCreate<X>()
+        {
+            return new DatabaseCreateBuilder<X>(Storage, this);
+        }
         // private readonly Dictionary<Type, object> savedCreateQuery = new();
         protected override Task<ResultWithError<List<X>>> CreateLogic<X>(List<X> values)
         {

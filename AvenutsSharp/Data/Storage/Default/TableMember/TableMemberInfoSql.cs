@@ -344,9 +344,9 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 IsUpdatable = false;
                 return true;
             }
-            if (attribute is AutoIncrement)
+            if (attribute is AutoIncrement autoIncrement)
             {
-                IsAutoIncrement = true;
+                IsAutoIncrement = autoIncrement.Value;
                 return true;
             }
             if (attribute is ISqlTransform sqlTransform)

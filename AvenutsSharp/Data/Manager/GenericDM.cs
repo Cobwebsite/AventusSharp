@@ -396,6 +396,20 @@ namespace AventusSharp.Data.Manager
         }
         #endregion
 
+        #region generic create
+        public abstract ICreateBuilder<X> CreateCreate<X>() where X : U;
+        private MethodInfo? ICreateCreate = null;
+        ICreateBuilder<X> IGenericDM.CreateCreate<X>()
+        {
+            ICreateBuilder<X>? result = InvokeMethod<ICreateBuilder<X>, X>(ref ICreateCreate, Array.Empty<object>());
+            if (result == null)
+            {
+                throw new Exception("Create create not exist => impossible");
+            }
+            return result;
+        }
+        #endregion
+
         #region generic update
         public abstract IUpdateBuilder<X> CreateUpdate<X>() where X : U;
         private MethodInfo? ICreateUpdate = null;
@@ -1173,7 +1187,10 @@ namespace AventusSharp.Data.Manager
         /// </summary>
         /// <typeparam name="X"></typeparam>
         /// <param name="item"></param>
-        public virtual async Task OnItemLoaded<X>(X item) where X : U { }
+        public virtual Task OnItemLoaded<X>(X item) where X : U
+        {
+            return Task.CompletedTask;
+        }
 
         async Task IGenericDM.OnItemLoaded<X>(X item)
         {
@@ -1578,7 +1595,7 @@ namespace AventusSharp.Data.Manager
             try
             {
                 errors.AddRange(await BeforeUpdateWithError(values));
-               await BeforeUpdate(values);
+                await BeforeUpdate(values);
             }
             catch (Exception e)
             {

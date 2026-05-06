@@ -1,220 +1,244 @@
 
 
-// using System;
-// using System.Collections.Generic;
-// using System.Data;
-// using System.Data.Common;
-// using AventusSharp.Data.Attributes;
-// using AventusSharp.Data.Manager.DB;
-// using AventusSharp.Data.Manager.DB.Builders;
-// using AventusSharp.Data.Storage.Default;
-// using AventusSharp.Data.Storage.Default.TableMember;
-// using AventusSharp.Tools;
-// using Microsoft.Data.Sqlite;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Threading.Tasks;
+using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Data.Migrations;
+using AventusSharp.Data.Storage.Default;
+using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Tools;
+using Microsoft.Data.Sqlite;
 
-// namespace AventusSharp.Data.Storage.Sqlite;
+namespace AventusSharp.Data.Storage.Sqlite;
 
-// public class MySQLStorage : DefaultDBStorage<MySQLStorage>
-// {
-//     protected bool CreateDatabase { get; set; }
-//     public MySQLStorage(StorageCredentials info, bool createDatabase = true) : base(info)
-//     {
-//         CreateDatabase = createDatabase;
-//     }
+public class SqliteCredentials : StorageCredentials
+{
+    public SqliteCredentials(string database) : base("", "", "", database)
+    {
+    }
+}
+public class SqliteStorage : DefaultDBStorage<SqliteStorage>
+{
+    protected bool CreateDatabase { get; set; }
+    protected SqliteMigrationProvider MigrationProvider { get; }
+    public SqliteStorage(string path, bool createDatabase = true) : base(new SqliteCredentials(path))
+    {
+        CreateDatabase = createDatabase;
+        MigrationProvider = new SqliteMigrationProvider(this);
+    }
 
-//     protected override DbConnection GetConnection()
-//     {
-//         SqliteConnectionStringBuilder builder = new()
-//         {
-//             DataSource = database // SQLite utilise un fichier comme base de données
-//         };
+    public override DbConnection GetConnection()
+    {
+        SqliteConnectionStringBuilder builder = new()
+        {
+            DataSource = database,
+        };
 
-//         return new SqliteConnection(builder.ConnectionString);
-//     }
+        return new SqliteConnection(builder.ConnectionString);
+    }
 
-        // protected override IMigrationProvider DefineMigrationProvider()
-        // {
-        //     return new SqliteMigrationProvider(this);
-        // }
+    protected override IMigrationProvider DefineMigrationProvider()
+    {
+        return MigrationProvider;
+    }
 
-//     public override VoidWithError ConnectWithError()
-//     {
-//         VoidWithError result = new();
-//         try
-//         {
-//             IsConnectedOneTime = true;
-//             using (DbConnection connection = GetConnection())
-//             {
-//                 connection.Open();
-//                 IsConnectedOneTime = true;
-//             }
-//         }
-//         catch (Exception e)
-//         {
-//             if (e is SqliteException exception)
-//             {
-//                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-//             }
-//             else
-//             {
-//                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-//             }
-//         }
+    public override async Task<VoidWithError> ConnectWithError()
+    {
+        VoidWithError result = new();
+        try
+        {
+            IsConnectedOneTime = true;
+            using (DbConnection connection = GetConnection())
+            {
+                await connection.OpenAsync();
+                IsConnectedOneTime = true;
+            }
+        }
+        catch (Exception e)
+        {
+            if (e is SqliteException exception)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
+            else
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
+        }
 
-//         return result;
-//     }
+        return result;
+    }
 
-//     public override ResultWithDataError<DbCommand> CreateCmd(string sql)
-//     {
-//         ResultWithDataError<DbCommand> result = new();
-//         try
-//         {
-//             SqliteConnection mySqlConnection = (SqliteConnection)GetConnection();
-//             SqliteCommand command = mySqlConnection.CreateCommand();
-//             command.CommandType = System.Data.CommandType.Text;
-//             command.CommandText = sql;
-//             result.Result = command;
-//         }
-//         catch (Exception e)
-//         {
-//             result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
-//         }
-//         return result;
-//     }
-//     public override DbParameter GetDbParameter()
-//     {
-//         return new SqliteParameter();
-//     }
+    public override ResultWithDataError<DbCommand> CreateCmd(string sql)
+    {
+        ResultWithDataError<DbCommand> result = new();
+        try
+        {
+            SqliteConnection mySqlConnection = (SqliteConnection)GetConnection();
+            SqliteCommand command = mySqlConnection.CreateCommand();
+            command.CommandType = System.Data.CommandType.Text;
+            command.CommandText = sql;
+            result.Result = command;
+        }
+        catch (Exception e)
+        {
+            result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+        }
+        return result;
+    }
+    public override DbParameter GetDbParameter()
+    {
+        return new SqliteParameter();
+    }
 
-//     public override ResultWithError<bool> ResetStorage()
-//     {
-//         ResultWithError<bool> result = new();
+    public override async Task<ResultWithError<bool>> ResetStorage()
+    {
+        ResultWithError<bool> result = new();
 
-//         // Récupérer toutes les tables existantes
-//         string sql = "SELECT 'DROP TABLE IF EXISTS \"' || name || '\";' AS query " +
-//                      "FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
+        // Récupérer toutes les tables existantes
+        string sql = "SELECT 'DROP TABLE IF EXISTS \"' || name || '\";' AS query " +
+                     "FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
 
-//         ResultWithError<List<Dictionary<string, string?>>> queryResult = Query(sql);
-//         if (!queryResult.Success || queryResult.Result == null)
-//         {
-//             result.Errors.AddRange(queryResult.Errors);
-//             return result;
-//         }
+        ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
+        if (!queryResult.Success || queryResult.Result == null)
+        {
+            result.Errors.AddRange(queryResult.Errors);
+            return result;
+        }
 
-//         string dropAllCmd = "";
-//         foreach (Dictionary<string, string?> line in queryResult.Result)
-//         {
-//             dropAllCmd += line["query"];
-//         }
+        string dropAllCmd = "";
+        foreach (Dictionary<string, string?> line in queryResult.Result)
+        {
+            dropAllCmd += line["query"];
+        }
 
-//         VoidWithError executeResult = Execute(dropAllCmd);
-//         if (!executeResult.Success)
-//         {
-//             result.Errors.AddRange(executeResult.Errors);
-//             return result;
-//         }
+        VoidWithError executeResult = await Execute(dropAllCmd);
+        if (!executeResult.Success)
+        {
+            result.Errors.AddRange(executeResult.Errors);
+            return result;
+        }
 
-//         result.Result = true;
-//         return result;
-//     }
+        result.Result = true;
+        return result;
+    }
 
-//     #region table
-//     protected override string PrepareSQLCreateTable(TableInfo table)
-//     {
-//         return Queries.CreateTable.GetQuery(table, this);
-//     }
-//     protected override string PrepareSQLCreateIntermediateTable(TableMemberInfoSql tableMember)
-//     {
-//         return Queries.CreateIntermediateTable.GetQuery(tableMember, this);
-//     }
-//     protected override string PrepareSQLTableExist(string table)
-//     {
-//         string sql = "SELECT COUNT(*) AS nb FROM sqlite_master " +
-//                      "WHERE type='table' AND name = '" + table + "';";
-//         return sql;
-//     }
-//     #endregion
+    #region table
+    protected override List<string> PrepareSQLCreateTable(TableInfo table)
+    {
+        return Queries.CreateTable.GetQuery(table, this);
+    }
+    protected override string PrepareSQLCreateIntermediateTable(TableMemberInfoSql tableMember)
+    {
+        return Queries.CreateIntermediateTable.GetQuery(tableMember, this);
+    }
+    protected override string PrepareSQLTableExist(string table)
+    {
+        string sql = "SELECT COUNT(*) AS nb FROM sqlite_master " +
+                     "WHERE type='table' AND name = '" + table + "';";
+        return sql;
+    }
 
-//     #region query
-//     protected override DatabaseQueryBuilderInfo PrepareSQLForQuery<X>(DatabaseQueryBuilder<X> queryBuilder)
-//     {
-//         return Queries.Query.PrepareSQL(queryBuilder, this);
-//     }
+    protected override string PrepareSQLTableRename(string oldName, string newName)
+    {
+        return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+    }
+    protected override string PrepareSQLTableDelete(string name)
+    {
+        return "DROP TABLE IF EXISTS `" + name + "`;";
+    }
 
-//     #endregion
+    #endregion
 
-//     #region exist
-//     protected override DatabaseExistBuilderInfo PrepareSQLForExist<X>(DatabaseExistBuilder<X> queryBuilder)
-//     {
-//         return Queries.Exist.PrepareSQL(queryBuilder, this);
-//     }
-//     #endregion
+    #region query
+    protected override DatabaseQueryBuilderInfo PrepareSQLForQuery<X>(DatabaseQueryBuilder<X> queryBuilder)
+    {
+        return Queries.Query.PrepareSQL(queryBuilder, this);
+    }
 
-//     #region create
-//     protected override DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder)
-//     {
-//         return Queries.Create.PrepareSQL(createBuilder);
-//     }
-//     #endregion
+    #endregion
 
-//     #region update
-//     protected override DatabaseUpdateBuilderInfo PrepareSQLForUpdate<X>(DatabaseUpdateBuilder<X> updateBuilder)
-//     {
-//         return Queries.Update.PrepareSQL(updateBuilder, this);
-//     }
+    #region exist
+    protected override DatabaseExistBuilderInfo PrepareSQLForExist<X>(DatabaseExistBuilder<X> queryBuilder)
+    {
+        return Queries.Exist.PrepareSQL(queryBuilder, this);
+    }
+    #endregion
 
-//     #endregion
+    #region create
+    protected override DatabaseCreateBuilderInfo PrepareSQLForCreate<X>(DatabaseCreateBuilder<X> createBuilder)
+    {
+        return Queries.Create.PrepareSQL(createBuilder);
+    }
+    protected override DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId)
+    {
+        return Queries.BulkCreate.PrepareSQL(createBuilder, nbItems, withId);
+    }
+    #endregion
 
-//     #region delete
-//     protected override DatabaseDeleteBuilderInfo PrepareSQLForDelete<X>(DatabaseDeleteBuilder<X> deleteBuilder)
-//     {
-//         return Queries.Delete.PrepareSQL(deleteBuilder, this);
-//     }
+    #region update
+    protected override DatabaseUpdateBuilderInfo PrepareSQLForUpdate<X>(DatabaseUpdateBuilder<X> updateBuilder)
+    {
+        return Queries.Update.PrepareSQL(updateBuilder, this);
+    }
 
-//     #endregion
+    #endregion
+
+    #region delete
+    protected override DatabaseDeleteBuilderInfo PrepareSQLForDelete<X>(DatabaseDeleteBuilder<X> deleteBuilder)
+    {
+        return Queries.Delete.PrepareSQL(deleteBuilder, this);
+    }
+
+    #endregion
 
 
-//     protected override object? TransformValueForFct(ParamsInfo paramsInfo)
-//     {
-//         if (paramsInfo.Value is string casted)
-//         {
-//             if (paramsInfo.FctMethodCall == WhereGroupFctEnum.StartsWith)
-//             {
-//                 return casted + "%";
-//             }
-//             if (paramsInfo.FctMethodCall == WhereGroupFctEnum.EndsWith)
-//             {
-//                 return "%" + casted;
-//             }
-//             if (paramsInfo.FctMethodCall == WhereGroupFctEnum.ContainsStr)
-//             {
-//                 return "%" + casted + "%";
-//             }
-//         }
-//         return paramsInfo.Value;
-//     }
+    protected override object? TransformValueForFct(ParamsInfo paramsInfo)
+    {
+        if (paramsInfo.Value is string casted)
+        {
+            if (paramsInfo.FctMethodCall == WhereGroupFctEnum.StartsWith)
+            {
+                return casted + "%";
+            }
+            if (paramsInfo.FctMethodCall == WhereGroupFctEnum.EndsWith)
+            {
+                return "%" + casted;
+            }
+            if (paramsInfo.FctMethodCall == WhereGroupFctEnum.ContainsStr)
+            {
+                return "%" + casted + "%";
+            }
+        }
+        return paramsInfo.Value;
+    }
 
-//     public override string GetSqlColumnType(DbType dbType, TableMemberInfoSql? tableMember = null)
-//     {
-//         if (dbType == DbType.Int16) { return "smallint"; }
-//         if (dbType == DbType.Int32) { return "int"; }
-//         if (dbType == DbType.Int64) { return "bigint"; }
-//         if (dbType == DbType.Double) { return "float"; }
-//         if (dbType == DbType.Boolean) { return "bit"; }
-//         if (dbType == DbType.DateTime) { return "datetime"; }
-//         if (dbType == DbType.Date) { return "date"; }
-//         if (dbType == DbType.String)
-//         {
-//             if (tableMember is ITableMemberInfoSizable basic && basic.SizeAttr != null)
-//             {
-//                 if (basic.SizeAttr.SizeType == null) return "varchar(" + basic.SizeAttr.Max + ")";
-//                 else if (basic.SizeAttr.SizeType == SizeEnum.MaxVarChar) return "TEXT";
-//                 else if (basic.SizeAttr.SizeType == SizeEnum.Text) return "TEXT";
-//                 else if (basic.SizeAttr.SizeType == SizeEnum.MediumText) return "MEDIUMTEXT";
-//                 else if (basic.SizeAttr.SizeType == SizeEnum.LongText) return "LONGTEXT";
-//             }
-//             return "varchar(255)";
-//         }
-//         throw new NotImplementedException();
-//     }
-// }
+    public override string GetSqlColumnType(DbType dbType, TableMemberInfoSql? tableMember = null)
+    {
+        if (dbType == DbType.Int16) { return "smallint"; }
+        if (dbType == DbType.Int32) { return "int"; }
+        if (dbType == DbType.Int64) { return "bigint"; }
+        if (dbType == DbType.Double) { return "float"; }
+        if (dbType == DbType.Boolean) { return "bit"; }
+        if (dbType == DbType.DateTime) { return "datetime"; }
+        if (dbType == DbType.Date) { return "date"; }
+        if (dbType == DbType.String)
+        {
+            if (tableMember is ITableMemberInfoSizable basic && basic.SizeAttr != null)
+            {
+                if (basic.SizeAttr.SizeType == null) return "varchar(" + basic.SizeAttr.Max + ")";
+                else if (basic.SizeAttr.SizeType == SizeEnum.MaxVarChar) return "TEXT";
+                else if (basic.SizeAttr.SizeType == SizeEnum.Text) return "TEXT";
+                else if (basic.SizeAttr.SizeType == SizeEnum.MediumText) return "MEDIUMTEXT";
+                else if (basic.SizeAttr.SizeType == SizeEnum.LongText) return "LONGTEXT";
+            }
+            return "varchar(255)";
+        }
+        throw new NotImplementedException();
+    }
+}

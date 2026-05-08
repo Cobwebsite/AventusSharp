@@ -52,10 +52,11 @@ namespace CSharpToTypescript
                 Compilation = await proj.GetCompilationAsync() ?? throw new Exception("Can't compile");
 
                 List<INamedTypeSymbol> result = new();
-                INamespaceSymbol? rootNamespace = Compilation.GlobalNamespace.GetNamespaceMembers().First(p => p.Name == proj.Name);
+                string rootNamespaceName = proj.DefaultNamespace ?? proj.Name;
+                INamespaceSymbol? rootNamespace = Compilation.GlobalNamespace.GetNamespaceMembers().First(p => p.Name == rootNamespaceName);
                 if (rootNamespace != null)
                 {
-                    CurrentAssemblyName = rootNamespace.Name;
+                    CurrentAssemblyName = proj.Name;
                     LoadNamespace(rootNamespace, result);
                 }
                 FileToWrite.WriteAll();

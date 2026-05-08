@@ -16,6 +16,7 @@ namespace AventusSharp.Routes.Response
         public async Task send(HttpContext context, IRouter? from = null)
         {
             var bytes = Encoding.UTF8.GetBytes(text);
+            context.Response.ContentType = "text/plain";
             context.Response.StatusCode = code;
             await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
         }

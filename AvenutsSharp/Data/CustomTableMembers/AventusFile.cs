@@ -32,7 +32,8 @@ namespace AventusSharp.Data.CustomTableMembers
             if (result is _AventusFile file)
             {
                 ResultWithError<bool> beforeSaveResult = file.BeforeSave(obj);
-                if(!beforeSaveResult.Success) {
+                if (!beforeSaveResult.Success)
+                {
                     throw beforeSaveResult.Errors[0].GetException();
                 }
                 return file.Uri;
@@ -94,7 +95,10 @@ namespace AventusSharp.Data.CustomTableMembers
                 return result;
             }
 
-            ResultWithRouteError<bool> resultTemp = Upload.MoveWithError(DefineFileSave(Upload));
+            string? savePath = result.Extract(() => DefineSavePath(instance, Upload));
+            if (savePath == null) return result;
+
+            ResultWithRouteError<bool> resultTemp = Upload.MoveWithError(savePath);
             result.Result = resultTemp.Result;
             result.Errors = resultTemp.ToGeneric().Errors;
             Upload = null;
@@ -102,11 +106,24 @@ namespace AventusSharp.Data.CustomTableMembers
             return result;
         }
 
-        protected abstract string DefineFileSave(HttpFile file);
+        protected abstract ResultWithError<string> DefineSavePath(object instance, HttpFile file);
     }
 
     public abstract class AventusFile<T> : _AventusFile where T : IStorable
     {
+        protected sealed override ResultWithError<string> DefineSavePath(object instance, HttpFile file)
+        {
+            if (instance is T t)
+            {
+                return DefineSavePath(t, file);
+            }
+            ResultWithError<string> result = new ResultWithError<string>();
+            result.Errors.Add(new DataError(DataErrorCode.WrongType, "The object of type " + TypeTools.GetReadableName(instance.GetType()) + " can't be used for image saving " + TypeTools.GetReadableName(typeof(T))));
+            return result;
+        }
+
+        protected abstract ResultWithError<string> DefineSavePath(T instance, HttpFile file);
+
         public override sealed ResultWithError<bool> BeforeSave(object instance)
         {
             ResultWithError<bool> result = new ResultWithError<bool>();
@@ -129,11 +146,20 @@ namespace AventusSharp.Data.CustomTableMembers
                 return result;
             }
 
-            ResultWithRouteError<bool> resultTemp = Upload.MoveWithError(DefineFileSave(Upload));
-            result.Result = resultTemp.Result;
-            result.Errors = resultTemp.ToGeneric().Errors;
+            result.Run(() => MoveFile(instance, Upload));
             Upload = null;
 
+            return result;
+        }
+
+
+        public virtual ResultWithError<bool> MoveFile(T instance, HttpFile file)
+        {
+            ResultWithError<bool> result = new ResultWithError<bool>();
+            string? savePath = result.Extract(() => DefineSavePath(instance, file));
+            if (savePath == null) return result;
+            
+            result.Run(() => file.MoveWithError(savePath).ToGeneric());
             return result;
         }
 

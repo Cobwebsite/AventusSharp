@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager.DB;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
@@ -139,6 +140,15 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
-        
+
+        public IQueryBuilder<T> WithScope<X>() where X : IScope, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> WithoutScope()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

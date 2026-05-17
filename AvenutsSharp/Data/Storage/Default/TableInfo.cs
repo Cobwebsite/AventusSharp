@@ -88,7 +88,7 @@ namespace AventusSharp.Data.Storage.Default
 
         public IGenericDM? DM { get; private set; }
 
-        public List<Expression<Func<object, bool>>> Scopes { get; set; } = new();
+        public List<IScope> Scopes { get; set; } = new();
 
         public TableInfo(Type type)
         {
@@ -106,7 +106,7 @@ namespace AventusSharp.Data.Storage.Default
             {
                 if (_scope is IScope scope)
                 {
-                    Scopes.Add(scope.Where());
+                    Scopes.Add(scope);
                 }
             }
         }

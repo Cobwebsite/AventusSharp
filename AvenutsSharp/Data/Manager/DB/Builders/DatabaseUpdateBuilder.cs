@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Storage.Default;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
@@ -80,6 +81,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
         public async Task<ResultWithError<List<T>>> RunWithError(T item)
         {
             ResultWithError<List<T>> result = new();
+            MergeScopeAndWhere();
             ResultWithError<List<int>> resultTemp = await Storage.UpdateFromBuilder(this, item);
             if (resultTemp.Success && resultTemp.Result != null)
             {
@@ -210,6 +212,17 @@ namespace AventusSharp.Data.Manager.DB.Builders
         void IUpdateBuilder<T>.SetVariableInternal(string name, object value)
         {
             SetVariableGeneric(name, value);
+        }
+
+        public IUpdateBuilder<T> WithScope<X>() where X : IScope, new()
+        {
+            WithScopeGeneric<X>();
+            return this;
+        }
+        public IUpdateBuilder<T> WithoutScope()
+        {
+            WithoutScopeGeneric();
+            return this;
         }
     }
 }

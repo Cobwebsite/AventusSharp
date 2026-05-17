@@ -344,11 +344,11 @@ namespace AventusSharp.Data.Storage.Default
             {
                 Result = new List<Dictionary<string, string?>>()
             };
-            await QueryStream(command, dataParameters, (line) =>
+            await result.RunAsync(() => QueryStream(command, dataParameters, (line) =>
             {
                 result.Result.Add(line);
                 return Task.FromResult(new VoidWithError());
-            });
+            }));
             return result;
         }
 

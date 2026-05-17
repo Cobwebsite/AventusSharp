@@ -520,6 +520,7 @@ namespace AventusSharp.Data.Manager.DB
                     else
                     {
                         result.Errors.AddRange(resultTemp.Errors);
+                        break;
                     }
                 }
 
@@ -588,6 +589,7 @@ namespace AventusSharp.Data.Manager.DB
                     else
                     {
                         result.Errors.AddRange(resultTemp.Errors);
+                        break;
                     }
                 }
 
@@ -633,6 +635,7 @@ namespace AventusSharp.Data.Manager.DB
                     else
                     {
                         result.Errors.AddRange(resultTemp.Errors);
+                        break;
                     }
                 }
 

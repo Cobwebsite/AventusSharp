@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -24,6 +25,16 @@ namespace AventusSharp.Data.Manager.Dummy
         }
 
         public DeleteBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IDeleteBuilder<T> WithoutScope()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IDeleteBuilder<T> WithScope<X>() where X : IScope, new()
         {
             throw new NotImplementedException();
         }

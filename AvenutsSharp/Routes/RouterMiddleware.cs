@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Request;
@@ -23,6 +24,13 @@ namespace AventusSharp.Routes
         private static bool configLoaded = false;
         internal static RouterConfig config = new RouterConfig();
         private static Dictionary<Type, object> injected = new Dictionary<Type, object>();
+
+        private static AsyncLocal<HttpContext?> _contextScope = new();
+        public static HttpContext? ContextScope
+        {
+            get => _contextScope.Value;
+            internal set => _contextScope.Value = value;
+        }
 
         public static void Configure(Action<RouterConfig> configAction)
         {
@@ -363,7 +371,6 @@ namespace AventusSharp.Routes
                 return router;
             }
 
-
             string url = context.Request.Path.ToString().ToLower();
 
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
@@ -483,6 +490,7 @@ namespace AventusSharp.Routes
         {
             RouteInfo routerInfo = routerResolve.RouteInfo;
             bool canContinue = true;
+            ContextScope = context;
             foreach (Middleware middleware in routerInfo.middlewares)
             {
                 if (!canContinue) return;
@@ -511,6 +519,7 @@ namespace AventusSharp.Routes
                     if (!o.GetType().IsGenericType)
                     {
                         context.Response.StatusCode = 204;
+                        ContextScope = null;
                         return;
                     }
                     o = ((dynamic)task).Result;
@@ -533,6 +542,7 @@ namespace AventusSharp.Routes
                     await new Json(o).send(context, routerInfo.router);
                 }
             }
+            ContextScope = null;
             return;
         }
 

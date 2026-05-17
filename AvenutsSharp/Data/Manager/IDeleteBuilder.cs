@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -41,6 +42,9 @@ namespace AventusSharp.Data.Manager
 
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
+
+        public IDeleteBuilder<T> WithScope<X>() where X : IScope, new();
+        public IDeleteBuilder<T> WithoutScope();
     }
 
     public class DeleteBuilderPrepared<T>

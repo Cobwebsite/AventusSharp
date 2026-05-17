@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Storage.Default;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Routes;
 using AventusSharp.Tools;
@@ -334,6 +335,17 @@ namespace AventusSharp.Data.Manager.DB.Builders
         void IQueryBuilder<T>.SetVariableInternal(string name, object value)
         {
             SetVariableGeneric(name, value);
+        }
+
+        public IQueryBuilder<T> WithScope<X>() where X : IScope, new()
+        {
+            WithScopeGeneric<X>();
+            return this;
+        }
+        public IQueryBuilder<T> WithoutScope()
+        {
+            WithoutScopeGeneric();
+            return this;
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Storage.Default;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
@@ -55,6 +56,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
             if (result.Success && result.Result != null)
             {
+                MergeScopeAndWhere();
                 VoidWithError resultTemp = await Storage.DeleteFromBuilder(this, result.Result);
                 if (resultTemp.Success && DM is IDatabaseDM databaseDM)
                 {
@@ -110,6 +112,19 @@ namespace AventusSharp.Data.Manager.DB.Builders
         {
             SetVariableGeneric(name, value);
             queryBuilder.SetVariableInternal(name, value);
+        }
+
+        public IDeleteBuilder<T> WithScope<X>() where X : IScope, new()
+        {
+            WithScopeGeneric<X>();
+            queryBuilder.WithScope<X>();
+            return this;
+        }
+        public IDeleteBuilder<T> WithoutScope()
+        {
+            WithoutScopeGeneric();
+            queryBuilder.WithoutScope();
+            return this;
         }
     }
 }

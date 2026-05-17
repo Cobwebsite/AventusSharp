@@ -158,10 +158,12 @@ namespace AventusSharp.WebSocket
         /// <returns></returns>
         public async Task Route(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid = "")
         {
+            RouterMiddleware.ContextScope = connection.GetContext();
             foreach (Func<WebSocketConnection, string, WebSocketRouterBody, string, Task<bool>> middleware in middlewares)
             {
                 if (!await middleware(connection, path, body, uid))
                 {
+                    RouterMiddleware.ContextScope = null;
                     return;
                 }
             }
@@ -214,6 +216,7 @@ namespace AventusSharp.WebSocket
                                             if (!bodyPart.Success)
                                             {
                                                 await connection.Send(path, bodyPart);
+                                                RouterMiddleware.ContextScope = null;
                                                 return;
                                             }
                                             value = bodyPart.Result;
@@ -280,6 +283,7 @@ namespace AventusSharp.WebSocket
                     }
                 }
             }
+            RouterMiddleware.ContextScope = null;
         }
 
 

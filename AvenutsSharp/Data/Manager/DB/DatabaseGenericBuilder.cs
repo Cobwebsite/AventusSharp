@@ -1,6 +1,7 @@
 ﻿using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Routes;
 using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http.Extensions;
 using System;
@@ -36,7 +37,9 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     public List<SortInfo>? Sorting { get; private set; } = null;
     public List<GroupInfo>? Groups { get; private set; } = null;
 
-    public WhereGroup? Scopes { get; set; }
+    protected bool _noScope { get; set; }
+    protected List<IScope>? ManualScopes { get; set; }
+    protected List<IScope>? Scopes { get; set; }
 
     public List<GenericError> Errors { get; private set; } = new List<GenericError>();
 
@@ -136,21 +139,9 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         {
             if (Scopes == null) Scopes = new();
 
-            LambdaTranslator<T> translator = new(this);
             foreach (var scope in table.Scopes)
             {
-                if (Scopes.Groups.Count > 0)
-                    Scopes.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
-
-                var translateResult = translator.Translate(scope);
-                if (!translateResult.IsExternal)
-                {
-                    Scopes.Groups.AddRange(translateResult.Wheres);
-                }
-                else
-                {
-                    throw new NotImplementedException("Missing implementation to scope with external subquery");
-                }
+                Scopes.Add(scope);
             }
         }
 
@@ -604,18 +595,61 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         return AllMembersByPath.ContainsKey(mergedPath) && AllMembersByPath[mergedPath] == true;
     }
 
+    protected void WithoutScopeGeneric()
+    {
+        _noScope = true;
+    }
+
+    protected void WithScopeGeneric<X>() where X : IScope, new()
+    {
+        X scope = TypeTools.CreateNewObj<X>();
+        if (ManualScopes == null) ManualScopes = new();
+        ManualScopes.Add(scope);
+    }
     protected void MergeScopeAndWhere()
     {
-        if (Scopes == null) return;
+        if (_noScope) return;
+        List<IScope>? scopes = ManualScopes ?? Scopes;
+        if (scopes == null) return;
+
+
+        LambdaTranslator<T> translator = new(this);
+        WhereGroup whereGroup = new();
+        bool hasScope = false;
+        foreach (var scope in scopes)
+        {
+            var scopeFct = scope.Where(RouterMiddleware.ContextScope);
+            if (scopeFct != null)
+            {
+                hasScope = true;
+                if (whereGroup.Groups.Count > 0)
+                    whereGroup.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
+
+                var translateResult = translator.Translate(scopeFct);
+                if (!translateResult.IsExternal)
+                {
+                    whereGroup.Groups.AddRange(translateResult.Wheres);
+                }
+                else
+                {
+                    throw new NotImplementedException("Missing implementation to scope with external subquery");
+                }
+            }
+        }
+
+        if (!hasScope) return;
 
         if (Wheres == null)
         {
-            Wheres = new List<IWhereRootGroup>() { Scopes };
+            Wheres = new List<IWhereRootGroup>() { whereGroup };
             return;
         }
 
+
+
+
         var group = new WhereGroup();
-        group.Groups.AddRange(Scopes);
+        group.Groups.AddRange(whereGroup);
         group.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
         group.Groups.AddRange(Wheres);
         Wheres = new List<IWhereRootGroup>() { group };

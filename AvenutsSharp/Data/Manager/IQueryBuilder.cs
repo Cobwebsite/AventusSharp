@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager.DB;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
@@ -189,6 +190,9 @@ namespace AventusSharp.Data.Manager
 
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
+
+        public IQueryBuilder<T> WithScope<X>() where X : IScope, new();
+        public IQueryBuilder<T> WithoutScope();
     }
 
     public interface IQueryBuilderPrepared
@@ -351,6 +355,7 @@ namespace AventusSharp.Data.Manager
             return this;
         }
 
+        
 
     }
 

@@ -86,10 +86,10 @@ namespace AventusSharp.SSE
                 connections.Add(connection);
                 try
                 {
+                    RouterMiddleware.ContextScope = context;
                     await OnConnectionOpen(connection);
-                    Console.WriteLine("waiting");
                     await connection.WaitForShutdown;
-                    Console.WriteLine("done");
+                    RouterMiddleware.ContextScope = null;
                 }
                 catch (Exception ex)
                 {

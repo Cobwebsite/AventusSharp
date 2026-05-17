@@ -358,6 +358,12 @@ namespace AventusSharp.Routes
 
         public static async Task<RouterResolve?> Resolve(HttpContext context)
         {
+            if (context.Items.ContainsKey("routerResolve") && context.Items["routerResolve"] is RouterResolve router)
+            {
+                return router;
+            }
+
+
             string url = context.Request.Path.ToString().ToLower();
 
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
@@ -453,7 +459,10 @@ namespace AventusSharp.Routes
                             }
                         }
 
-                        return new RouterResolve(routerInfo, param);
+
+                        RouterResolve routerResolve = new RouterResolve(routerInfo, param);
+                        context.Items["routerResolve"] = routerResolve;
+                        return routerResolve;
                     }
                 }
             }

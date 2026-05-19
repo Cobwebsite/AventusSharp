@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using AventusSharp.Data;
 using AventusSharp.Routes;
 using AventusSharp.SSE;
@@ -20,12 +21,8 @@ public static class AventusExtension
             return args.Contains("--export-info");
         }
     }
-    public static bool IsExport(this IApplicationBuilder app)
-    {
-        string[] args = Environment.GetCommandLineArgs();
-        return args.Contains("--export-info");
-    }
-    public static void OnStop(this IApplicationBuilder app, Action action)
+   
+    private static void OnStop(this IApplicationBuilder app, Action action)
     {
         IHostApplicationLifetime lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
 
@@ -36,7 +33,9 @@ public static class AventusExtension
     }
     public static IApplicationBuilder UseAventusData(this IApplicationBuilder app, Action<DataManagerConfig>? config = null)
     {
-        if (app.IsExport()) return app;
+        if (IsExportCommand) return app;
+
+        AventusLogger.Initialize(app);
 
         if (config != null)
             DataMainManager.Configure(config);
@@ -50,6 +49,8 @@ public static class AventusExtension
 
     public static IApplicationBuilder UseAventusHttp(this IApplicationBuilder app, Action<RouterConfig>? config = null)
     {
+        AventusLogger.Initialize(app);
+
         if (config != null)
             Routes.RouterMiddleware.Configure(config);
         VoidWithError result = Routes.RouterMiddleware.Register();
@@ -64,6 +65,8 @@ public static class AventusExtension
 
     public static IApplicationBuilder UseAventusWebsocket(this IApplicationBuilder app, Action<WebSocketConfig>? config = null)
     {
+        AventusLogger.Initialize(app);
+
         if (config != null)
             WebSocketMiddleware.Configure(config);
         VoidWithError result = WebSocketMiddleware.Register();
@@ -82,6 +85,8 @@ public static class AventusExtension
     }
     public static IApplicationBuilder UseAventusSSE(this IApplicationBuilder app, Action<SSEConfig>? config = null)
     {
+        AventusLogger.Initialize(app);
+
         if (config != null)
             SSEMiddleware.Configure(config);
         VoidWithError result = SSEMiddleware.Register();
@@ -99,7 +104,7 @@ public static class AventusExtension
 
     public static IApplicationBuilder UseAventusExport(this IApplicationBuilder app)
     {
-        if (app.IsExport())
+        if (IsExportCommand)
         {
             Routes.RouterMiddleware.PrintForExport();
             WebSocketMiddleware.PrintForExport();

@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Tools.Attributes;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -68,7 +69,7 @@ namespace AventusSharp.Tools
 
         public void Print()
         {
-            Console.WriteLine(GetMessagePrint());
+            AventusLogger.Instance.LogError(exception: GetException(), message: GetMessagePrint());
         }
 
 

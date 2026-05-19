@@ -1,15 +1,12 @@
-﻿using AventusSharp.Data.Manager;
-using AventusSharp.Data.Manager.DB;
+﻿using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
-using Microsoft.AspNetCore.Http.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace AventusSharp.Data.Storage.Sqlite.Queries
 {

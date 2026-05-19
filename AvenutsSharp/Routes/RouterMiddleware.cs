@@ -12,6 +12,7 @@ using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace AventusSharp.Routes
@@ -201,13 +202,13 @@ namespace AventusSharp.Routes
                                     if (!routesInfo.ContainsKey(info.UniqueKey))
                                     {
                                         if (config.PrintRoute)
-                                            Console.WriteLine("Add http : " + info.ToString());
+                                            AventusLogger.Instance.LogInformation("Add http : " + info.ToString());
                                         routesInfo.Add(info.UniqueKey, info);
                                     }
                                     else
                                     {
                                         if (config.PrintRoute)
-                                            Console.WriteLine("Add http : " + info.ToString());
+                                            AventusLogger.Instance.LogInformation("Add http : " + info.ToString());
                                         RouteInfo otherInfo = routesInfo[info.UniqueKey];
                                         result.Errors.Add(new RouteError(RouteErrorCode.RouteAlreadyExist, info.ToString() + " is already added from " + otherInfo.action.Name + " (" + otherInfo.action.DeclaringType?.Assembly.FullName + ")"));
                                     }
@@ -229,7 +230,7 @@ namespace AventusSharp.Routes
         {
             if (routesInfo.Count == 0) return;
 
-            Console.WriteLine("--- Routes HTTP ---");
+            AventusLogger.Instance.LogInformation("--- Routes HTTP ---");
             List<RouteExposeHttp> expose = new List<RouteExposeHttp>();
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
             {
@@ -244,8 +245,8 @@ namespace AventusSharp.Routes
                 });
 
             }
-            Console.WriteLine(JsonConvert.SerializeObject(expose));
-            Console.WriteLine("-------------------");
+            AventusLogger.Instance.LogInformation(JsonConvert.SerializeObject(expose));
+            AventusLogger.Instance.LogInformation("-------------------");
         }
         public static void Inject(object o)
         {
@@ -265,7 +266,7 @@ namespace AventusSharp.Routes
             if (o != null)
                 injected[typeof(T)] = o;
             else
-                Console.WriteLine("Can't create " + typeof(U));
+                AventusLogger.Instance.LogError("Can't create " + typeof(U));
         }
         public static Regex PrepareUrl(string urlPattern, Dictionary<string, RouterParameterInfo> @params, Type t, MethodInfo methodInfo)
         {
@@ -293,7 +294,7 @@ namespace AventusSharp.Routes
                     MethodInfo? method = t.GetMethod(value, BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (method == null)
                     {
-                        Console.WriteLine("Can't find method " + value + " on " + t.FullName);
+                        AventusLogger.Instance.LogError("Can't find method " + value + " on " + t.FullName);
                         continue;
                     }
                     object? o = method.Invoke(routerInstances[t], Array.Empty<object>());
@@ -445,7 +446,7 @@ namespace AventusSharp.Routes
                                         // error
                                         if (value == null && !parameter.optional)
                                         {
-                                            Console.WriteLine("ERRRRROOOOOR");
+                                            AventusLogger.Instance.LogError("Can't find the parameter " + parameter.name + " for http request " + url + "(" + context.Request.Method + ")");
                                         }
                                         param[parameter.positionCSharp] = value;
                                     }

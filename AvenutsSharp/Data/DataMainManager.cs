@@ -10,6 +10,7 @@ using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.Dummy;
 using AventusSharp.Data.Migrations;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Data
 {
@@ -306,7 +307,7 @@ namespace AventusSharp.Data
                 bool monitor = this.config.log.monitorManagerAnalyze;
                 if (monitor)
                 {
-                    Console.WriteLine("*********** Analyze managers **********");
+                    AventusLogger.Instance.LogInformation("*********** Analyze managers **********");
                 }
                 Stopwatch? time = null;
                 List<Type> managerTypes = GenericDM.GetExistingDMTypes();
@@ -370,7 +371,7 @@ namespace AventusSharp.Data
                     managerInformations.Add(managerType, info);
                     if (monitor)
                     {
-                        Console.WriteLine(managerType.Name);
+                        AventusLogger.Instance.LogInformation(managerType.Name);
                     }
 
 
@@ -431,7 +432,7 @@ namespace AventusSharp.Data
                 bool monitor = this.config.log.monitorDataDependances;
                 if (monitor)
                 {
-                    Console.WriteLine("*********** Calculate data dependances **********");
+                    AventusLogger.Instance.LogInformation("*********** Calculate data dependances **********");
                 }
                 List<Type> dataTypes = new();
                 foreach (Assembly assembly in searchingAssemblies)
@@ -580,7 +581,7 @@ namespace AventusSharp.Data
 
                 if (config.log.monitorDataDependances)
                 {
-                    Console.WriteLine(info.ToString());
+                    AventusLogger.Instance.LogInformation(info.ToString());
                 }
                 return result;
             }
@@ -593,7 +594,7 @@ namespace AventusSharp.Data
                 orderedData = new List<DataInformation>();
                 if (monitor)
                 {
-                    Console.WriteLine("*********** Data ordering **********");
+                    AventusLogger.Instance.LogInformation("*********** Data ordering **********");
                 }
                 foreach (DataInformation info in infos)
                 {
@@ -610,18 +611,18 @@ namespace AventusSharp.Data
                     }
                     if (monitor && time != null)
                     {
-                        Console.WriteLine("Data " + info.Name + " ordering loop in " + time.ElapsedMilliseconds + "ms");
+                        AventusLogger.Instance.LogInformation("Data " + info.Name + " ordering loop in " + time.ElapsedMilliseconds + "ms");
                         time.Stop();
                         time = null;
                     }
                 }
                 if (config.log.monitorDataOrdered)
                 {
-                    Console.WriteLine("*********** Data ordered **********");
+                    AventusLogger.Instance.LogInformation("*********** Data ordered **********");
                     int i = 1;
                     foreach (DataInformation dataInfo in orderedData)
                     {
-                        Console.WriteLine(i + ". " + dataInfo.Name + " - " + dataInfo.ManagerInfo.Manager.Name);
+                        AventusLogger.Instance.LogInformation(i + ". " + dataInfo.Name + " - " + dataInfo.ManagerInfo.Manager.Name);
                         i++;
                     }
                 }
@@ -782,7 +783,7 @@ namespace AventusSharp.Data
                 orderedManager = new List<ManagerInformation>();
                 if (monitor)
                 {
-                    Console.WriteLine("*********** Manager ordering **********");
+                    AventusLogger.Instance.LogInformation("*********** Manager ordering **********");
                 }
                 foreach (ManagerInformation info in managerInformations)
                 {
@@ -799,18 +800,18 @@ namespace AventusSharp.Data
                     }
                     if (time != null)
                     {
-                        Console.WriteLine("Manager " + info.Manager.Name + " ordering loop in " + time.ElapsedMilliseconds + "ms");
+                        AventusLogger.Instance.LogInformation("Manager " + info.Manager.Name + " ordering loop in " + time.ElapsedMilliseconds + "ms");
                         time.Stop();
                         time = null;
                     }
                 }
                 if (config.log.monitorManagerOrdered)
                 {
-                    Console.WriteLine("*********** Manager ordered **********");
+                    AventusLogger.Instance.LogInformation("*********** Manager ordered **********");
                     int i = 1;
                     foreach (ManagerInformation managerInfo in orderedManager)
                     {
-                        Console.WriteLine(i + ". " + managerInfo.Manager.Name);
+                        AventusLogger.Instance.LogInformation(i + ". " + managerInfo.Manager.Name);
                         i++;
                     }
                 }
@@ -891,7 +892,7 @@ namespace AventusSharp.Data
                 bool monitor = this.config.log.monitorManagerInit;
                 if (monitor)
                 {
-                    Console.WriteLine("*********** Init managers **********");
+                    AventusLogger.Instance.LogInformation("*********** Init managers **********");
                 }
                 Stopwatch? time = null;
                 List<IGenericDM> genericDMs = new();
@@ -937,7 +938,7 @@ namespace AventusSharp.Data
                     }
                     if (time != null)
                     {
-                        Console.WriteLine("Manager " + dm.Name + " init in " + time.ElapsedMilliseconds + "ms");
+                        AventusLogger.Instance.LogInformation("Manager " + dm.Name + " init in " + time.ElapsedMilliseconds + "ms");
                         time.Stop();
                         time = null;
                     }

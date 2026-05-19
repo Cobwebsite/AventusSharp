@@ -4,6 +4,7 @@ using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Routes.Request;
 using AventusSharp.Tools;
+using Microsoft.Extensions.Logging;
 using MySqlX.XDevAPI.Common;
 using Newtonsoft.Json;
 using System;
@@ -254,7 +255,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for GetPyramidsInfo<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new();
             }
         }
@@ -304,7 +305,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for GetMemberInfo<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new();
             }
         }
@@ -358,7 +359,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for GetMembersInfo<" + TypeTools.GetReadableName(typeof(X)) + ", " + TypeTools.GetReadableName(typeof(Y)) + ">");
                 return new();
             }
         }
@@ -587,7 +588,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for GetAll<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new List<X>();
             }
         }
@@ -752,7 +753,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for GetById<" + TypeTools.GetReadableName(typeof(X)) + ">");
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
                 return default;
 #pragma warning restore CS8603 // Existence possible d'un retour de référence null.
@@ -918,7 +919,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for GetByIds<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new List<X>();
             }
         }
@@ -1071,7 +1072,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Where<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new List<X>();
             }
         }
@@ -1171,7 +1172,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Single<" + TypeTools.GetReadableName(typeof(X)) + ">");
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
                 return default;
 #pragma warning restore CS8603 // Existence possible d'un retour de référence null.
@@ -1200,7 +1201,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for OnItemLoaded<" + TypeTools.GetReadableName(typeof(X)) + ">");
             }
         }
 
@@ -1439,7 +1440,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Create<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new List<X>();
             }
         }
@@ -1465,7 +1466,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for BulkCreate<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return false;
             }
         }
@@ -1570,7 +1571,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Create<" + TypeTools.GetReadableName(typeof(X)) + ">");
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
                 return default;
 #pragma warning restore CS8603 // Existence possible d'un retour de référence null.
@@ -1724,7 +1725,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Update<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new List<X>();
             }
         }
@@ -1827,7 +1828,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Update<" + TypeTools.GetReadableName(typeof(X)) + ">");
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
                 return default;
 #pragma warning restore CS8603 // Existence possible d'un retour de référence null.
@@ -1985,7 +1986,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Delete<" + TypeTools.GetReadableName(typeof(X)) + ">");
                 return new List<X>();
             }
         }
@@ -2085,7 +2086,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for Delete<" + TypeTools.GetReadableName(typeof(X)) + ">");
 #pragma warning disable CS8603 // Existence possible d'un retour de référence null.
                 return default;
 #pragma warning restore CS8603 // Existence possible d'un retour de référence null.
@@ -2710,7 +2711,7 @@ namespace AventusSharp.Data.Manager
         {
             if (printErrorInConsole)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "One of Invoke method can't be done");
             }
         }
 

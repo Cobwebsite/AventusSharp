@@ -56,7 +56,7 @@ namespace CSharpToTypescript
                 INamespaceSymbol? rootNamespace = Compilation.GlobalNamespace.GetNamespaceMembers().First(p => p.Name == rootNamespaceName);
                 if (rootNamespace != null)
                 {
-                    CurrentAssemblyName = proj.Name;
+                    CurrentAssemblyName = proj.AssemblyName;
                     LoadNamespace(rootNamespace, result);
                 }
                 FileToWrite.WriteAll();

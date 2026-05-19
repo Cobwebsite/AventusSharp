@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data.CustomTableMembers;
 using AventusSharp.Tools.Attributes;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -166,9 +167,7 @@ namespace AventusSharp.Tools
                             }
                             catch
                             {
-                                Console.WriteLine(type.Name);
-                                Console.WriteLine(prop.Name);
-                                Console.WriteLine(value);
+                                AventusLogger.Instance.LogError("Json can't be converted. Type :"+type.Name+", Prop :"+prop.Name+", Type of value : "+TypeTools.GetReadableName(value.GetType()));
                                 throw;
                             }
                         }

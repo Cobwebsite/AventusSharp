@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Tools;
 
@@ -60,7 +61,7 @@ public static class Binder
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erreur lors du binding de {sourceName}: {ex.Message}");
+                AventusLogger.Instance.LogError(ex, "AutoBinding failed");
             }
         }
     }

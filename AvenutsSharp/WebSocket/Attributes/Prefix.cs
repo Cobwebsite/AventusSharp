@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.FileSystemGlobbing.Internal;
-using System;
+﻿using System;
 
 namespace AventusSharp.WebSocket.Attributes
 {

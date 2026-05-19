@@ -2,6 +2,7 @@
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -52,7 +53,7 @@ namespace AventusSharp.WebSocket
             if (o != null)
                 injected[typeof(T)] = o;
             else
-                Console.WriteLine("Can't create " + typeof(U));
+                AventusLogger.Instance.LogError("Can't create " + typeof(U));
         }
         public static WebSocketConnection? GetConnection<T>(string sessionId) where T : WsEndPoint
         {
@@ -267,12 +268,12 @@ namespace AventusSharp.WebSocket
                                     info.endpoint = _class;
                                     _class.routesInfo.Add(info.UniqueKey, info);
                                     if (config.PrintRoute)
-                                        Console.WriteLine("Add websocket : " + info.ToString());
+                                        AventusLogger.Instance.LogInformation("Add websocket : " + info.ToString());
                                 }
                                 else
                                 {
                                     if (config.PrintRoute)
-                                        Console.WriteLine("Add websocket : " + info.ToString());
+                                        AventusLogger.Instance.LogInformation("Add websocket : " + info.ToString());
                                     WebSocketRouteInfo otherInfo = _class.routesInfo[info.UniqueKey];
                                     throw new Exception(info.ToString() + " is already added from " + otherInfo.action.Name + " (" + otherInfo.action.DeclaringType?.Assembly.FullName + ")");
                                 }
@@ -289,7 +290,7 @@ namespace AventusSharp.WebSocket
         {
             if (endPointInstances.Count == 0) return;
 
-            Console.WriteLine("--- Routes WS ---");
+            AventusLogger.Instance.LogInformation("--- Routes WS ---");
             List<WsExpose> expose = new List<WsExpose>();
             foreach (KeyValuePair<string, WsEndPoint> endpointInfo in endPointInstances)
             {
@@ -305,8 +306,8 @@ namespace AventusSharp.WebSocket
                     });
                 }
             }
-            Console.WriteLine(JsonConvert.SerializeObject(expose));
-            Console.WriteLine("-------------------");
+            AventusLogger.Instance.LogInformation(JsonConvert.SerializeObject(expose));
+            AventusLogger.Instance.LogInformation("-------------------");
         }
 
         internal static WebSocketAttributeAnalyze PrepareAttributes(IEnumerable<object> attrs, string prefix)
@@ -399,7 +400,7 @@ namespace AventusSharp.WebSocket
                     MethodInfo? method = o.GetType().GetMethod(value, BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (method == null)
                     {
-                        Console.WriteLine("Can't find method " + value + " on " + o.GetType().FullName);
+                        AventusLogger.Instance.LogError("Can't find method " + value + " on " + o.GetType().FullName);
                         continue;
                     }
                     //object? res = method.Invoke(routeInstances[t], Array.Empty<object>());
@@ -480,9 +481,9 @@ namespace AventusSharp.WebSocket
                 //    context.Response.StatusCode = 404;
                 //    if (enableError)
                 //    {
-                //        Console.WriteLine("no router found for " + newPath);
+                //        AventusLogger.Instance.LogError("no router found for " + newPath);
                 //        string listRouter = string.Join(", ", routers.Keys.ToList());
-                //        Console.WriteLine("List " + listRouter);
+                //        AventusLogger.Instance.LogError("List " + listRouter);
                 //    }
                 //}
             }

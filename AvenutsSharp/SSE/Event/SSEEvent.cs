@@ -1,7 +1,6 @@
 ﻿using AventusSharp.SSE.Attributes;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
-using Microsoft.AspNetCore.Connections;
 using System;
 using System.Collections.Generic;
 using System.Linq;

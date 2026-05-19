@@ -6,6 +6,7 @@ using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using K4os.Compression.LZ4.Internal;
+using Microsoft.Extensions.Logging;
 using MySqlX.XDevAPI.Relational;
 using System;
 using System.Collections;
@@ -539,7 +540,6 @@ namespace AventusSharp.Data.Storage.Default
         {
             if (Debug)
             {
-                Console.WriteLine();
                 if (parameters != null)
                 {
                     foreach (KeyValuePair<string, object?> parameter in parameters)
@@ -547,10 +547,8 @@ namespace AventusSharp.Data.Storage.Default
                         queryWithParam = queryWithParam.Replace(parameter.Key, parameter.Key + "(" + parameter.Value?.ToString() + ")");
                     }
                 }
-                Console.WriteLine(queryWithParam);
-                // System.Diagnostics.StackTrace t = new System.Diagnostics.StackTrace();
-                // Console.WriteLine(t);
-                Console.WriteLine();
+                AventusLogger.Instance.LogInformation(queryWithParam);
+
             }
         }
         #endregion

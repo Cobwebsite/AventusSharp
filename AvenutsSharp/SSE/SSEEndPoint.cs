@@ -1,6 +1,8 @@
 using AventusSharp.Routes;
+using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -93,7 +95,7 @@ namespace AventusSharp.SSE
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    AventusLogger.Instance.LogError(ex, "Connection with the socket from " + context.Request.Host + " crashed");
                 }
                 connections.Remove(connection);
             }
@@ -158,7 +160,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
             }
         }
 
@@ -199,7 +201,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
             }
         }
 
@@ -229,7 +231,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
             }
         }
 

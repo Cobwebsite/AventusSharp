@@ -1,4 +1,3 @@
-using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using System;
 
 namespace AventusSharp.Routes.Attributes

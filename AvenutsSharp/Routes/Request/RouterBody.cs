@@ -143,15 +143,11 @@ namespace AventusSharp.Routes.Request
             VoidWithRouteError result = new();
             try
             {
-                context.Request.EnableBuffering();
-                string jsonString = String.Empty;
-
-                context.Request.Body.Position = 0;
-                using (var inputStream = new StreamReader(context.Request.Body))
+                using (var reader = new StreamReader(context.Request.Body))
+                using (var jsonReader = new JsonTextReader(reader))
                 {
-                    jsonString = await inputStream.ReadToEndAsync();
+                    data = await JObject.LoadAsync(jsonReader);
                 }
-                data = JObject.Parse(jsonString);
             }
             catch (Exception e)
             {

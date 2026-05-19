@@ -1,8 +1,10 @@
 ﻿using AventusSharp.Routes;
+using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Event;
 using AventusSharp.WebSocket.Request;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -11,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Convert = System.Convert;
 
 namespace AventusSharp.WebSocket
 {
@@ -91,7 +94,7 @@ namespace AventusSharp.WebSocket
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    AventusLogger.Instance.LogError(ex, "Connection with the socket from " + context.Request.Host + " crashed");
                 }
                 await connection.Start();
             }
@@ -176,8 +179,8 @@ namespace AventusSharp.WebSocket
                 {
                     if (WebSocketMiddleware.config.PrintTrigger)
                     {
-                        Console.WriteLine("trigger " + routeInfo.ToString());
-                        Console.WriteLine("with body " + body.ToString());
+                        AventusLogger.Instance.LogInformation("trigger " + routeInfo.ToString());
+                        AventusLogger.Instance.LogInformation("with body " + body.ToString());
                     }
 
                     object?[] param = new object[routeInfo.nbParamsFunction];
@@ -226,7 +229,7 @@ namespace AventusSharp.WebSocket
                                     // error
                                     if (value == null && !parameter.optional)
                                     {
-                                        Console.WriteLine("ERRRRROOOOOR");
+                                        AventusLogger.Instance.LogError("Can't find the parameter " + parameter.name + " for ws request " + url);
                                     }
                                     param[parameter.positionCSharp] = value;
                                 }
@@ -315,7 +318,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
             }
         }
 
@@ -337,7 +340,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
             }
         }
 
@@ -383,7 +386,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send data though the websocket");
             }
         }
 
@@ -414,7 +417,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
             }
         }
 

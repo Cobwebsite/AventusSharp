@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System;
 using Scriban.Parsing;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.SSE
 {
@@ -58,7 +59,7 @@ namespace AventusSharp.SSE
             await context.Response.Body.FlushAsync();
         }
 
-        public async Task Close()
+        public Task Close()
         {
             try
             {
@@ -66,6 +67,7 @@ namespace AventusSharp.SSE
                 tokenSource.Cancel();
             }
             catch { }
+            return Task.CompletedTask;
         }
 
         #region Send
@@ -89,7 +91,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error in RouterSocket.send() : " + e.ToString());
+                AventusLogger.Instance.LogError(exception: e, message: "Can't send the event "+eventName+" though the sse connection");
                 instance.RemoveInstance(this);
             }
         }
@@ -127,7 +129,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(exception: e, message: "Can't send the event "+eventName+" though the sse connection");
             }
         }
 

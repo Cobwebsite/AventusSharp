@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Routes
 {
@@ -107,7 +108,7 @@ namespace AventusSharp.Routes
             {
                 if (item.Id != id)
                 {
-                    Console.WriteLine("Impossible " + StorableName() + ": get " + item.Id + " instead of " + id);
+                    AventusLogger.Instance.LogError("Impossible " + StorableName() + ": get " + item.Id + " instead of " + id);
                 }
                 result.Result = ConvertResourceDetails(context, item);
             }
@@ -350,7 +351,7 @@ namespace AventusSharp.Routes
             {
                 if (result.Result.Id != id)
                 {
-                    Console.WriteLine("Impossible " + StorableName() + ": get " + result.Result.Id + " instead of " + id);
+                    AventusLogger.Instance.LogError("Impossible " + StorableName() + ": get " + result.Result.Id + " instead of " + id);
                 }
                 result.Result = OnSend(context, result.Result);
             }

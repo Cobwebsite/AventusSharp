@@ -12,6 +12,7 @@ using System.Threading;
 using System;
 using AventusSharp.WebSocket.Request;
 using Scriban.Parsing;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.WebSocket
 {
@@ -97,7 +98,7 @@ namespace AventusSharp.WebSocket
                             {
                                 if (DisplayMsg)
                                 {
-                                    Console.WriteLine("Received on " + o["channel"], "onMessage");
+                                    AventusLogger.Instance.LogInformation("Received on " + o["channel"], "onMessage");
                                 }
                                 string? channel = o["channel"]?.ToString().ToLower();
                                 if (channel == null)
@@ -121,7 +122,7 @@ namespace AventusSharp.WebSocket
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine("Error on parse message from socket : " + e.Message, "errorParsingMessage");
+                            AventusLogger.Instance.LogError(e, $"Can't parse the websocket message : {msg}");
                         }
                         msg = "";
                     }
@@ -207,7 +208,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error in RouterSocket.send() : " + e.ToString());
+                AventusLogger.Instance.LogError(e, "Can't send data though the websocket");
                 this.instance.RemoveInstance(this);
             }
         }
@@ -234,7 +235,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the websocket");
             }
         }
 

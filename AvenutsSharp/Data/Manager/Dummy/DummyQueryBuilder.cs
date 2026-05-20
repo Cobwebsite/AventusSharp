@@ -150,5 +150,50 @@ namespace AventusSharp.Data.Manager.Dummy
         {
             throw new NotImplementedException();
         }
+
+        public IQueryBuilder<T> IncludeWithoutScope<Y>(Expression<Func<T, Y?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> IncludeWithoutScope<Y>(Expression<Func<T, List<Y>?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> memberExpression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> memberExpression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> memberExpression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> memberExpression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            throw new NotImplementedException();
+        }
+
+        public IQueryBuilder<T> WithScope(IScope scope)
+        {
+            throw new NotImplementedException();
+        }
+
+        IQueryBuilder<T> IQueryBuilder<T>.IncludeWithoutScope(LambdaExpression memberExpression, List<LambdaExpression>? fields)
+        {
+            throw new NotImplementedException();
+        }
+
+        IQueryBuilder<T> IQueryBuilder<T>.IncludeWithScope(LambdaExpression memberExpression, List<IScope> scopes, List<LambdaExpression>? fields)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

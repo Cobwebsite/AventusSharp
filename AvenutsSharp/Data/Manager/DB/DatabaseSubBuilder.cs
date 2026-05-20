@@ -30,12 +30,12 @@ public abstract class DatabaseSubBuilder
 
     public abstract Task<VoidWithError> Run<X>(List<X> items) where X : notnull;
 
-    public abstract VoidWithError PrepareReverseLink(List<string> names, List<LambdaExpression>? fields);
-    public abstract VoidWithError ExtendReverseLink(List<string> names, List<LambdaExpression>? fields);
+    public abstract VoidWithError PrepareReverseLink(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
+    public abstract VoidWithError ExtendReverseLink(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
 
-    public abstract VoidWithError PrepareExternalStorage(List<string> names, List<LambdaExpression>? fields);
+    public abstract VoidWithError PrepareExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
 
-    public abstract VoidWithError ExtendExternalStorage(List<string> names, List<LambdaExpression>? fields);
+    public abstract VoidWithError ExtendExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
 }
 public enum DatabaseSubBuilderKind
 {
@@ -163,7 +163,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         return result;
 
     }
-    public override VoidWithError PrepareReverseLink(List<string> names, List<LambdaExpression>? fields)
+    public override VoidWithError PrepareReverseLink(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes)
     {
         Kind = DatabaseSubBuilderKind.ReverseLink;
         string name = names[0];
@@ -327,7 +327,37 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                     }
                     LambdaExpression lambda3 = Expression.Lambda(nameProperty2, argParam2);
                     query.Field(lambda3);
-                    query.Include(lambda3, fields);
+                    if (scopes != null)
+                    {
+                        query.IncludeWithScope(lambda3, scopes, fields);
+                    }
+                    else
+                    {
+                        query.Include(lambda3, fields);
+                    }
+                }
+
+                if (scopes != null)
+                {
+                    List<Scope<Y>> realScopes = new();
+                    foreach (var scope in scopes)
+                    {
+                        if (scope is Scope<Y> realScope)
+                        {
+                            realScopes.Add(realScope);
+                        }
+                    }
+                    if (realScopes.Count > 0)
+                    {
+                        foreach (var realScope in realScopes)
+                        {
+                            query.WithScope(realScope);
+                        }
+                    }
+                    else
+                    {
+                        query.WithoutScope();
+                    }
                 }
 
                 ReverseLinkQuery = query.WhereWithParameters(lambda);
@@ -341,7 +371,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
 
         return result;
     }
-    public override VoidWithError ExtendReverseLink(List<string> names, List<LambdaExpression>? fields)
+    public override VoidWithError ExtendReverseLink(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes)
     {
         VoidWithError result = new VoidWithError();
         if (ReverseLinkQuery == null || ReverseLinkMemberX == null || ReverseLinkReverseMember == null)
@@ -360,7 +390,17 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
             }
             LambdaExpression lambda3 = Expression.Lambda(nameProperty2, argParam2);
             ReverseLinkQuery.Field(lambda3);
-            ReverseLinkQuery.Include(lambda3, fields);
+
+            if (scopes != null)
+            {
+                ReverseLinkQuery.IncludeWithScope(lambda3, scopes, fields);
+            }
+            else
+            {
+                ReverseLinkQuery.Include(lambda3, fields);
+
+            }
+
         }
 
 
@@ -470,7 +510,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
 
         return result;
     }
-    public override VoidWithError PrepareExternalStorage(List<string> names, List<LambdaExpression>? fields)
+    public override VoidWithError PrepareExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes)
     {
         VoidWithError result = new VoidWithError();
         Kind = DatabaseSubBuilderKind.ExternalStorage;
@@ -519,14 +559,22 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
             }
             LambdaExpression lambda3 = Expression.Lambda(nameProperty2, argParam2);
             query.Field(lambda3);
-            query.Include(lambda3, fields);
+
+            if (scopes != null)
+            {
+                query.IncludeWithScope(lambda3, scopes, fields);
+            }
+            else
+            {
+                query.Include(lambda3, fields);
+            }
         }
 
 
         ExternalStorageQuery = query.WhereWithParameters(lambda);
         return result;
     }
-    public override VoidWithError ExtendExternalStorage(List<string> names, List<LambdaExpression>? fields)
+    public override VoidWithError ExtendExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes)
     {
         VoidWithError result = new VoidWithError();
         if (ExternalStorageMemberX == null || ExternalStorageQuery == null)
@@ -545,7 +593,15 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
             }
             LambdaExpression lambda3 = Expression.Lambda(nameProperty2, argParam2);
             ExternalStorageQuery.Field(lambda3);
-            ExternalStorageQuery.Include(lambda3, fields);
+
+            if (scopes != null)
+            {
+                ExternalStorageQuery.IncludeWithScope(lambda3, scopes, fields);
+            }
+            else
+            {
+                ExternalStorageQuery.Include(lambda3, fields);
+            }
         }
 
 

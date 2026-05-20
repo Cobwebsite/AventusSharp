@@ -6,10 +6,10 @@ import { RamCompletor } from "./RamCompletor.lib.avt";
 namespace RAM {
     export abstract class RamHttp<T extends Storable> extends Aventus.Ram<T> {
         protected getAllDone: boolean = false;
-        protected routes: StorableRouter<T>;
+        protected routes: StorableRouter<T, any, any>;
 
 
-        public abstract defineRoutes(): StorableRouter<T>;
+        public abstract defineRoutes(): StorableRouter<T, any, any>;
 
         protected constructor() {
             super();

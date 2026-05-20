@@ -407,16 +407,17 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     }
 
-    protected void IncludeGeneric<Y>(Expression<Func<T, Y?>> expression, List<LambdaExpression>? fields) where Y : IStorable
+    protected void IncludeGeneric<Y>(Expression<Func<T, Y?>> expression, List<LambdaExpression>? fields, List<Scope<Y>>? scopes) where Y : IStorable
     {
-        IncludeGeneric((LambdaExpression)expression, fields);
+        IncludeGeneric(expression, fields, scopes?.ConvertList<IScope>());
     }
-    protected void IncludeGeneric(LambdaExpression lambdaExpression, List<LambdaExpression>? fields)
+    protected void IncludeGeneric(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, List<IScope>? scopes)
     {
         LambdaIncludeResult lambdaResult = LambdaInclude(
            lambdaExpression,
            fields: fields,
-           addToMembers: true
+           addToMembers: true,
+           scopes
         );
 
         string fullPath = string.Join(".", lambdaResult.Steps.SkipLast(1).Select(p => p.Name));
@@ -432,12 +433,12 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
     }
 
-    public LambdaIncludeResult LambdaInclude(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, bool addToMembers)
+    public LambdaIncludeResult LambdaInclude(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, bool addToMembers, List<IScope>? scopes = null)
     {
         List<LambdaStep> lambdaParts = LambdaTranslator.ExtractPart(lambdaExpression);
-        return LambdaInclude(lambdaParts, fields, addToMembers);
+        return LambdaInclude(lambdaParts, fields, addToMembers, scopes);
     }
-    public LambdaIncludeResult LambdaInclude(List<LambdaStep> lambdaParts, List<LambdaExpression>? fields, bool addToMembers)
+    public LambdaIncludeResult LambdaInclude(List<LambdaStep> lambdaParts, List<LambdaExpression>? fields, bool addToMembers, List<IScope>? scopes = null)
     {
         bool isExternal = false;
         DatabaseBuilderInfo parentInfo = InfoByPath[""];
@@ -501,12 +502,12 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                         }
                         if (SubQueries.ContainsKey(fullPath))
                         {
-                            SubQueries[fullPath].ExtendExternalStorage(namesTemp, fields);
+                            SubQueries[fullPath].ExtendExternalStorage(namesTemp, fields, scopes);
                         }
                         else
                         {
                             DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, listType ?? lambdaPart.Type);
-                            VoidWithError prepareInfo = subQuery.PrepareExternalStorage(namesTemp, fields);
+                            VoidWithError prepareInfo = subQuery.PrepareExternalStorage(namesTemp, fields, scopes);
                             if (prepareInfo.Success)
                             {
                                 SubQueries.Add(fullPath, subQuery);
@@ -532,12 +533,12 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
                     if (SubQueries.ContainsKey(fullPath))
                     {
-                        SubQueries[fullPath].ExtendReverseLink(namesTemp, fields);
+                        SubQueries[fullPath].ExtendReverseLink(namesTemp, fields, scopes);
                     }
                     else
                     {
                         DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, listType ?? lambdaPart.Type);
-                        VoidWithError prepareInfo = subQuery.PrepareReverseLink(namesTemp, fields);
+                        VoidWithError prepareInfo = subQuery.PrepareReverseLink(namesTemp, fields, scopes);
                         if (prepareInfo.Success)
                         {
                             SubQueries.Add(fullPath, subQuery);
@@ -601,7 +602,10 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     protected void WithScopeGeneric<X>() where X : IScope, new()
     {
-        X scope = TypeTools.CreateNewObj<X>();
+        WithScopeGeneric(TypeTools.CreateNewObj<X>());
+    }
+    protected void WithScopeGeneric(IScope scope)
+    {
         if (ManualScopes == null) ManualScopes = new();
         ManualScopes.Add(scope);
     }

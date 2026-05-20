@@ -1,6 +1,7 @@
 namespace Tools {
 
 	export interface IWithError<T extends Aventus.GenericError> {
+		success: boolean;
 	}
 
 	@Convertible()

@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Storage.Default;
+﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
+using Nullable = System.Nullable;
 
 namespace AventusSharp.Data.Manager.DB
 {
@@ -20,8 +22,8 @@ namespace AventusSharp.Data.Manager.DB
         public Dictionary<string, ParamsInfo> WhereParamsInfo { get; }
         public Dictionary<string, DatabaseBuilderInfo> InfoByPath { get; }
 
-        public LambdaIncludeResult LambdaInclude(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, bool addToMembers);
-        public LambdaIncludeResult LambdaInclude(List<LambdaStep> lambdaParts, List<LambdaExpression>? fields, bool addToMembers);
+        public LambdaIncludeResult LambdaInclude(LambdaExpression lambdaExpression, List<LambdaExpression>? fields, bool addToMembers, List<IScope>? scopes);
+        public LambdaIncludeResult LambdaInclude(List<LambdaStep> lambdaParts, List<LambdaExpression>? fields, bool addToMembers, List<IScope>? scopes);
     }
 
     public class LambdaStep
@@ -725,7 +727,7 @@ namespace AventusSharp.Data.Manager.DB
                 if (onParameter)
                 {
                     List<LambdaStep> steps = LambdaStep.Create(pathes, types);
-                    LambdaIncludeResult lambdaResult = databaseBuilder.LambdaInclude(steps, null, false);
+                    LambdaIncludeResult lambdaResult = databaseBuilder.LambdaInclude(steps, null, false, null);
                     if (lambdaResult.IsExternal)
                     {
                         isExternal = true;

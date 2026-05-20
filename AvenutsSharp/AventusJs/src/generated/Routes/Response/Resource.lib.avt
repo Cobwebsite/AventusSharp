@@ -3,7 +3,7 @@ import { SharpClass } from '../../../Data/SharpClass.lib.avt';
 namespace Routes.Response {
 
 	export abstract class Resource extends SharpClass  {
-		
+
 	}
 
 }

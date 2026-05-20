@@ -278,17 +278,60 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public IQueryBuilder<T> Include<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
         {
-            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>());
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), null);
             return this;
         }
         public IQueryBuilder<T> Include<Y>(Expression<Func<T, List<Y>?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
         {
-            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>());
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), null);
             return this;
         }
         IQueryBuilder<T> IQueryBuilder<T>.Include(LambdaExpression expression, List<LambdaExpression>? fields)
         {
-            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>());
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), null);
+            return this;
+        }
+
+        public IQueryBuilder<T> IncludeWithoutScope<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), []);
+            return this;
+        }
+        public IQueryBuilder<T> IncludeWithoutScope<Y>(Expression<Func<T, List<Y>?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), []);
+            return this;
+        }
+        IQueryBuilder<T> IQueryBuilder<T>.IncludeWithoutScope(LambdaExpression expression, List<LambdaExpression>? fields)
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), []);
+            return this;
+        }
+
+
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> expression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), scopes);
+            return this;
+        }
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> expression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), [scope]);
+            return this;
+        }
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> expression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), scopes.ConvertList<IScope>());
+            return this;
+        }
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> expression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), [scope]);
+            return this;
+        }
+        IQueryBuilder<T> IQueryBuilder<T>.IncludeWithScope(LambdaExpression expression, List<IScope> scopes, List<LambdaExpression>? fields)
+        {
+            IncludeGeneric(expression, fields?.ConvertList<LambdaExpression>(), scopes);
             return this;
         }
 
@@ -338,6 +381,11 @@ namespace AventusSharp.Data.Manager.DB.Builders
         public IQueryBuilder<T> WithScope<X>() where X : IScope, new()
         {
             WithScopeGeneric<X>();
+            return this;
+        }
+        public IQueryBuilder<T> WithScope(IScope scope)
+        {
+            WithScopeGeneric(scope);
             return this;
         }
         public IQueryBuilder<T> WithoutScope()

@@ -160,6 +160,69 @@ namespace AventusSharp.Data.Manager
         internal IQueryBuilder<T> Include(LambdaExpression memberExpression, List<LambdaExpression>? fields = null);
 
         /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> IncludeWithoutScope<Y>(Expression<Func<T, Y?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> IncludeWithoutScope<Y>(Expression<Func<T, List<Y>?>> memberExpression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        internal IQueryBuilder<T> IncludeWithoutScope(LambdaExpression memberExpression, List<LambdaExpression>? fields = null);
+
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="scopes">The scopes to use.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> memberExpression, List<Scope<Y>> scopes,  List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="scope">The scope to use.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> memberExpression, Scope<Y> scope,  List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="scopes">The scopes to use.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> memberExpression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="scope">The scope to use.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        public IQueryBuilder<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> memberExpression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable;
+        /// <summary>
+        /// Includes a related object in the query.
+        /// </summary>
+        /// <param name="memberExpression">The expression representing the related object to include.</param>
+        /// <param name="scopes">The scopes to use.</param>
+        /// <param name="fields">The fields to include.</param>
+        /// <returns>The current query builder instance for method chaining.</returns>
+        internal IQueryBuilder<T> IncludeWithScope(LambdaExpression memberExpression, List<IScope> scopes, List<LambdaExpression>? fields = null);
+
+        /// <summary>
         /// Limits the number of results returned by the query.
         /// </summary>
         /// <param name="limit">The maximum number of results to return.</param>
@@ -192,6 +255,7 @@ namespace AventusSharp.Data.Manager
         internal void SetVariableInternal(string name, object value);
 
         public IQueryBuilder<T> WithScope<X>() where X : IScope, new();
+        public IQueryBuilder<T> WithScope(IScope scope);
         public IQueryBuilder<T> WithoutScope();
     }
 
@@ -312,6 +376,56 @@ namespace AventusSharp.Data.Manager
             builder.Include(expression, fields);
             return this;
         }
+
+        public QueryBuilderPrepared<T> IncludeWithoutScope<Y>(Expression<Func<T, Y?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.IncludeWithoutScope(expression, fields?.ConvertList<LambdaExpression>());
+            return this;
+        }
+
+        public QueryBuilderPrepared<T> IncludeWithoutScope<Y>(Expression<Func<T, List<Y>?>> expression, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.IncludeWithoutScope(expression, fields?.ConvertList<LambdaExpression>());
+            return this;
+        }
+
+        internal QueryBuilderPrepared<T> IncludeWithoutScope(LambdaExpression expression, List<LambdaExpression>? fields)
+        {
+            builder.IncludeWithoutScope(expression, fields);
+            return this;
+        }
+
+
+        public QueryBuilderPrepared<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> expression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.IncludeWithScope(expression, scopes, fields);
+            return this;
+        }
+
+        public QueryBuilderPrepared<T> IncludeWithScope<Y>(Expression<Func<T, Y?>> expression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.IncludeWithScope(expression, scope, fields);
+            return this;
+        }
+
+        public QueryBuilderPrepared<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> expression, List<Scope<Y>> scopes, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.IncludeWithScope(expression, scopes, fields);
+            return this;
+        }
+
+        public QueryBuilderPrepared<T> IncludeWithScope<Y>(Expression<Func<T, List<Y>?>> expression, Scope<Y> scope, List<Expression<Func<Y, object?>>>? fields = null) where Y : IStorable
+        {
+            builder.IncludeWithScope(expression, scope, fields);
+            return this;
+        }
+
+        internal QueryBuilderPrepared<T> IncludeWithScope(LambdaExpression expression, List<IScope> scopes, List<LambdaExpression>? fields)
+        {
+            builder.IncludeWithScope(expression, scopes, fields);
+            return this;
+        }
+
 
         /// <summary>
         /// Limits the number of results returned by the query.

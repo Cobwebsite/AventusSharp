@@ -63,11 +63,23 @@ public class AventusConsoleLogger : ILogger
             _ => ("[LOG ]", ConsoleColor.Gray)
         };
 
-        // Écriture personnalisée dans la console
-        ConsoleColor originalColor = Console.ForegroundColor;
-        Console.ForegroundColor = color;
-        Console.WriteLine($"{prefix} [{_categoryName}] : " + message);
-        Console.ForegroundColor = originalColor;
+        string fullMessage = $"{prefix} [{_categoryName}] : " + message;
+#if ANDROID
+        Console.WriteLine(fullMessage);
+#else
+        try
+        {
+            ConsoleColor originalColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            Console.WriteLine(fullMessage);
+            Console.ForegroundColor = originalColor;
+        }
+        catch
+        {
+            // Sécurité au cas où une autre plateforme ne supporterait pas les couleurs
+            Console.WriteLine(fullMessage);
+        }
+#endif
 
         if (exception != null)
         {

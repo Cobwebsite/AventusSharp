@@ -611,10 +611,13 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     }
     protected void MergeScopeAndWhere()
     {
-        if (_noScope) return;
+        if (_noScope)
+        {
+            return;
+        }
         List<IScope>? scopes = ManualScopes ?? Scopes;
         if (scopes == null) return;
-
+        scopes = scopes.ToList();
 
         LambdaTranslator<T> translator = new(this);
         WhereGroup whereGroup = new();

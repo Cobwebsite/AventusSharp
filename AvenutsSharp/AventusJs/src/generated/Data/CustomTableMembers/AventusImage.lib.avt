@@ -1,0 +1,35 @@
+import { AventusFile } from "../../../Data/AventusFile.lib.avt";
+import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.avt';
+
+namespace Data.CustomTableMembers {
+
+	export abstract class AventusImage<T extends Aventus.IData> extends AventusFile<T>  {
+
+	}
+
+	export enum ImageFileErrorCode {
+		UnknowError,
+		NotValidImage,
+		FileNotSvg,
+		NoSize
+	}
+
+	@Convertible()
+	export class ImageFileError extends Aventus.GenericError<typeof ImageFileErrorCode>  {
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.ImageFileError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class VoidWithImageFileError extends VoidWithError<ImageFileError>  {
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.VoidWithImageFileError, AventusSharp"; }
+	}
+
+	@Convertible()
+	export class ResultWithImageFileError<T> extends ResultWithError<T, ImageFileError>  {
+		/** Fullname of the class */
+		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.ResultWithImageFileError, AventusSharp"; }
+	}
+
+}

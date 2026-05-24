@@ -20,7 +20,6 @@
         "AventusSharp.Data.SharpClass": {
           "result": "SharpClass",
           "file": "./AventusJs/src/Data/SharpClass.lib.avt"
-
         },
         "AventusSharp.Tools.ResultWithError": {
           "result": "ResultWithError",
@@ -29,6 +28,18 @@
         "AventusSharp.Tools.VoidWithError": {
           "result": "VoidWithError",
           "file": "./AventusJs/src/generated/Tools/ResultWithError.lib.avt"
+        },
+        "AventusSharp.Routes.Response.Resource": {
+          "result": "Resource",
+          "file": "./AventusJs/src/Route/Response/Resource.lib.avt"
+        },
+        "AventusSharp.Routes.StorableRouter": {
+          "result": "StorableRouter",
+          "file": "./AventusJs/src/Route/StorableRouter.lib.avt"
+        },
+        "AventusSharp.Data.CustomTableMembers.AventusFile<T>": {
+          "result": "AventusFile<T>",
+          "file": "./AventusJs/src/Data/AventusFile.lib.avt"
         }
       }
     }

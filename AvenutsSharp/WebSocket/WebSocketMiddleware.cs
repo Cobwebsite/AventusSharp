@@ -290,7 +290,7 @@ namespace AventusSharp.WebSocket
         {
             if (endPointInstances.Count == 0) return;
 
-            AventusLogger.Instance.LogInformation("--- Routes WS ---");
+            Console.WriteLine("--- Routes WS ---");
             List<WsExpose> expose = new List<WsExpose>();
             foreach (KeyValuePair<string, WsEndPoint> endpointInfo in endPointInstances)
             {
@@ -306,8 +306,8 @@ namespace AventusSharp.WebSocket
                     });
                 }
             }
-            AventusLogger.Instance.LogInformation(JsonConvert.SerializeObject(expose));
-            AventusLogger.Instance.LogInformation("-------------------");
+            Console.WriteLine(JsonConvert.SerializeObject(expose));
+            Console.WriteLine("-------------------");
         }
 
         internal static WebSocketAttributeAnalyze PrepareAttributes(IEnumerable<object> attrs, string prefix)

@@ -230,7 +230,7 @@ namespace AventusSharp.Routes
         {
             if (routesInfo.Count == 0) return;
 
-            AventusLogger.Instance.LogInformation("--- Routes HTTP ---");
+            Console.WriteLine("--- Routes HTTP ---");
             List<RouteExposeHttp> expose = new List<RouteExposeHttp>();
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
             {
@@ -245,8 +245,8 @@ namespace AventusSharp.Routes
                 });
 
             }
-            AventusLogger.Instance.LogInformation(JsonConvert.SerializeObject(expose));
-            AventusLogger.Instance.LogInformation("-------------------");
+            Console.WriteLine(JsonConvert.SerializeObject(expose));
+            Console.WriteLine("-------------------");
         }
         public static void Inject(object o)
         {

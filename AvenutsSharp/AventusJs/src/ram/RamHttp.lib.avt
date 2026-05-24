@@ -1,7 +1,7 @@
 import type { VoidWithError } from "Aventus@Main:Aventus.package.avt";
 import { Storable } from "../Storable.data.avt";
-import { StorableRouter } from "../generated/Routes/StorableRouter.lib.avt";
 import { RamCompletor } from "./RamCompletor.lib.avt";
+import type { StorableRouter } from "../Routes/StorableRouter.lib.avt";
 
 namespace RAM {
     export abstract class RamHttp<T extends Storable> extends Aventus.Ram<T> {

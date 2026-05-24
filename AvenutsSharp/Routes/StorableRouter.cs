@@ -8,10 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using AventusSharp.Tools.Attributes;
 
 namespace AventusSharp.Routes
 {
-    public abstract class StorableRouter<T, U, R, S> : IRouter
+    public interface IStorableRouter
+    {
+        
+    }
+    [NoExport]
+    public abstract class StorableRouter<T, U, R, S> : IStorableRouter, IRouter
         where T : IStorable
         where U : Request.Request
         where R : Resource
@@ -249,6 +255,7 @@ namespace AventusSharp.Routes
 
     }
 
+    [NoExport]
     public abstract class StorableRouter<T, U, R> : StorableRouter<T, U, R, R>
        where T : IStorable
        where U : Request.Request
@@ -260,7 +267,8 @@ namespace AventusSharp.Routes
         }
     }
     
-    public abstract class StorableRouter<T> : IRouter where T : IStorable
+    [NoExport]
+    public abstract class StorableRouter<T> : IStorableRouter, IRouter where T : IStorable
     {
         /// <summary>
         /// Define the name of the object for the url

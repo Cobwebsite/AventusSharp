@@ -1,0 +1,18 @@
+import { clone, Json } from "Aventus@Main:Aventus.package.avt";
+import { SharpClass } from "../../Data/SharpClass.lib.avt";
+import type { Request } from "../../generated/Routes/Request/Request.lib.avt";
+
+namespace Routes.Response {
+
+    export abstract class Resource extends SharpClass {
+        public toRequest<T extends Request>(request: new () => T): T {
+            const result = new request();
+            const resourceClone = clone(this);
+            Json.classFromJson(result, resourceClone, {
+                replaceUndefined: true
+            });
+            return result;
+        }
+    }
+
+}

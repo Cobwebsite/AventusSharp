@@ -3,7 +3,6 @@ using AventusSharp.Tools.Attributes;
 
 namespace AventusSharp.Routes.Response;
 
-[Export]
 public abstract class Resource
 {
     public void AutoBind(object source)

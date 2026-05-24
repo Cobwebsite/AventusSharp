@@ -4,18 +4,13 @@ using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Response;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
-using Microsoft.AspNetCore.Http;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using IRouter = AventusSharp.Routes.IRouter;
 using Path = System.IO.Path;
 
 namespace CSharpToTypescript.Container

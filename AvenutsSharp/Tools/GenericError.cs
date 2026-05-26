@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Tools.Attributes;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,6 +28,7 @@ namespace AventusSharp.Tools
 
         public int Line { get; set; } = -1;
 
+        [JsonConstructor]
         public GenericError(int code, string message, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             Code = code;

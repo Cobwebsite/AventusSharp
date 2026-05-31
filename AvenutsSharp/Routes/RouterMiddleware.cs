@@ -383,6 +383,10 @@ namespace AventusSharp.Routes
                     Match match = routerInfo.pattern.Match(url);
                     if (match.Success)
                     {
+                        if (config.PrintTrigger)
+                        {
+                            AventusLogger.Instance.LogInformation("trigger " + routeInfo.Value.ToString());
+                        }
                         RouterBody? body = null;
                         object?[] param = new object[routerInfo.nbParamsFunction];
                         foreach (RouterParameterInfo parameter in routerInfo.parameters.Values)

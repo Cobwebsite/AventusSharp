@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Project = Microsoft.CodeAnalysis.Project;
 
 namespace CSharpToTypescript
@@ -62,7 +63,59 @@ namespace CSharpToTypescript
                 FileToWrite.WriteAll();
 
             }
-                // Directory.Delete(Config.outputDir, true);
+            // Directory.Delete(Config.outputDir, true);
+        }
+
+        private (string targetFrameworkArg, string extraArgs) Parsecsproj()
+        {
+            string targetFrameworkArg = "";
+            string extraArgs = "";
+            string detectedFramework = "";
+
+            try
+            {
+                var doc = XDocument.Load(Config.csProj);
+                var allFrameworksRaw = doc.Descendants("TargetFrameworks")
+                              .Concat(doc.Descendants("TargetFramework"))
+                              .Select(el => el.Value)
+                              .ToList();
+
+                List<string> frameworks = new();
+                foreach (var raw in allFrameworksRaw)
+                {
+                    var parts = raw.Split(';')
+                                   .Select(f => f.Replace("$(TargetFrameworks)", "").Trim(';', ' ', '\r', '\n'))
+                                   .Where(f => !string.IsNullOrEmpty(f) && !f.StartsWith("$")); // On exclut les expressions MSBuild complexes
+
+                    frameworks.AddRange(parts);
+                }
+
+                if (frameworks.Any())
+                {
+                    bool isWindowsOS = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+                    if (isWindowsOS && frameworks.Any(f => f.Contains("windows")))
+                    {
+                        detectedFramework = frameworks.First(f => f.Contains("windows"));
+                    }
+                    else if (frameworks.Any(f => f.Contains("android")))
+                    {
+                        detectedFramework = frameworks.First(f => f.Contains("android"));
+                        extraArgs += " -p:AndroidBuildApplication=false -p:EmbedAssembliesIntoApk=false";
+                    }
+                    else
+                    {
+                        detectedFramework = frameworks.First();
+                    }
+
+                    targetFrameworkArg = $" -f {detectedFramework}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Impossible de parser le csproj ({ex.Message}). Compilation par défaut lancée.");
+            }
+            return (targetFrameworkArg, extraArgs);
         }
 
         private bool Build()
@@ -77,7 +130,9 @@ namespace CSharpToTypescript
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.CreateNoWindow = true;
 
-            string cmd = $"build \"{Config.csProj}\" -v m -o \"{tempOutputDir}\" -nologo";
+            (string targetFrameworkArg, string extraArgs) = Parsecsproj();
+
+            string cmd = $"build \"{Config.csProj}\"{targetFrameworkArg} -v m -o \"{tempOutputDir}\" -nologo -p:CreatePackagePerPlatform=false{extraArgs}";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 p.StartInfo.FileName = "cmd.exe";
@@ -176,7 +231,7 @@ namespace CSharpToTypescript
                     Console.WriteLine($"Parsing error for http route : {ex.Message}");
                 }
             }
-        
+
             string patternWs = @"(?<=--- Routes HTTP ---\s+)(.*?)(?=\s+-------------------)";
 
             Match matchWs = Regex.Match(output, patternWs, RegexOptions.Singleline);
@@ -206,7 +261,7 @@ namespace CSharpToTypescript
                     Console.WriteLine($"Parsing error for ws route : {ex.Message}");
                 }
             }
-        
+
         }
 
         private void LoadNamespace(INamespaceSymbol @namespace, List<INamedTypeSymbol> result)

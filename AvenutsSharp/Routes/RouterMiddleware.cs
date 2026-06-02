@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -496,59 +497,75 @@ namespace AventusSharp.Routes
             RouteInfo routerInfo = routerResolve.RouteInfo;
             bool canContinue = true;
             ContextScope = context;
-            foreach (Middleware middleware in routerInfo.middlewares)
+            try
             {
-                if (!canContinue) return;
-                canContinue = false;
-                await middleware.Run(context, routerInfo, () =>
+                foreach (Middleware middleware in routerInfo.middlewares)
                 {
-                    return Task.Run(() =>
+                    if (!canContinue) return;
+                    canContinue = false;
+                    await middleware.Run(context, routerInfo, () =>
                     {
-                        canContinue = true;
+                        return Task.Run(() =>
+                        {
+                            canContinue = true;
+                        });
                     });
-                });
-            }
-            if (!canContinue) return;
-            object?[] param = routerResolve.Params;
-            if (routerInfo.action.ReturnType == typeof(void))
-            {
-                routerInfo.action.Invoke(routerInfo.router, param);
-                context.Response.StatusCode = 204;
-            }
-            else
-            {
-                object? o = routerInfo.action.Invoke(routerInfo.router, param);
-                if (o is Task task)
+                }
+                if (!canContinue)
                 {
-                    await (dynamic)task;
-                    if (!o.GetType().IsGenericType)
-                    {
-                        context.Response.StatusCode = 204;
-                        ContextScope = null;
-                        return;
-                    }
-                    o = ((dynamic)task).Result;
+                    ContextScope = null;
+                    return;
                 }
 
-                if (o is IResponse response)
+                object?[] param = routerResolve.Params;
+                if (routerInfo.action.ReturnType == typeof(void))
                 {
-                    await response.send(context, routerInfo.router);
-                }
-                else if (o is byte[] bytes)
-                {
-                    await new ByteResponse(bytes).send(context, routerInfo.router);
-                }
-                else if (o is string txt)
-                {
-                    await new TextResponse(txt).send(context, routerInfo.router);
+                    routerInfo.action.Invoke(routerInfo.router, param);
+                    context.Response.StatusCode = 204;
                 }
                 else
                 {
-                    await new Json(o).send(context, routerInfo.router);
+                    object? o = routerInfo.action.Invoke(routerInfo.router, param);
+                    if (o is Task task)
+                    {
+                        await (dynamic)task;
+                        if (!o.GetType().IsGenericType)
+                        {
+                            context.Response.StatusCode = 204;
+                            ContextScope = null;
+                            return;
+                        }
+                        o = ((dynamic)task).Result;
+                    }
+
+                    if (o is IResponse response)
+                    {
+                        await response.send(context, routerInfo.router);
+                    }
+                    else if (o is byte[] bytes)
+                    {
+                        await new ByteResponse(bytes).send(context, routerInfo.router);
+                    }
+                    else if (o is string txt)
+                    {
+                        await new TextResponse(txt).send(context, routerInfo.router);
+                    }
+                    else
+                    {
+                        await new Json(o).send(context, routerInfo.router);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                if (exception is AventusException e)
+                {
+                    int code = Enum.IsDefined(typeof(HttpStatusCode), context.Response.StatusCode) ? context.Response.StatusCode : 500;
+                    VoidWithError error = new VoidWithError() { Errors = [e.Error] };
+                    await new Json(error, code).send(context);
                 }
             }
             ContextScope = null;
-            return;
         }
 
 

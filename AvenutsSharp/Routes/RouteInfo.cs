@@ -35,7 +35,7 @@ namespace AventusSharp.Routes
 
         public override string ToString()
         {
-            return baseUrl.ToString() + " " + method.ToString();
+            return pattern.ToString() + " " + method.ToString();
         }
     }
 

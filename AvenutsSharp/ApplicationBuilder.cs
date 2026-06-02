@@ -21,7 +21,7 @@ public static class AventusExtension
             return args.Contains("--export-info");
         }
     }
-   
+
     private static void OnStop(this IApplicationBuilder app, Action action)
     {
         IHostApplicationLifetime lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
@@ -112,4 +112,5 @@ public static class AventusExtension
         }
         return app;
     }
+
 }

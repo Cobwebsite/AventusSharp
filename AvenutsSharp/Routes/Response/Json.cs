@@ -9,26 +9,30 @@ namespace AventusSharp.Routes.Response
     public class Json : IResponse
     {
         private string txt;
-        public Json(object? o)
+        private int code;
+
+        public Json(object? o, JsonConverter converter, int code = 200) : this(JsonConvert.SerializeObject(o, converter), code)
         {
-            txt = JsonConvert.SerializeObject(o, RouterMiddleware.config.JSONSettings);
+        }
+        public Json(object? o, JsonSerializerSettings converter, int code = 200) : this(JsonConvert.SerializeObject(o, converter), code)
+        {
         }
 
-        public Json(object? o, JsonConverter converter)
+        public Json(object? o, int code = 200) : this(o, RouterMiddleware.config.JSONSettings, code)
         {
-            txt = JsonConvert.SerializeObject(o, converter);
         }
 
-        public Json(string json)
+        public Json(string json, int code = 200)
         {
             txt = json;
+            this.code = code;
         }
 
         public async Task send(HttpContext context, IRouter? from = null)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(txt);
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = 200;
+            context.Response.StatusCode = code;
             await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
         }
     }

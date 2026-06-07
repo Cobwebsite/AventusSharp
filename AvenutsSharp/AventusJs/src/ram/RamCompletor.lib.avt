@@ -1,4 +1,4 @@
-import type { VoidWithError } from "Aventus@Main:Aventus.package.avt";
+import type { IRamData, VoidWithError } from "Aventus@Main:Aventus.package.avt";
 import type { Storable } from "../Storable.data.avt";
 
 namespace RAM {
@@ -10,18 +10,17 @@ namespace RAM {
         [K in keyof T]: NonNullable<T[K]> extends U ? K : never;
     }[keyof T];
 
-    type ItemField<T extends Aventus.IData, U extends Aventus.IData> = {
+    type ItemField<T , U extends IRamData> = {
         id: NumberKeys<T>;
         obj: KeysOfType<T, U>;
         ram: typeof Aventus.Ram<U>;
     };
 
-    export class RamCompletor<T extends Storable> {
+    export class RamCompletor<T> {
 
         protected objects: T[] = [];
         protected fields: ItemField<T, any>[] = [];
-        protected error?: VoidWithError;
-        public constructor(objects?: T | T[], error?: VoidWithError) {
+        public constructor(objects?: T | T[]) {
             if(!objects) {
                 objects = [];
             }
@@ -29,10 +28,9 @@ namespace RAM {
                 objects = [objects];
             }
             this.objects = objects;
-            this.error = error;
         }
 
-        public add<U extends Aventus.IData>(field: ItemField<T, U>): RamCompletor<T> {
+        public add<U extends IRamData>(field: ItemField<T, U>): RamCompletor<T> {
             this.fields.push(field);
             return this;
         }
@@ -78,20 +76,14 @@ namespace RAM {
                 const mapRecord = mapRecords[objKey];
                 if(listId.length > 0) {
                     const ram = Aventus.Instance.get(field.ram);
-                    const query = await ram.getByIdsWithError(listId);
-                    if(query.success && query.result) {
-                        for(let item of query.result) {
+                    const resultTemp = await result.extractAsync(() => ram.getByIdsWithError(listId))
+                    if(resultTemp) {
+                        for(let item of resultTemp) {
                             if(mapRecord[item.Id]) {
                                 for(let record of mapRecord[item.Id]) {
                                     record[objKey as keyof T] = item;
                                 }
                             }
-                        }
-                    }
-                    else {
-                        result.errors = [...result.errors, ...query.errors];
-                        if(this.error) {
-                            this.error.errors = [...this.error.errors, ...query.errors];
                         }
                     }
                 }

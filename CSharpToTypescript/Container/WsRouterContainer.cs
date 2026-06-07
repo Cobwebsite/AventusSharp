@@ -621,6 +621,7 @@ namespace CSharpToTypescript.Container
         public string routeEvent = "";
         public string returnType = "";
         private bool? listenOnBoot = null;
+        private bool addFormData = ProjectManager.Config.httpRouter.addFormData;
 
         public WsRouteContainer(WsExpose methodExpose, IMethodSymbol methodSymbol, Type @class, WsRouterContainer parent) : this(methodSymbol, @class, parent)
         {
@@ -747,6 +748,10 @@ namespace CSharpToTypescript.Container
                 else if (attr is FctName fctNameAttr)
                 {
                     this.name = fctNameAttr.name;
+                }
+                else if(attr is AddFormData addFormDataAttr)
+                {
+                    addFormData = addFormDataAttr.Value;
                 }
             }
 
@@ -981,7 +986,11 @@ namespace CSharpToTypescript.Container
             string bodyKey = GetUniqueParamName("body");
             if (parametersBodyAndType.Count > 0)
             {
-                parametersUrlAndType[bodyKey] = "{ " + string.Join(", ", parametersBodyAndType.Select(p => p.Key + ": " + p.Value)) + " } | FormData";
+                parametersUrlAndType[bodyKey] = "{ " + string.Join(", ", parametersBodyAndType.Select(p => p.Key + ": " + p.Value)) + " }";
+                if (addFormData)
+                {
+                    parametersUrlAndType[bodyKey] += " | FormData";
+                }
             }
             string optionsKey = GetUniqueParamName("options");
             string infoType = "";

@@ -10,22 +10,24 @@ using System.Threading.Tasks;
 
 namespace AventusSharp.Tools
 {
+    [NoExport]
     public interface IWithError
     {
         public bool Success { get; }
 
-        [NoExport]
         public List<GenericError> Errors { get; }
 
         public void Print();
     }
 
+    [NoExport]
     public interface IWithError<T> : IWithError where T : GenericError
     {
         [NoExport]
         public new List<T> Errors { get; }
     }
 
+    [NoExport]
     public class VoidWithError<T> : IWithError<T> where T : GenericError
     {
         public bool Success { get => Errors.Count == 0; }
@@ -150,6 +152,7 @@ namespace AventusSharp.Tools
         }
     }
 
+    [NoExport]
     public class VoidWithError : VoidWithError<GenericError>
     {
 
@@ -183,16 +186,19 @@ namespace AventusSharp.Tools
 
     }
 
+    [NoExport]
     public interface IResultWithError : IWithError
     {
         [NoExport]
         public object? Result { get; }
     }
+    [NoExport]
     public interface IResultWithError<T> : IWithError<T>, IResultWithError where T : GenericError
     {
 
     }
 
+    [NoExport]
     public class ResultWithError<T, U> : VoidWithError<U>, IResultWithError<U> where U : GenericError
     {
         public T? Result { get; set; } = default;
@@ -286,6 +292,7 @@ namespace AventusSharp.Tools
 
     }
 
+    [NoExport]
     public class ResultWithError<T> : ResultWithError<T, GenericError>
     {
 

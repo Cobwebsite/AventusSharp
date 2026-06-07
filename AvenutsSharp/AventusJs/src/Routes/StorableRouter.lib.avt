@@ -1,5 +1,5 @@
 import type { Request } from "../generated/Routes/Request/Request.lib.avt";
-import type { ResultWithError } from "../generated/Tools/ResultWithError.lib.avt";
+import type { ResultWithError } from "../Tools/ResultWithError.lib.avt";
 import { Resource } from './Response/Resource.lib.avt';
 
 namespace Routes {
@@ -21,7 +21,7 @@ namespace Routes {
         }
 
         @BindThis()
-        public async CreateMany(body: { list: T[]; }): Promise<ResultWithError<S[]>> {
+        public async CreateMany(body: { list: U[]; }): Promise<ResultWithError<S[]>> {
             const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}s`, Aventus.HttpMethod.POST);
             request.setBody(body);
             type TypeResult = S[];
@@ -52,7 +52,7 @@ namespace Routes {
         }
 
         @BindThis()
-        public async UpdateMany(body: { list: T[]; }): Promise<ResultWithError<S[]>> {
+        public async UpdateMany(body: { list: U[]; }): Promise<ResultWithError<S[]>> {
             const request = new Aventus.HttpRequest(`${this.getPrefix()}/${this.StorableName()}s`, Aventus.HttpMethod.PUT);
             request.setBody(body);
             type TypeResult = S[];

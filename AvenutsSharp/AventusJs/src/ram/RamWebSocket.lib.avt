@@ -1,7 +1,10 @@
-import type { VoidWithError } from "Aventus@Main:Aventus.package.avt";
-import { type StorableWsRouter } from "../generated/WebSocket/StorableWsRouter.lib.avt";
 import { Storable } from "../Storable.data.avt";
 import { RamCompletor } from "./RamCompletor.lib.avt";
+import type { Request as HttpRequest } from "../generated/Routes/Request/Request.lib.avt";
+import type { Resource } from "../Routes/Response/Resource.lib.avt";
+import type { StorableWsRouter } from "../WebSocket/StorableWsRouter.lib.avt";
+import { ResultWithError, VoidWithError } from "../Tools/ResultWithError.lib.avt";
+import { Ram, RamError, RamErrorCode, uuidv4, type ExtractFromError, type KeysObject, type RamItem, type UriParamsValue } from "Aventus@Main:Aventus.package.avt";
 
 namespace RAM {
     export type RamWebSocketListenOnStart = {
@@ -14,9 +17,14 @@ namespace RAM {
         Delete: boolean,
         DeleteMany: boolean,
     };
-    export abstract class RamWebSocket<T extends Storable> extends Aventus.Ram<T> {
+    export abstract class RamWebSocket<
+        Item extends Storable,
+        Request extends HttpRequest | Item = Item,
+        ResourceSimple extends Resource | Item = Item,
+        ResourceDetails extends ResourceSimple = ResourceSimple,
+    > extends Ram<Item, Request, ResourceSimple, ResourceDetails> {
         protected getAllDone: boolean = false;
-        private routes: StorableWsRouter<T>;
+        private routes: StorableWsRouter<Item, Request, ResourceSimple, ResourceDetails>;
         protected otherGetAllLocked: { [uid: string]: true; } = {};
         protected otherGetByIdLocked: { [uid: string]: true; } = {};
         protected otherCreateItemLocked: { [uid: string]: true; } = {};
@@ -27,12 +35,16 @@ namespace RAM {
         protected otherDeleteListLocked: { [uid: string]: true; } = {};
 
 
-        public abstract defineRoutes(): StorableWsRouter<T>;
+        public abstract defineRoutes(): StorableWsRouter<Item, Request, ResourceSimple, ResourceDetails>;
 
         protected constructor() {
             super();
             this.routes = this.defineRoutes();
             this.addEventsBindings();
+        }
+
+        protected override addOrUpdateData(item: ResourceDetails | ExtractFromError<ResourceDetails> | ResourceSimple | ExtractFromError<ResourceSimple>): Promise<ResultWithError<{ kind: "created" | "updated"; value: RamItem<ResourceDetails, Request>; }>> {
+            return super.addOrUpdateData(item as ResourceDetails);
         }
 
         protected addEventsBindings() {
@@ -116,74 +128,57 @@ namespace RAM {
             };
         }
 
-        public complete(objects?: T | T[], error?: VoidWithError): RamCompletor<T> {
-            return new RamCompletor(objects, error);
+        public complete(objects?: ResourceDetails | ResourceDetails[]): RamCompletor<ResourceDetails> {
+            return new RamCompletor(objects);
         }
 
         @BindThis()
-        protected async otherGetAll(items: Aventus.ExtractFromError<T[]>, params: Aventus.UriParamsValue, uid?: string): Promise<void> {
+        protected async otherGetAll(items: ResourceSimple[], params: UriParamsValue, uid?: string): Promise<void> {
             if(uid && this.otherGetAllLocked[uid]) return;
 
             for(let item of items) {
-                let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                await this.addOrUpdateData(item, resultTemp);
+                await this.addOrUpdateData(item);
             }
         }
-        protected override async beforeGetAll(result: Aventus.ResultRamWithError<Map<number, Aventus.RamItem<T>>>): Promise<void> {
+        protected override async beforeGetAll(): Promise<VoidWithError> {
+            const result = new VoidWithError();
             if(!this.getAllDone) {
-                let uid = Aventus.uuidv4();
+                let uid = uuidv4();
                 this.otherGetAllLocked[uid] = true;
-                let response = await this.routes.GetAll({ uid });
+                const list = await result.extractAsync(() => this.routes.GetAll({ uid }));
                 delete this.otherGetAllLocked[uid];
-                if(!response) return;
+                if(!list) return result;
 
-                if(response.success && response.result) {
-                    for(let item of response.result) {
-                        let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                        await this.addOrUpdateData(item, resultTemp);
-                        if(!resultTemp.success) {
-                            result.errors = [...result.errors, ...resultTemp.errors];
-                        }
-                    }
-                }
-                else {
-                    result.errors = [...result.errors, ...response.errors];
+                for(let item of list) {
+                    await result.runAsync(() => this.addOrUpdateData(item));
                 }
             }
+            return result;
 
         }
 
         @BindThis()
-        protected async otherGetById(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
+        protected async otherGetById(item: ExtractFromError<ResourceDetails>, params: UriParamsValue, uid?: string) {
             if(uid && this.otherGetByIdLocked[uid]) return;
 
-            let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-            await this.addOrUpdateData(item, resultTemp);
+            await this.addOrUpdateData(item);
         }
-        protected override async beforeGetById(id: number, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): Promise<void> {
+        protected override async beforeGetById(id: number): Promise<VoidWithError> {
+            const result = new VoidWithError();
             if(this.records.has(id)) {
-                return;
+                return result;
             }
-            else {
-                let uid = Aventus.uuidv4();
-                this.otherGetByIdLocked[uid] = true;
-                let response = await this.routes.GetById(id, { uid });
-                delete this.otherGetByIdLocked[uid];
-                if(!response) return;
 
-                if(response.success && response.result) {
-                    let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                    await this.addOrUpdateData(response.result, resultTemp);
-                    if(!resultTemp.success) {
-                        result.errors = [...result.errors, ...resultTemp.errors];
-                    }
-                }
-                else {
-                    result.errors = [...result.errors, ...response.errors];
-                }
-            }
+            let uid = uuidv4();
+            this.otherGetByIdLocked[uid] = true;
+            const item = await result.extractAsync(() => this.routes.GetById(id));
+            delete this.otherGetByIdLocked[uid];
+            if(!item) return result;
+            await result.runAsync(() => this.addOrUpdateData(item));
+            return result;
         }
-        protected override async beforeGetByIds(ids: number[], result: Aventus.ResultRamWithError<Aventus.RamItem<T>[]>): Promise<void> {
+        protected override async beforeGetByIds(ids: number[]): Promise<VoidWithError> {
+            const result = new VoidWithError();
             let missingIds: number[] = [];
             for(let id of ids) {
                 if(!this.records.has(id)) {
@@ -192,215 +187,179 @@ namespace RAM {
             }
 
             if(missingIds.length > 0) {
-                let response = await this.routes.GetByIds({ ids: missingIds });
-                if(response.success && response.result) {
-                    for(let item of response.result) {
-                        let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                        await this.addOrUpdateData(item, resultTemp);
-                        if(!resultTemp.success) {
-                            result.errors = [...result.errors, ...resultTemp.errors];
-                        }
-                    }
-                }
-                else {
-                    result.errors = [...result.errors, ...response.errors];
+                const response = await result.extractAsync(() => this.routes.GetByIds({ ids: missingIds }));
+                if(!response) return result;
+
+                for(let item of response) {
+                    await result.runAsync(() => this.addOrUpdateData(item));
                 }
             }
+            return result;
         }
 
         //#region create
         @BindThis()
-        protected async otherCreateItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
+        protected async otherCreateItem(item: ExtractFromError<ResourceDetails>, params: UriParamsValue, uid?: string) {
             if(uid && this.otherCreateItemLocked[uid]) return;
 
-            let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-            await this.addOrUpdateData(item, resultTemp);
+            const resultTemp = await this.addOrUpdateData(item);
             if(resultTemp.success && resultTemp.result) {
-                this.publish('created', resultTemp.result);
+                this.publish('created', resultTemp.result.value);
             }
         }
-        protected override async beforeCreateItem(item: T, fromList: boolean, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): Promise<void> {
-            if(fromList) {
-                return;
-            }
-            let uid = Aventus.uuidv4();
-            this.otherCreateItemLocked[uid] = true;
-            let response = await this.routes.Create({ item }, { uid });
-            delete this.otherCreateItemLocked[uid];
 
-            if(response.success && response.result) {
-                result.result = this.getObjectForRam(response.result);
-            }
-            else {
-                result.errors = [...result.errors, ...response.errors];
-            }
+
+        protected override async transformCreateRequestListToItem(list: Request[]): Promise<ResultWithError<ResourceDetails[]>> {
+            const uid = uuidv4();
+            this.otherCreateListLocked[uid] = true;
+            const result = await this.routes.CreateMany({ list });
+            delete this.otherCreateListLocked[uid];
+            return result as ResultWithError<ResourceDetails[]>;
         }
+
+        protected override async transformCreateRequestToItem(item: Request): Promise<ResultWithError<ResourceDetails>> {
+            const uid = uuidv4();
+            this.otherCreateItemLocked[uid] = true;
+            const result = await this.routes.Create({ request: item });
+            delete this.otherCreateItemLocked[uid];
+            return result as ResultWithError<ResourceDetails>;
+        }
+
 
         @BindThis()
-        protected async otherCreateList(items: Aventus.ExtractFromError<T[]>, params: Aventus.UriParamsValue, uid?: string) {
+        protected async otherCreateList(items: ExtractFromError<ResourceDetails[]>, params: UriParamsValue, uid?: string) {
             if(uid && this.otherCreateListLocked[uid]) return;
 
             for(let item of items) {
-                let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                await this.addOrUpdateData(item, resultTemp);
+                const resultTemp = await this.addOrUpdateData(item);
                 if(resultTemp.success && resultTemp.result) {
-                    this.publish('created', resultTemp.result);
+                    this.publish('created', resultTemp.result.value);
                 }
             }
         }
-        protected override async beforeCreateList(list: T[], result: Aventus.ResultRamWithError<Aventus.RamItem<T>[]>): Promise<void> {
-            let uid = Aventus.uuidv4();
-            this.otherCreateListLocked[uid] = true;
-            let response = await this.routes.CreateMany({ list }, { uid });
-            delete this.otherCreateListLocked[uid];
 
-            if(response.success && response.result) {
-                result.result = [];
-                for(let element of response.result) {
-                    result.result.push(this.getObjectForRam(element));
-                }
-            }
-            else {
-                result.errors = [...result.errors, ...response.errors];
-            }
-        }
         //#endregion
 
         //#region update
         @BindThis()
-        protected async otherUpdateItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
+        protected async otherUpdateItem(item: ExtractFromError<ResourceDetails>, params: UriParamsValue, uid?: string) {
             if(uid && this.otherUpdateItemLocked[uid]) return;
 
-            let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-            await this.addOrUpdateData(item, resultTemp);
+            const resultTemp = await this.addOrUpdateData(item);
             if(resultTemp.success && resultTemp.result) {
-                this.publish('updated', resultTemp.result);
+                this.publish('updated', resultTemp.result.value);
             }
         }
-        protected override async beforeUpdateItem(item: T, fromList: boolean, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): Promise<void> {
-            if(fromList) {
-                return;
-            }
 
-            let uid = Aventus.uuidv4();
+        protected override async transformUpdateRequestListToItem(list: Request[]): Promise<ResultWithError<ResourceDetails[]>> {
+            let uid = uuidv4();
+            this.otherUpdateListLocked[uid] = true;
+            const result = await this.routes.UpdateMany({ list });
+            delete this.otherUpdateListLocked[uid];
+            return result as ResultWithError<ResourceDetails[]>;
+        }
+        protected override async transformUpdateRequestToItem(item: Request): Promise<ResultWithError<ResourceDetails>> {
+            const result: ResultWithError<ResourceDetails> = new ResultWithError();
+            const id = result.extract(() => this.getIdWithError(item));
+            if(id === undefined) return result;
+            let uid = uuidv4();
             this.otherUpdateItemLocked[uid] = true;
-            let response = await this.routes.Update(item.Id, { item }, { uid });
+            const temp = await this.routes.Update(id, { request: item });
             delete this.otherUpdateItemLocked[uid];
-
-            if(response.success && response.result) {
-                result.result = this.getObjectForRam(response.result);
-            }
-            else {
-                result.errors = [...result.errors, ...response.errors];
-            }
+            return temp as ResultWithError<ResourceDetails>;
         }
+
 
         @BindThis()
-        protected async otherUpdateList(items: T[], params: Aventus.UriParamsValue, uid?: string) {
+        protected async otherUpdateList(items: ExtractFromError<ResourceDetails[]>, params: UriParamsValue, uid?: string) {
             if(uid && this.otherUpdateListLocked[uid]) return;
 
             for(let item of items) {
-                let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                await this.addOrUpdateData(item, resultTemp);
+                const resultTemp = await this.addOrUpdateData(item);
                 if(resultTemp.success && resultTemp.result) {
-                    this.publish('updated', resultTemp.result);
+                    this.publish('updated', resultTemp.result.value);
                 }
             }
         }
-        protected override async beforeUpdateList(list: T[], result: Aventus.ResultRamWithError<Aventus.RamItem<T>[]>): Promise<void> {
-            let uid = Aventus.uuidv4();
-            this.otherUpdateListLocked[uid] = true;
-            let response = await this.routes.UpdateMany({ list }, { uid });
-            delete this.otherUpdateListLocked[uid];
 
-            if(response.success && response.result) {
-                result.result = [];
-                for(let element of response.result) {
-                    result.result.push(this.getObjectForRam(element));
-                }
-            }
-            else {
-                result.errors = [...result.errors, ...response.errors];
-            }
-        }
         //#endregion
 
         //#region delete
         @BindThis()
-        protected otherDeleteItem(item: Aventus.ExtractFromError<T>, params: Aventus.UriParamsValue, uid?: string) {
+        protected otherDeleteItem(id: ExtractFromError<number>, params: UriParamsValue, uid?: string) {
             if(uid && this.otherDeleteItemLocked[uid]) return;
 
-            let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-            this.deleteData(item, resultTemp);
+            const resultTemp = this.deleteData(id);
             if(resultTemp.success && resultTemp.result) {
                 this.publish('deleted', resultTemp.result);
-                this.recordsSubscribers.delete(resultTemp.result.Id);
+                this.recordsSubscribers.delete(id);
             }
         }
-        protected override async beforeDeleteItem(item: T, fromList: boolean, result: Aventus.VoidWithError): Promise<void> {
+        protected override async beforeDeleteItem(item: ResourceDetails, fromList: boolean): Promise<VoidWithError> {
+            const result: VoidWithError = new VoidWithError();
             if(fromList) {
-                return;
+                return result;
             }
 
-            let uid = Aventus.uuidv4();
+            let uid = uuidv4();
             this.otherDeleteItemLocked[uid] = true;
-            let response = await this.routes.Delete(item.Id, { uid });
+            const id = await result.extract(() => this.getIdWithError(item));
+            if(id === undefined) return result;
+            await result.runAsync(() => this.routes.Delete(id, { uid }));
             delete this.otherDeleteItemLocked[uid];
 
-            if(!response.success) {
-                result.errors = [...result.errors, ...response.errors];
-            }
+            return result;
         }
 
         @BindThis()
-        protected otherDeleteList(items: T[], params: Aventus.UriParamsValue, uid?: string) {
+        protected otherDeleteList(ids: number[], params: UriParamsValue, uid?: string) {
             if(uid && this.otherDeleteListLocked[uid]) return;
 
-            for(let item of items) {
-                let resultTemp: Aventus.ResultRamWithError<Aventus.RamItem<T>> = new Aventus.ResultRamWithError();
-                this.deleteData(item, resultTemp);
+            for(let id of ids) {
+                const resultTemp = this.deleteData(id);
                 if(resultTemp.success && resultTemp.result) {
                     this.publish('deleted', resultTemp.result);
-                    this.recordsSubscribers.delete(resultTemp.result.Id);
+                    this.recordsSubscribers.delete(id);
                 }
 
             }
         }
-        protected override async beforeDeleteList(list: T[], result: Aventus.VoidWithError): Promise<void> {
-            let uid = Aventus.uuidv4();
-            this.otherDeleteListLocked[uid] = true;
-            let response = await this.routes.DeleteMany({ ids: list.map(t => t.Id) }, { uid });
-            delete this.otherDeleteListLocked[uid];
+        protected override async beforeDeleteList(list: ResourceDetails[]): Promise<VoidWithError> {
+            const result: VoidWithError = new VoidWithError();
+            if(list.length == 0) return result;
 
-
-            if(!response.success) {
-                result.errors = [...result.errors, ...response.errors];
+            const ids: number[] = [];
+            for(let item of list) {
+                const id = result.extract(() => this.getIdWithError(item));
+                if(id === undefined) return result;
+                ids.push(id);
             }
+
+            let uid = uuidv4();
+            this.otherDeleteListLocked[uid] = true;
+            await result.runAsync(() => this.routes.DeleteMany({ ids }));
+            delete this.otherDeleteListLocked[uid];
+            return result;
         }
 
         /**
         * Delete element inside Ram without firing delete event
         */
-        protected deleteData(item: Aventus.KeysObject<T>, result: Aventus.ResultRamWithError<Aventus.RamItem<T>>): void {
+        protected deleteData(id: number): ResultWithError<RamItem<ResourceDetails, Request>> {
+            const result = new ResultWithError<RamItem<ResourceDetails, Request>>();
             try {
-                let idWithError = this.getIdWithError(item);
-                if(idWithError.success && idWithError.result !== undefined) {
-                    let id = idWithError.result;
-                    if(this.records.has(id)) {
-                        result.result = this.records.get(id);
-                        this.records.delete(id);
-                    }
-                    else {
-                        result.errors.push(new Aventus.RamError(Aventus.RamErrorCode.noItemInsideRam, "can't delete the item " + id + " because it wasn't found inside ram"));
-                    }
+                if(this.records.has(id)) {
+                    result.result = this.records.get(id);
+                    this.records.delete(id);
                 }
                 else {
-                    result.errors = [...result.errors, ...idWithError.errors];
+                    result.errors.push(new RamError(RamErrorCode.noItemInsideRam, "can't delete the item " + id + " because it wasn't found inside ram"));
                 }
             }
             catch(e) {
-                result.errors.push(new Aventus.RamError(Aventus.RamErrorCode.unknow, e));
+                result.errors.push(new RamError(RamErrorCode.unknow, e));
             }
+            return result;
         }
         //#endregion
 

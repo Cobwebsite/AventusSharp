@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Data
@@ -50,6 +51,12 @@ namespace AventusSharp.Data
     [NoExport]
     public abstract class Storable<T> : IStorable where T : IStorable
     {
+        public static T OnlyId(int id)
+        {
+            T el = (T)RuntimeHelpers.GetUninitializedObject(typeof(T));
+            el.Id = id;
+            return el;
+        }
         public static void EnableDebug()
         {
             var st = DBStorage.GetFrom<T>();

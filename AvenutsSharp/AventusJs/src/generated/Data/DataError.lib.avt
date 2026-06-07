@@ -1,4 +1,4 @@
-import { VoidWithError, ResultWithError } from '../Tools/ResultWithError.lib.avt';
+import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.avt';
 import { SharpClass } from '../../Data/SharpClass.lib.avt';
 
 namespace Data {

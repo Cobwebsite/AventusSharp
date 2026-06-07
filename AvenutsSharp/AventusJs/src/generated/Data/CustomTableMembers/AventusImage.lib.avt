@@ -1,5 +1,5 @@
-import { AventusFile } from "../../../Data/AventusFile.lib.avt";
-import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.avt';
+import { AventusFile } from '../../../Data/AventusFile.lib.avt';
+import { VoidWithError, ResultWithError } from '../../../Tools/ResultWithError.lib.avt';
 
 namespace Data.CustomTableMembers {
 

@@ -35,6 +35,8 @@ namespace CSharpToTypescript.Container
         private Dictionary<string, Func<string>> additionalFcts = new();
         public string? prefix;
         public bool prefixForParent = false;
+        public bool cacheFct;
+        public bool clearCacheFct;
         public HttpRouterContainer(INamedTypeSymbol type) : base(type)
         {
             if (ProjectManager.Config.httpRouter.useCompiledDll)
@@ -164,6 +166,25 @@ namespace CSharpToTypescript.Container
             if (prefixAttr is Prefix prefix)
             {
                 this.prefix = prefix.txt;
+            }
+
+            FrontCache? frontCacheAttr = realType.GetCustomAttribute<FrontCache>();
+            FrontCacheClearable? cacheClearableAttr = realType.GetCustomAttribute<FrontCacheClearable>();
+
+            if (cacheClearableAttr != null)
+            {
+                cacheFct = cacheClearableAttr.Cache;
+                clearCacheFct = cacheClearableAttr.Clear;
+            }
+            else if (frontCacheAttr != null)
+            {
+                cacheFct = frontCacheAttr.Value;
+                clearCacheFct = ProjectManager.Config.httpRouter.clearCacheFct;
+            }
+            else
+            {
+                cacheFct = ProjectManager.Config.httpRouter.cacheByDefault;
+                clearCacheFct = ProjectManager.Config.httpRouter.clearCacheFct;
             }
         }
 
@@ -412,6 +433,8 @@ namespace CSharpToTypescript.Container
         private Type? typeContainer;
         private string overrideTxt = "";
         private bool addFormData;
+        private bool cacheFct;
+        private bool clearCacheFct;
 
         public bool AvoidResultError
         {
@@ -478,20 +501,34 @@ namespace CSharpToTypescript.Container
             _method = methodTemp;
             canBeAdded = true;
 
-            if (method.GetCustomAttribute(typeof(NoExport)) != null || method.GetCustomAttribute(typeof(NoRoute)) != null)
+            if (method.GetCustomAttribute<NoExport>() != null || method.GetCustomAttribute<NoRoute>() != null)
             {
                 canBeAdded = false;
                 return;
             }
-            Attribute? addFormDataAttr = method.GetCustomAttribute(typeof(AddFormData));
-            if (addFormDataAttr != null)
+
+
+            addFormData = method.GetCustomAttribute<AddFormData>()?.Value ?? ProjectManager.Config.httpRouter.addFormData;
+
+            FrontCache? frontCacheAttr = method.GetCustomAttribute<FrontCache>();
+            FrontCacheClearable? cacheClearableAttr = method.GetCustomAttribute<FrontCacheClearable>();
+
+            if (cacheClearableAttr != null)
             {
-                addFormData = ((AddFormData)addFormDataAttr).Value;
+                cacheFct = cacheClearableAttr.Cache;
+                clearCacheFct = cacheClearableAttr.Clear;
+            }
+            else if (frontCacheAttr != null)
+            {
+                cacheFct = frontCacheAttr.Value;
+                clearCacheFct = parent.clearCacheFct;
             }
             else
             {
-                addFormData = ProjectManager.Config.httpRouter.addFormData;
+                cacheFct = parent.cacheFct;
+                clearCacheFct = parent.clearCacheFct;
             }
+
             if (methodSymbol != null && methodSymbol.IsOverride)
             {
                 overrideTxt = "override ";
@@ -965,6 +1002,7 @@ namespace CSharpToTypescript.Container
 
             string fctDesc = BaseContainer.GetAccessibility(method) + overrideTxt + "async " + name + "(" + @params + "): $resultType {";
             string request = "const request = new Aventus.HttpRequest(`${this.getPrefix()}" + route + "`, Aventus.HttpMethod." + this.httpMethods[0].ToUpper() + ");";
+
             string body = "";
             string resultWithErrorType = parent.GetAventusTypeName("AventusSharp.Tools.ResultWithError");
             string voidWithErrorType = parent.GetAventusTypeName("AventusSharp.Tools.VoidWithError");
@@ -1046,6 +1084,10 @@ namespace CSharpToTypescript.Container
             {
                 parent.AddTxt(body, result);
             }
+            if (cacheFct)
+            {
+                parent.AddTxt("request.enableCache();", result);
+            }
             if (!string.IsNullOrEmpty(typeTxt))
             {
                 parent.AddTxt(typeTxt, result);
@@ -1056,6 +1098,24 @@ namespace CSharpToTypescript.Container
             }
             parent.AddTxtClose("}", result);
 
+            if (cacheFct && clearCacheFct)
+            {
+                parent.AddTxt("", result);
+                parent.AddTxt("@BindThis()", result);
+
+                string fctDescCache = BaseContainer.GetAccessibility(method) + overrideTxt + name + "_ClearCache(" + @params + "): void {";
+                parent.AddTxtOpen(fctDescCache, result);
+
+                string requestCache = "const request = new Aventus.HttpRequest(`${this.getPrefix()}" + route + "`, Aventus.HttpMethod." + this.httpMethods[0].ToUpper() + ");";
+                parent.AddTxt(requestCache, result);
+
+                if (!string.IsNullOrEmpty(body))
+                {
+                    parent.AddTxt(body, result);
+                }
+                parent.AddTxt("request.clearCache(this.router);", result);
+                parent.AddTxtClose("}", result);
+            }
 
             return string.Join("\r\n", result);
         }

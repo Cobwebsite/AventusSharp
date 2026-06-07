@@ -76,6 +76,8 @@ namespace CSharpToTypescript
     {
         public bool useCompiledDll = false;
         public bool createRouter = false;
+        public bool cacheByDefault = false;
+        public bool clearCacheFct = false;
         public string routerName = "GeneratedRouter";
         public string uri = "";
         public string? host;

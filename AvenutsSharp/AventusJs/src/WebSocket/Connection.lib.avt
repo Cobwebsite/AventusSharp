@@ -1,7 +1,7 @@
 import { SocketError, SocketErrorCode } from "./SocketError.lib.avt";
-import { VoidWithError } from "../generated/Tools/ResultWithError.lib.avt";
 import type { ConnectionOptions, SocketMessage, SocketRoute, InternalSocketRoute, SocketSendMessageOptions } from './ISocket.lib.avt';
 import { Socket } from "./Socket.lib.avt";
+import { VoidWithError } from "../Tools/ResultWithError.lib.avt";
 
 namespace WebSocket {
 

@@ -240,6 +240,12 @@ namespace AventusSharp.Data.Storage.Mysql
 
         #endregion
 
+        #region graph
+        public override string DiagramType()
+        {
+            return "mysql";
+        }
+        #endregion
 
         protected override object? TransformValueForFct(ParamsInfo paramsInfo)
         {

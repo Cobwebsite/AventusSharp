@@ -237,6 +237,12 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
 
     #endregion
 
+    #region graph
+    public override string DiagramType()
+    {
+        return "mssql";
+    }
+    #endregion
 
     protected override object? TransformValueForFct(ParamsInfo paramsInfo)
     {

@@ -242,6 +242,12 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
 
     #endregion
 
+    #region graph
+    public override string DiagramType()
+    {
+        return "postgresql";
+    }
+    #endregion
 
     protected override object? TransformValueForFct(ParamsInfo paramsInfo)
     {

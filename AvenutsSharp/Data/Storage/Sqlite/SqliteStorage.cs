@@ -202,6 +202,12 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
     #endregion
 
+    #region graph
+    public override string DiagramType()
+    {
+        return "sqlite";
+    }
+    #endregion
 
     protected override object? TransformValueForFct(ParamsInfo paramsInfo)
     {

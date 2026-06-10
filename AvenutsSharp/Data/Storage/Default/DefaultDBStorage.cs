@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+﻿using AventusSharp.Chart;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
@@ -2484,6 +2485,163 @@ namespace AventusSharp.Data.Storage.Default
 
 
         public abstract string GetSqlColumnType(DbType dbType, TableMemberInfoSql tableMember);
+        #endregion
+
+        #region Graph
+        public List<DiagramObject> GetDiagrams(string mainName)
+        {
+            string diagramType = DiagramType();
+            Dictionary<string, DiagramObject> diagrams = new()
+            {
+                { mainName, new DiagramObject(mainName, diagramType) }
+            };
+
+            foreach (var pair in allTableInfos)
+            {
+                var info = pair.Value;
+                if (info.IsForceInherit) continue;
+                if (pair.Key.IsInterface) continue;
+
+                IEnumerable<Diagram> attrs = pair.Key.GetCustomAttributes<Diagram>();
+                bool mainFound = false;
+                string? area = pair.Key.Namespace;
+                foreach (Diagram attr in attrs)
+                {
+                    string name = attr.Name ?? mainName;
+                    if (name == mainName)
+                    {
+                        mainFound = true;
+                    }
+                    else
+                    {
+                        area = attr.Area;
+                    }
+                    if (!diagrams.ContainsKey(name))
+                    {
+                        diagrams.Add(name, new DiagramObject(name, diagramType));
+                    }
+
+                    (DiagramTable table, List<DiagramRelationship> rels) temp = CreateTableDiagram(info);
+                    if (area != null)
+                    {
+                        if (!diagrams[name].Areas.Exists(p => p.Name == area))
+                        {
+                            string[] colors = { "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899" };
+                            diagrams[name].Areas.Add(new Area()
+                            {
+                                Name = area,
+                                Color = colors[new Random().Next(colors.Length)]
+                            });
+                        }
+
+                        temp.table.ParentAreaId = diagrams[name].Areas.Find(p => p.Name == area)!.Id;
+
+                    }
+
+                    diagrams[name].Tables.Add(temp.table);
+                    diagrams[name].Relationships.AddRange(temp.rels);
+                }
+
+                if (!mainFound)
+                {
+                    (DiagramTable table, List<DiagramRelationship> rels) temp = CreateTableDiagram(info);
+                    if (area != null)
+                    {
+                        if (!diagrams[mainName].Areas.Exists(p => p.Name == area))
+                        {
+                            string[] colors = { "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899" };
+                            diagrams[mainName].Areas.Add(new Area()
+                            {
+                                Name = area,
+                                Color = colors[new Random().Next(colors.Length)]
+                            });
+                        }
+                        temp.table.ParentAreaId = diagrams[mainName].Areas.Find(p => p.Name == area)!.Id;
+
+                    }
+
+                    diagrams[mainName].Tables.Add(temp.table);
+                    diagrams[mainName].Relationships.AddRange(temp.rels);
+                }
+
+
+            }
+
+
+            foreach (var pair in diagrams)
+            {
+                DiagramObject diagram = pair.Value;
+
+                List<DiagramRelationship> relationships = diagram.Relationships.ToList();
+                foreach (DiagramRelationship relationship in relationships)
+                {
+                    if (
+                        !diagram.Tables.Exists(p => p.Id == relationship.SourceTableId && p.Fields.Exists(f => f.Id == relationship.SourceFieldId)) ||
+                        !diagram.Tables.Exists(p => p.Id == relationship.TargetTableId && p.Fields.Exists(f => f.Id == relationship.TargetFieldId))
+                    )
+                    {
+                        diagram.Relationships.Remove(relationship);
+                    }
+                }
+
+                diagram.LayoutDiagram();
+            }
+
+
+            return diagrams.Values.ToList();
+        }
+        public abstract string DiagramType();
+
+        private (DiagramTable table, List<DiagramRelationship> rels) CreateTableDiagram(TableInfo info)
+        {
+            DiagramTable table = new DiagramTable()
+            {
+                Id = info.SqlTableName.ToLower(),
+                Name = info.SqlTableName.ToLower(),
+            };
+
+            List<DiagramRelationship> rels = new();
+
+            foreach (var member in info.Members)
+            {
+                if (member == null) continue;
+
+                DbType? type = TableMemberInfoSql.GetDbType(member.MemberType, member);
+                if (type == null) continue;
+
+                string typeTxt = GetSqlColumnType((DbType)type, member);
+
+                DiagramField field = new DiagramField()
+                {
+                    Id = info.SqlTableName.ToLower() + "." + member.SqlName,
+                    Name = member.SqlName,
+                    Type = new()
+                    {
+                        Id = typeTxt,
+                        Name = typeTxt
+                    },
+                    PrimaryKey = member.IsPrimary,
+                    Unique = member.IsUnique,
+                    Nullable = member.IsNullable,
+                };
+                table.Fields.Add(field);
+
+                if (member is ITableMemberInfoSqlLinkSingle rel && rel.TableLinked?.Primary != null && info.Primary != null)
+                {
+                    // TODO add relation name
+                    DiagramRelationship relationship = new DiagramRelationship()
+                    {
+                        Name = table.Name + "_" + rel.TableLinked.SqlTableName.ToLower(),
+                        SourceTableId = table.Name,
+                        SourceFieldId = table.Name + "." + info.Primary.SqlName,
+                        TargetTableId = rel.TableLinked.SqlTableName.ToLower(),
+                        TargetFieldId = rel.TableLinked.SqlTableName.ToLower() + "." + rel.TableLinked.Primary.SqlName
+                    };
+                    rels.Add(relationship);
+                }
+            }
+            return (table, rels);
+        }
         #endregion
 
         public override string ToString()

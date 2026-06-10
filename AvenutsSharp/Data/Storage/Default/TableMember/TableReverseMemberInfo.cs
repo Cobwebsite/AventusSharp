@@ -74,7 +74,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     reversInfo = tableInfo.Members.Find(m => m.Name == ReverseLinkAttr.field);
                     if (reversInfo == null)
                     {
-                        el = tableInfo.Parent; continue;
+                        el = el.Parent; 
+                        continue;
                     }
                     break;
                 }
@@ -94,7 +95,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 while (el != null)
                 {
                     reversInfo.AddRange(tableInfo.Members.Where(m => m is ITableMemberInfoSqlLink link && link.TableLinkedType == TableInfo.Type).ToList());
-                    el = tableInfo.Parent;
+                    el = el.Parent;
                 }
                 if (reversInfo.Count > 1)
                 {

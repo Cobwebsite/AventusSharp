@@ -90,6 +90,8 @@ namespace AventusSharp.Data.Storage.Default
 
         public List<IScope> Scopes { get; set; } = new();
 
+        public bool IsForceInherit { get; set; } = false;
+
         public TableInfo(Type type)
         {
             SqlTableName = GetSQLTableName(type);
@@ -112,7 +114,7 @@ namespace AventusSharp.Data.Storage.Default
         }
         public TableInfo(PyramidInfo pyramid) : this(pyramid.type)
         {
-
+            IsForceInherit = pyramid.isForceInherit;
         }
 
 

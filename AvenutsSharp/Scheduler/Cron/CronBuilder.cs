@@ -1,116 +1,175 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AventusSharp.Scheduler.Cron;
 
 
 public class CronBuilder
 {
-    private int? _sec;
-    private int? _min;
-    private int? _hour;
-    private int? _dayOfMonth;
-    private int? _month;
-    private int? _dayOfWeek;
-    public CronBuilder Second(int sec)
+    private string _secs = "*";
+    private string _mins = "*";
+    private string _hours = "*";
+    private string _daysOfMonth = "*";
+    private string _months = "*";
+    private string _daysOfWeek = "*";
+
+    public CronBuilder Second(params int[] secs)
     {
-        if (sec > 59 || sec < 0)
+        foreach (var sec in secs)
         {
-            throw new Exception("Out of range for sec");
+            if (sec > 59 || sec < 0)
+                throw new ArgumentOutOfRangeException(nameof(secs), "Out of range for sec");
         }
-        _sec = sec;
+        _secs = string.Join(",", secs.Distinct().OrderBy(m => m));
         return this;
     }
-    public CronBuilder EachSeconds()
+    public CronBuilder EachSeconds(int? step = null)
     {
-        _sec = null;
+        if (step == null)
+        {
+            _secs = "*";
+            return this;
+        }
+        if (step > 59 || step < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be between 1 and 59");
+        }
+        _secs = $"*/{step}";
         return this;
     }
 
-    public CronBuilder Minute(int min)
+    public CronBuilder Minute(params int[] minutes)
     {
-        if (min > 59 || min < 0)
+        foreach (var min in minutes)
         {
-            throw new Exception("Out of range for minute");
+            if (min > 59 || min < 0)
+                throw new ArgumentOutOfRangeException(nameof(minutes), "Out of range for minutes");
         }
-        _min = min;
+        _mins = string.Join(",", minutes.Distinct().OrderBy(m => m));
         return this;
     }
-    public CronBuilder EachMinutes()
+    public CronBuilder EachMinutes(int? step = null)
     {
-        _min = null;
+        if (step == null)
+        {
+            _mins = "*";
+            return this;
+        }
+        if (step > 59 || step < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be between 1 and 59");
+        }
+        _mins = $"*/{step}";
         return this;
     }
 
-    public CronBuilder Hour(int hour)
+
+    public CronBuilder Hour(params int[] hours)
     {
-        if (hour > 23 || hour < 0)
+        foreach (var hour in hours)
         {
-            throw new Exception("Out of range for hour");
+            if (hour > 23 || hour < 0)
+                throw new ArgumentOutOfRangeException(nameof(hours), "Out of range for hours");
         }
-        _hour = hour;
+        _hours = string.Join(",", hours.Distinct().OrderBy(m => m));
         return this;
     }
-    public CronBuilder EachHours()
+    public CronBuilder EachHours(int? step = null)
     {
-        _hour = null;
+        if (step == null)
+        {
+            _hours = "*";
+            return this;
+        }
+        if (step > 23 || step < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be between 1 and 23");
+        }
+        _hours = $"*/{step}";
         return this;
     }
 
-    public CronBuilder DayOfMonth(int day)
+
+    public CronBuilder DayOfMonth(params int[] days)
     {
-        if (day > 31 || day < 1)
+        foreach (var day in days)
         {
-            throw new Exception("Out of range for day of month");
+            if (day > 31 || day < 1)
+                throw new ArgumentOutOfRangeException(nameof(days), "Out of range for day of month");
         }
-        _dayOfMonth = day;
+        _daysOfMonth = string.Join(",", days.Distinct().OrderBy(m => m));
         return this;
     }
-    public CronBuilder EachDaysOfMonth()
+    public CronBuilder EachDaysOfMonth(int? step = null)
     {
-        _dayOfMonth = null;
+        if (step == null)
+        {
+            _daysOfMonth = "*";
+            return this;
+        }
+        if (step > 31 || step < 1)
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be between 1 and 31");
+        _daysOfMonth = $"*/{step}";
         return this;
     }
 
-    public CronBuilder Month(int month)
-    {
-        if (month > 12 || month < 1)
-        {
-            throw new Exception("Out of range for month");
-        }
-        _month = month;
-        return this;
-    }
-    public CronBuilder EachMonths()
-    {
-        _month = null;
-        return this;
-    }
 
-    public CronBuilder DayOfWeek(int day)
+    public CronBuilder Month(params int[] months)
     {
-        if (day > 6 || day < 0)
+        foreach (var month in months)
         {
-            throw new Exception("Out of range for day of week");
+            if (month > 12 || month < 1)
+                throw new ArgumentOutOfRangeException(nameof(months), "Out of range for months");
         }
-        _dayOfWeek = day;
+        _months = string.Join(",", months.Distinct().OrderBy(m => m));
         return this;
     }
-    public CronBuilder EachDaysOfWeek()
+    public CronBuilder EachMonths(int? step = null)
     {
-        _dayOfWeek = null;
+        if (step == null)
+        {
+            _months = "*";
+            return this;
+        }
+        if (step > 12 || step < 1)
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be between 1 and 12");
+        _months = $"*/{step}";
         return this;
     }
-
+   
+    public CronBuilder DayOfWeek(params int[] days)
+    {
+        foreach (var day in days)
+        {
+            if (day > 6 || day < 0)
+                throw new ArgumentOutOfRangeException(nameof(days), "Out of range for days of week");
+        }
+        _daysOfWeek = string.Join(",", days.Distinct().OrderBy(m => m));
+        return this;
+    }
+    public CronBuilder EachDaysOfWeek(int? step = null)
+    {
+         if (step == null)
+        {
+            _daysOfWeek = "*";
+            return this;
+        }
+        if (step > 12 || step < 1)
+            throw new ArgumentOutOfRangeException(nameof(step), "Step must be between 1 and 12");
+        _daysOfWeek = $"*/{step}";
+        return this;
+    }
+    
     public override string ToString()
     {
         List<string> result = [
-            _sec == null ? "*" : _sec+"",
-            _min == null ? "*" : _min+"",
-            _hour == null ? "*" : _hour+"",
-            _dayOfMonth == null ? "*" : _dayOfMonth+"",
-            _month == null ? "*" : _month+"",
-            _dayOfWeek == null ? "*" : _dayOfWeek+"",
+            _secs,
+            _mins,
+            _hours,
+            _daysOfMonth,
+            _months,
+            _daysOfWeek,
         ];
         return string.Join(" ", result);
     }

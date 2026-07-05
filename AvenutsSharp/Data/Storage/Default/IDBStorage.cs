@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager;
+﻿using AventusSharp.Chart;
+using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
@@ -52,6 +53,8 @@ namespace AventusSharp.Data.Storage.Default
 
         Task<ResultWithError<List<Dictionary<string, string?>>>> Query(string sql, string callerPath = "", int callerNo = 0);
         Task<ResultWithError<List<Dictionary<string, string?>>>> Query(DbCommand command, List<Dictionary<string, object?>>? dataParameters, string callerPath = "", int callerNo = 0);
+
+        List<DiagramObject> GetDiagrams(DiagramConfigInternal config);
     }
 
 

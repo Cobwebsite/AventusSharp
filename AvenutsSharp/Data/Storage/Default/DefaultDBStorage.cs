@@ -73,7 +73,10 @@ namespace AventusSharp.Data.Storage.Default
             return null;
         }
 
-
+        public static List<IDBStorage> GetAll()
+        {
+            return listStorage.Values.ToList();
+        }
     }
 
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
@@ -117,6 +120,10 @@ namespace AventusSharp.Data.Storage.Default
         {
             credentials = info;
             addCreatedAndUpdatedDate = info.addCreatedAndUpdatedDate;
+            if (!DBStorage.listStorage.ContainsKey(GetType()))
+            {
+                DBStorage.listStorage.Add(GetType(), this);
+            }
         }
 
         #region connection
@@ -2488,13 +2495,15 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Graph
-        public List<DiagramObject> GetDiagrams(string mainName)
+        public List<DiagramObject> GetDiagrams(DiagramConfigInternal config)
         {
             string diagramType = DiagramType();
-            Dictionary<string, DiagramObject> diagrams = new()
+            Dictionary<string, DiagramObject> diagrams = new();
+            string mainName = config.MainName;
+            if (config.GenerateMain)
             {
-                { mainName, new DiagramObject(mainName, diagramType) }
-            };
+                diagrams[mainName] = new DiagramObject(mainName, diagramType);
+            }
 
             foreach (var pair in allTableInfos)
             {
@@ -2521,16 +2530,21 @@ namespace AventusSharp.Data.Storage.Default
                         diagrams.Add(name, new DiagramObject(name, diagramType));
                     }
 
-                    (DiagramTable table, List<DiagramRelationship> rels) temp = CreateTableDiagram(info);
+                    (DiagramTable table, List<DiagramRelationship> rels) temp = CreateTableDiagram(info, attr);
                     if (area != null)
                     {
                         if (!diagrams[name].Areas.Exists(p => p.Name == area))
                         {
                             string[] colors = { "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899" };
+                            string color = colors[new Random().Next(colors.Length)];
+                            if (attr.AreaColor != null)
+                            {
+                                color = attr.AreaColor;
+                            }
                             diagrams[name].Areas.Add(new Area()
                             {
                                 Name = area,
-                                Color = colors[new Random().Next(colors.Length)]
+                                Color = color
                             });
                         }
 
@@ -2542,7 +2556,7 @@ namespace AventusSharp.Data.Storage.Default
                     diagrams[name].Relationships.AddRange(temp.rels);
                 }
 
-                if (!mainFound)
+                if (!mainFound && config.GenerateMain)
                 {
                     (DiagramTable table, List<DiagramRelationship> rels) temp = CreateTableDiagram(info);
                     if (area != null)
@@ -2592,12 +2606,13 @@ namespace AventusSharp.Data.Storage.Default
         }
         public abstract string DiagramType();
 
-        private (DiagramTable table, List<DiagramRelationship> rels) CreateTableDiagram(TableInfo info)
+        private (DiagramTable table, List<DiagramRelationship> rels) CreateTableDiagram(TableInfo info, Diagram? attr = null)
         {
             DiagramTable table = new DiagramTable()
             {
-                Id = info.SqlTableName.ToLower(),
-                Name = info.SqlTableName.ToLower(),
+                Id = info.SqlTableName,
+                Name = info.SqlTableName,
+                Color = attr?.TableColor ?? "#3b82f6"
             };
 
             List<DiagramRelationship> rels = new();
@@ -2613,7 +2628,7 @@ namespace AventusSharp.Data.Storage.Default
 
                 DiagramField field = new DiagramField()
                 {
-                    Id = info.SqlTableName.ToLower() + "." + member.SqlName,
+                    Id = info.SqlTableName + "." + member.SqlName,
                     Name = member.SqlName,
                     Type = new()
                     {
@@ -2631,12 +2646,17 @@ namespace AventusSharp.Data.Storage.Default
                     // TODO add relation name
                     DiagramRelationship relationship = new DiagramRelationship()
                     {
-                        Name = table.Name + "_" + rel.TableLinked.SqlTableName.ToLower(),
+                        Name = table.Name + "_" + rel.TableLinked.SqlTableName,
                         SourceTableId = table.Name,
                         SourceFieldId = table.Name + "." + info.Primary.SqlName,
-                        TargetTableId = rel.TableLinked.SqlTableName.ToLower(),
-                        TargetFieldId = rel.TableLinked.SqlTableName.ToLower() + "." + rel.TableLinked.Primary.SqlName
+                        TargetTableId = rel.TableLinked.SqlTableName,
+                        TargetFieldId = rel.TableLinked.SqlTableName + "." + rel.TableLinked.Primary.SqlName
                     };
+                    DiagramRelation? relationAttr = member.memberInfo?.GetCustomAttribute<DiagramRelation>();
+                    if (relationAttr != null)
+                    {
+                        relationship.Description = relationAttr.Description;
+                    }
                     rels.Add(relationship);
                 }
             }

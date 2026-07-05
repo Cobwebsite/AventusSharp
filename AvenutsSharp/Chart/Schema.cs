@@ -388,23 +388,12 @@ public class DiagramTable
     [JsonProperty(PropertyName = "fields")]
     public List<DiagramField> Fields { get; set; } = new();
 
-    [JsonProperty(PropertyName = "indexes")]
-    public List<object> Indexes { get; set; } = new();
-
     [JsonProperty(PropertyName = "color")]
-    public string Color { get; set; } = "#3b82f6"; // Couleur par défaut
+    public required string Color { get; set; }
 
-    [JsonProperty(PropertyName = "isView")]
-    public bool IsView { get; set; } = false;
+    internal double Width { get; set; } = 224;
 
-    [JsonProperty(PropertyName = "createdAt")]
-    public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-    [JsonProperty(PropertyName = "width")]
-    public double Width { get; set; } = 224; // Largeur par défaut dans ChartDB
-
-    [JsonProperty(PropertyName = "parentAreaId")]
-    public string? ParentAreaId { get; set; }
+    internal string? ParentAreaId { get; set; }
 }
 
 public class DiagramField
@@ -426,9 +415,6 @@ public class DiagramField
 
     [JsonProperty(PropertyName = "nullable")]
     public bool Nullable { get; set; }
-
-    [JsonProperty(PropertyName = "createdAt")]
-    public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 }
 
 public class DiagramFieldType
@@ -447,6 +433,9 @@ public class DiagramRelationship
     [JsonProperty(PropertyName = "name")]
     public required string Name { get; set; }
 
+    [JsonProperty(PropertyName = "description")]
+    public string? Description { get; set; }
+
     [JsonProperty(PropertyName = "sourceTableId")]
     public required string SourceTableId { get; set; }
 
@@ -459,14 +448,6 @@ public class DiagramRelationship
     [JsonProperty(PropertyName = "targetFieldId")]
     public required string TargetFieldId { get; set; }
 
-    [JsonProperty(PropertyName = "sourceCardinality")]
-    public string SourceCardinality { get; set; } = "many"; // "one" | "many"
-
-    [JsonProperty(PropertyName = "targetCardinality")]
-    public string TargetCardinality { get; set; } = "one"; // "one" | "many"
-
-    [JsonProperty(PropertyName = "createdAt")]
-    public long CreatedAt { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 }
 
 public class Area

@@ -1,13 +1,20 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
+using AventusSharp.Chart;
 using AventusSharp.Data;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Routes;
+using AventusSharp.Routes.Response;
 using AventusSharp.SSE;
 using AventusSharp.Tools;
 using AventusSharp.WebSocket;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 
 namespace AventusSharp;
 
@@ -19,6 +26,15 @@ public static class AventusExtension
         {
             string[] args = Environment.GetCommandLineArgs();
             return args.Contains("--export-info");
+        }
+    }
+
+    public static bool IsDbDiagramCommand
+    {
+        get
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            return args.Contains("--db-diagram");
         }
     }
 
@@ -108,6 +124,60 @@ public static class AventusExtension
         {
             Routes.RouterMiddleware.PrintForExport();
             WebSocketMiddleware.PrintForExport();
+            Environment.Exit(0);
+        }
+        return app;
+    }
+
+    public static IApplicationBuilder UseAventusDbDiagram(this IApplicationBuilder app, Action<DiagramConfig>? config = null)
+    {
+        if (IsDbDiagramCommand)
+        {
+            DiagramConfig baseConfig = new DiagramConfig()
+            {
+                GenerateMain = true,
+                MainName = Assembly.GetEntryAssembly()?.GetName().Name ?? "Database",
+                OutputDirectory = ""
+            };
+            if (config != null)
+                config(baseConfig);
+
+            List<IDBStorage> dbs = DBStorage.GetAll();
+            List<DiagramObject> diagrams = new();
+            foreach (IDBStorage db in dbs)
+            {
+                diagrams.AddRange(db.GetDiagrams(baseConfig.ToInternal()));
+            }
+
+            string output = baseConfig.OutputDirectory;
+            if (!Path.IsPathFullyQualified(output))
+            {
+                output = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, output);
+            }
+
+            foreach (DiagramObject diagramObject in diagrams)
+            {
+                DiagramObject diagram = diagramObject;
+                string writePath = Path.Join(output, diagram.Name + ".db.avt");
+                if (File.Exists(writePath))
+                {
+                    DiagramObject? oldDiagram = JsonConvert.DeserializeObject<DiagramObject>(File.ReadAllText(writePath));
+                    if (oldDiagram != null)
+                    {
+                        oldDiagram.Merge(diagram);
+                        diagram = oldDiagram;
+                    }
+                }
+
+                string txt = JsonConvert.SerializeObject(diagram, new JsonSerializerSettings()
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+                if (Environment.NewLine != "\n")
+                    txt = txt.Replace("\n", Environment.NewLine);
+                File.WriteAllText(writePath, txt);
+            }
+
             Environment.Exit(0);
         }
         return app;

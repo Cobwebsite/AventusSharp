@@ -83,7 +83,7 @@ namespace AventusSharp.Data.Manager.DB
     }
     public class GenericDatabaseDM<T, U> : GenericDM<T, U>, IDatabaseDM where T : IGenericDM<U>, new() where U : IStorable
     {
-         
+
         private readonly Dictionary<int, U> Records = new Dictionary<int, U>();
 
         public bool NeedLocalCache { get; private set; } = false;
@@ -108,7 +108,7 @@ namespace AventusSharp.Data.Manager.DB
 
         public bool IsSameStorage(IGenericDM? dm)
         {
-            if(dm is IDatabaseDM databaseDM)
+            if (dm is IDatabaseDM databaseDM)
             {
                 return databaseDM.Storage == Storage;
             }
@@ -123,11 +123,16 @@ namespace AventusSharp.Data.Manager.DB
         protected virtual IDBStorage? SearchAttributeStorage()
         {
             Attributes.Storage? attr = typeof(U).GetCustomAttribute<Attributes.Storage>();
-            if(attr != null) {
+            if (attr != null)
+            {
                 Type type = attr.type;
-                if(!DBStorage.listStorage.ContainsKey(type))
+                if (!DBStorage.listStorage.ContainsKey(type))
                 {
-                    DBStorage.listStorage.Add(type, (IDBStorage)TypeTools.CreateNewObj(type));
+                    IDBStorage storage = (IDBStorage)TypeTools.CreateNewObj(type);
+                    if (!DBStorage.listStorage.ContainsKey(type))
+                    {
+                        DBStorage.listStorage.Add(type, storage);
+                    }
                 }
                 return DBStorage.listStorage[type];
             }
@@ -213,7 +218,7 @@ namespace AventusSharp.Data.Manager.DB
                 if (!result.Success) return result;
                 bool force = Config != null && Config.AutoCreateModel;
                 result = await storage.CreateTable(PyramidInfo, force);
-                
+
                 return result;
             }
             result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name));
@@ -674,7 +679,7 @@ namespace AventusSharp.Data.Manager.DB
         #endregion
 
         #region Transaction
-       
+
         protected override TransactionContext? getTransactionScope()
         {
             return Storage.getTransactionScope();

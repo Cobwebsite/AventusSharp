@@ -35,6 +35,7 @@ namespace AventusSharp.Data.Storage.Default
 
         public Task<VoidWithError> ConnectWithError();
         public Task<ResultWithError<bool>> ResetStorage();
+        public Task Close();
 
         public string GetDatabaseName();
         public ResultWithError<Dictionary<TableInfo, IList>> GroupDataByType<X>(IList data);

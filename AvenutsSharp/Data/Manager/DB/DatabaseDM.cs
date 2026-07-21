@@ -257,7 +257,7 @@ namespace AventusSharp.Data.Manager.DB
                 };
                 foreach (KeyValuePair<int, U> record in Records)
                 {
-                    if (record is X casted)
+                    if (record.Value is X casted)
                     {
                         result.Result.Add(casted);
                     }

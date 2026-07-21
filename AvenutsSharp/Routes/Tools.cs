@@ -27,12 +27,17 @@ namespace AventusSharp.Routes
                 {
                     splitted.RemoveAt(splitted.Count - 1);
                 }
+                else
+                {
+                    splitted[splitted.Count - 1] = splitted[splitted.Count - 1].Replace("Router", "");
+                }
 
                 string final = string.Join("/", splitted);
 
                 defaultName = final + prefix + defaultName;
             }
-            else {
+            else
+            {
                 defaultName = prefix + defaultName;
             }
 

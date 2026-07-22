@@ -44,6 +44,7 @@ namespace CSharpToTypescript
             if (!Build())
             {
                 Console.WriteLine("Error : Compilation failed");
+                Environment.Exit(2);
                 return;
             }
             if (!MSBuildLocator.IsRegistered) MSBuildLocator.RegisterDefaults();

@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Diagnostics;
 using CSharpToTypescript;
 using Newtonsoft.Json;
 
@@ -6,7 +7,7 @@ if (args.Length >= 1)
 {
     string configPath = args[0];
     ProjectConfig? config = JsonConvert.DeserializeObject<ProjectConfig>(File.ReadAllText(configPath));
-    if(config != null)
+    if (config != null)
     {
         config.Prepare(configPath);
         await new ProjectManager().Init(config);
@@ -14,11 +15,13 @@ if (args.Length >= 1)
     else
     {
         Console.WriteLine("Error : Can't load the config file");
+        Environment.Exit(1);
     }
 }
 else
 {
     Console.WriteLine("Error : Can't load the config file");
+    Environment.Exit(1);
     return;
     // ProjectConfig config = new ProjectConfig();
     // if (false)

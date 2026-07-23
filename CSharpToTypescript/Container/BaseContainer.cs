@@ -10,6 +10,7 @@ using Microsoft.Build.Framework;
 using Microsoft.CodeAnalysis;
 using MySqlX.XDevAPI.Common;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -152,6 +153,10 @@ namespace CSharpToTypescript.Container
             {
                 result += "static ";
             }
+            if(type.IsOverride)
+            {
+                result += "override ";
+            }
             return result;
         }
         public static string GetAccessibility(MethodInfo info)
@@ -246,8 +251,9 @@ namespace CSharpToTypescript.Container
                 name = type.ToString() ?? "";
             }
 
-            bool isFull;
-            name = GetVariantTypeName(type, depth, genericExtendsConstraint, name, out isFull);
+            bool isFull = false;
+            if (type is INamedTypeSymbol namedTypeSymbol)
+                name = GetVariantTypeName(namedTypeSymbol, depth, genericExtendsConstraint, name, out isFull);
             if (enumToTypeof && type is ITypeSymbol typeSymbol1 && typeSymbol1.TypeKind == TypeKind.Enum)
             {
                 name = "typeof " + name;
@@ -337,10 +343,16 @@ namespace CSharpToTypescript.Container
         }
 
 
-        public string GetVariantTypeName(ISymbol type, int depth, bool genericExtendsConstraint, string name, out bool isFull)
+        public string GetVariantTypeName(INamedTypeSymbol type, int depth, bool genericExtendsConstraint, string name, out bool isFull)
         {
             isFull = false;
             string fullName = type.GetFullName();
+            Type? compiledType = Tools.GetCompiledType(type);
+            if (compiledType == null)
+            {
+                throw new Exception("Impossible : can't convert type " + type);
+            }
+
             bool isNullable = false;
             if (fullName == "System.Nullable" && type is INamedTypeSymbol namedTypeSymbol)
             {
@@ -369,10 +381,16 @@ namespace CSharpToTypescript.Container
             else if (fullName == typeof(StorableListDouble).FullName) result = "number[]";
             else if (fullName == typeof(StorableListBool).FullName) result = "boolean[]";
             else if (fullName == typeof(StorableListString).FullName) result = "string[]";
-            else if (fullName == typeof(List<>).FullName?.Split("`")[0] && type is INamedTypeSymbol namedType)
+            else if (compiledType.GetInterfaces().Contains(typeof(IDictionary)))
             {
                 isFull = true;
-                result = DetermineGenericType(namedType, null, depth, genericExtendsConstraint);
+                result = DetermineGenericType(type, null, depth, genericExtendsConstraint);
+                result = "Map" + result;
+            }
+            else if (compiledType.GetInterfaces().Contains(typeof(IList)))
+            {
+                isFull = true;
+                result = DetermineGenericType(type, null, depth, genericExtendsConstraint);
 
                 if (result.StartsWith("<"))
                 {
@@ -380,12 +398,7 @@ namespace CSharpToTypescript.Container
                 }
                 result += "[]";
             }
-            else if (fullName == typeof(Dictionary<,>).FullName?.Split("`")[0] && type is INamedTypeSymbol namedTypeDico)
-            {
-                isFull = true;
-                result = DetermineGenericType(namedTypeDico, null, depth, genericExtendsConstraint);
-                result = "Map" + result;
-            }
+
             if (isNullable)
             {
                 fullName += "?";

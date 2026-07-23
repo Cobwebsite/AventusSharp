@@ -931,6 +931,10 @@ namespace CSharpToTypescript.Container
                     }
                 }
             }
+            else if(node is AnonymousFunctionExpressionSyntax test)
+            {
+                // prevent going down to sub function
+            }
             else
             {
                 foreach (var child in node.ChildNodes())

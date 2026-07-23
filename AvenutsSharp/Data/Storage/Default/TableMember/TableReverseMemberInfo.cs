@@ -74,7 +74,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     reversInfo = tableInfo.Members.Find(m => m.Name == ReverseLinkAttr.field);
                     if (reversInfo == null)
                     {
-                        el = el.Parent; 
+                        el = el.Parent;
                         continue;
                     }
                     break;
@@ -121,109 +121,117 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(int Id)
         {
             ResultWithDataError<List<IStorable>> result = new();
-            if (reverseQueryBuilder == null)
+            try
             {
-                if (ReverseLinkType == null || reverseMember == null)
+                if (reverseQueryBuilder == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, "Reverse link seems to not be init : " + Name));
-                    return result;
-                }
-
-                ParameterExpression argParam = Expression.Parameter(ReverseLinkType, "t");
-                Expression nameProperty;
-                Type varType;
-                if (TypeTools.IsPrimitiveType(reverseMember.MemberType))
-                {
-                    varType = reverseMember.MemberType;
-                    nameProperty = Expression.PropertyOrField(argParam, reverseMember.SqlName);
-                }
-                else
-                {
-                    varType = typeof(int);
-                    Expression temp = Expression.PropertyOrField(argParam, reverseMember.SqlName);
-                    nameProperty = Expression.PropertyOrField(temp, Storable.Id);
-                }
-                Expression<Func<int>> idLambda = () => Id;
-
-                Type? typeIfNullable = System.Nullable.GetUnderlyingType(nameProperty.Type);
-                if (typeIfNullable != null)
-                {
-                    nameProperty = Expression.Call(nameProperty, "GetValueOrDefault", Type.EmptyTypes);
-                }
-
-                Expression e1 = Expression.Equal(nameProperty, idLambda.Body);
-                LambdaExpression lambda = Expression.Lambda(e1, argParam);
-
-                IGenericDM dm = GenericDM.Get(ReverseLinkType);
-                object? query = dm.GetType().GetMethod("CreateQuery")?.MakeGenericMethod(reverseMember.TableInfo.Type).Invoke(dm, null);
-                if (query == null)
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't create the query"));
-                    return result;
-                }
-                // MethodInfo? setVariable = query.GetType().GetMethod("SetVariable");
-                // if (setVariable == null)
-                // {
-                //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function setVariable"));
-                //     return result;
-                // }
-                // MethodInfo? runWithError = query.GetType().GetMethod("RunWithError");
-                // if (runWithError == null)
-                // {
-                //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
-                //     return result;
-                // }
-                MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
-                if (whereWithParam == null)
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function whereWithParam"));
-                    return result;
-                }
-
-                var prepared = whereWithParam.Invoke(query, new object[] { lambda });
-                IQueryBuilderPrepared preparedQuery;
-                if (prepared is IQueryBuilderPrepared _preparedQuery)
-                {
-                    preparedQuery = _preparedQuery;
-                }
-                else
-                {
-                    result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
-                    return result;
-                }
-
-                reverseQueryBuilder = async delegate (int id)
-                {
-                    ResultWithDataError<List<IStorable>> result = new();
-                    IResultWithError? resultWithError = await _preparedQuery.New().SetVariables((define) =>
+                    if (ReverseLinkType == null || reverseMember == null)
                     {
-                        define(Storable.Id, id);
-                    }).RunWithError();
-                    if (resultWithError != null)
+                        result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, "Reverse link seems to not be init : " + Name));
+                        return result;
+                    }
+
+                    ParameterExpression argParam = Expression.Parameter(ReverseLinkType, "t");
+                    Expression nameProperty;
+                    Type varType;
+                    if (TypeTools.IsPrimitiveType(reverseMember.MemberType))
                     {
-                        foreach (GenericError error in resultWithError.Errors)
+                        varType = reverseMember.MemberType;
+                        nameProperty = Expression.PropertyOrField(argParam, reverseMember.Name);
+                    }
+                    else
+                    {
+                        varType = typeof(int);
+                        Expression temp = Expression.PropertyOrField(argParam, reverseMember.Name);
+                        nameProperty = Expression.PropertyOrField(temp, Storable.Id);
+                    }
+                    Expression<Func<int>> idLambda = () => Id;
+
+                    Type? typeIfNullable = System.Nullable.GetUnderlyingType(nameProperty.Type);
+                    if (typeIfNullable != null)
+                    {
+                        nameProperty = Expression.Call(nameProperty, "GetValueOrDefault", Type.EmptyTypes);
+                    }
+
+                    Expression e1 = Expression.Equal(nameProperty, idLambda.Body);
+                    LambdaExpression lambda = Expression.Lambda(e1, argParam);
+
+                    IGenericDM dm = GenericDM.Get(ReverseLinkType);
+                    Type t = reverseMember.TableInfo.Type.ContainsGenericParameters ? dm.GetMainType() : reverseMember.TableInfo.Type;
+                    object? query = dm.GetType().GetMethod("CreateQuery")?.MakeGenericMethod(t).Invoke(dm, null);
+                    if (query == null)
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't create the query"));
+                        return result;
+                    }
+                    // MethodInfo? setVariable = query.GetType().GetMethod("SetVariable");
+                    // if (setVariable == null)
+                    // {
+                    //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function setVariable"));
+                    //     return result;
+                    // }
+                    // MethodInfo? runWithError = query.GetType().GetMethod("RunWithError");
+                    // if (runWithError == null)
+                    // {
+                    //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
+                    //     return result;
+                    // }
+                    MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
+                    if (whereWithParam == null)
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function whereWithParam"));
+                        return result;
+                    }
+
+                    var prepared = whereWithParam.Invoke(query, new object[] { lambda });
+                    IQueryBuilderPrepared preparedQuery;
+                    if (prepared is IQueryBuilderPrepared _preparedQuery)
+                    {
+                        preparedQuery = _preparedQuery;
+                    }
+                    else
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
+                        return result;
+                    }
+
+                    reverseQueryBuilder = async delegate (int id)
+                    {
+                        ResultWithDataError<List<IStorable>> result = new();
+                        IResultWithError? resultWithError = await _preparedQuery.New().SetVariables((define) =>
                         {
-                            if (error is DataError dataError)
-                            {
-                                result.Errors.Add(dataError);
-                            }
-                        }
-                        result.Result = new List<IStorable>();
-                        if (resultWithError.Result is IList list)
+                            define(Storable.Id, id);
+                        }).RunWithError();
+                        if (resultWithError != null)
                         {
-                            foreach (object item in list)
+                            foreach (GenericError error in resultWithError.Errors)
                             {
-                                if (item is IStorable storable)
+                                if (error is DataError dataError)
                                 {
-                                    result.Result.Add(storable);
+                                    result.Errors.Add(dataError);
+                                }
+                            }
+                            result.Result = new List<IStorable>();
+                            if (resultWithError.Result is IList list)
+                            {
+                                foreach (object item in list)
+                                {
+                                    if (item is IStorable storable)
+                                    {
+                                        result.Result.Add(storable);
+                                    }
                                 }
                             }
                         }
-                    }
-                    return result;
-                };
+                        return result;
+                    };
+                }
+                result = await reverseQueryBuilder(Id);
             }
-            result = await reverseQueryBuilder(Id);
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
             return result;
         }
 

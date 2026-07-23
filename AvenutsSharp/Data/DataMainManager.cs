@@ -478,6 +478,7 @@ namespace AventusSharp.Data
                 ManagerInformation managerInfo = managerInfoResult.Result;
                 managerInfo.AddDataInformation(info);
                 info.ManagerInfo = managerInfo;
+                Type? interfaceType = null;
                 if (dataType.IsGenericType)
                 {
                     if (!dataType.IsAbstract && !dataType.IsInterface)
@@ -488,7 +489,7 @@ namespace AventusSharp.Data
                     ResultWithDataError<Type> interfaceTypeTemp = GetTypeForGenericClass(dataType);
                     if (interfaceTypeTemp.Success && interfaceTypeTemp.Result != null)
                     {
-                        Type interfaceType = interfaceTypeTemp.Result;
+                        interfaceType = interfaceTypeTemp.Result;
                         AddDataDependance(dataType, interfaceType, "*constraint");
                         if (dataInformations.ContainsKey(interfaceType))
                         {
@@ -541,6 +542,11 @@ namespace AventusSharp.Data
                     {
                         AddDataDependance(dataType, _interface, "*interface");
                     }
+                }
+
+                if (interfaceType != null)
+                {
+                    dataType = interfaceType;
                 }
 
                 // load fields

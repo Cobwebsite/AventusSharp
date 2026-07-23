@@ -139,67 +139,97 @@ namespace CSharpToTypescript
         }
         public static Type? GetCompiledType(INamedTypeSymbol? type)
         {
-            if (type == null) return null;
+            if (type == null)
+                return null;
 
-            string fullName = "";
-            string typeName = type.ContainingNamespace.ToString() + "." + type.Name;
-            if (type.IsGenericType)
+            string metadataName = GetMetadataName(type);
+
+            Assembly? assembly = AppDomain.CurrentDomain
+                .GetAssemblies()
+                .FirstOrDefault(a =>
+                    string.Equals(
+                        a.GetName().Name,
+                        type.ContainingAssembly.Name,
+                        StringComparison.Ordinal
+                    )
+                );
+
+            if (assembly == null)
             {
-                typeName += "`" + type.TypeParameters.Length;
+                try
+                {
+                    string assemblyPath = Path.Combine(
+                        ProjectManager.Config.outputDir,
+                        type.ContainingAssembly.Name + ".dll"
+                    );
+
+                    assembly = Assembly.LoadFrom(assemblyPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    return null;
+                }
             }
-            fullName += typeName + ", " + type.ContainingAssembly.Name;
-            Type? realType = Type.GetType(fullName);
+
+            Type? realType = assembly.GetType(
+                metadataName,
+                throwOnError: false,
+                ignoreCase: false
+            );
+
             if (realType == null)
+                return null;
+
+            if (!type.IsGenericType)
+                return realType;
+
+            var genericArguments = new List<Type>();
+
+            foreach (ITypeSymbol typeArgument in type.TypeArguments)
             {
-                Assembly? assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == type.ContainingAssembly.Name);
-                if (assembly == null)
-                {
-                    try
-                    {
-                        assembly = Assembly.LoadFrom(ProjectManager.Config.outputDir + Path.DirectorySeparatorChar + type.ContainingAssembly.Name + ".dll");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                }
-                if (assembly != null)
-                {
-                    realType = assembly.GetType(typeName);
-                }
+                // Le type contient encore un paramètre générique ouvert.
+                if (typeArgument is ITypeParameterSymbol)
+                    return realType;
+
+                if (typeArgument is not INamedTypeSymbol namedArgument)
+                    return null;
+
+                Type? compiledArgument = GetCompiledType(namedArgument);
+
+                if (compiledArgument == null)
+                    return null;
+
+                genericArguments.Add(compiledArgument);
             }
 
-            if (type.IsGenericType && realType != null)
+            if (realType.IsGenericTypeDefinition)
             {
-                bool fullGeneric = false;
-                List<Type> subTypes = new List<Type>();
-                foreach (ITypeSymbol genericType in type.TypeArguments)
-                {
-                    if (genericType is INamedTypeSymbol named)
-                    {
-                        Type? subType = GetCompiledType(named);
-                        if (subType == null)
-                        {
-                            throw new Exception("impossible");
-                        }
-                        subTypes.Add(subType);
-                    }
-                    else if (genericType is ITypeParameterSymbol typeParameter)
-                    {
-                        fullGeneric = true;
-                    }
-                    else
-                    {
-                        throw new Exception("impossible");
-                    }
-                }
-                if (!fullGeneric)
-                {
-                    realType = realType.MakeGenericType(subTypes.ToArray());
-                }
+                return realType.MakeGenericType(genericArguments.ToArray());
             }
 
             return realType;
+        }
+        private static string GetMetadataName(INamedTypeSymbol type)
+        {
+            var containingTypes = new Stack<string>();
+
+            INamedTypeSymbol? current = type;
+
+            while (current != null)
+            {
+                containingTypes.Push(current.MetadataName);
+                current = current.ContainingType;
+            }
+
+            string nestedTypeName = string.Join("+", containingTypes);
+
+            if (type.ContainingNamespace is { IsGlobalNamespace: false } ns)
+            {
+                return ns.ToDisplayString() + "." + nestedTypeName;
+            }
+
+            return nestedTypeName;
         }
 
         public static ITypeSymbol GetTypeSymbol(Type type)

@@ -1137,7 +1137,7 @@ namespace AventusSharp.Data.Storage.Default
                 for (int i = 0; i < queryResult.Result.Count; i++)
                 {
                     Dictionary<string, string?> itemFields = queryResult.Result[i];
-                    ResultWithDataError<object> resultTemp = CreateObject(baseInfo, itemFields, false);
+                    ResultWithError<object> resultTemp = await CreateObject(baseInfo, itemFields, false);
                     if (resultTemp.Success && resultTemp.Result != null)
                     {
                         if (resultTemp.Result is X oCasted)
@@ -1175,29 +1175,29 @@ namespace AventusSharp.Data.Storage.Default
             string sql = queryBuilder.info.Sql;
 
             DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
-            VoidWithError queryResult = await QueryStreamGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal), null, (ligne) =>
+            VoidWithError queryResult = await QueryStreamGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal), null, async (ligne) =>
             {
                 VoidWithError result = new VoidWithError();
-                object? objectTemp = result.Extract(() => CreateObject(baseInfo, ligne, false).ToGeneric());
+                object? objectTemp = await result.ExtractAsync(() => CreateObject(baseInfo, ligne, false));
                 if (objectTemp != null)
                 {
                     if (objectTemp is X oCasted)
                     {
-                        action(oCasted);
+                        await action(oCasted);
                     }
                     else
                     {
                         result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible to cast " + objectTemp.GetType().Name + " into " + typeof(X).Name));
                     }
                 }
-                return Task.FromResult(result);
+                return result;
             });
             return queryResult;
         }
 
-        protected ResultWithDataError<object> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields, bool allowNull)
+        protected async Task<ResultWithError<object>> CreateObject(DatabaseBuilderInfo info, Dictionary<string, string?> itemFields, bool allowNull)
         {
-            ResultWithDataError<object> result = new ResultWithDataError<object>();
+            ResultWithError<object> result = new ResultWithError<object>();
             string rootAlias = info.Alias;
             TableInfo rootTableInfo = info.TableInfo;
 
@@ -1255,15 +1255,20 @@ namespace AventusSharp.Data.Storage.Default
                             if (member.Value.UseDM)
                             {
                                 string idValue = itemFields[key] ?? string.Empty;
-                                object? oTemp = memberInfo1N.TableLinked?.DM?.GetById(int.Parse(idValue));
-                                if (oTemp != null)
-                                    hasValue = true;
-                                memberInfo.SetValue(o, oTemp);
+                                IGenericDM? dm = memberInfo1N.TableLinked?.DM;
+                                if (dm != null)
+                                {
+                                    object? oTemp = await dm.GetById(int.Parse(idValue));
+                                    if (oTemp != null)
+                                        hasValue = true;
+                                    memberInfo.SetValue(o, oTemp);
+                                }
+
                             }
                             else if (info.joins.ContainsKey(memberInfo))
                             {
                                 // loaded from the query
-                                ResultWithDataError<object> oTemp = CreateObject(info.joins[memberInfo], itemFields, memberInfo.IsNullable);
+                                ResultWithError<object> oTemp = await CreateObject(info.joins[memberInfo], itemFields, memberInfo.IsNullable);
                                 if (oTemp.Success)
                                 {
                                     if (oTemp.Result != null)
@@ -1377,6 +1382,13 @@ namespace AventusSharp.Data.Storage.Default
             {
                 if (member.IsAutoRead)
                 {
+                    if (queryBuilder is IQueryBuilder<X> qb)
+                    {
+                        ParameterExpression argParam = Expression.Parameter(typeof(X), "t");
+                        Expression nameProperty = Expression.PropertyOrField(argParam, member.Name);
+                        LambdaExpression lambda3 = Expression.Lambda(nameProperty, argParam);
+                        qb.Include(lambda3);
+                    }
                     baseInfo.ReverseLinks.Add(member);
                 }
             }

@@ -1,6 +1,7 @@
 ﻿using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
+using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
 using System.Collections;
@@ -594,12 +595,32 @@ namespace AventusSharp.Data.Manager.DB
 
                     // ResultWithError<X> resultTemp = ((DatabaseUpdateBuilder<X>)savedUpdateQuery[type]).Prepare(value.Id).SingleWithError(value);
                     id = value.Id;
+                    X? valueBeforeUpdate = default;
+                    if (NeedLocalCache && getTransactionScope() != null)
+                    {
+                        ResultWithError<X> snapshot = await GetByIdWithErrorNoCache<X>(id);
+                        if (!snapshot.Success || snapshot.Result == null)
+                        {
+                            result.Errors.AddRange(snapshot.Errors);
+                            break;
+                        }
+                        valueBeforeUpdate = snapshot.Result;
+                    }
                     ResultWithError<X> resultTemp = await new DatabaseUpdateBuilder<X>(Storage, this, NeedLocalCache, value.GetType())
                                                             .Where(p => p.Id == id)
                                                             .SingleWithError(value);
 
                     if (resultTemp.Success && resultTemp.Result != null)
                     {
+                        if (valueBeforeUpdate != null)
+                        {
+                            X snapshot = valueBeforeUpdate;
+                            getTransactionScope()?.OnRollback(() =>
+                            {
+                                RestorePersistentValues(value, snapshot);
+                                return Task.FromResult(new VoidWithError());
+                            });
+                        }
                         result.Result.Add(resultTemp.Result);
                     }
                     else
@@ -668,6 +689,14 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     result.Add(casted);
                     Records.Remove(id);
+                    getTransactionScope()?.OnRollback(() =>
+                    {
+                        if (casted is U item)
+                        {
+                            Records[id] = item;
+                        }
+                        return Task.FromResult(new VoidWithError());
+                    });
                 }
             }
             return result;
@@ -681,9 +710,31 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     result.Add(casted);
                     Records.Remove(item.Id);
+                    int id = item.Id;
+                    getTransactionScope()?.OnRollback(() =>
+                    {
+                        if (casted is U cached)
+                        {
+                            Records[id] = cached;
+                        }
+                        return Task.FromResult(new VoidWithError());
+                    });
                 }
             }
             return result;
+        }
+
+        private void RestorePersistentValues<X>(X target, X snapshot) where X : IStorable
+        {
+            TableInfo? table = Storage.GetTableInfo(target.GetType());
+            while (table != null)
+            {
+                foreach (TableMemberInfoSql member in table.Members)
+                {
+                    member.SetValue(target, member.GetValue(snapshot));
+                }
+                table = table.Parent;
+            }
         }
 
 

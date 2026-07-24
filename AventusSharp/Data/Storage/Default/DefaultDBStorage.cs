@@ -1257,7 +1257,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else if (memberInfo is TableMemberInfoSql1N memberInfo1N)
                     {
-                        if (itemFields[key] != "")
+                        if (!string.IsNullOrEmpty(itemFields[key]))
                         {
                             if (member.Value.UseDM)
                             {
@@ -2007,14 +2007,14 @@ namespace AventusSharp.Data.Storage.Default
                     ParameterExpression argParam = Expression.Parameter(typeof(X), "t");
                     MemberExpression fieldProperty = Expression.Property(argParam, member.SqlName);
                     LambdaExpression lambda = Expression.Lambda(fieldProperty, argParam);
-                    queryBuilder.GetType().GetMethod("Field")?.MakeGenericMethod(fieldProperty.Type).Invoke(queryBuilder, new object[] { lambda });
+                    queryBuilder.Field(lambda);
                 }
                 else if (member is ITableMemberInfoSqlLinkMultiple)
                 {
                     ParameterExpression argParam = Expression.Parameter(typeof(X), "t");
                     MemberExpression fieldProperty = Expression.Property(argParam, member.SqlName);
                     LambdaExpression lambda = Expression.Lambda(fieldProperty, argParam);
-                    queryBuilder.GetType().GetMethod("Field")?.MakeGenericMethod(fieldProperty.Type).Invoke(queryBuilder, new object[] { lambda });
+                    queryBuilder.Field(lambda);
                 }
             }
             queryBuilder.Where(p => listIdUpdate.Contains(p.Id));
@@ -2318,6 +2318,37 @@ namespace AventusSharp.Data.Storage.Default
             #endregion
 
             // auto delete 1-n
+            TableInfo deletedTable = deleteBuilder.InfoByPath[""].TableInfo;
+            HashSet<(Type Type, int Id)> autoDeleted = [];
+            foreach (TableMemberInfoSql member in deletedTable.Members.Where(member => member.IsAutoDelete))
+            {
+                foreach (X element in elementsToDelete)
+                {
+                    object? linkedValue = member.GetValue(element);
+                    IEnumerable<IStorable> linkedItems = linkedValue switch
+                    {
+                        IStorable storable => [storable],
+                        IEnumerable enumerable => enumerable.OfType<IStorable>(),
+                        _ => []
+                    };
+
+                    foreach (IStorable linkedItem in linkedItems)
+                    {
+                        if (linkedItem.Id == 0 || !autoDeleted.Add((linkedItem.GetType(), linkedItem.Id)))
+                        {
+                            continue;
+                        }
+                        await result.RunAsync(async () =>
+                        {
+                            VoidWithError deleteLinked = new()
+                            {
+                                Errors = await linkedItem.DeleteWithError()
+                            };
+                            return deleteLinked;
+                        });
+                    }
+                }
+            }
 
 
             return result;

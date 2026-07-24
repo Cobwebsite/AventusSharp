@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Migrations;
@@ -31,7 +32,10 @@ public static class MigrationManager
             Type[] types = assembly.GetTypes();
             foreach (Type type in types)
             {
-                if (type.GetInterfaces().Contains(typeof(IMigration)) && !type.IsAbstract && !_migrationsClasses.Contains(type))
+                if (type.GetInterfaces().Contains(typeof(IMigration))
+                    && !type.IsAbstract
+                    && type.GetCustomAttribute<ManualInit>() == null
+                    && !_migrationsClasses.Contains(type))
                 {
                     _migrationsClasses.Add(type);
                 }

@@ -104,6 +104,8 @@ namespace AventusSharp.Data.Storage.Default
                 parameter.Name,
                 "(^|[._])(?:CreatedDate|UpdatedDate)$");
         }
+
+        protected virtual DateTime GetCurrentDateTime() => DateTime.Now;
         private bool linksCreated;
         private AsyncLocal<DbTransactionContext?> _transactionScope = new();
         private DbTransactionContext? transactionScope
@@ -815,7 +817,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     if (IsAutomaticTimestamp(parameterInfo.Key))
                     {
-                        parameterInfo.Key.Value = DateTime.Now;
+                        parameterInfo.Key.Value = GetCurrentDateTime();
                         if (item != null)
                         {
                             parameterInfo.Key.SetCurrentValueOnObject(item);
@@ -1077,7 +1079,7 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         if (IsAutomaticTimestamp(parameterInfo.Key))
                         {
-                            parameterInfo.Key.Value = DateTime.Now;
+                            parameterInfo.Key.Value = GetCurrentDateTime();
                             if (item != null)
                             {
                                 parameterInfo.Key.SetCurrentValueOnObject(item);

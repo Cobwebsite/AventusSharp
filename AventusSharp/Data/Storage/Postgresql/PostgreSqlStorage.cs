@@ -25,6 +25,8 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         MigrationProvider = new PostgreSqlMigrationProvider(this);
     }
 
+    protected override DateTime GetCurrentDateTime() => DateTime.UtcNow;
+
     public override DbConnection GetConnection()
     {
         NpgsqlConnectionStringBuilder builder = new()

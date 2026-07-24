@@ -90,6 +90,20 @@ namespace AventusSharp.Data.Storage.Default
         protected StorageCredentials credentials;
 
         protected bool addCreatedAndUpdatedDate;
+
+        private static bool IsAutomaticTimestamp(ParamsInfo parameter)
+        {
+            string? memberName = parameter.MembersList.LastOrDefault()?.Name;
+            if (memberName == nameof(IStorableTimestamp.CreatedDate)
+                || memberName == nameof(IStorableTimestamp.UpdatedDate))
+            {
+                return true;
+            }
+
+            return Regex.IsMatch(
+                parameter.Name,
+                "(^|[._])(?:CreatedDate|UpdatedDate)$");
+        }
         private bool linksCreated;
         private AsyncLocal<DbTransactionContext?> _transactionScope = new();
         private DbTransactionContext? transactionScope
@@ -799,7 +813,7 @@ namespace AventusSharp.Data.Storage.Default
                 cmd.Parameters.Add(parameter);
                 if (parameterInfo.Value == QueryParameterType.GrabValue)
                 {
-                    if (Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)UpdatedDate$") || Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)CreatedDate$"))
+                    if (IsAutomaticTimestamp(parameterInfo.Key))
                     {
                         parameterInfo.Key.Value = DateTime.Now;
                         if (item != null)
@@ -1061,7 +1075,7 @@ namespace AventusSharp.Data.Storage.Default
                     cmd.Parameters.Add(parameter);
                     if (parameterInfo.Value == QueryParameterType.GrabValue)
                     {
-                        if (Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)UpdatedDate$") || Regex.IsMatch(parameterInfo.Key.Name, "(^|\\.)CreatedDate$"))
+                        if (IsAutomaticTimestamp(parameterInfo.Key))
                         {
                             parameterInfo.Key.Value = DateTime.Now;
                             if (item != null)
@@ -1385,18 +1399,25 @@ namespace AventusSharp.Data.Storage.Default
                 }
             }
 
-            foreach (TableReverseMemberInfo member in tableInfo.ReverseMembers)
+            // Reverse AutoRead expressions are rooted on X. For a joined/nested table,
+            // injecting one here would build (for example) `x => x.Lamps` even though
+            // Lamps belongs to x.Room. A reverse link on that related object must be
+            // loaded from the related object itself.
+            if (path.Count == 0)
             {
-                if (member.IsAutoRead)
+                foreach (TableReverseMemberInfo member in tableInfo.ReverseMembers)
                 {
-                    if (queryBuilder is IQueryBuilder<X> qb)
+                    if (member.IsAutoRead)
                     {
-                        ParameterExpression argParam = Expression.Parameter(typeof(X), "t");
-                        Expression nameProperty = Expression.PropertyOrField(argParam, member.Name);
-                        LambdaExpression lambda3 = Expression.Lambda(nameProperty, argParam);
-                        qb.Include(lambda3);
+                        if (queryBuilder is IQueryBuilder<X> qb)
+                        {
+                            ParameterExpression argParam = Expression.Parameter(typeof(X), "t");
+                            Expression nameProperty = Expression.PropertyOrField(argParam, member.Name);
+                            LambdaExpression lambda3 = Expression.Lambda(nameProperty, argParam);
+                            qb.Include(lambda3);
+                        }
+                        baseInfo.ReverseLinks.Add(member);
                     }
-                    baseInfo.ReverseLinks.Add(member);
                 }
             }
         }

@@ -170,40 +170,52 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     protected void WhereGeneric(Expression<Func<T, bool>> expression)
     {
-        if (Wheres != null)
+        try
         {
-            throw new Exception("Can't use twice the where action");
+            if (Wheres != null)
+            {
+                throw new Exception("Can't use twice the where action");
+            }
+            ReplaceWhereByParameters = false;
+            LambdaTranslator<T> translator = new(this);
+            TranslateResult translateResult = translator.Translate(expression);
+            if (!translateResult.IsExternal)
+            {
+                Wheres = translateResult.Wheres;
+            }
+            else
+            {
+                throw new NotImplementedException("Missing implementation to where external subquery");
+            }
         }
-        ReplaceWhereByParameters = false;
-        LambdaTranslator<T> translator = new(this);
-        TranslateResult translateResult = translator.Translate(expression);
-        if (!translateResult.IsExternal)
+        catch (Exception exception)
         {
-            Wheres = translateResult.Wheres;
-        }
-        else
-        {
-            // TODO ignore in sub query
-            throw new NotImplementedException("Missing implementation to where external subquery");
+            Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
         }
     }
     protected void WhereGenericWithParameters(Expression<Func<T, bool>> expression)
     {
-        if (Wheres != null)
+        try
         {
-            throw new Exception("Can't use twice the where action");
+            if (Wheres != null)
+            {
+                throw new Exception("Can't use twice the where action");
+            }
+            ReplaceWhereByParameters = true;
+            LambdaTranslator<T> translator = new(this);
+            TranslateResult translateResult = translator.Translate(expression);
+            if (!translateResult.IsExternal)
+            {
+                Wheres = translateResult.Wheres;
+            }
+            else
+            {
+                throw new NotImplementedException("Missing implementation to where external subquery");
+            }
         }
-        ReplaceWhereByParameters = true;
-        LambdaTranslator<T> translator = new(this);
-        TranslateResult translateResult = translator.Translate(expression);
-        if (!translateResult.IsExternal)
+        catch (Exception exception)
         {
-            Wheres = translateResult.Wheres;
-        }
-        else
-        {
-            // TODO ignore in sub query
-            throw new NotImplementedException("Missing implementation to where external subquery");
+            Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
         }
     }
     protected void PrepareGeneric(params object[] objects)

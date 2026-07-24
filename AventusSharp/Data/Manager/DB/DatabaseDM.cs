@@ -519,6 +519,17 @@ namespace AventusSharp.Data.Manager.DB
                         if (NeedLocalCache)
                         {
                             Records[resultTemp.Result.Id] = resultTemp.Result;
+                            int createdId = resultTemp.Result.Id;
+                            U createdItem = resultTemp.Result;
+                            getTransactionScope()?.OnRollback(() =>
+                            {
+                                if (Records.TryGetValue(createdId, out U? cached)
+                                    && ReferenceEquals(cached, createdItem))
+                                {
+                                    Records.Remove(createdId);
+                                }
+                                return Task.FromResult(new VoidWithError());
+                            });
                         }
                         result.Result.Add(resultTemp.Result);
                     }

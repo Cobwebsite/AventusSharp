@@ -1,6 +1,7 @@
 ﻿using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Storage.Default;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace AventusSharp.Data.Storage.Mysql.Queries
 {
@@ -80,7 +81,10 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     }
                     else if (queryGroup is WhereGroupConstantBool boolConst)
                     {
-                        subQuery += boolConst.Value ? "1" : "0";
+                        bool nativeBoolean = storage is Postgresql.PostgreSqlStorage;
+                        subQuery += nativeBoolean
+                            ? (boolConst.Value ? "TRUE" : "FALSE")
+                            : (boolConst.Value ? "1" : "0");
                     }
                     else if (queryGroup is WhereGroupConstantString stringConst)
                     {
@@ -104,7 +108,8 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     }
                     else if (queryGroup is WhereGroupConstantDateTime dateTimeConst)
                     {
-                        subQuery += "'" + dateTimeConst.Value.ToString(storage.DateTimeFormat) + "'";
+                        string format = storage.DateTimeFormat ?? "yyyy-MM-dd HH:mm:ss.fffffff";
+                        subQuery += "'" + dateTimeConst.Value.ToString(format, CultureInfo.InvariantCulture) + "'";
                     }
                     else if (queryGroup is WhereGroupConstantOther otherConst)
                     {
@@ -126,7 +131,10 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             }
             else if (rootWhereGroup is WhereGroupSingleBool whereSingleBool)
             {
-                string value = rootWhereGroup.negate ? "0" : "1";
+                bool nativeBoolean = storage is Postgresql.PostgreSqlStorage;
+                string value = nativeBoolean
+                    ? (rootWhereGroup.negate ? "FALSE" : "TRUE")
+                    : (rootWhereGroup.negate ? "0" : "1");
                 whereTxt += whereSingleBool.Alias + "." + whereSingleBool.TableMemberInfo.SqlName + " = " + value;
                 applyNegate = false;
             }

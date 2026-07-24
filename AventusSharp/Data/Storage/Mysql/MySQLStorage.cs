@@ -21,6 +21,7 @@ namespace AventusSharp.Data.Storage.Mysql
         protected MySQLMigrationProvider MigrationProvider { get; }
         public MySQLStorage(StorageCredentials info, bool createDatabase = true) : base(info)
         {
+            DateTimeFormat = "yyyy-MM-dd HH:mm:ss.ffffff";
             CreateDatabase = createDatabase;
             MigrationProvider = new MySQLMigrationProvider(this);
         }

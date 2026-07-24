@@ -21,6 +21,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     protected MsSqlMigrationProvider MigrationProvider { get; }
     public MsSqlStorage(StorageCredentials info, bool createDatabase = true) : base(info)
     {
+        DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fff";
         CreateDatabase = createDatabase;
         MigrationProvider = new MsSqlMigrationProvider(this);
     }

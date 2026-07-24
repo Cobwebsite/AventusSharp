@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AventusSharp.Tools;
 
@@ -15,6 +16,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
 
     public int count;
     private Func<Task> _endTransaction;
+    private readonly List<Func<Task<VoidWithError>>> _rollbackActions = [];
 
     public TransactionContext(Func<Task> endTransaction)
     {
@@ -48,6 +50,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         {
             await TransactionCommit();
             result.Result = true;
+            _rollbackActions.Clear();
             await _endTransaction();
         }
         catch (Exception e)
@@ -78,7 +81,14 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         try
         {
             await TransactionRollback();
-            result.Result = true;
+            VoidWithError rollbackActionsResult = new();
+            foreach (Func<Task<VoidWithError>> action in _rollbackActions)
+            {
+                await rollbackActionsResult.RunAsync(action);
+            }
+            _rollbackActions.Clear();
+            result.Errors.AddRange(rollbackActionsResult.Errors);
+            result.Result = rollbackActionsResult.Success;
             await _endTransaction();
         }
         catch (Exception e)
@@ -105,6 +115,11 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
     protected abstract Task TransactionDispose();
     protected abstract Task TransactionRollback();
     protected abstract Task TransactionCommit();
+
+    public void OnRollback(Func<Task<VoidWithError>> action)
+    {
+        _rollbackActions.Add(action);
+    }
 
     
 }

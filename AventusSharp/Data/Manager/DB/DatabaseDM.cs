@@ -233,6 +233,15 @@ namespace AventusSharp.Data.Manager.DB
         #endregion
 
         #region Get
+        public override Task OnItemLoaded<X>(X item)
+        {
+            if (NeedLocalCache && item is U cachedItem)
+            {
+                Records.GetOrAdd(item.Id, cachedItem);
+            }
+            return Task.CompletedTask;
+        }
+
         public override IQueryBuilder<X> CreateQuery<X>()
         {
             return new DatabaseQueryBuilder<X>(Storage, this) { UseShortObject = false };

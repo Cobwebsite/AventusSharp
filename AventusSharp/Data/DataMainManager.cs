@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data.Manager;
+using AventusSharp.Data.Manager.DB;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +9,6 @@ using AventusSharp.Tools;
 using System.Threading.Tasks;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Attributes;
-using AventusSharp.Data.Manager.Dummy;
 using AventusSharp.Data.Migrations;
 using Microsoft.Extensions.Logging;
 
@@ -23,7 +23,7 @@ namespace AventusSharp.Data
         /// <summary>
         /// Define the default DataManager to use for you Storable
         /// </summary>
-        public Type defaultDM = typeof(DummyDM<>);
+        public Type defaultDM = typeof(SimpleDatabaseDM<>);
         /// <summary>
         /// Define logs you need to see
         /// </summary>

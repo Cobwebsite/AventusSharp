@@ -871,21 +871,27 @@ namespace AventusSharp.Data.Storage.Default
         protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
         {
             ResultWithError<List<Dictionary<string, string?>>> result = new ResultWithError<List<Dictionary<string, string?>>>();
-            await PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
-            {
-                result = await Query(cmd, parametersFinal);
-                return new VoidWithError();
-            });
+            await result.RunAsync(() => 
+                PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
+                {
+                    result = await Query(cmd, parametersFinal);
+                    return new VoidWithError();
+                })
+            );
             return result;
         }
         protected async Task<VoidWithError> QueryStreamGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item, Func<Dictionary<string, string?>, Task<VoidWithError>> transform)
         {
             VoidWithError result = new VoidWithError();
-            await PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
+            VoidWithError prepareResult = await PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
             {
                 result = await QueryStream(cmd, parametersFinal, transform);
                 return new VoidWithError();
             });
+            if (!prepareResult.Success)
+            {
+                result.Errors.AddRange(prepareResult.Errors);
+            }
             return result;
         }
         // protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)

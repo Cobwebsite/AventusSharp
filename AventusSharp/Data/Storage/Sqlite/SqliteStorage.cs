@@ -116,13 +116,15 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
             return result;
         }
 
-        string dropAllCmd = "";
+        string dropAllCmd = "PRAGMA foreign_keys = OFF;";
         foreach (Dictionary<string, string?> line in queryResult.Result)
         {
             dropAllCmd += line["query"];
         }
+        dropAllCmd += "PRAGMA foreign_keys = ON;";
 
-        VoidWithError executeResult = await Execute(dropAllCmd);
+        // PRAGMA foreign_keys cannot be changed while a transaction is active.
+        VoidWithError executeResult = await ExecuteNoTransaction(dropAllCmd);
         if (!executeResult.Success)
         {
             result.Errors.AddRange(executeResult.Errors);

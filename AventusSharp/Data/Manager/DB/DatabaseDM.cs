@@ -5,6 +5,7 @@ using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
@@ -85,14 +86,14 @@ namespace AventusSharp.Data.Manager.DB
     public class GenericDatabaseDM<T, U> : GenericDM<T, U>, IDatabaseDM where T : IGenericDM<U>, new() where U : IStorable
     {
 
-        private readonly Dictionary<int, U> Records = new Dictionary<int, U>();
+        private readonly ConcurrentDictionary<int, U> Records = new();
 
         public bool NeedLocalCache { get; private set; } = false;
         public bool NeedShortLink { get; private set; } = false;
         public List<string>? ShortLinks { get; private set; } = null;
 
         private IDBStorage? storage;
-        protected List<Type> GetAllDone { get; } = new List<Type>();
+        protected ConcurrentDictionary<Type, byte> GetAllDone { get; } = new();
 
 
         public IDBStorage Storage
@@ -250,7 +251,7 @@ namespace AventusSharp.Data.Manager.DB
         {
             Type type = typeof(X);
             Type rootType = typeof(U);
-            if (GetAllDone.Contains(rootType) || GetAllDone.Contains(type))
+            if (GetAllDone.ContainsKey(rootType) || GetAllDone.ContainsKey(type))
             {
                 ResultWithError<List<X>> result = new()
                 {
@@ -271,22 +272,14 @@ namespace AventusSharp.Data.Manager.DB
                 List<X> finalResult = new List<X>();
                 foreach (X newRecord in resultNoCache.Result)
                 {
-                    if (!Records.ContainsKey(newRecord.Id))
+                    U canonical = Records.GetOrAdd(newRecord.Id, newRecord);
+                    if (canonical is X casted)
                     {
-                        finalResult.Add(newRecord);
-                        Records.Add(newRecord.Id, newRecord);
-                    }
-                    else
-                    {
-                        U item = Records[newRecord.Id];
-                        if (item is X casted)
-                        {
-                            finalResult.Add(casted);
-                        }
+                        finalResult.Add(casted);
                     }
                 }
                 resultNoCache.Result = finalResult;
-                GetAllDone.Add(type);
+                GetAllDone.TryAdd(type, 0);
             }
             return resultNoCache;
         }
@@ -306,7 +299,7 @@ namespace AventusSharp.Data.Manager.DB
 
         public async Task<ResultWithError<X>> GetByIdWithErrorCache<X>(int id) where X : U
         {
-            if (Records.ContainsKey(id) && Records[id] is X casted)
+            if (Records.TryGetValue(id, out U? existing) && existing is X casted)
             {
                 ResultWithError<X> result = new()
                 {
@@ -317,7 +310,13 @@ namespace AventusSharp.Data.Manager.DB
             ResultWithError<X> resultNoCache = await GetByIdWithErrorNoCache<X>(id);
             if (resultNoCache.Success && resultNoCache.Result != null)
             {
-                Records[resultNoCache.Result.Id] = resultNoCache.Result;
+                U canonical = Records.GetOrAdd(
+                    resultNoCache.Result.Id,
+                    resultNoCache.Result);
+                if (canonical is X canonicalResult)
+                {
+                    resultNoCache.Result = canonicalResult;
+                }
             }
             return resultNoCache;
         }
@@ -378,9 +377,9 @@ namespace AventusSharp.Data.Manager.DB
             List<int> missingIds = new();
             foreach (int id in ids)
             {
-                if (Records.ContainsKey(id))
+                if (Records.TryGetValue(id, out U? cached))
                 {
-                    if (Records[id] is X casted)
+                    if (cached is X casted)
                     {
                         result.Result.Add(casted);
                     }
@@ -397,11 +396,11 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     foreach (X item in resultNoCache.Result)
                     {
-                        if (!Records.ContainsKey(item.Id))
+                        U canonical = Records.GetOrAdd(item.Id, item);
+                        if (canonical is X casted)
                         {
-                            Records.Add(item.Id, item);
+                            result.Result.Add(casted);
                         }
-                        result.Result.Add(item);
                     }
                 }
                 else
@@ -549,7 +548,7 @@ namespace AventusSharp.Data.Manager.DB
                                 if (Records.TryGetValue(createdId, out U? cached)
                                     && ReferenceEquals(cached, createdItem))
                                 {
-                                    Records.Remove(createdId);
+                                    Records.TryRemove(createdId, out _);
                                 }
                                 return Task.FromResult(new VoidWithError());
                             });
@@ -707,10 +706,10 @@ namespace AventusSharp.Data.Manager.DB
             List<X> result = new();
             foreach (int id in ids)
             {
-                if (Records.ContainsKey(id) && Records[id] is X casted)
+                if (Records.TryGetValue(id, out U? cached) && cached is X casted)
                 {
                     result.Add(casted);
-                    Records.Remove(id);
+                    Records.TryRemove(id, out _);
                     getTransactionScope()?.OnRollback(() =>
                     {
                         if (casted is U item)
@@ -728,10 +727,12 @@ namespace AventusSharp.Data.Manager.DB
             List<X> result = new();
             foreach (X item in items)
             {
-                if (item is U && Records.ContainsKey(item.Id) && Records[item.Id] is X casted)
+                if (item is U
+                    && Records.TryGetValue(item.Id, out U? cachedItem)
+                    && cachedItem is X casted)
                 {
                     result.Add(casted);
-                    Records.Remove(item.Id);
+                    Records.TryRemove(item.Id, out _);
                     int id = item.Id;
                     getTransactionScope()?.OnRollback(() =>
                     {

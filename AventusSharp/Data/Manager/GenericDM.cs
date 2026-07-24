@@ -1210,13 +1210,19 @@ namespace AventusSharp.Data.Manager
         #endregion
 
         #region Exist
+        protected virtual Task<ResultWithError<bool>> ExistLogic<X>(
+            Expression<Func<X, bool>> func) where X : U
+        {
+            return CreateExist<X>().Where(func).RunWithError();
+        }
+
         public Task<ResultWithError<bool>> ExistWithError(Expression<Func<U, bool>> func)
         {
-            return CreateExist<U>().Where(func).RunWithError();
+            return ExistLogic(func);
         }
         public Task<ResultWithError<bool>> ExistWithError<X>(Expression<Func<X, bool>> func) where X : U
         {
-            return CreateExist<X>().Where(func).RunWithError();
+            return ExistLogic(func);
         }
         private MethodInfo? IExistWithError = null;
         async Task<ResultWithError<bool>> IGenericDM.ExistWithError<X>(Expression<Func<X, bool>> func)
@@ -1245,13 +1251,15 @@ namespace AventusSharp.Data.Manager
                 return result;
             }
         }
-        public Task<bool> Exist(Expression<Func<U, bool>> func)
+        public async Task<bool> Exist(Expression<Func<U, bool>> func)
         {
-            return CreateExist<U>().Where(func).Run();
+            ResultWithError<bool> result = await ExistWithError(func);
+            return result.Success && result.Result;
         }
-        public Task<bool> Exist<X>(Expression<Func<X, bool>> func) where X : U
+        public async Task<bool> Exist<X>(Expression<Func<X, bool>> func) where X : U
         {
-            return CreateExist<X>().Where(func).Run();
+            ResultWithError<bool> result = await ExistWithError(func);
+            return result.Success && result.Result;
         }
         private MethodInfo? IExist = null;
         Task<bool> IGenericDM.Exist<X>(Expression<Func<X, bool>> func)

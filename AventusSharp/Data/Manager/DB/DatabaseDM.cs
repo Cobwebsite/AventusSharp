@@ -488,6 +488,22 @@ namespace AventusSharp.Data.Manager.DB
         #endregion
 
         #region Exist
+        protected override async Task<ResultWithError<bool>> ExistLogic<X>(
+            Expression<Func<X, bool>> func)
+        {
+            if (!NeedLocalCache)
+            {
+                return await base.ExistLogic(func);
+            }
+
+            ResultWithError<List<X>> records = await WhereWithErrorCache(func);
+            return new ResultWithError<bool>
+            {
+                Result = records.Success && records.Result is { Count: > 0 },
+                Errors = records.Errors.ToList()
+            };
+        }
+
         public override IExistBuilder<X> CreateExist<X>()
         {
             return new DatabaseExistBuilder<X>(Storage, this);

@@ -66,7 +66,7 @@ public class ImageFile
                 return result;
             }
 
-            if (isSvgResult.Success)
+            if (isSvgResult.Result)
             {
                 if (savePath != null)
                 {
@@ -83,7 +83,7 @@ public class ImageFile
             using SKCodec codec = SKCodec.Create(data);
             SKEncodedImageFormat format = codec.EncodedFormat;
 
-            using SKBitmap skImage = SKBitmap.Decode(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None));
+            using SKBitmap skImage = SKBitmap.Decode(data);
             int sourceWidth = skImage.Width;
             // Get the image current height
             int sourceHeight = skImage.Height;
@@ -126,7 +126,7 @@ public class ImageFile
                 pathWithExtension.Add(extensionName.ToLower());
                 string newPath = string.Join(".", pathWithExtension);
 
-                using (FileStream fs = new FileStream(newPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+                using (FileStream fs = new FileStream(newPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     encodedImage.SaveTo(fs);
                     result.Result = newPath;
@@ -216,7 +216,7 @@ public class ImageFile
                 savePath = path;
             }
 
-            using (FileStream fs = new FileStream(savePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            using (FileStream fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 encodedImage.SaveTo(fs);
                 result.Result = savePath;
@@ -237,7 +237,7 @@ public class ImageFile
         }
         else if (size.MaxHeight != null || size.MaxWidth != null)
         {
-            return Compress(path, size.MaxWidth, size.MaxHeight, savePath);
+            return Compress(path, size.MaxHeight, size.MaxWidth, savePath);
         }
         return result;
     }

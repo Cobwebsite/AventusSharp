@@ -26,8 +26,8 @@ else
     // ProjectConfig config = new ProjectConfig();
     // if (false)
     // {
-    //     config.csProj = "D:\\Aventus\\AvenutsSharp\\AvenutsSharp\\AventusSharp.csproj";
-    //     config.outputPath = "D:\\Aventus\\AvenutsSharp\\AvenutsSharp\\AventusJs\\src\\generated";
+    //     config.csProj = "D:\\Aventus\\AventusSharp\\AventusSharp\\AventusSharp.csproj";
+    //     config.outputPath = "D:\\Aventus\\AventusSharp\\AventusSharp\\AventusJs\\src\\generated";
     // }
     // if (false)
     // {

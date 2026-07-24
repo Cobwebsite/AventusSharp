@@ -1,0 +1,8 @@
+{
+    "scripts": {
+        "dev": "dotnet build AventusSharp.csproj",
+        "build": "dotnet build AventusSharp.csproj -c Release",
+        "publish": "dotnet-publish bin\\Release\\AventusSharp.0.0.10.nupkg",
+        "converter": "D:\\Aventus\\AventusSharp\\CSharpToTypescript\\publish.cmd"
+    }
+}

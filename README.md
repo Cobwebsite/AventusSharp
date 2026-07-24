@@ -16,6 +16,17 @@ dotnet add package AventusSharp
 
 The documentation is available here [https://sharp.aventusjs.com](https://sharp.aventusjs.com).
 
+Developer references in this repository:
+
+- [AI usage guide](docs/AVENTUSSHARP_AI_GUIDE.md)
+- [Testing strategy](docs/TESTING.md)
+
+Run the complete local test suite with:
+
+```shell
+dotnet test AventusSharpTest/AventusSharpTest.csproj
+```
+
 ## Contributor
 
 Your support plays a vital role in our ability to enhance Aventus, expand its capabilities, and empower developers like you to create exceptional web experiences. Together, we can invest more time and resources into making Aventus even more powerful and providing new opportunities for programming professionals.

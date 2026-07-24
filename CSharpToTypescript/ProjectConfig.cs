@@ -13,8 +13,8 @@ namespace CSharpToTypescript
 {
     internal class ProjectConfig
     {
-        public string csProj = @"D:\Aventus\AvenutsSharp\AvenutsSharp\AventusSharp.csproj";
-        public string outputPath = @"D:\Aventus\AvenutsSharp\AvenutsSharp\AventusJs\src";
+        public string csProj = @"D:\Aventus\AventusSharp\AventusSharp\AventusSharp.csproj";
+        public string outputPath = @"D:\Aventus\AventusSharp\AventusSharp\AventusJs\src";
         public bool exportEnumByDefault = false;
         public bool exportStorableByDefault = true;
         public bool exportHttpRouteByDefault = true;

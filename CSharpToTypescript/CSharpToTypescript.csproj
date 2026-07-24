@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AvenutsSharp\AventusSharp.csproj" />
+    <ProjectReference Include="..\AventusSharp\AventusSharp.csproj" />
   </ItemGroup>
 
 </Project>

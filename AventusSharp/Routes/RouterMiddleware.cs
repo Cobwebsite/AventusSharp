@@ -352,9 +352,7 @@ namespace AventusSharp.Routes
 
             string replaceSlash = @"([a-zA-Z0-9_-]|^)\/";
             urlPattern = Regex.Replace(urlPattern, replaceSlash, "$1\\/");
-            urlPattern = urlPattern.ToLower();
-
-            return new Regex(urlPattern);
+            return new Regex(urlPattern, RegexOptions.IgnoreCase);
         }
 
 
@@ -373,7 +371,7 @@ namespace AventusSharp.Routes
                 return router;
             }
 
-            string url = context.Request.Path.ToString().ToLower();
+            string url = context.Request.Path.ToString();
 
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
             {

@@ -45,7 +45,7 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
                     if (member.Key is ITableMemberInfoSqlWritable writable)
                     {
                         string alias = member.Value.Alias;
-                        string name = alias + "." + member.Key.SqlName;
+                        string name = alias + "_" + member.Key.SqlName;
                         List<TableMemberInfoSql> membersListTemp = new List<TableMemberInfoSql>();
                         membersListTemp.AddRange(membersList);
                         membersListTemp.Add(member.Key);
@@ -56,7 +56,7 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
                             TypeLvl0 = baseInfo.TableInfo.Type,
                             MembersList = membersListTemp
                         });
-                        fields.Add(name + " = @" + name);
+                        fields.Add("\"" + member.Key.SqlName + "\" = @" + name);
                     }
                     else if (member.Key is ITableMemberInfoSqlLinkMultiple memberNM)
                     {
@@ -144,8 +144,7 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
                 joinTxt = " " + joinTxt;
             }
 
-            string sql = "UPDATE \"" + mainInfo.TableInfo.SqlTableName + "\" " + mainInfo.Alias
-                + joinTxt
+            string sql = "UPDATE \"" + mainInfo.TableInfo.SqlTableName + "\" AS " + mainInfo.Alias
                 + " SET " + string.Join(",", fields)
                 + whereTxt;
 

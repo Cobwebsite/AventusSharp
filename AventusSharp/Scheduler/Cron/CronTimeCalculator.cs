@@ -6,7 +6,7 @@ public class CronTimeCalculator
 {
     private readonly CrontabSchedule _calculator;
 
-    internal CronTimeCalculator(string cronExpression)
+    public CronTimeCalculator(string cronExpression)
     {
         var cronFields = cronExpression.Split(StringSeparatorStock.Space, StringSplitOptions.RemoveEmptyEntries).Length;
         var parseOptions = new CrontabSchedule.ParseOptions

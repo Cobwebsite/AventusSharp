@@ -28,7 +28,7 @@ public class Query
             {
                 TableMemberInfoSql member = baseInfo.TableInfo.TypeMember;
                 string alias = baseInfo.Alias;
-                fields.Add(alias + "." + member.SqlName + " \"" + alias + "*" + member.SqlName + "\"");
+                fields.Add(alias + ".\"" + member.SqlName + "\" \"" + alias + "*" + member.SqlName + "\"");
             }
             string lastAlias = baseInfo.Alias;
             TableInfo lastTableInfo = baseInfo.TableInfo;
@@ -43,9 +43,9 @@ public class Query
                 else if (parentLink.Key.TypeMember != null)
                 {
                     TableMemberInfoSql member = parentLink.Key.TypeMember;
-                    fields.Add(alias + "." + member.SqlName + " \"" + alias + "*" + member.SqlName + "\"");
+                    fields.Add(alias + ".\"" + member.SqlName + "\" \"" + alias + "*" + member.SqlName + "\"");
                 }
-                joins.Add("INNER JOIN \"" + info.SqlTableName + "\" " + alias + " ON " + lastAlias + "." + lastTableInfo.Primary?.SqlName + "=" + alias + "." + info.Primary?.SqlName);
+                joins.Add("INNER JOIN \"" + info.SqlTableName + "\" " + alias + " ON " + lastAlias + ".\"" + lastTableInfo.Primary?.SqlName + "\"=" + alias + ".\"" + info.Primary?.SqlName + "\"");
                 lastAlias = alias;
                 lastTableInfo = info;
             }
@@ -64,9 +64,9 @@ public class Query
                     else if (child.TableInfo.TypeMember != null)
                     {
                         TableMemberInfoSql member = child.TableInfo.TypeMember;
-                        fields.Add(alias + "." + member.SqlName + " \"" + alias + "*" + member.SqlName + "\"");
+                        fields.Add(alias + ".\"" + member.SqlName + "\" \"" + alias + "*" + member.SqlName + "\"");
                     }
-                    joins.Add("LEFT OUTER JOIN \"" + child.TableInfo.SqlTableName + "\" " + child.Alias + " ON " + parentAlias + "." + parentPrimName + "=" + alias + "." + primName);
+                    joins.Add("LEFT OUTER JOIN \"" + child.TableInfo.SqlTableName + "\" " + child.Alias + " ON " + parentAlias + ".\"" + parentPrimName + "\"=" + alias + ".\"" + primName + "\"");
                     loadChild(child.Children, alias, primName);
                 }
             };
@@ -87,17 +87,17 @@ public class Query
                     {
                         alias = queryBuilder.CreateAlias(baseInfo.TableInfo, linkMultiple.TableLinked);
                     }
-                    fields.Add("STRING_AGG(" + alias + "." + linkMultiple.TableIntermediateKey2 + ") \"" + baseInfo.Alias + "*" + member.Key.SqlName + "\"");
-                    joins.Add("LEFT OUTER JOIN \"" + linkMultiple.TableIntermediateName + "\" " + alias + " ON " + alias + "." + linkMultiple.TableIntermediateKey1 + "=" + baseInfo.Alias + "." + baseInfo.TableInfo.Primary?.SqlName);
+                    fields.Add("STRING_AGG(" + alias + ".\"" + linkMultiple.TableIntermediateKey2 + "\") \"" + baseInfo.Alias + "*" + member.Key.SqlName + "\"");
+                    joins.Add("LEFT OUTER JOIN \"" + linkMultiple.TableIntermediateName + "\" " + alias + " ON " + alias + ".\"" + linkMultiple.TableIntermediateKey1 + "\"=" + baseInfo.Alias + ".\"" + baseInfo.TableInfo.Primary?.SqlName + "\"");
                     if (groupBy == "")
                     {
-                        groupBy = " GROUP BY " + mainInfo.Alias + "." + mainInfo.TableInfo.Primary?.SqlName;
+                        groupBy = " GROUP BY " + mainInfo.Alias + ".\"" + mainInfo.TableInfo.Primary?.SqlName + "\"";
                     }
                 }
                 else
                 {
                     string alias = member.Value.Alias;
-                    fields.Add(alias + "." + member.Key.SqlName + " \"" + alias + "*" + member.Key.SqlName + "\"");
+                    fields.Add(alias + ".\"" + member.Key.SqlName + "\" \"" + alias + "*" + member.Key.SqlName + "\"");
                 }
 
             }
@@ -110,7 +110,7 @@ public class Query
                 {
                     continue;
                 }
-                joins.Add("LEFT OUTER JOIN \"" + databaseQueryBuilderInfo.TableInfo.SqlTableName + "\" " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + "." + tableMemberInfo.SqlName + "=" + databaseQueryBuilderInfo.Alias + "." + databaseQueryBuilderInfo.TableInfo.Primary?.SqlName);
+                joins.Add("LEFT OUTER JOIN \"" + databaseQueryBuilderInfo.TableInfo.SqlTableName + "\" " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + ".\"" + tableMemberInfo.SqlName + "\"=" + databaseQueryBuilderInfo.Alias + ".\"" + databaseQueryBuilderInfo.TableInfo.Primary?.SqlName + "\"");
                 path.Add(tableMemberInfo.Name);
                 types.Add(tableMemberInfo.MemberType);
                 loadInfo(databaseQueryBuilderInfo, path, types);
@@ -136,7 +136,7 @@ public class Query
             foreach (SortInfo sortInfo in queryBuilder.Sorting)
             {
                 string order = sortInfo.Sort == Sort.ASC ? "ASC" : "DESC";
-                orderByPart.Add(sortInfo.Alias + "." + sortInfo.TableMember.SqlName + " " + order);
+                orderByPart.Add(sortInfo.Alias + ".\"" + sortInfo.TableMember.SqlName + "\" " + order);
             }
         }
         string orderBy = "";

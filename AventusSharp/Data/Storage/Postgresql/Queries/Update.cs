@@ -45,7 +45,7 @@ public class Update
                 if (member.Key is ITableMemberInfoSqlWritable writable)
                 {
                     string alias = member.Value.Alias;
-                    string name = alias + "." + member.Key.SqlName;
+                    string name = alias + "_" + member.Key.SqlName;
                     List<TableMemberInfoSql> membersListTemp = new List<TableMemberInfoSql>();
                     membersListTemp.AddRange(membersList);
                     membersListTemp.Add(member.Key);
@@ -56,7 +56,7 @@ public class Update
                         TypeLvl0 = baseInfo.TableInfo.Type,
                         MembersList = membersListTemp
                     });
-                    fields.Add(name + " = @" + name);
+                    fields.Add("\"" + member.Key.SqlName + "\" = @" + name);
                 }
                 else if (member.Key is ITableMemberInfoSqlLinkMultiple memberNM)
                 {
@@ -144,8 +144,7 @@ public class Update
             joinTxt = " " + joinTxt;
         }
 
-        string sql = "UPDATE \"" + mainInfo.TableInfo.SqlTableName + "\" " + mainInfo.Alias
-            + joinTxt
+        string sql = "UPDATE \"" + mainInfo.TableInfo.SqlTableName + "\" AS " + mainInfo.Alias
             + " SET " + string.Join(",", fields)
             + whereTxt;
 
@@ -157,7 +156,7 @@ public class Update
         {
             throw new Exception("Can't find Id... 0_o");
         }
-        string idField = pair.Value + "." + pair.Key.SqlName;
+        string idField = pair.Value + ".\"" + pair.Key.SqlName + "\"";
         result.QuerySql = "SELECT " + idField + " FROM \"" + mainInfo.TableInfo.SqlTableName + "\" " + mainInfo.Alias + joinTxt + whereTxt;
 
 
@@ -180,7 +179,7 @@ public class Update
 
             if (member is ITableMemberInfoSqlWritable memberLink)
             {
-                string name = alias + "." + member.SqlName;
+                string name = alias + "_" + member.SqlName;
                 updateParamsInfo.Add(new ParamsInfo()
                 {
                     DbType = memberLink.SqlType,
@@ -188,7 +187,7 @@ public class Update
                     TypeLvl0 = tableInfo.Type,
                     MembersList = new List<TableMemberInfoSql>() { member }
                 });
-                fields.Add(name + " = @" + name);
+                fields.Add("\"" + member.SqlName + "\" = @" + name);
             }
         }
 

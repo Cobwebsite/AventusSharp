@@ -24,12 +24,10 @@ internal class CreateTable
         {
             if (member is ITableMemberInfoSqlWritable memberWritable)
             {
-                string typeTxt = storage.GetSqlColumnType(memberWritable.SqlType, member);
+                string typeTxt = member.IsAutoIncrement
+                    ? "SERIAL"
+                    : storage.GetSqlColumnType(memberWritable.SqlType, member);
                 string schemaProp = "\t\"" + member.SqlName + "\" " + typeTxt;
-                if (member.IsAutoIncrement)
-                {
-                    schemaProp += " SERIAL";
-                }
                 if (member.IsPrimary)
                 {
                     schemaProp += " PRIMARY KEY";

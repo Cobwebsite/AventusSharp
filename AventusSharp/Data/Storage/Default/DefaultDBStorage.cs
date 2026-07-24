@@ -525,7 +525,7 @@ namespace AventusSharp.Data.Storage.Default
         {
             if (transactionScope != null)
             {
-                DbConnection? connection = transactionScope.transaction.Connection;
+                DbConnection? connection = transactionScope.Connection;
                 await transactionScope.transaction.DisposeAsync();
                 if (connection != null)
                 {
@@ -2698,15 +2698,12 @@ namespace AventusSharp.Data.Storage.Default
         public DbTransaction transaction;
 
 
-        public DbConnection? Connection
-        {
-            get => transaction.Connection;
-        }
+        public DbConnection Connection { get; }
 
         public DbTransactionContext(DbTransaction transaction, Func<Task> endTransaction) : base(endTransaction)
         {
             this.transaction = transaction;
-            if (transaction.Connection == null) throw new Exception("Transaction without connection");
+            Connection = transaction.Connection ?? throw new Exception("Transaction without connection");
         }
 
         protected override async Task TransactionDispose()

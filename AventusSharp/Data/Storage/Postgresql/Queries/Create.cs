@@ -93,7 +93,7 @@ internal class Create
 
             if (hasPrimaryResult)
             {
-                sql += " RETURNING Id;";
+                sql += " RETURNING \"" + tableInfo.Primary?.SqlName + "\";";
             }
             else
             {

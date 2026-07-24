@@ -709,11 +709,9 @@ namespace AventusSharp.Data.Manager.DB
         {
             if (getTransactionScope() is DbTransactionContext dbTransactionContext)
             {
+                DbConnection connection = dbTransactionContext.Connection;
                 await dbTransactionContext.transaction.DisposeAsync();
-                if (dbTransactionContext.transaction.Connection != null)
-                {
-                    await dbTransactionContext.transaction.Connection.DisposeAsync();
-                }
+                await connection.DisposeAsync();
             }
         }
         #endregion

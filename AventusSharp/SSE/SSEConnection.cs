@@ -11,6 +11,7 @@ using System.Threading;
 using System;
 using Scriban.Parsing;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace AventusSharp.SSE
 {
@@ -46,7 +47,8 @@ namespace AventusSharp.SSE
             tokenSource = new CancellationTokenSource();
             context.RequestAborted.Register(() => _tcs.TrySetResult());
             this.context = context;
-            SessionId = context.Session.Id;
+            SessionId = context.Features.Get<ISessionFeature>()?.Session?.Id
+                ?? Guid.NewGuid().ToString("N");
             this.instance = instance;
         }
 

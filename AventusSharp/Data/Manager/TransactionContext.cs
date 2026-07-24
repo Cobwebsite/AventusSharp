@@ -90,7 +90,11 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await _Rollback();
+        if (!isEnded)
+        {
+            isEnded = true;
+            await _Rollback();
+        }
         await TransactionDispose();
     }
     public void Dispose()

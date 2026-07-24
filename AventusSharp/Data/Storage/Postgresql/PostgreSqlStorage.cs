@@ -274,9 +274,9 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         if (dbType == DbType.Int16) { return "smallint"; }
         if (dbType == DbType.Int32) { return "int"; }
         if (dbType == DbType.Int64) { return "bigint"; }
-        if (dbType == DbType.Double) { return "float"; }
-        if (dbType == DbType.Boolean) { return "bit"; }
-        if (dbType == DbType.DateTime) { return "datetime"; }
+        if (dbType == DbType.Double) { return "double precision"; }
+        if (dbType == DbType.Boolean) { return "boolean"; }
+        if (dbType == DbType.DateTime) { return "timestamp"; }
         if (dbType == DbType.Date) { return "date"; }
         if (dbType == DbType.String)
         {
@@ -285,8 +285,8 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
                 if (basic.SizeAttr.SizeType == null) return "varchar(" + basic.SizeAttr.Max + ")";
                 else if (basic.SizeAttr.SizeType == SizeEnum.MaxVarChar) return "TEXT";
                 else if (basic.SizeAttr.SizeType == SizeEnum.Text) return "TEXT";
-                else if (basic.SizeAttr.SizeType == SizeEnum.MediumText) return "MEDIUMTEXT";
-                else if (basic.SizeAttr.SizeType == SizeEnum.LongText) return "LONGTEXT";
+                else if (basic.SizeAttr.SizeType == SizeEnum.MediumText) return "TEXT";
+                else if (basic.SizeAttr.SizeType == SizeEnum.LongText) return "TEXT";
             }
             return "varchar(255)";
         }

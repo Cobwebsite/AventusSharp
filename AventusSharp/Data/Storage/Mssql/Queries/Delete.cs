@@ -82,7 +82,7 @@ internal class Delete
             joinTxt = " " + joinTxt;
         }
 
-        result.Sql = "DELETE FROM [" + mainInfo.TableInfo.SqlTableName + "] "
+        result.Sql = "DELETE " + mainInfo.Alias + " FROM [" + mainInfo.TableInfo.SqlTableName + "] " + mainInfo.Alias
             + joinTxt
             + whereTxt;
 

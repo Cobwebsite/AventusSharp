@@ -70,7 +70,7 @@ namespace AventusSharp.Data
             var st = DBStorage.GetFrom<T>();
             if (st != null)
             {
-                st.Debug = true;
+                st.Debug = false;
             }
         }
 

@@ -441,25 +441,27 @@ namespace AventusSharp.Data.Manager.DB
 
         public async Task<ResultWithError<List<X>>> WhereWithErrorCache<X>(Expression<Func<X, bool>> func) where X : U
         {
-            Type type = typeof(X);
-            Type rootType = typeof(U);
-            if (GetAllDone.Contains(rootType) || GetAllDone.Contains(type))
+            ResultWithError<List<X>> allRecords = await GetAllWithErrorCache<X>();
+            ResultWithError<List<X>> result = new()
             {
-                ResultWithError<List<X>> result = new()
-                {
-                    Result = new List<X>()
-                };
-                Func<X, bool> fct = func.Compile();
-                foreach (KeyValuePair<int, U> pair in Records)
+                Result = new List<X>(),
+                Errors = allRecords.Errors.ToList()
+            };
+            if (!allRecords.Success || allRecords.Result == null)
+            {
+                return result;
+            }
+
+            try
+            {
+                Func<X, bool> filter = func.Compile();
+                foreach (X record in allRecords.Result)
                 {
                     try
                     {
-                        if (pair.Value is X casted)
+                        if (filter(record))
                         {
-                            if (fct.Invoke(casted))
-                            {
-                                result.Result.Add(casted);
-                            }
+                            result.Result.Add(record);
                         }
                     }
                     catch (Exception e)
@@ -467,9 +469,13 @@ namespace AventusSharp.Data.Manager.DB
                         result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
                     }
                 }
-                return result;
             }
-            return await WhereWithErrorNoCache(func);
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
+
+            return result;
         }
 
         public Task<ResultWithError<List<X>>> WhereWithErrorNoCache<X>(Expression<Func<X, bool>> func) where X : U

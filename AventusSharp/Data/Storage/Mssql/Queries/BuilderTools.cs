@@ -9,11 +9,12 @@ public static class BuilderTools
 {
     public static string Where(List<IWhereRootGroup>? wheres, IDBStorage storage)
     {
-        return Regex.Replace(
+        string sql = Regex.Replace(
             BuilderToolsMysql.Where(wheres, storage),
             @"\b(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)\(([^()]+)\)",
             match => $"DATEPART({match.Groups[1].Value}, {match.Groups[2].Value})",
             RegexOptions.IgnoreCase);
+        return Regex.Replace(sql, @"\bCEIL\(", "CEILING(", RegexOptions.IgnoreCase);
     }
 
     public static string GetFctName(WhereGroupFctEnum fctEnum)

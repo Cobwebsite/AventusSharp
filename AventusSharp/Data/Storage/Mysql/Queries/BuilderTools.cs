@@ -188,6 +188,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 WhereGroupFctSqlEnum.Min => "MIN",
                 WhereGroupFctSqlEnum.Abs => "ABS",
                 WhereGroupFctSqlEnum.Round => "ROUND",
+                WhereGroupFctSqlEnum.Ceil => "CEIL",
                 WhereGroupFctSqlEnum.Floor => "FLOOR",
                 _ => "",
             };

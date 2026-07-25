@@ -273,7 +273,23 @@ namespace AventusSharp.Data.Manager.DB
 
             if (numbers.Contains(onType))
             {
-                if (methodName == "Max")
+                if (methodName == "Abs")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Abs;
+                }
+                else if (methodName == "Round")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Round;
+                }
+                else if (methodName == "Floor")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Floor;
+                }
+                else if (methodName == "Ceiling")
+                {
+                    fctSql = WhereGroupFctSqlEnum.Ceil;
+                }
+                else if (methodName == "Max")
                 {
                     fctSql = WhereGroupFctSqlEnum.Max;
                 }
@@ -1049,7 +1065,7 @@ namespace AventusSharp.Data.Manager.DB
             }
             else if (methodName == "GetValueOrDefault" && node.Method.DeclaringType != null && node.Method.DeclaringType.IsGenericType && node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                Visit(node.Object);
+                Visit(node.Object ?? node.Arguments.FirstOrDefault());
                 return node;
             }
 
@@ -1102,7 +1118,7 @@ namespace AventusSharp.Data.Manager.DB
                 AddToParentGroup(newGroup2);
                 currentGroup = newGroup2;
                 queryGroups.Add(newGroup2);
-                Visit(node.Object);
+                Visit(node.Object ?? node.Arguments.FirstOrDefault());
                 queryGroups.RemoveAt(queryGroups.Count - 1);
                 currentGroup = queryGroups.LastOrDefault();
             }

@@ -182,7 +182,7 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
             }
             else if (queryBuilder.OffsetSize != null)
             {
-                limitOffset = " LIMIT 18446744073709551615 OFFSET " + queryBuilder.OffsetSize;
+                limitOffset = " LIMIT -1 OFFSET " + queryBuilder.OffsetSize;
             }
 
             string sql = "SELECT " + string.Join(",", fields)

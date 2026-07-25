@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
@@ -39,7 +40,40 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
             DataSource = database,
         };
 
-        return new SqliteConnection(builder.ConnectionString);
+        SqliteConnection connection = new(builder.ConnectionString);
+        connection.CreateFunction<string?, int?>("YEAR", value => DatePart(value, part => part.Year));
+        connection.CreateFunction<string?, int?>("MONTH", value => DatePart(value, part => part.Month));
+        connection.CreateFunction<string?, int?>("DAY", value => DatePart(value, part => part.Day));
+        connection.CreateFunction<string?, int?>("HOUR", value => DatePart(value, part => part.Hour));
+        connection.CreateFunction<string?, int?>("MINUTE", value => DatePart(value, part => part.Minute));
+        connection.CreateFunction<string?, int?>("SECOND", value => DatePart(value, part => part.Second));
+        return connection;
+    }
+
+    private static int? DatePart(string? value, Func<DateTime, int> selector)
+    {
+        string[] supportedFormats =
+        [
+            "yyyy-MM-dd",
+            "yyyy-MM-dd HH-mm-ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss.fffffff"
+        ];
+        if (DateTime.TryParseExact(
+                value,
+                supportedFormats,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AllowWhiteSpaces,
+                out DateTime date)
+            || DateTime.TryParse(
+            value,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AllowWhiteSpaces,
+            out date))
+        {
+            return selector(date);
+        }
+        return null;
     }
 
     protected override IMigrationProvider DefineMigrationProvider()

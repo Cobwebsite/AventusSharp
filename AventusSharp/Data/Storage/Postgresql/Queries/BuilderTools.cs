@@ -9,7 +9,12 @@ public static class BuilderTools
 {
     public static string Where(List<IWhereRootGroup>? wheres, IDBStorage storage)
     {
-        return QuoteQualifiedColumns(BuilderToolsMysql.Where(wheres, storage));
+        string sql = QuoteQualifiedColumns(BuilderToolsMysql.Where(wheres, storage));
+        return Regex.Replace(
+            sql,
+            @"\b(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)\(([^()]+)\)",
+            match => $"EXTRACT({match.Groups[1].Value} FROM {match.Groups[2].Value})",
+            RegexOptions.IgnoreCase);
     }
 
     public static string QuoteQualifiedColumns(string sql)

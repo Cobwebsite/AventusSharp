@@ -2132,13 +2132,17 @@ namespace AventusSharp.Data.Manager
             {
                 ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
                 resultTemp.Errors.AddRange(commitResult.Errors);
+                if (commitResult.Result || !commitResult.Success)
+                {
+                    setTransactionScope(null);
+                }
             }
             else
             {
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
+                setTransactionScope(null);
             }
-            setTransactionScope(null);
             return resultTemp;
         }
         /// <summary>
@@ -2173,13 +2177,17 @@ namespace AventusSharp.Data.Manager
             {
                 ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
                 resultTemp.Errors.AddRange(commitResult.Errors);
+                if (commitResult.Result || !commitResult.Success)
+                {
+                    setTransactionScope(null);
+                }
             }
             else
             {
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
+                setTransactionScope(null);
             }
-            setTransactionScope(null);
             return resultTemp;
         }
 

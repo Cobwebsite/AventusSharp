@@ -201,19 +201,25 @@ namespace AventusSharp.Data.Manager.DB
                 }
                 if (valueToSet is IList listToSet)
                 {
-                    List<int> ids = new List<int>();
-                    foreach (object valueUnique in listToSet)
+                    bool containsStorable = listToSet
+                        .Cast<object?>()
+                        .Any(item => item is IStorable);
+                    if (containsStorable)
                     {
-                        if (valueUnique is IStorable storable)
+                        List<int> ids = new List<int>();
+                        foreach (object? valueUnique in listToSet)
                         {
-                            ids.Add(storable.Id);
+                            if (valueUnique is IStorable storable)
+                            {
+                                ids.Add(storable.Id);
+                            }
+                            else if (valueUnique is int storableId)
+                            {
+                                ids.Add(storableId);
+                            }
                         }
-                        else if (valueUnique is int storableId)
-                        {
-                            ids.Add(storableId);
-                        }
+                        valueToSet = ids;
                     }
-                    valueToSet = ids;
                 }
                 else if (valueToSet is IStorable storable)
                 {

@@ -240,6 +240,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         if (dbType == DbType.Boolean) { return "bit"; }
         if (dbType == DbType.DateTime) { return "datetime"; }
         if (dbType == DbType.Date) { return "date"; }
+        if (dbType == DbType.Time) { return "time"; }
         if (dbType == DbType.String)
         {
             if (tableMember is ITableMemberInfoSizable basic && basic.SizeAttr != null)

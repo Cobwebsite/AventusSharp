@@ -219,6 +219,10 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     valueToSet = storable.Id;
                 }
+                else if (DbType == DbType.String && valueToSet is char character)
+                {
+                    valueToSet = character.ToString();
+                }
 
                 Value = valueToSet;
             }

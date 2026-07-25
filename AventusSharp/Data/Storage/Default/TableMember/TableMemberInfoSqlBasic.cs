@@ -124,6 +124,13 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 SetValue(obj, value);
             }
+            else if (MemberType == typeof(char))
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    SetValue(obj, value[0]);
+                }
+            }
             else if (MemberType == typeof(bool))
             {
                 if (value == "1" || value?.ToLower() == "true")

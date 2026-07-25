@@ -495,7 +495,16 @@ namespace AventusSharp.Data.Manager.DB
                     throw new NotSupportedException(string.Format("The binary operator '{0}' is not supported", b.NodeType));
             }
 
-            Expression rightResult = Visit(b.Right);
+            Expression rightResult;
+            if (IsCharMember(b.Left) && TryGetCharConstant(b.Right, out char character))
+            {
+                AddToParentGroup(new WhereGroupConstantString(character.ToString()));
+                rightResult = b.Right;
+            }
+            else
+            {
+                rightResult = Visit(b.Right);
+            }
 
             if (canSimplify && canSimplifyFct && leftResult is ConstantExpression cLeft && rightResult is ConstantExpression cRight)
             {
@@ -519,6 +528,45 @@ namespace AventusSharp.Data.Manager.DB
             return b;
         }
 
+        private static bool IsCharMember(Expression expression)
+        {
+            while (expression is UnaryExpression unary
+                && (unary.NodeType == ExpressionType.Convert
+                    || unary.NodeType == ExpressionType.ConvertChecked))
+            {
+                expression = unary.Operand;
+            }
+
+            return expression is MemberExpression member && member.Type == typeof(char);
+        }
+
+        private static bool TryGetCharConstant(Expression expression, out char value)
+        {
+            while (expression is UnaryExpression unary
+                && (unary.NodeType == ExpressionType.Convert
+                    || unary.NodeType == ExpressionType.ConvertChecked))
+            {
+                expression = unary.Operand;
+            }
+
+            if (expression is ConstantExpression constant)
+            {
+                if (constant.Value is char character)
+                {
+                    value = character;
+                    return true;
+                }
+                if (constant.Value is int number && number is >= char.MinValue and <= char.MaxValue)
+                {
+                    value = (char)number;
+                    return true;
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
         protected override Expression VisitConstant(ConstantExpression c)
         {
             IQueryable? q = c.Value as IQueryable;
@@ -537,6 +585,10 @@ namespace AventusSharp.Data.Manager.DB
 
                     case TypeCode.String:
                         AddToParentGroup(new WhereGroupConstantString((string)c.Value));
+                        break;
+
+                    case TypeCode.Char:
+                        AddToParentGroup(new WhereGroupConstantString(c.Value.ToString()!));
                         break;
 
                     case TypeCode.DateTime:
@@ -575,6 +627,11 @@ namespace AventusSharp.Data.Manager.DB
                         else if (c.Value is Date date)
                         {
                             AddToParentGroup(new WhereGroupConstantString(date.ToString()));
+                            break;
+                        }
+                        else if (c.Value is TimeSpan time)
+                        {
+                            AddToParentGroup(new WhereGroupConstantString(time.ToString("c")));
                             break;
                         }
                         throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", c.Value));

@@ -280,6 +280,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         if (dbType == DbType.Boolean) { return "boolean"; }
         if (dbType == DbType.DateTime) { return "timestamp"; }
         if (dbType == DbType.Date) { return "date"; }
+        if (dbType == DbType.Time) { return "time"; }
         if (dbType == DbType.String)
         {
             if (tableMember is ITableMemberInfoSizable basic && basic.SizeAttr != null)

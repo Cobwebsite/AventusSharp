@@ -1206,7 +1206,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     if (objectTemp is X oCasted)
                     {
-                        await action(oCasted);
+                        await result.RunAsync(() => action(oCasted));
                     }
                     else
                     {

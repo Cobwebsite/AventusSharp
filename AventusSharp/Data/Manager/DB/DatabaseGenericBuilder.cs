@@ -277,11 +277,14 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     protected void FieldsGeneric()
     {
         string fullPath = "";
-        if (AllMembersByPath[fullPath])
-        {
-            Storage.LoadAllTableFieldsQuery(InfoByPath[fullPath].TableInfo, InfoByPath[fullPath].Alias, InfoByPath[fullPath], new List<string>(), new List<Type>(), this);
-            AllMembersByPath[fullPath] = false;
-        }
+        Storage.LoadAllTableFieldsQuery(
+            InfoByPath[fullPath].TableInfo,
+            InfoByPath[fullPath].Alias,
+            InfoByPath[fullPath],
+            new List<string>(),
+            new List<Type>(),
+            this);
+        AllMembersByPath[fullPath] = false;
     }
     protected string FieldGeneric<X>(Expression<Func<T, X>> expression)
     {

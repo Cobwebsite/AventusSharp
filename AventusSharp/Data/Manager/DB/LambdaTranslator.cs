@@ -393,6 +393,7 @@ namespace AventusSharp.Data.Manager.DB
             isExternal = false;
             queryGroups = new List<IWhereRootGroup>();
             queryGroupsBase = new List<IWhereRootGroup>();
+            expression = new NullableMemberNormalizer().Visit(expression)!;
             Visit(expression);
 
             return new TranslateResult()
@@ -400,6 +401,33 @@ namespace AventusSharp.Data.Manager.DB
                 IsExternal = isExternal,
                 Wheres = queryGroupsBase
             };
+        }
+
+        private sealed class NullableMemberNormalizer : ExpressionVisitor
+        {
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                Expression? sourceExpression = node.Expression;
+                if (sourceExpression == null)
+                    return base.VisitMember(node);
+
+                Type? underlyingType = System.Nullable.GetUnderlyingType(sourceExpression.Type);
+                if (underlyingType == null)
+                    return base.VisitMember(node);
+
+                Expression nullableExpression = Visit(sourceExpression)!;
+                if (node.Member.Name == nameof(System.Nullable<int>.HasValue))
+                {
+                    return Expression.NotEqual(
+                        nullableExpression,
+                        Expression.Constant(null, sourceExpression.Type));
+                }
+                if (node.Member.Name == nameof(System.Nullable<int>.Value))
+                {
+                    return Expression.Convert(nullableExpression, underlyingType);
+                }
+                return base.VisitMember(node);
+            }
         }
 
         [return: NotNullIfNotNull("node")]

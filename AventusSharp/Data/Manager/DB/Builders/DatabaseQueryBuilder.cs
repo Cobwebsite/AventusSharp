@@ -207,7 +207,13 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 }
             }
 
-            if (finalBody == null) return this;
+            if (finalBody == null)
+            {
+                Errors.Add(new DataError(
+                    DataErrorCode.WrongType,
+                    $"The search value '{search}' cannot be converted for any selected field on {typeof(T).Name}"));
+                return this;
+            }
 
             Expression<Func<T, bool>> lambda = Expression.Lambda<Func<T, bool>>(finalBody, parameter);
 

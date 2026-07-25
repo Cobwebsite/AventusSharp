@@ -277,10 +277,39 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             }
         }
     }
+    protected void ResetPreparedParametersGeneric()
+    {
+        foreach (ParamsInfo parameter in WhereParamsInfo.Values)
+        {
+            parameter.ResetValue();
+        }
+    }
 
     protected virtual void OnVariableSet(ParamsInfo param, object fromObject)
     {
 
+    }
+    protected List<GenericError> GetRunErrors()
+    {
+        List<GenericError> result = Errors.ToList();
+        if (!ReplaceWhereByParameters)
+        {
+            return result;
+        }
+
+        List<string> missingParameters = WhereParamsInfo.Values
+            .Where(parameter => !parameter.IsSet)
+            .Select(parameter => parameter.Name)
+            .Distinct()
+            .ToList();
+        if (missingParameters.Count > 0)
+        {
+            result.Add(new DataError(
+                DataErrorCode.ValidationError,
+                "Missing values for prepared query parameters: " +
+                string.Join(", ", missingParameters)));
+        }
+        return result;
     }
     protected void SetVariableGeneric(string name, object value)
     {

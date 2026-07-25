@@ -81,6 +81,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
         public async Task<ResultWithError<List<T>>> RunWithError(T item)
         {
             ResultWithError<List<T>> result = new();
+            List<GenericError> runErrors = GetRunErrors();
+            if (runErrors.Count > 0)
+            {
+                result.Errors = runErrors;
+                return result;
+            }
             MergeScopeAndWhere();
             ResultWithError<List<int>> resultTemp = await Storage.UpdateFromBuilder(this, item);
             if (resultTemp.Success && resultTemp.Result != null)
@@ -218,6 +224,10 @@ namespace AventusSharp.Data.Manager.DB.Builders
         void IUpdateBuilder<T>.SetVariableInternal(string name, object value)
         {
             SetVariableGeneric(name, value);
+        }
+        void IUpdateBuilder<T>.ResetPreparedParametersInternal()
+        {
+            ResetPreparedParametersGeneric();
         }
 
         public IUpdateBuilder<T> WithScope<X>() where X : IScope, new()

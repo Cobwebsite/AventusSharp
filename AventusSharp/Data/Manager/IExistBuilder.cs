@@ -43,6 +43,7 @@ namespace AventusSharp.Data.Manager
 
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
+        internal void ResetPreparedParametersInternal();
     }
 
     public class ExistBuilderPrepared<T>
@@ -62,6 +63,7 @@ namespace AventusSharp.Data.Manager
         public ExistBuilderPreparedInstance<T> New()
         {
             mutex.Wait();
+            builder.ResetPreparedParametersInternal();
             return new ExistBuilderPreparedInstance<T>(builder, this);
         }
 

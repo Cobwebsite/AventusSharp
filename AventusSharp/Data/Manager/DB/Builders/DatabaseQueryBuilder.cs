@@ -44,11 +44,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
         }
         public async Task<ResultWithError<List<T>>> RunWithError()
         {
-            if (Errors.Count > 0)
+            List<GenericError> runErrors = GetRunErrors();
+            if (runErrors.Count > 0)
             {
                 return new ResultWithError<List<T>>()
                 {
-                    Errors = Errors
+                    Errors = runErrors
                 };
             }
             MergeScopeAndWhere();
@@ -60,11 +61,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public async Task<VoidWithError> RunStreamWithError(Func<T, Task<VoidWithError>> action)
         {
-            if (Errors.Count > 0)
+            List<GenericError> runErrors = GetRunErrors();
+            if (runErrors.Count > 0)
             {
                 return new VoidWithError()
                 {
-                    Errors = Errors
+                    Errors = runErrors
                 };
             }
             MergeScopeAndWhere();
@@ -388,6 +390,10 @@ namespace AventusSharp.Data.Manager.DB.Builders
         void IQueryBuilder<T>.SetVariableInternal(string name, object value)
         {
             SetVariableGeneric(name, value);
+        }
+        void IQueryBuilder<T>.ResetPreparedParametersInternal()
+        {
+            ResetPreparedParametersGeneric();
         }
 
         public IQueryBuilder<T> WithScope<X>() where X : IScope, new()

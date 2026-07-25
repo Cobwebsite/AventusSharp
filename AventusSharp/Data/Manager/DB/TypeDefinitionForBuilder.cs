@@ -172,6 +172,7 @@ namespace AventusSharp.Data.Manager.DB
 
         public object? RootValue { get; set; }
         public object? Value { get; set; }
+        public bool IsSet { get; private set; }
 
         public WhereGroupFctEnum FctMethodCall { get; set; }
 
@@ -179,11 +180,18 @@ namespace AventusSharp.Data.Manager.DB
         {
             return Regex.IsMatch(name, @"^" + this.Name + @"(\.|$)");
         }
+        public void ResetValue()
+        {
+            RootValue = null;
+            Value = null;
+            IsSet = false;
+        }
         public void SetValue(object value)
         {
             RootValue = value;
             if (value.GetType() == TypeLvl0)
             {
+                IsSet = true;
                 object? valueToSet = value;
                 for (int i = 0; i < MembersList.Count - 1; i++)
                 {

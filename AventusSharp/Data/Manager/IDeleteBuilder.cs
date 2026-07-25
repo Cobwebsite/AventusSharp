@@ -44,6 +44,7 @@ namespace AventusSharp.Data.Manager
 
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
+        internal void ResetPreparedParametersInternal();
 
         public IDeleteBuilder<T> WithScope<X>() where X : IScope, new();
         public IDeleteBuilder<T> WithoutScope();
@@ -66,6 +67,7 @@ namespace AventusSharp.Data.Manager
         public DeleteBuilderPreparedInstance<T> New()
         {
             mutex.Wait();
+            builder.ResetPreparedParametersInternal();
             return new DeleteBuilderPreparedInstance<T>(builder, this);
         }
 

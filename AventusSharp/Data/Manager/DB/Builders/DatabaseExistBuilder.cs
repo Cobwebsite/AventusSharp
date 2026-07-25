@@ -44,7 +44,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
         }
         public async Task<bool> Run()
         {
-            ResultWithError<bool> result = await Storage.ExistFromBuilder(this);
+            ResultWithError<bool> result = await RunWithError();
             if (result.Success)
             {
                 return result.Result;
@@ -54,6 +54,14 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public async Task<ResultWithError<bool>> RunWithError()
         {
+            List<GenericError> runErrors = GetRunErrors();
+            if (runErrors.Count > 0)
+            {
+                return new ResultWithError<bool>()
+                {
+                    Errors = runErrors
+                };
+            }
             ResultWithError<bool> result = await Storage.ExistFromBuilder(this);
             DM.PrintErrors(result);
             return result;
@@ -67,6 +75,10 @@ namespace AventusSharp.Data.Manager.DB.Builders
         void IExistBuilder<T>.SetVariableInternal(string name, object value)
         {
             SetVariableGeneric(name, value);
+        }
+        void IExistBuilder<T>.ResetPreparedParametersInternal()
+        {
+            ResetPreparedParametersGeneric();
         }
     }
 }

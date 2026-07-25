@@ -120,6 +120,11 @@ namespace AventusSharp.Data.Manager.DB.Builders
             SetVariableGeneric(name, value);
             queryBuilder.SetVariableInternal(name, value);
         }
+        void IDeleteBuilder<T>.ResetPreparedParametersInternal()
+        {
+            ResetPreparedParametersGeneric();
+            ((IQueryBuilder<T>)queryBuilder).ResetPreparedParametersInternal();
+        }
 
         public IDeleteBuilder<T> WithScope<X>() where X : IScope, new()
         {

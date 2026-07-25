@@ -255,6 +255,7 @@ namespace AventusSharp.Data.Manager
 
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
+        internal void ResetPreparedParametersInternal();
 
         public IQueryBuilder<T> WithScope<X>() where X : IScope, new();
         public IQueryBuilder<T> WithScope(IScope scope);
@@ -282,6 +283,7 @@ namespace AventusSharp.Data.Manager
         public QueryBuilderPreparedInstance<T> New()
         {
             mutex.Wait();
+            builder.ResetPreparedParametersInternal();
             return new QueryBuilderPreparedInstance<T>(builder, this);
         }
 

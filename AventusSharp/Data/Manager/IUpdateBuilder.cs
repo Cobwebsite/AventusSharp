@@ -67,6 +67,7 @@ namespace AventusSharp.Data.Manager
 
         internal void PrepareInternal(params object[] objects);
         internal void SetVariableInternal(string name, object value);
+        internal void ResetPreparedParametersInternal();
 
         public IUpdateBuilder<T> WithScope<X>() where X : IScope, new();
         public IUpdateBuilder<T> WithoutScope();
@@ -89,6 +90,7 @@ namespace AventusSharp.Data.Manager
         public UpdateBuilderPreparedInstance<T> New()
         {
             mutex.Wait();
+            builder.ResetPreparedParametersInternal();
             return new UpdateBuilderPreparedInstance<T>(builder, this);
         }
 

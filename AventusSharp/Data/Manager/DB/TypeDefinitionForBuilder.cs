@@ -223,6 +223,10 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     valueToSet = character.ToString();
                 }
+                else if (DbType == DbType.String && valueToSet?.GetType().IsEnum == true)
+                {
+                    valueToSet = valueToSet.ToString();
+                }
 
                 Value = valueToSet;
             }

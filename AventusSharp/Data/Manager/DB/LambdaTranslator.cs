@@ -501,6 +501,12 @@ namespace AventusSharp.Data.Manager.DB
                 AddToParentGroup(new WhereGroupConstantString(character.ToString()));
                 rightResult = b.Right;
             }
+            else if (TryGetEnumMemberType(b.Left, out Type? enumType)
+                && TryGetEnumConstant(b.Right, enumType, out string? enumValue))
+            {
+                AddToParentGroup(new WhereGroupConstantString(enumValue));
+                rightResult = b.Right;
+            }
             else
             {
                 rightResult = Visit(b.Right);
@@ -540,6 +546,26 @@ namespace AventusSharp.Data.Manager.DB
             return expression is MemberExpression member && member.Type == typeof(char);
         }
 
+        private static bool TryGetEnumMemberType(Expression expression, out Type enumType)
+        {
+            while (expression is UnaryExpression unary
+                && (unary.NodeType == ExpressionType.Convert
+                    || unary.NodeType == ExpressionType.ConvertChecked))
+            {
+                expression = unary.Operand;
+            }
+
+            if (expression is not MemberExpression member)
+            {
+                enumType = typeof(object);
+                return false;
+            }
+
+            Type memberType = System.Nullable.GetUnderlyingType(member.Type) ?? member.Type;
+            enumType = memberType;
+            return memberType.IsEnum;
+        }
+
         private static bool TryGetCharConstant(Expression expression, out char value)
         {
             while (expression is UnaryExpression unary
@@ -564,6 +590,43 @@ namespace AventusSharp.Data.Manager.DB
             }
 
             value = default;
+            return false;
+        }
+
+        private static bool TryGetEnumConstant(
+            Expression expression,
+            Type enumType,
+            out string value)
+        {
+            while (expression is UnaryExpression unary
+                && (unary.NodeType == ExpressionType.Convert
+                    || unary.NodeType == ExpressionType.ConvertChecked))
+            {
+                expression = unary.Operand;
+            }
+
+            if (expression is ConstantExpression constant
+                && constant.Value != null)
+            {
+                if (constant.Value.GetType().IsEnum)
+                {
+                    value = constant.Value.ToString()!;
+                    return true;
+                }
+                if (constant.Value is IConvertible)
+                {
+                    try
+                    {
+                        value = Enum.ToObject(enumType, constant.Value).ToString()!;
+                        return true;
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            value = "";
             return false;
         }
 

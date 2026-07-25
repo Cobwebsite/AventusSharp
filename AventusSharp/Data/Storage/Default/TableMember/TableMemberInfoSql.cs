@@ -48,6 +48,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             if (type == null)
                 return null;
+            type = System.Nullable.GetUnderlyingType(type) ?? type;
             if (type == typeof(int))
                 return DbType.Int32;
             if (type == typeof(short))

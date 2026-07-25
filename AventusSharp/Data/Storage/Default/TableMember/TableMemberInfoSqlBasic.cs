@@ -65,11 +65,16 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 return dt.ToString(database.Storage.DateTimeFormat);
             }
+            else if (result?.GetType().IsEnum == true)
+            {
+                return result.ToString();
+            }
             return result;
         }
 
         protected override void SetSqlValue(object obj, string? value)
         {
+            Type effectiveMemberType = System.Nullable.GetUnderlyingType(MemberType) ?? MemberType;
             if(SqlTransform != null)
             {
                 SetValue(obj, SqlTransform.FromSql(value, this));
@@ -78,60 +83,60 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 SetValue(obj, value);
             }
-            else if (MemberType == typeof(int))
+            else if (effectiveMemberType == typeof(int))
             {
                 if (int.TryParse(value, out int nb))
                 {
                     SetValue(obj, nb);
                 }
             }
-            else if (MemberType == typeof(short))
+            else if (effectiveMemberType == typeof(short))
             {
                 if (short.TryParse(value, out short nb))
                 {
                     SetValue(obj, nb);
                 }
             }
-            else if (MemberType == typeof(long))
+            else if (effectiveMemberType == typeof(long))
             {
                 if (long.TryParse(value, out long nb))
                 {
                     SetValue(obj, nb);
                 }
             }
-            else if (MemberType == typeof(double))
+            else if (effectiveMemberType == typeof(double))
             {
                 if (double.TryParse(value, out double nb))
                 {
                     SetValue(obj, nb);
                 }
             }
-            else if (MemberType == typeof(float))
+            else if (effectiveMemberType == typeof(float))
             {
                 if (float.TryParse(value, out float nb))
                 {
                     SetValue(obj, nb);
                 }
             }
-            else if (MemberType == typeof(decimal))
+            else if (effectiveMemberType == typeof(decimal))
             {
                 if (decimal.TryParse(value, out decimal nb))
                 {
                     SetValue(obj, nb);
                 }
             }
-            else if (MemberType == typeof(string))
+            else if (effectiveMemberType == typeof(string))
             {
                 SetValue(obj, value);
             }
-            else if (MemberType == typeof(char))
+            else if (effectiveMemberType == typeof(char))
             {
                 if (!string.IsNullOrEmpty(value))
                 {
                     SetValue(obj, value[0]);
                 }
             }
-            else if (MemberType == typeof(bool))
+            else if (effectiveMemberType == typeof(bool))
             {
                 if (value == "1" || value?.ToLower() == "true")
                 {
@@ -142,7 +147,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     SetValue(obj, false);
                 }
             }
-            else if (MemberType == typeof(DateTime))
+            else if (effectiveMemberType == typeof(DateTime))
             {
                 if (value == null)
                 {
@@ -153,7 +158,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     SetValue(obj, dateTime);
                 }
             }
-            else if (MemberType == typeof(TimeSpan))
+            else if (effectiveMemberType == typeof(TimeSpan))
             {
                 if (value == null)
                 {
@@ -164,13 +169,13 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     SetValue(obj, dateTime);
                 }
             }
-            else if (MemberType.IsEnum)
+            else if (effectiveMemberType.IsEnum)
             {
                 if (value == null)
                 {
                     SetValue(obj, null);
                 }
-                else if (Enum.TryParse(MemberType, value, out object? val))
+                else if (Enum.TryParse(effectiveMemberType, value, out object? val))
                 {
                     SetValue(obj, val);
                 }

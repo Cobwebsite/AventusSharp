@@ -134,7 +134,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         DatabaseBuilderInfo info = new(alias, table);
         InfoByPath[path] = info;
 
-        if (table.Scopes.Count > 0)
+        if (path == "" && table.Scopes.Count > 0)
         {
             if (Scopes == null) Scopes = new();
 
@@ -453,6 +453,33 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
            addToMembers: true,
            scopes
         );
+
+        string relationPath = string.Join(".", lambdaResult.Steps.Select(step => step.Name));
+        if (!lambdaResult.IsExternal && InfoByPath.TryGetValue(relationPath, out DatabaseBuilderInfo? relationInfo))
+        {
+            List<IScope> scopesToApply = scopes ?? relationInfo.TableInfo.Scopes.ToList();
+            if (scopesToApply.Count > 0)
+            {
+                LambdaExpression relationExpression = LambdaTranslator.MergePart<T>(lambdaResult.Steps);
+                foreach (IScope scope in scopesToApply)
+                {
+                    LambdaExpression? scopeExpression = scope.Where(RouterMiddleware.ContextScope);
+                    if (scopeExpression == null)
+                    {
+                        continue;
+                    }
+
+                    LambdaExpression merged = LambdaTranslator.LambdaMerge(
+                        relationExpression,
+                        scopeExpression);
+                    AddWhereGeneric(
+                        Expression.Lambda<Func<T, bool>>(
+                            merged.Body,
+                            (ParameterExpression)merged.Parameters[0]),
+                        WhereGroupFctEnum.And);
+                }
+            }
+        }
 
         string fullPath = string.Join(".", lambdaResult.Steps.SkipLast(1).Select(p => p.Name));
         string lastName = lambdaResult.Steps.Last().Name;

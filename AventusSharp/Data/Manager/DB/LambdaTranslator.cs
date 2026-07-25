@@ -393,6 +393,7 @@ namespace AventusSharp.Data.Manager.DB
             isExternal = false;
             queryGroups = new List<IWhereRootGroup>();
             queryGroupsBase = new List<IWhereRootGroup>();
+            expression = new InvocationExpander().Visit(expression)!;
             expression = new NullableMemberNormalizer().Visit(expression)!;
             Visit(expression);
 
@@ -401,6 +402,27 @@ namespace AventusSharp.Data.Manager.DB
                 IsExternal = isExternal,
                 Wheres = queryGroupsBase
             };
+        }
+
+        private sealed class InvocationExpander : ExpressionVisitor
+        {
+            protected override Expression VisitInvocation(InvocationExpression node)
+            {
+                Expression target = Visit(node.Expression)!;
+                if (target is not LambdaExpression lambda)
+                {
+                    return base.VisitInvocation(node);
+                }
+
+                Expression body = lambda.Body;
+                for (int i = 0; i < lambda.Parameters.Count; i++)
+                {
+                    body = new ParameterReplacer(
+                        lambda.Parameters[i],
+                        Visit(node.Arguments[i])!).Visit(body)!;
+                }
+                return Visit(body);
+            }
         }
 
         private sealed class NullableMemberNormalizer : ExpressionVisitor

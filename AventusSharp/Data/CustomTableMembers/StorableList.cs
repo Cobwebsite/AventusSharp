@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
+using System.Text.Json;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
@@ -30,35 +31,18 @@ namespace AventusSharp.Data.CustomTableMembers
             object? result = GetValue(obj);
             if (result is IStorableList list)
             {
-                List<string> listString = new List<string>();
-                foreach (object? item in list)
-                {
-                    if (item != null)
-                    {
-                        string? txtValue = item.ToString();
-                        if (txtValue != null)
-                        {
-                            listString.Add(txtValue);
-                        }
-                    }
-                }
-                return string.Join(",", listString);
+                return JsonSerializer.Serialize(list, result.GetType());
             }
             return null;
         }
 
         protected override void SetSqlValue(object obj, string? value)
         {
-            if (!string.IsNullOrEmpty(value) && dataMemberInfo != null && dataMemberInfo.Type != null)
+            if (value != null && dataMemberInfo?.Type != null)
             {
-                object? newList = Activator.CreateInstance(dataMemberInfo.Type);
+                object? newList = JsonSerializer.Deserialize(value, dataMemberInfo.Type);
                 if (newList is IStorableList list)
                 {
-                    string[] values = value.Split(",");
-                    foreach (string val in values)
-                    {
-                        list.setStringValue(val);
-                    }
                     SetValue(obj, list);
                 }
             }

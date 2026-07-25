@@ -97,6 +97,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
+        public IQueryBuilder<T> OrWhere(Expression<Func<T, bool>> expression)
+        {
+            OrWhereGeneric(expression);
+            return this;
+        }
+
         private Dictionary<Type, object?> _searchable = new();
         private (bool success, object? value) TryGetSearchValue(Type type, string search)
         {

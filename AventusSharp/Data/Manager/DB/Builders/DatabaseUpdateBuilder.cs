@@ -198,6 +198,12 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
+        public IUpdateBuilder<T> OrWhere(Expression<Func<T, bool>> func)
+        {
+            OrWhereGeneric(func);
+            return this;
+        }
+
         public UpdateBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
             WhereGenericWithParameters(func);

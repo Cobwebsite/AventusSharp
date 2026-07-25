@@ -32,6 +32,8 @@ namespace AventusSharp.Data.Manager
         /// <returns>The current existence builder instance for method chaining.</returns>
         public IExistBuilder<T> Where(Expression<Func<T, bool>> func);
 
+        public IExistBuilder<T> OrWhere(Expression<Func<T, bool>> func);
+
         /// <summary>
         /// Adds a condition to the existence check with parameters for the provided expression.
         /// </summary>

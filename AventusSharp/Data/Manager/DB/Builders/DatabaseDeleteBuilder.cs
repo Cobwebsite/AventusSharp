@@ -94,6 +94,13 @@ namespace AventusSharp.Data.Manager.DB.Builders
             return this;
         }
 
+        public IDeleteBuilder<T> OrWhere(Expression<Func<T, bool>> func)
+        {
+            OrWhereGeneric(func);
+            queryBuilder.OrWhere(func);
+            return this;
+        }
+
         public DeleteBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
 

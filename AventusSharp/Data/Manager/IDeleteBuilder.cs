@@ -33,6 +33,8 @@ namespace AventusSharp.Data.Manager
         /// <returns>The current delete builder instance for method chaining.</returns>
         public IDeleteBuilder<T> Where(Expression<Func<T, bool>> func);
 
+        public IDeleteBuilder<T> OrWhere(Expression<Func<T, bool>> func);
+
         /// <summary>
         /// Adds a condition to the delete query with parameters for the provided expression.
         /// </summary>

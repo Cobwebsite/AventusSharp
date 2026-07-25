@@ -56,6 +56,8 @@ namespace AventusSharp.Data.Manager
         /// <returns>The current update builder instance for method chaining.</returns>
         public IUpdateBuilder<T> Where(Expression<Func<T, bool>> func);
 
+        public IUpdateBuilder<T> OrWhere(Expression<Func<T, bool>> func);
+
         /// <summary>
         /// Adds a condition to the update query with parameters for the provided expression.
         /// </summary>

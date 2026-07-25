@@ -55,6 +55,8 @@ namespace AventusSharp.Data.Manager
         /// <returns>The current query builder instance for method chaining.</returns>
         public IQueryBuilder<T> Where(Expression<Func<T, bool>> func);
 
+        public IQueryBuilder<T> OrWhere(Expression<Func<T, bool>> func);
+
         /// <summary>
         /// Adds a condition to the query using one search string and multiple fields
         /// </summary>

@@ -170,18 +170,37 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     protected void WhereGeneric(Expression<Func<T, bool>> expression)
     {
+        AddWhereGeneric(expression, WhereGroupFctEnum.And);
+    }
+
+    protected void OrWhereGeneric(Expression<Func<T, bool>> expression)
+    {
+        AddWhereGeneric(expression, WhereGroupFctEnum.Or);
+    }
+
+    private void AddWhereGeneric(
+        Expression<Func<T, bool>> expression,
+        WhereGroupFctEnum link)
+    {
         try
         {
-            if (Wheres != null)
-            {
-                throw new Exception("Can't use twice the where action");
-            }
             ReplaceWhereByParameters = false;
             LambdaTranslator<T> translator = new(this);
             TranslateResult translateResult = translator.Translate(expression);
             if (!translateResult.IsExternal)
             {
-                Wheres = translateResult.Wheres;
+                if (Wheres == null)
+                {
+                    Wheres = translateResult.Wheres;
+                }
+                else
+                {
+                    WhereGroup group = new();
+                    group.Groups.AddRange(Wheres);
+                    group.Groups.Add(new WhereGroupFct(link));
+                    group.Groups.AddRange(translateResult.Wheres);
+                    Wheres = [group];
+                }
             }
             else
             {

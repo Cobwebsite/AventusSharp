@@ -235,7 +235,7 @@ namespace AventusSharp.Data.Manager.DB
         #region Get
         public override Task OnItemLoaded<X>(X item)
         {
-            if (NeedLocalCache && item is U cachedItem)
+            if (NeedLocalCache && item.Id > 0 && item is U cachedItem)
             {
                 Records.GetOrAdd(item.Id, cachedItem);
             }
@@ -586,6 +586,14 @@ namespace AventusSharp.Data.Manager.DB
                     X value = values[0];
                     DatabaseCreateBuilder<X> builder = new DatabaseCreateBuilder<X>(Storage, this, value.GetType());
                     result = await builder.RunBulkWithError(values, withId);
+                    if (result.Success && NeedLocalCache)
+                    {
+                        // Bulk insertion does not necessarily return the generated ids.
+                        // Invalidate the "complete" marker so the next cached read
+                        // reloads the rows and registers them with their database ids.
+                        GetAllDone.TryRemove(typeof(X), out _);
+                        GetAllDone.TryRemove(typeof(U), out _);
+                    }
                 }
                 catch (Exception e)
                 {

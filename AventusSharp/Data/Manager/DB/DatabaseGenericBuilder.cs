@@ -616,11 +616,25 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     protected void LimitGeneric(int? limit)
     {
+        if (limit < 0)
+        {
+            Errors.Add(new DataError(
+                DataErrorCode.ValidationError,
+                "Limit must be greater than or equal to zero"));
+            return;
+        }
         LimitSize = limit;
     }
 
     protected void OffsetGeneric(int? offset)
     {
+        if (offset < 0)
+        {
+            Errors.Add(new DataError(
+                DataErrorCode.ValidationError,
+                "Offset must be greater than or equal to zero"));
+            return;
+        }
         OffsetSize = offset;
     }
 

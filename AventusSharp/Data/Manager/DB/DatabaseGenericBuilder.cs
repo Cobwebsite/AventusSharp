@@ -271,10 +271,6 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                     }
                 }
             }
-            if (toSet.Count > 0)
-            {
-                throw new Exception("Can't found a value to set for variables : " + string.Join(", ", toSet.Select(t => t.Name)));
-            }
         }
     }
     protected void ResetPreparedParametersGeneric()

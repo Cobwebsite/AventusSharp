@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Storage.Default;
@@ -123,6 +124,15 @@ public class Query
         }
 
         loadInfo(mainInfo, new List<string>(), new List<Type>());
+
+        if (queryBuilder.Groups != null)
+        {
+            string groups = string.Join(", ", queryBuilder.Groups.Select(
+                group => group.Alias + ".[" + group.TableMember.SqlName + "]"));
+            groupBy = groupBy == ""
+                ? " GROUP BY " + groups
+                : groupBy + ", " + groups;
+        }
 
         string whereTxt = BuilderTools.Where(queryBuilder.Wheres, storage);
 

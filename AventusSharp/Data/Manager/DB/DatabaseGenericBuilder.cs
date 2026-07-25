@@ -512,11 +512,12 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                                 if (addToMembers)
                                 {
                                     parentInfo.Members.Add(memberInfoWithAlias.Key, new DatabaseBuilderInfoMember(memberInfoWithAlias.Key, memberInfoWithAlias.Value, Storage));
-                                    AllMembersByPath[fullPath] = i == lambdaParts.Count - 1;
+                                    AllMembersByPath[fullPath] =
+                                        fields == null && i == lambdaParts.Count - 1;
                                 }
                             }
                         }
-                        else if (addToMembers && fields != null && i == lambdaParts.Count - 1)
+                        if (addToMembers && fields != null && i == lambdaParts.Count - 1)
                         {
                             LambdaExpression baseExp = LambdaTranslator.MergePart<T>(lambdaParts);
                             foreach (var field in fields)

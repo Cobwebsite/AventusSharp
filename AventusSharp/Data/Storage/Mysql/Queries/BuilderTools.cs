@@ -88,20 +88,21 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     }
                     else if (queryGroup is WhereGroupConstantString stringConst)
                     {
-                        string strValue = "'" + stringConst.Value + "'";
+                        string escapedValue = stringConst.Value.Replace("'", "''");
+                        string strValue = "'" + escapedValue + "'";
                         if (lastGroup is WhereGroupFct groupFct)
                         {
                             if (groupFct.Fct == WhereGroupFctEnum.StartsWith)
                             {
-                                strValue = "'" + stringConst.Value + "%'";
+                                strValue = "'" + escapedValue + "%'";
                             }
                             else if (groupFct.Fct == WhereGroupFctEnum.EndsWith)
                             {
-                                strValue = "'%" + stringConst.Value + "'";
+                                strValue = "'%" + escapedValue + "'";
                             }
                             else if (groupFct.Fct == WhereGroupFctEnum.ContainsStr)
                             {
-                                strValue = "'%" + stringConst.Value + "%'";
+                                strValue = "'%" + escapedValue + "%'";
                             }
                         }
                         subQuery += strValue;

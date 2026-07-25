@@ -792,7 +792,12 @@ namespace AventusSharp.Data.Storage.Default
                             Value = list[i],
                         }, parameterInfo.Value);
                     }
-                    sqlToExecute = sqlToExecute.Replace("@" + parameterInfo.Key.Name, "(" + string.Join(",", paramNames) + ")");
+                    string replacement = paramNames.Count == 0
+                        ? "(NULL)"
+                        : "(" + string.Join(",", paramNames) + ")";
+                    sqlToExecute = sqlToExecute.Replace(
+                        "@" + parameterInfo.Key.Name,
+                        replacement);
                 }
                 else
                 {

@@ -653,10 +653,10 @@ namespace AventusSharp.Data.Manager.DB
                         if (valueBeforeUpdate != null)
                         {
                             X snapshot = valueBeforeUpdate;
-                            getTransactionScope()?.OnRollback(() =>
+                            getTransactionScope()?.OnRollback(async () =>
                             {
-                                RestorePersistentValues(value, snapshot);
-                                return Task.FromResult(new VoidWithError());
+                                await RestorePersistentValues(value, snapshot);
+                                return new VoidWithError();
                             });
                         }
                         result.Result.Add(resultTemp.Result);
@@ -664,6 +664,10 @@ namespace AventusSharp.Data.Manager.DB
                     else
                     {
                         result.Errors.AddRange(resultTemp.Errors);
+                        if (valueBeforeUpdate != null)
+                        {
+                            await RestorePersistentValues(value, valueBeforeUpdate);
+                        }
                         break;
                     }
                 }
@@ -764,14 +768,22 @@ namespace AventusSharp.Data.Manager.DB
             return result;
         }
 
-        private void RestorePersistentValues<X>(X target, X snapshot) where X : IStorable
+        private async Task RestorePersistentValues<X>(X target, X snapshot) where X : IStorable
         {
             TableInfo? table = Storage.GetTableInfo(target.GetType());
             while (table != null)
             {
                 foreach (TableMemberInfoSql member in table.Members)
                 {
-                    member.SetValue(target, member.GetValue(snapshot));
+                    object? value = member.GetValue(snapshot);
+                    if (value is IStorable storable && storable.Id > 0)
+                    {
+                        object? canonical = await GenericDM
+                            .Get(storable.GetType())
+                            .GetById(storable.Id);
+                        value = canonical ?? value;
+                    }
+                    member.SetValue(target, value);
                 }
                 table = table.Parent;
             }

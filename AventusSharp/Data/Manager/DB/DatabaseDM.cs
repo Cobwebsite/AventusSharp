@@ -596,11 +596,18 @@ namespace AventusSharp.Data.Manager.DB
                                 {
                                     continue;
                                 }
+                                List<(TableMemberInfoSql Member, object? Value)>
+                                    valuesBeforeNormalization = new();
                                 TableInfo? table = Storage.GetTableInfo(item.GetType());
                                 while (table != null)
                                 {
                                     foreach (TableMemberInfoSql member in table.Members)
                                     {
+                                        if (member.HasSqlTransform)
+                                        {
+                                            valuesBeforeNormalization.Add(
+                                                (member, member.GetValue(item)));
+                                        }
                                         member.NormalizeSqlTransformValue(item);
                                     }
                                     table = table.Parent;
@@ -614,6 +621,11 @@ namespace AventusSharp.Data.Manager.DB
                                         && ReferenceEquals(cached, createdItem))
                                     {
                                         Records.TryRemove(createdId, out _);
+                                    }
+                                    foreach ((TableMemberInfoSql member, object? value)
+                                        in valuesBeforeNormalization)
+                                    {
+                                        member.SetValue(createdItem, value);
                                     }
                                     return Task.FromResult(new VoidWithError());
                                 });

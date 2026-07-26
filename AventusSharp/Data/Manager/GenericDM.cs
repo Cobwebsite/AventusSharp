@@ -1342,7 +1342,7 @@ namespace AventusSharp.Data.Manager
             }
             result = await CreateLogic(values);
             await WrapperAfterCreate(values, result);
-            OnCreated?.Invoke(TransformResult<X, U>(result));
+            PublishCreated(TransformResult<X, U>(result));
             return result;
         }
         /// <summary>
@@ -1661,7 +1661,7 @@ namespace AventusSharp.Data.Manager
             }
             result = await UpdateLogic(values);
             await WrapperAfterUpdate(values, result);
-            OnUpdated?.Invoke(TransformResult<X, U>(result));
+            PublishUpdated(TransformResult<X, U>(result));
             return result;
         }
         private MethodInfo? IUpdateListWithError = null;
@@ -1922,8 +1922,62 @@ namespace AventusSharp.Data.Manager
             }
             result = await DeleteLogic(values);
             await WrapperAfterDelete(values, result);
-            OnDeleted?.Invoke(TransformResult<X, U>(result));
+            PublishDeleted(TransformResult<X, U>(result));
             return result;
+        }
+
+        private void PublishCreated(ResultWithError<List<U>> result)
+        {
+            if (OnCreated == null) return;
+            foreach (OnCreatedHandler<U> handler in OnCreated.GetInvocationList())
+            {
+                try
+                {
+                    handler(result);
+                }
+                catch (Exception exception)
+                {
+                    AventusLogger.Instance.LogError(
+                        exception,
+                        "An OnCreated handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                }
+            }
+        }
+
+        private void PublishUpdated(ResultWithError<List<U>> result)
+        {
+            if (OnUpdated == null) return;
+            foreach (OnUpdatedHandler<U> handler in OnUpdated.GetInvocationList())
+            {
+                try
+                {
+                    handler(result);
+                }
+                catch (Exception exception)
+                {
+                    AventusLogger.Instance.LogError(
+                        exception,
+                        "An OnUpdated handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                }
+            }
+        }
+
+        private void PublishDeleted(ResultWithError<List<U>> result)
+        {
+            if (OnDeleted == null) return;
+            foreach (OnDeletedHandler<U> handler in OnDeleted.GetInvocationList())
+            {
+                try
+                {
+                    handler(result);
+                }
+                catch (Exception exception)
+                {
+                    AventusLogger.Instance.LogError(
+                        exception,
+                        "An OnDeleted handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                }
+            }
         }
         private MethodInfo? IDeleteListWithError = null;
         /// <summary>

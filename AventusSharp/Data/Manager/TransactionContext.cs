@@ -82,9 +82,9 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         {
             await TransactionRollback();
             VoidWithError rollbackActionsResult = new();
-            foreach (Func<Task<VoidWithError>> action in _rollbackActions)
+            for (int index = _rollbackActions.Count - 1; index >= 0; index--)
             {
-                await rollbackActionsResult.RunAsync(action);
+                await rollbackActionsResult.RunAsync(_rollbackActions[index]);
             }
             _rollbackActions.Clear();
             result.Errors.AddRange(rollbackActionsResult.Errors);

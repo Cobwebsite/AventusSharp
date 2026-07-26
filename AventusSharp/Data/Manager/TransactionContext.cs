@@ -84,7 +84,17 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
             VoidWithError rollbackActionsResult = new();
             for (int index = _rollbackActions.Count - 1; index >= 0; index--)
             {
-                await rollbackActionsResult.RunAsync(_rollbackActions[index]);
+                VoidWithError actionResult = new();
+                try
+                {
+                    await actionResult.RunAsync(_rollbackActions[index]);
+                }
+                catch (Exception exception)
+                {
+                    actionResult.Errors.Add(
+                        new DataError(DataErrorCode.UnknowError, exception));
+                }
+                rollbackActionsResult.Errors.AddRange(actionResult.Errors);
             }
             _rollbackActions.Clear();
             result.Errors.AddRange(rollbackActionsResult.Errors);

@@ -598,7 +598,7 @@ namespace AventusSharp.Data.Manager.DB
                                 }
                                 List<TableMemberInfoSql> members = new();
                                 List<(TableMemberInfoSql Member, object? Value)>
-                                    valuesBeforeNormalization = new();
+                                    valuesBeforeCanonicalization = new();
                                 TableInfo? table = Storage.GetTableInfo(item.GetType());
                                 while (table != null)
                                 {
@@ -607,7 +607,7 @@ namespace AventusSharp.Data.Manager.DB
                                         members.Add(member);
                                         if (member.HasSqlTransform)
                                         {
-                                            valuesBeforeNormalization.Add(
+                                            valuesBeforeCanonicalization.Add(
                                                 (member, member.GetValue(item)));
                                         }
                                     }
@@ -623,7 +623,7 @@ namespace AventusSharp.Data.Manager.DB
                                         Records.TryRemove(createdId, out _);
                                     }
                                     foreach ((TableMemberInfoSql member, object? value)
-                                        in valuesBeforeNormalization)
+                                        in valuesBeforeCanonicalization)
                                     {
                                         member.SetValue(createdItem, value);
                                     }
@@ -632,6 +632,20 @@ namespace AventusSharp.Data.Manager.DB
                                 foreach (TableMemberInfoSql member in members)
                                 {
                                     member.NormalizeSqlTransformValue(item);
+                                    object? valueToCanonicalize = member.GetValue(item);
+                                    if (valueToCanonicalize is IStorable storable
+                                        && storable.Id > 0)
+                                    {
+                                        valuesBeforeCanonicalization.Add(
+                                            (member, valueToCanonicalize));
+                                        object? canonical = await GenericDM
+                                            .Get(storable.GetType())
+                                            .GetById(storable.Id);
+                                        if (canonical != null)
+                                        {
+                                            member.SetValue(item, canonical);
+                                        }
+                                    }
                                 }
                                 Records[item.Id] = item;
                             }

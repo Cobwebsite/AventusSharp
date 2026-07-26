@@ -596,6 +596,7 @@ namespace AventusSharp.Data.Manager.DB
                                 {
                                     continue;
                                 }
+                                List<TableMemberInfoSql> members = new();
                                 List<(TableMemberInfoSql Member, object? Value)>
                                     valuesBeforeNormalization = new();
                                 TableInfo? table = Storage.GetTableInfo(item.GetType());
@@ -603,16 +604,15 @@ namespace AventusSharp.Data.Manager.DB
                                 {
                                     foreach (TableMemberInfoSql member in table.Members)
                                     {
+                                        members.Add(member);
                                         if (member.HasSqlTransform)
                                         {
                                             valuesBeforeNormalization.Add(
                                                 (member, member.GetValue(item)));
                                         }
-                                        member.NormalizeSqlTransformValue(item);
                                     }
                                     table = table.Parent;
                                 }
-                                Records[item.Id] = item;
                                 int createdId = item.Id;
                                 U createdItem = item;
                                 getTransactionScope()?.OnRollback(() =>
@@ -629,6 +629,11 @@ namespace AventusSharp.Data.Manager.DB
                                     }
                                     return Task.FromResult(new VoidWithError());
                                 });
+                                foreach (TableMemberInfoSql member in members)
+                                {
+                                    member.NormalizeSqlTransformValue(item);
+                                }
+                                Records[item.Id] = item;
                             }
                         }
                         // Bulk insertion does not necessarily return the generated ids.

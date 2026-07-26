@@ -596,6 +596,15 @@ namespace AventusSharp.Data.Manager.DB
                                 {
                                     continue;
                                 }
+                                TableInfo? table = Storage.GetTableInfo(item.GetType());
+                                while (table != null)
+                                {
+                                    foreach (TableMemberInfoSql member in table.Members)
+                                    {
+                                        member.NormalizeSqlTransformValue(item);
+                                    }
+                                    table = table.Parent;
+                                }
                                 Records[item.Id] = item;
                                 int createdId = item.Id;
                                 U createdItem = item;

@@ -251,6 +251,16 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             SetSqlValue(obj, value);
         }
 
+        public void NormalizeSqlTransformValue(object obj)
+        {
+            if (SqlTransform == null)
+            {
+                return;
+            }
+            object? sqlValue = SqlTransform.ToSql(GetValue(obj), this);
+            SetValue(obj, SqlTransform.FromSql(sqlValue?.ToString(), this));
+        }
+
 
         #region link
         //public TableMemberInfoLink Link { get; protected set; } = TableMemberInfoLink.None;

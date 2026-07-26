@@ -588,6 +588,28 @@ namespace AventusSharp.Data.Manager.DB
                     result = await builder.RunBulkWithError(values, withId);
                     if (result.Success && NeedLocalCache)
                     {
+                        if (withId)
+                        {
+                            foreach (X item in values)
+                            {
+                                if (item.Id <= 0)
+                                {
+                                    continue;
+                                }
+                                Records[item.Id] = item;
+                                int createdId = item.Id;
+                                U createdItem = item;
+                                getTransactionScope()?.OnRollback(() =>
+                                {
+                                    if (Records.TryGetValue(createdId, out U? cached)
+                                        && ReferenceEquals(cached, createdItem))
+                                    {
+                                        Records.TryRemove(createdId, out _);
+                                    }
+                                    return Task.FromResult(new VoidWithError());
+                                });
+                            }
+                        }
                         // Bulk insertion does not necessarily return the generated ids.
                         // Invalidate the "complete" marker so the next cached read
                         // reloads the rows and registers them with their database ids.

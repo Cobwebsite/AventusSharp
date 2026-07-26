@@ -50,12 +50,22 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         {
             await TransactionCommit();
             result.Result = true;
-            _rollbackActions.Clear();
-            await _endTransaction();
         }
         catch (Exception e)
         {
             result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+        }
+        finally
+        {
+            _rollbackActions.Clear();
+            try
+            {
+                await _endTransaction();
+            }
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
         }
         return result;
     }
@@ -99,11 +109,22 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
             _rollbackActions.Clear();
             result.Errors.AddRange(rollbackActionsResult.Errors);
             result.Result = rollbackActionsResult.Success;
-            await _endTransaction();
         }
         catch (Exception e)
         {
             result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+        }
+        finally
+        {
+            _rollbackActions.Clear();
+            try
+            {
+                await _endTransaction();
+            }
+            catch (Exception e)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            }
         }
         return result;
     }

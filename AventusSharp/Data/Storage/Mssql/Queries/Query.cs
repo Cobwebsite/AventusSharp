@@ -17,6 +17,7 @@ public class Query
         List<string> fields = new();
         List<string> joins = new();
         string groupBy = "";
+        bool hasMultipleAggregation = false;
 
         void loadInfo(DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types)
         {
@@ -90,12 +91,9 @@ public class Query
                     {
                         alias = queryBuilder.CreateAlias(baseInfo.TableInfo, linkMultiple.TableLinked);
                     }
-                    fields.Add("STRING_AGG(" + alias + "." + linkMultiple.TableIntermediateKey2 + ") [" + baseInfo.Alias + "*" + member.Key.SqlName + "]");
+                    fields.Add("STRING_AGG(CAST(" + alias + "." + linkMultiple.TableIntermediateKey2 + " AS varchar(max)), ',') [" + baseInfo.Alias + "*" + member.Key.SqlName + "]");
+                    hasMultipleAggregation = true;
                     joins.Add("LEFT OUTER JOIN [" + linkMultiple.TableIntermediateName + "] " + alias + " ON " + alias + "." + linkMultiple.TableIntermediateKey1 + "=" + baseInfo.Alias + "." + baseInfo.TableInfo.Primary?.SqlName);
-                    if (groupBy == "")
-                    {
-                        groupBy = " GROUP BY " + mainInfo.Alias + "." + mainInfo.TableInfo.Primary?.SqlName;
-                    }
                 }
                 else
                 {
@@ -124,6 +122,20 @@ public class Query
         }
 
         loadInfo(mainInfo, new List<string>(), new List<Type>());
+
+        if (hasMultipleAggregation)
+        {
+            List<string> selectedFields = fields
+                .Where(field => !field.StartsWith("STRING_AGG(", StringComparison.Ordinal))
+                .Select(field =>
+                {
+                    int aliasPosition = field.LastIndexOf(" [", StringComparison.Ordinal);
+                    return aliasPosition > 0 ? field[..aliasPosition] : field;
+                })
+                .Distinct()
+                .ToList();
+            groupBy = " GROUP BY " + string.Join(", ", selectedFields);
+        }
 
         if (queryBuilder.Groups != null)
         {

@@ -8,18 +8,34 @@ namespace AventusSharp.Data.Storage.Mysql.Tools
     {
         public static string CheckConstraint(string constraint)
         {
-            if (constraint.Length > 64) // 128 mssql / 64 mysql
+            string prefix = "";
+            string suffix = "";
+            string name = constraint;
+            if (constraint.Length >= 2)
             {
-                // replace random by 64 char hash
+                if (constraint[0] == '[' && constraint[^1] == ']')
+                {
+                    prefix = "[";
+                    suffix = "]";
+                    name = constraint[1..^1];
+                }
+                else if ((constraint[0] == '`' && constraint[^1] == '`')
+                    || (constraint[0] == '"' && constraint[^1] == '"'))
+                {
+                    prefix = constraint[0].ToString();
+                    suffix = constraint[^1].ToString();
+                    name = constraint[1..^1];
+                }
+            }
+
+            if (name.Length > 64) // 128 mssql / 64 mysql
+            {
                 using (SHA256 sha256Hash = SHA256.Create())
                 {
-                    return GetHash(sha256Hash, constraint);
+                    name = GetHash(sha256Hash, name);
                 }
-
-                // string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                // return new string(Enumerable.Repeat(chars, 64).Select(s => s[random.Next(s.Length)]).ToArray());
             }
-            return constraint;
+            return prefix + name + suffix;
         }
 
         private static string GetHash(HashAlgorithm hashAlgorithm, string input)

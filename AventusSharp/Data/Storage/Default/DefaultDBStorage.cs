@@ -866,7 +866,7 @@ namespace AventusSharp.Data.Storage.Default
 
                     if (parameterValue.Value is IList enumerable)
                     {
-                        foreach (object o in enumerable)
+                        foreach (object? o in enumerable.Cast<object?>().Distinct())
                         {
                             Dictionary<string, object?> clone = current.ToDictionary(t => t.Key, t => t.Value);
                             clone.Add(parameterValue.Key, o);

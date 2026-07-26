@@ -117,6 +117,33 @@ Bonnes pratiques :
 - traiter explicitement les listes vides et les résultats absents ;
 - entourer les mutations liées d’une transaction.
 
+Avec `preferLocalCache`, un identifiant correspond à une instance canonique :
+les lectures par identifiant, filtres et `GetAll` doivent partager cette même
+référence. `BulkCreateWithError(values, withId: true)` enregistre donc les
+objets fournis comme instances canoniques. Leurs membres `SqlTransform` sont
+normalisés comme après une lecture SQL, tandis que leurs propriétés `[NotInDB]`
+sont conservées. Un rollback retire ces objets du cache et restaure les valeurs
+qui avaient été normalisées.
+
+Sans `withId`, un bulk ne connaît pas nécessairement les identifiants générés.
+Le cache complet est invalidé et la lecture suivante rematérialise les lignes
+avec leurs identifiants réels.
+
+Les appels successifs a `Where` sont combines avec `AND`. `OrWhere` combine
+le filtre deja construit avec `OR`. La composition est effectuee de gauche a
+droite :
+
+```csharp
+Todo.StartQuery()
+    .Where(todo => todo.Completed)
+    .OrWhere(todo => todo.Title.Contains("urgent"))
+    .Where(todo => todo.Id > 10);
+// (Completed OR Title.Contains("urgent")) AND Id > 10
+```
+
+Un scope est toujours combine avec le groupe utilisateur complet :
+`Scope AND (filtres utilisateur)`.
+
 ## 6. Routes HTTP
 
 Une route AventusSharp est une classe dérivée de `Router`, généralement décorée par `[Prefix]`. Une méthode porte un attribut HTTP (`[Get]`, `[Post]`, `[Put]`, `[Delete]`, `[Options]`) et `[Path]`.
@@ -190,4 +217,3 @@ Les valeurs sont validées, triées et dédupliquées. Ne pas injecter une expre
 6. Les effets de cascade et `AutoCRUD` sont voulus.
 7. Les tests utilisent SQLite ou des doubles, jamais une base réseau implicite.
 8. `dotnet test AventusSharpTest/AventusSharpTest.csproj` passe.
-

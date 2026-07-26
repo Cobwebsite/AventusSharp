@@ -1,0 +1,48 @@
+name: aventussharp-tests
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: aventus_tests
+      MYSQL_USER: aventus
+      MYSQL_PASSWORD: aventus_test_password
+      MYSQL_ROOT_PASSWORD: aventus_root_password
+    ports:
+      - "0:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uaventus", "-paventus_test_password"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+  postgresql:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: aventus_tests
+      POSTGRES_USER: aventus
+      POSTGRES_PASSWORD: aventus_test_password
+    ports:
+      - "0:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aventus -d aventus_tests"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Aventus_Test_123!"
+    ports:
+      - "0:1433"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Aventus_Test_123!'
+          -C -Q 'SELECT 1' || exit 1
+      interval: 3s
+      timeout: 10s
+      retries: 60

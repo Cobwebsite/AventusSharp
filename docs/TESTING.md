@@ -12,14 +12,34 @@ Avec couverture :
 dotnet test AventusSharpTest\AventusSharpTest.csproj --collect:"XPlat Code Coverage"
 ```
 
+Tests conteneurisés :
+
+```powershell
+dotnet test AventusSharpTest\AventusSharpTest.csproj --filter "Category=Docker"
+```
+
+La suite utilise [docker-compose.databases.yml](../AventusSharpTest/docker-compose.databases.yml)
+pour démarrer MySQL, PostgreSQL et SQL Server avec des ports hôte dynamiques. Les
+conteneurs et volumes sont supprimés à la fin de l’exécution.
+
+Sur une machine sans Docker, ces tests sont ignorés. En CI, rendre Docker obligatoire :
+
+```powershell
+$env:AVENTUS_REQUIRE_DOCKER = "1"
+dotnet test AventusSharpTest\AventusSharpTest.csproj --filter "Category=Docker"
+```
+
 ## Organisation
 
 Un seul projet contient toutes les catégories de tests :
 
 - `Tools` : résultats typés, erreurs, extensions et conversions ;
 - `Data` : types temporels et intégration SQLite ;
-- `Routes` : réponses HTTP et normalisation des attributs ;
-- `Scheduler` : construction et validation des expressions cron.
+- `Integration` : modèle vers schéma, CRUD, cache d’identité, transactions, builders et diagrammes ;
+- `Routes` : réponses HTTP, découverte, binding et exécution du middleware ;
+- `WebSocket` : découverte des endpoints et métadonnées de routage ;
+- `SSE` : enregistrement et ouverture du flux ;
+- `Scheduler` : cron, registres et exécution de jobs.
 
 Les tests unitaires ne dépendent ni du réseau, ni d’un compte, ni d’un serveur externe. Les tests de stockage utilisent un fichier SQLite local réinitialisé avant chaque test.
 
@@ -30,14 +50,15 @@ Les tests unitaires ne dépendent ni du réseau, ni d’un compte, ni d’un ser
 | Résultats/erreurs | Unitaire | Maintenir les contrats de court-circuit et conversion |
 | Extensions/outils | Unitaire partiel | Ajouter CSV, configuration et conversion JSON |
 | Date/Datetime | Unitaire | Ajouter cas de fuseau et sérialisation |
-| Scheduler/Cron | Unitaire | Ajouter calendrier, unités et exécution de jobs |
-| SQLite bas niveau | Intégration | Ajouter transactions, paramètres et concurrence |
-| Data manager/CRUD | À compléter | Fixtures SQLite par modèle, relations 1-N/N-M, héritage |
-| Builders/lambdas | À compléter | Matrice d’expressions traduites pour chaque moteur |
+| Scheduler/Cron | Unitaire et exécution | Ajouter toutes les unités calendaires et la non-réentrance concurrente |
+| SQLite bas niveau | Intégration | Ajouter paramètres volumineux et concurrence |
+| Data manager/CRUD | Intégration simple | Ajouter relations 1-N/N-M, héritage, scopes et validations |
+| Cache local | Intégration | Ajouter relations et mises à jour concurrentes |
+| Builders/lambdas | Matrice SQLite partielle | Répliquer la génération SQL et les cas limites sur chaque moteur |
 | Migrations | À compléter | Création, renommage, ajout/suppression de colonnes |
-| HTTP | Unitaire partiel | Hôte ASP.NET en mémoire, binding JSON/form-data, middleware |
-| WebSocket | À compléter | Connexion locale, routage, événements et erreurs |
-| SSE | À compléter | Abonnement, topics, broadcast et déconnexion |
+| HTTP | Middleware en mémoire | Ajouter multipart, injection, middlewares et erreurs |
+| WebSocket | Découverte/routage | Ajouter une vraie socket locale, événements et déconnexion |
+| SSE | Ouverture de flux | Ajouter abonnement, topics, broadcast et déconnexion |
 | Vues/ressources | À compléter | Scriban, cache, chemins et types MIME |
 | CSV import/export | À compléter | Culture, mapping, erreurs et round-trip |
 | Images/fichiers | À compléter | Validation, redimensionnement et nettoyage |
@@ -61,5 +82,8 @@ Les tests unitaires ne dépendent ni du réseau, ni d’un compte, ni d’un ser
 - L’ancienne suite exigeait deux bases MySQL locales et contenait beaucoup de code commenté.
 - La solution référençait un projet `Test` inexistant.
 - La fin d’une transaction disposait la transaction avant de mémoriser sa connexion, empêchant sa libération correcte.
+- Le builder `DELETE` SQLite utilisait une syntaxe MySQL (`DELETE alias.* FROM`).
+- Le builder `UPDATE` SQLite utilisait un alias et des paramètres contenant des points, invalides pour SQLite.
+- Le routeur HTTP mettait le chemin complet en minuscules avant d’extraire les paramètres.
+- SSE exigeait implicitement une session ASP.NET même lorsque l’application n’utilisait pas `UseSession`.
 - Le package stable dépend actuellement d’une préversion de `Microsoft.Data.Sqlite`, ce qui produit `NU5104`.
-

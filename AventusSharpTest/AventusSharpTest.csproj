@@ -21,4 +21,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\AventusSharp\AventusSharp.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="docker-compose.databases.yml"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

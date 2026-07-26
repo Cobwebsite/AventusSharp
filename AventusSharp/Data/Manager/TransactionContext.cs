@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using AventusSharp.Tools;
 
@@ -12,6 +13,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
 
 
     private bool isEnded = false;
+    private int isDisposed = 0;
 
 
     public int count;
@@ -131,6 +133,10 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref isDisposed, 1) != 0)
+        {
+            return;
+        }
         if (!isEnded)
         {
             isEnded = true;

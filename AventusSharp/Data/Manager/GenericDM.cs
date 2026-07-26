@@ -2127,7 +2127,19 @@ namespace AventusSharp.Data.Manager
                 return resultError;
             }
             setTransactionScope(transactionResult.Result);
-            ResultWithError<Y> resultTemp = await action();
+            ResultWithError<Y> resultTemp;
+            try
+            {
+                resultTemp = await action();
+            }
+            catch (Exception exception)
+            {
+                resultTemp = new ResultWithError<Y>()
+                {
+                    Result = defaultValue
+                };
+                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+            }
             if (resultTemp.Success)
             {
                 ResultWithError<bool> commitResult = await transactionResult.Result.Commit();
@@ -2172,7 +2184,16 @@ namespace AventusSharp.Data.Manager
                 return resultError;
             }
             setTransactionScope(transactionResult.Result);
-            VoidWithError resultTemp = await action();
+            VoidWithError resultTemp;
+            try
+            {
+                resultTemp = await action();
+            }
+            catch (Exception exception)
+            {
+                resultTemp = new VoidWithError();
+                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+            }
             if (resultTemp.Success)
             {
                 ResultWithError<bool> commitResult = await transactionResult.Result.Commit();

@@ -52,7 +52,7 @@ namespace AventusSharp.Scheduler
         /// </summary>
         public static IJobFactory JobFactory
         {
-            private get => _jobFactory = _jobFactory ?? new JobFactory();
+            get => _jobFactory = _jobFactory ?? new JobFactory();
             set => _jobFactory = value;
         }
 
@@ -61,6 +61,11 @@ namespace AventusSharp.Scheduler
             return () =>
             {
                 IJob job = JobFactory.GetJobInstance<T>();
+                if (job == null)
+                {
+                    throw new InvalidOperationException("The configured IJobFactory returned null.");
+                }
+
                 try
                 {
                     job.Execute();

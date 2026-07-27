@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,7 +26,7 @@ namespace AventusSharp.SSE
     [NoExport]
     public abstract class SSEEndPoint : ISSEEndPoint
     {
-        internal readonly List<SSEConnection> connections = new();
+        internal readonly ConcurrentDictionary<SSEConnection, byte> connections = new();
         private readonly List<Func<SSEConnection, string, Task<bool>>> middlewares = new();
         internal JsonSerializerSettings settings;
         public string Path { get; }
@@ -85,7 +86,7 @@ namespace AventusSharp.SSE
             {
                 SSEConnection connection = new(context, this);
                 await connection.Init();
-                connections.Add(connection);
+                TrackConnection(connection);
                 try
                 {
                     RouterMiddleware.ContextScope = context;
@@ -99,16 +100,9 @@ namespace AventusSharp.SSE
                 finally
                 {
                     RouterMiddleware.ContextScope = null;
-                    if (connections.Contains(connection))
+                    if (connections.TryRemove(connection, out _))
                     {
-                        try
-                        {
-                            await OnConnectionClose(connection);
-                        }
-                        finally
-                        {
-                            connections.Remove(connection);
-                        }
+                        await OnConnectionClose(connection);
                     }
                 }
             }
@@ -130,11 +124,10 @@ namespace AventusSharp.SSE
         {
             try
             {
-                if (connections.Contains(connection))
+                if (connections.TryRemove(connection, out _))
                 {
                     await connection.Close();
                     await OnConnectionClose(connection);
-                    connections.Remove(connection);
                 }
             }
             catch
@@ -149,7 +142,7 @@ namespace AventusSharp.SSE
 
         public async Task Stop()
         {
-            List<SSEConnection> conns = connections.ToList();
+            List<SSEConnection> conns = GetConnectionsSnapshot();
             foreach (SSEConnection connection in conns)
             {
                 await connection.Close();
@@ -197,7 +190,7 @@ namespace AventusSharp.SSE
 
                 if (connections == null)
                 {
-                    connections = this.connections;
+                    connections = GetConnectionsSnapshot();
                 }
 
                 List<SSEConnection> connectionsCloned = connections.ToList();
@@ -217,6 +210,16 @@ namespace AventusSharp.SSE
             {
                 AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
             }
+        }
+
+        internal List<SSEConnection> GetConnectionsSnapshot()
+        {
+            return connections.Keys.ToList();
+        }
+
+        internal bool TrackConnection(SSEConnection connection)
+        {
+            return connections.TryAdd(connection, 0);
         }
 
 

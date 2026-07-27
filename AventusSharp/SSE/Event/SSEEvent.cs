@@ -31,7 +31,7 @@ namespace AventusSharp.SSE.Event
 
         protected List<SSEConnection> FilterConnection(SSEEndPoint endPoint)
         {
-            return endPoint.connections;
+            return endPoint.GetConnectionsSnapshot();
         }
 
 

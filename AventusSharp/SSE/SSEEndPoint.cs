@@ -132,6 +132,7 @@ namespace AventusSharp.SSE
             {
                 if (connections.Contains(connection))
                 {
+                    await connection.Close();
                     await OnConnectionClose(connection);
                     connections.Remove(connection);
                 }

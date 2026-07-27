@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -556,12 +555,22 @@ namespace AventusSharp.Routes
             }
             catch (Exception exception)
             {
-                if (exception is AventusException e)
-                {
-                    int code = Enum.IsDefined(typeof(HttpStatusCode), context.Response.StatusCode) ? context.Response.StatusCode : 500;
-                    VoidWithError error = new VoidWithError() { Errors = [e.Error] };
-                    await new Json(error, code).send(context);
-                }
+                Exception routeException =
+                    exception is TargetInvocationException invocationException &&
+                    invocationException.InnerException is Exception innerException
+                        ? innerException
+                        : exception;
+                GenericError routeError =
+                    routeException is AventusException aventusException
+                        ? aventusException.Error
+                        : new RouteError(
+                            RouteErrorCode.UnknowError,
+                            routeException);
+                int code = context.Response.StatusCode >= 400
+                    ? context.Response.StatusCode
+                    : 500;
+                VoidWithError error = new() { Errors = [routeError] };
+                await new Json(error, code).send(context);
             }
             ContextScope = null;
         }

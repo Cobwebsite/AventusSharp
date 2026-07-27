@@ -3,6 +3,7 @@ using AventusSharp.Tools;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Data;
@@ -36,7 +37,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         }
 
         public MemberInfo? memberInfo { get; protected set; }
-        protected Dictionary<Type, MemberInfo> memberInfoByType = new();
+        protected ConcurrentDictionary<Type, MemberInfo> memberInfoByType = new();
         public TableInfo TableInfo { get; private set; }
         public IGenericDM? DM { get => TableInfo.DM; }
 
@@ -386,16 +387,16 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 if (member?.ReflectedType?.IsGenericType == true)
                 {
                     Type typeToUse = obj.GetType();
-                    if (!memberInfoByType.ContainsKey(typeToUse))
+                    if (!memberInfoByType.TryGetValue(typeToUse, out MemberInfo? realMember))
                     {
                         MemberInfo[] members = typeToUse.GetMember(member.Name);
                         if (members.Length == 0)
                         {
                             return null;
                         }
-                        memberInfoByType.Add(typeToUse, members[0]);
+                        realMember = memberInfoByType.GetOrAdd(typeToUse, members[0]);
                     }
-                    member = memberInfoByType[typeToUse];
+                    member = realMember;
                 }
 
                 if (member == null || member.ReflectedType == null || !member.ReflectedType.IsInstanceOfType(obj))

@@ -162,6 +162,37 @@ namespace AventusSharp.WebSocket
         public async Task Route(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid = "")
         {
             RouterMiddleware.ContextScope = connection.GetContext();
+            try
+            {
+                await RouteInternal(connection, path, body, uid);
+            }
+            catch (Exception exception)
+            {
+                Exception routeException =
+                    exception is System.Reflection.TargetInvocationException
+                        invocationException &&
+                    invocationException.InnerException is Exception innerException
+                        ? innerException
+                        : exception;
+                WsError error =
+                    routeException is AventusException aventusException &&
+                    aventusException.Error is WsError wsError
+                        ? wsError
+                        : new WsError(
+                            WsErrorCode.UnknowError,
+                            routeException);
+                ResultWithWsError<object> result = new();
+                result.Errors.Add(error);
+                await connection.Send(path, result, uid);
+            }
+            finally
+            {
+                RouterMiddleware.ContextScope = null;
+            }
+        }
+
+        private async Task RouteInternal(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid)
+        {
             foreach (Func<WebSocketConnection, string, WebSocketRouterBody, string, Task<bool>> middleware in middlewares)
             {
                 if (!await middleware(connection, path, body, uid))

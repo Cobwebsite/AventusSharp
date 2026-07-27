@@ -420,7 +420,7 @@ namespace AventusSharp.Routes
                                                     if (!resultTemp.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
-                                                        await new Json(resultTemp).send(context, routerInfo.router);
+                                                        await new Json(resultTemp, 422).send(context, routerInfo.router);
                                                         return null;
                                                     }
                                                 }
@@ -438,7 +438,7 @@ namespace AventusSharp.Routes
                                                     if (!bodyPart.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
-                                                        await new Json(bodyPart).send(context, routerInfo.router);
+                                                        await new Json(bodyPart, 422).send(context, routerInfo.router);
                                                         return null;
                                                     }
                                                     value = bodyPart.Result;
@@ -527,7 +527,7 @@ namespace AventusSharp.Routes
                     if (o is Task task)
                     {
                         await (dynamic)task;
-                        if (!o.GetType().IsGenericType)
+                        if (!routerInfo.action.ReturnType.IsGenericType)
                         {
                             context.Response.StatusCode = 204;
                             ContextScope = null;

@@ -63,7 +63,7 @@ namespace AventusSharp.Scheduler
                 throw new ArgumentNullException("job");
             }
 
-            return Schedule(() => JobManager.GetJobAction(job), null);
+            return Register(JobManager.GetJobAction(job), job.GetType().Name);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace AventusSharp.Scheduler
         /// <typeparam name="T">Job to schedule.</typeparam>
         public Schedule Schedule<T>() where T : IJob
         {
-            return Schedule(() => JobManager.GetJobAction<T>(), typeof(T).Name);
+            return Register(JobManager.GetJobAction<T>(), typeof(T).Name);
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace AventusSharp.Scheduler
                 throw new ArgumentNullException("job");
             }
 
-            return Schedule(() => JobManager.GetJobAction(job), null);
+            return Register(JobManager.GetJobAction(job), null);
         }
 
         /// <summary>
@@ -96,7 +96,26 @@ namespace AventusSharp.Scheduler
         /// <param name="name">Name to identify the job</param>
         public Schedule Schedule(Expression<Action> action, string? name)
         {
-            Schedule schedule = new Schedule(action.Compile());
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                MethodCallExpression methodCallExp = (MethodCallExpression)action.Body;
+                name = methodCallExp.Method.Name;
+            }
+
+            return Register(action.Compile(), name);
+        }
+
+        private Schedule Register(Action action, string? name)
+        {
+            Schedule schedule = new Schedule(action)
+            {
+                Name = name,
+            };
 
             if (_allJobsConfiguredAsNonReentrant)
             {
@@ -106,16 +125,6 @@ namespace AventusSharp.Scheduler
             lock (((ICollection)Schedules).SyncRoot)
             {
                 Schedules.Add(schedule);
-            }
-
-            if (string.IsNullOrEmpty(name))
-            {
-                MethodCallExpression methodCallExp = (MethodCallExpression)action.Body;
-                schedule.Name = methodCallExp.Method.Name;
-            }
-            else
-            {
-                schedule.Name = name;
             }
 
             return schedule;

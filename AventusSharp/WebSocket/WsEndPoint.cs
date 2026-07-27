@@ -218,7 +218,7 @@ namespace AventusSharp.WebSocket
                                             ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
                                             if (!bodyPart.Success)
                                             {
-                                                await connection.Send(path, bodyPart);
+                                                await connection.Send(path, bodyPart, uid);
                                                 RouterMiddleware.ContextScope = null;
                                                 return;
                                             }

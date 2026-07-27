@@ -44,7 +44,7 @@ namespace AventusSharp.Tools
         public virtual string GetMessageException(bool showDetails)
         {
             string exceptionMsg = "Error " + Code + ": " + Message;
-            if (Details.Count > 0)
+            if (showDetails && Details.Count > 0)
             {
                 exceptionMsg += "\n" + string.Join("\n", Details.Select(d => d.ToString()));
             }

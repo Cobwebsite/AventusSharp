@@ -54,18 +54,17 @@ namespace AventusSharp.Tools
 
         public static string GetReadableName(Type type)
         {
-            string generic = "";
-            if (type.IsGenericType)
+            string name = type.Name.Split('`')[0];
+            if (!type.IsGenericType)
             {
-                generic = "<";
-                Type[] arguments = type.GetGenericArguments();
-                foreach (Type argument in arguments)
-                {
-                    generic += GetReadableName(argument);
-                }
-                generic += ">";
+                return name;
             }
-            return type.Name.Split('`')[0] + generic;
+
+            string arguments = string.Join(
+                ",",
+                type.GetGenericArguments().Select(GetReadableName)
+            );
+            return name + "<" + arguments + ">";
         }
 
         public static object CreateNewObj(Type type)

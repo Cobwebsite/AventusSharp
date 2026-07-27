@@ -92,7 +92,7 @@ namespace AventusSharp.WebSocket
                             JObject o = JObject.Parse(msg);
                             if (o["channel"]?.ToString() == "ping")
                             {
-                                _ = Send("pong", (object)new JObject());
+                                _ = Send("pong");
                             }
                             else
                             {

@@ -191,7 +191,7 @@ namespace AventusSharp.Routes.Request
                         Action<object?, object?>? setTemp = null;
                         Type? typeFieldGet = null;
 
-                        PropertyInfo? propertyInfoGet = current?.GetType().GetProperty(s);
+                        PropertyInfo? propertyInfoGet = current?.GetType().GetProperty(s, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                         if (propertyInfoGet != null)
                         {
                             fct = propertyInfoGet.GetValue;
@@ -200,7 +200,7 @@ namespace AventusSharp.Routes.Request
                         }
                         else
                         {
-                            FieldInfo? fieldInfoGet = current?.GetType().GetField(s);
+                            FieldInfo? fieldInfoGet = current?.GetType().GetField(s, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                             if (fieldInfoGet != null)
                             {
                                 fct = fieldInfoGet.GetValue;
@@ -230,7 +230,7 @@ namespace AventusSharp.Routes.Request
 
                     Action<object?, object?>? set = null;
                     string last = splitted[splitted.Length - 1];
-                    PropertyInfo? propertyInfoSet = current?.GetType().GetProperty(last);
+                    PropertyInfo? propertyInfoSet = current?.GetType().GetProperty(last, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                     if (propertyInfoSet != null)
                     {
                         if (propertyInfoSet.PropertyType == typeof(HttpFile))
@@ -252,7 +252,7 @@ namespace AventusSharp.Routes.Request
                     }
                     else
                     {
-                        FieldInfo? fieldInfoSet = current?.GetType().GetField(last);
+                        FieldInfo? fieldInfoSet = current?.GetType().GetField(last, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                         if (fieldInfoSet != null)
                         {
                             if (fieldInfoSet.FieldType.GetInterfaces().Contains(typeof(HttpFile)))

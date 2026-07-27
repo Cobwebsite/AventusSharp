@@ -238,10 +238,10 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             foreach (Dictionary<string, object?> parameters in dataParameters)
                             {
-                                foreach (KeyValuePair<string, object?> parameter in parameters)
-                                {
-                                    command.Parameters[parameter.Key].Value = parameter.Value ?? DBNull.Value;
-                                }
+                                VoidWithError parameterResult = ApplyCommandParameters(command, parameters);
+                                result.Errors.AddRange(parameterResult.Errors);
+                                if (!parameterResult.Success)
+                                    return result;
 
                                 printCommand(command.CommandText, parameters);
                                 await command.ExecuteNonQueryAsync();
@@ -313,10 +313,10 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             foreach (Dictionary<string, object?> parameters in dataParameters)
                             {
-                                foreach (KeyValuePair<string, object?> parameter in parameters)
-                                {
-                                    command.Parameters[parameter.Key].Value = parameter.Value ?? DBNull.Value;
-                                }
+                                VoidWithError parameterResult = ApplyCommandParameters(command, parameters);
+                                result.Errors.AddRange(parameterResult.Errors);
+                                if (!parameterResult.Success)
+                                    return result;
 
                                 printCommand(command.CommandText, parameters);
                                 await command.ExecuteNonQueryAsync();
@@ -418,10 +418,10 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         foreach (Dictionary<string, object?> parameters in dataParameters)
                         {
-                            foreach (KeyValuePair<string, object?> parameter in parameters)
-                            {
-                                command.Parameters[parameter.Key].Value = parameter.Value ?? DBNull.Value;
-                            }
+                            VoidWithError parameterResult = ApplyCommandParameters(command, parameters);
+                            result.Errors.AddRange(parameterResult.Errors);
+                            if (!parameterResult.Success)
+                                return result;
 
                             printCommand(command.CommandText, parameters);
 
@@ -496,6 +496,33 @@ namespace AventusSharp.Data.Storage.Default
                 result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message + "\nSQL: " + command.CommandText, callerPath, callerNo));
             }
 
+            return result;
+        }
+
+        private static VoidWithError ApplyCommandParameters(DbCommand command, Dictionary<string, object?> values)
+        {
+            VoidWithError result = new();
+            foreach (DbParameter parameter in command.Parameters)
+            {
+                if (!values.ContainsKey(parameter.ParameterName))
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, $"The parameter {parameter.ParameterName} is missing"));
+                }
+            }
+            foreach (string name in values.Keys)
+            {
+                if (!command.Parameters.Contains(name))
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, $"The parameter {name} is not defined in the command"));
+                }
+            }
+            if (!result.Success)
+                return result;
+
+            foreach (KeyValuePair<string, object?> value in values)
+            {
+                command.Parameters[value.Key].Value = value.Value ?? DBNull.Value;
+            }
             return result;
         }
 
@@ -892,7 +919,7 @@ namespace AventusSharp.Data.Storage.Default
         protected async Task<ResultWithError<List<Dictionary<string, string?>>>> QueryGeneric(StorableAction action, string sql, Dictionary<ParamsInfo, QueryParameterType> parameters, IStorable? item = null)
         {
             ResultWithError<List<Dictionary<string, string?>>> result = new ResultWithError<List<Dictionary<string, string?>>>();
-            await result.RunAsync(() => 
+            await result.RunAsync(() =>
                 PrepareGeneric(action, sql, parameters, item, async (cmd, parametersFinal) =>
                 {
                     result = await Query(cmd, parametersFinal);

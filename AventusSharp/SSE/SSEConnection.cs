@@ -79,7 +79,7 @@ namespace AventusSharp.SSE
         /// <param name="eventName">Event name</param>
         /// <param name="data">string to send</param>
         /// <returns></returns>
-        private async Task Send(string eventName, string data)
+        internal async Task Send(string eventName, string data)
         {
             try
             {

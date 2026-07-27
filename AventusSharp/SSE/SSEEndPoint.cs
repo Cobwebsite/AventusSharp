@@ -91,13 +91,26 @@ namespace AventusSharp.SSE
                     RouterMiddleware.ContextScope = context;
                     await OnConnectionOpen(connection);
                     await connection.WaitForShutdown;
-                    RouterMiddleware.ContextScope = null;
                 }
                 catch (Exception ex)
                 {
                     AventusLogger.Instance.LogError(ex, "Connection with the socket from " + context.Request.Host + " crashed");
                 }
-                connections.Remove(connection);
+                finally
+                {
+                    RouterMiddleware.ContextScope = null;
+                    if (connections.Contains(connection))
+                    {
+                        try
+                        {
+                            await OnConnectionClose(connection);
+                        }
+                        finally
+                        {
+                            connections.Remove(connection);
+                        }
+                    }
+                }
             }
             else
             {

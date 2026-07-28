@@ -129,7 +129,7 @@ namespace AventusSharp.SSE
         /// Remove connection of SSE 
         /// </summary>
         /// <param name="connection"></param>
-        public async void RemoveInstance(SSEConnection connection)
+        public async Task RemoveInstance(SSEConnection connection)
         {
             try
             {

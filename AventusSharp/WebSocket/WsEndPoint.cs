@@ -114,7 +114,7 @@ namespace AventusSharp.WebSocket
         /// Remove connection of WS 
         /// </summary>
         /// <param name="connection"></param>
-        public async void RemoveInstance(WebSocketConnection connection)
+        public async Task RemoveInstance(WebSocketConnection connection)
         {
             try
             {

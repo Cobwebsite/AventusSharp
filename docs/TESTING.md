@@ -76,14 +76,3 @@ Les tests unitaires ne dépendent ni du réseau, ni d’un compte, ni d’un ser
 - Les tests propres à un moteur externe doivent être marqués et ignorés par défaut quand sa variable de connexion est absente.
 - Ne jamais utiliser une base de développement personnelle.
 
-## Défauts détectés pendant la refonte
-
-- Les anciens projets de test ciblaient .NET 8 alors que la bibliothèque cible .NET 10.
-- L’ancienne suite exigeait deux bases MySQL locales et contenait beaucoup de code commenté.
-- La solution référençait un projet `Test` inexistant.
-- La fin d’une transaction disposait la transaction avant de mémoriser sa connexion, empêchant sa libération correcte.
-- Le builder `DELETE` SQLite utilisait une syntaxe MySQL (`DELETE alias.* FROM`).
-- Le builder `UPDATE` SQLite utilisait un alias et des paramètres contenant des points, invalides pour SQLite.
-- Le routeur HTTP mettait le chemin complet en minuscules avant d’extraire les paramètres.
-- SSE exigeait implicitement une session ASP.NET même lorsque l’application n’utilisait pas `UseSession`.
-- Le package stable dépend actuellement d’une préversion de `Microsoft.Data.Sqlite`, ce qui produit `NU5104`.

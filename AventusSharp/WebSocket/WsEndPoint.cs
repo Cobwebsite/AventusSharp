@@ -404,7 +404,7 @@ namespace AventusSharp.WebSocket
                     }
                     if (conn.GetWebSocket().State != System.Net.WebSockets.WebSocketState.Open)
                     {
-                        RemoveInstance(conn);
+                        await RemoveInstance(conn);
                     }
                     else
                     {

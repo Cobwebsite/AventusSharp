@@ -94,7 +94,7 @@ namespace AventusSharp.SSE
             catch (Exception e)
             {
                 AventusLogger.Instance.LogError(exception: e, message: "Can't send the event "+eventName+" though the sse connection");
-                instance.RemoveInstance(this);
+                await instance.RemoveInstance(this);
             }
         }
         /// <summary>

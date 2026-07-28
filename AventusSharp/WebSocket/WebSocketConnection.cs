@@ -138,7 +138,7 @@ namespace AventusSharp.WebSocket
                     websocketHasError = true;
                 }
             }
-            instance.RemoveInstance(this);
+            await instance.RemoveInstance(this);
         }
 
         public async Task Close()
@@ -203,13 +203,13 @@ namespace AventusSharp.WebSocket
                 }
                 else
                 {
-                    this.instance.RemoveInstance(this);
+                    await instance.RemoveInstance(this);
                 }
             }
             catch (Exception e)
             {
                 AventusLogger.Instance.LogError(e, "Can't send data though the websocket");
-                this.instance.RemoveInstance(this);
+                await instance.RemoveInstance(this);
             }
         }
         /// <summary>

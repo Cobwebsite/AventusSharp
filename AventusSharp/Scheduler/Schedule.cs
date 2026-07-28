@@ -147,6 +147,12 @@ namespace AventusSharp.Scheduler
         /// <param name="interval">Interval to wait.</param>
         public TimeUnit ToRunEvery(int interval)
         {
+            if (interval <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(interval),
+                    "A recurring interval must be greater than zero.");
+            }
             return new TimeUnit(this, interval);
         }
 
@@ -156,6 +162,12 @@ namespace AventusSharp.Scheduler
         /// <param name="interval">Interval to wait.</param>
         public TimeUnit ToRunOnceIn(int interval)
         {
+            if (interval <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(interval),
+                    "A delayed execution interval must be greater than zero.");
+            }
             PendingRunOnce = true;
             return new TimeUnit(this, interval);
         }

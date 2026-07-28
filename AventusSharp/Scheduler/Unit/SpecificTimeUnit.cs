@@ -21,6 +21,12 @@ namespace AventusSharp.Scheduler.Unit
         /// <param name="interval">Interval to wait.</param>
         public TimeUnit AndEvery(int interval)
         {
+            if (interval <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(interval),
+                    "A recurring interval must be greater than zero.");
+            }
             Schedule parent = Schedule.Parent ?? Schedule;
 
             Schedule child =

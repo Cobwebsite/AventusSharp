@@ -10,6 +10,12 @@ namespace AventusSharp.Scheduler.Extension
     {
         private static DelayTimeUnit DelayFor(Schedule schedule, int interval)
         {
+            if (interval < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(interval),
+                    "A delay cannot be negative.");
+            }
             return new DelayTimeUnit(schedule, interval);
         }
 

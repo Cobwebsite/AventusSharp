@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using AventusSharp.Scheduler.Event;
 using AventusSharp.Scheduler.Util;
+using AventusSharp.Tools;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Scheduler
 {
@@ -525,7 +527,8 @@ namespace AventusSharp.Scheduler
             {
                 DateTime start = Now;
 
-                JobStart?.Invoke(
+                InvokeHandlers(
+                    JobStart,
                     new JobStartInfo
                     {
                         Name = schedule.Name,
@@ -549,7 +552,8 @@ namespace AventusSharp.Scheduler
                             e = aggregate.InnerExceptions.Single();
                         }
 
-                        JobException(
+                        InvokeHandlers(
+                           JobException,
                            new JobExceptionInfo
                            {
                                Name = schedule.Name,
@@ -566,7 +570,8 @@ namespace AventusSharp.Scheduler
                             _running.Remove(tuple);
                     }
 
-                    JobEnd?.Invoke(
+                    InvokeHandlers(
+                        JobEnd,
                         new JobEndInfo
                         {
                             Name = schedule.Name,
@@ -586,6 +591,30 @@ namespace AventusSharp.Scheduler
             }
 
             task.Start();
+        }
+
+        private static void InvokeHandlers<T>(
+            Action<T>? handlers,
+            T eventInfo)
+        {
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (Action<T> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(eventInfo);
+                }
+                catch (Exception exception)
+                {
+                    AventusLogger.Instance.LogError(
+                        exception,
+                        $"A scheduler {typeof(T).Name} handler failed");
+                }
+            }
         }
 
         #endregion

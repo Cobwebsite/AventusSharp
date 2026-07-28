@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Scriban;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ namespace AventusSharp.Routes.Response
 {
     public class ViewDynamic : IResponse
     {
-        private static Dictionary<string, Template> parsed = new Dictionary<string, Template>();
+        private static readonly ConcurrentDictionary<string, Template> parsed = new();
 
         private string viewName;
         private object model;
@@ -29,12 +29,10 @@ namespace AventusSharp.Routes.Response
             }
             if (File.Exists(path))
             {
-                if (!parsed.ContainsKey(viewName))
-                {
-                    parsed[viewName] = Template.Parse(File.ReadAllText(path));
-                }
-
-                string html = parsed[viewName].Render(model);
+                Template template = parsed.GetOrAdd(
+                    Path.GetFullPath(path),
+                    static templatePath => Template.Parse(File.ReadAllText(templatePath)));
+                string html = template.Render(model);
                 byte[] bytes = Encoding.UTF8.GetBytes(html);
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/html";

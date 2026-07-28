@@ -88,11 +88,15 @@ namespace AventusSharp.Data.Manager.DB
         public string Alias { get; set; }
         public TableMemberInfoSql TableMemberInfo { get; set; }
         public bool negate { get; set; } = false;
+        public object? TrueValue { get; set; }
+        public object? FalseValue { get; set; }
 
         public WhereGroupSingleBool(string alias, TableMemberInfoSql tableMemberInfo)
         {
             Alias = alias;
             TableMemberInfo = tableMemberInfo;
+            TrueValue = tableMemberInfo.TransformQueryValue(true);
+            FalseValue = tableMemberInfo.TransformQueryValue(false);
         }
     }
     public class WhereGroupConstantNull : IWhereGroup
@@ -141,14 +145,14 @@ namespace AventusSharp.Data.Manager.DB
     public class WhereGroupField : IWhereGroup
     {
         public string Alias { get; set; }
-        // private TableMemberInfoSql TableMemberInfo { get; set; }
 
         public string SqlName { get; set; }
+        public TableMemberInfoSql TableMemberInfo { get; set; }
 
         public WhereGroupField(string alias, TableMemberInfoSql tableMemberInfo)
         {
             Alias = alias;
-            // TableMemberInfo = tableMemberInfo;
+            TableMemberInfo = tableMemberInfo;
             SqlName = tableMemberInfo.SqlName;
 
             if (tableMemberInfo is ITableMemberInfoSqlLinkMultiple multiple && multiple.TableIntermediateKey2 != null)
@@ -175,6 +179,16 @@ namespace AventusSharp.Data.Manager.DB
         public bool IsSet { get; private set; }
 
         public WhereGroupFctEnum FctMethodCall { get; set; }
+        public TableMemberInfoSql? QueryTransformMember { get; private set; }
+
+        public void SetQueryTransform(TableMemberInfoSql member)
+        {
+            QueryTransformMember = member;
+            if (member.QueryDbType is DbType dbType)
+            {
+                DbType = dbType;
+            }
+        }
 
         public bool IsNameSimilar(string name)
         {
@@ -240,6 +254,21 @@ namespace AventusSharp.Data.Manager.DB
                 else if (DbType == DbType.String && valueToSet?.GetType().IsEnum == true)
                 {
                     valueToSet = valueToSet.ToString();
+                }
+
+                if (QueryTransformMember != null)
+                {
+                    if (valueToSet is IList values)
+                    {
+                        valueToSet = values.Cast<object?>()
+                            .Select(QueryTransformMember.TransformQueryValue)
+                            .ToList();
+                    }
+                    else
+                    {
+                        valueToSet =
+                            QueryTransformMember.TransformQueryValue(valueToSet);
+                    }
                 }
 
                 Value = valueToSet;

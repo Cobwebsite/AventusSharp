@@ -215,6 +215,14 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
         protected ISqlTransform? SqlTransform { get; set; }
         public bool HasSqlTransform => SqlTransform != null;
+        public object? TransformQueryValue(object? value)
+        {
+            return SqlTransform?.ToSql(value, this) ?? value;
+        }
+
+        public DbType? QueryDbType =>
+            OverrideDBType ?? GetDbType(MemberType, null);
+
         protected DbType? OverrideDBType { get; set; }
         public TableMemberInfoSql(TableInfo tableInfo) : base(tableInfo)
         {

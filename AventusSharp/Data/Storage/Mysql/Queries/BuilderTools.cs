@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Storage.Default;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -132,10 +133,10 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             }
             else if (rootWhereGroup is WhereGroupSingleBool whereSingleBool)
             {
-                bool nativeBoolean = storage is Postgresql.PostgreSqlStorage;
-                string value = nativeBoolean
-                    ? (rootWhereGroup.negate ? "FALSE" : "TRUE")
-                    : (rootWhereGroup.negate ? "0" : "1");
+                object? transformedValue = rootWhereGroup.negate
+                    ? whereSingleBool.FalseValue
+                    : whereSingleBool.TrueValue;
+                string value = FormatConstant(transformedValue, storage);
                 whereTxt += whereSingleBool.Alias + "." + whereSingleBool.TableMemberInfo.SqlName + " = " + value;
                 applyNegate = false;
             }
@@ -146,6 +147,34 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 whereTxt = "!" + whereTxt;
             }
             return whereTxt;
+        }
+
+        private static string FormatConstant(object? value, IDBStorage storage)
+        {
+            if (value == null)
+            {
+                return "NULL";
+            }
+            if (value is bool boolean)
+            {
+                bool nativeBoolean = storage is Postgresql.PostgreSqlStorage;
+                return nativeBoolean
+                    ? (boolean ? "TRUE" : "FALSE")
+                    : (boolean ? "1" : "0");
+            }
+            if (value is string or char)
+            {
+                return "'" + value.ToString()!.Replace("'", "''") + "'";
+            }
+            if (value is DateTime dateTime)
+            {
+                string format =
+                    storage.DateTimeFormat ?? "yyyy-MM-dd HH:mm:ss.fffffff";
+                return "'" + dateTime.ToString(
+                    format,
+                    CultureInfo.InvariantCulture) + "'";
+            }
+            return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "NULL";
         }
 
         public static string GetFctName(WhereGroupFctEnum fctEnum)

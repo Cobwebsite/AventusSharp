@@ -505,10 +505,46 @@ namespace AventusSharp.Data.Manager.DB
             }
             queryGroups.Add(newGroup);
 
+            TableMemberInfoSql? rightMember =
+                GetDirectQueryMember(b.Right);
+            if (rightMember?.HasSqlTransform == true
+                && IsReversibleComparison(b.NodeType))
+            {
+                Visit(b.Right);
+                AddToParentGroupCheckBool(new WhereGroupFct(
+                    ReverseComparison(b.NodeType)));
+
+                if (!databaseBuilder.ReplaceWhereByParameters
+                    && TryEvaluateValue(b.Left, out object? leftQueryValue))
+                {
+                    object? sqlValue =
+                        rightMember.TransformQueryValue(leftQueryValue);
+                    Visit(Expression.Constant(sqlValue));
+                }
+                else
+                {
+                    Visit(b.Left);
+                }
+
+                if (databaseBuilder.ReplaceWhereByParameters
+                    && currentGroup is WhereGroup reversedParameterGroup
+                    && reversedParameterGroup.Groups.LastOrDefault()
+                        is WhereGroupConstantParameter reversedParameter)
+                {
+                    databaseBuilder.WhereParamsInfo[reversedParameter.Value]
+                        .SetQueryTransform(rightMember);
+                }
+
+                queryGroups.RemoveAt(queryGroups.Count - 1);
+                currentGroup = queryGroups.LastOrDefault();
+                return b;
+            }
 
 
             bool canSimplifyFct = false;
             Expression leftResult = Visit(b.Left);
+            TableMemberInfoSql? leftMember =
+                GetFieldMember(currentGroup);
 
             switch (b.NodeType)
             {
@@ -562,7 +598,15 @@ namespace AventusSharp.Data.Manager.DB
             }
 
             Expression rightResult;
-            if (IsCharMember(b.Left) && TryGetCharConstant(b.Right, out char character))
+            if (!databaseBuilder.ReplaceWhereByParameters
+                && leftMember?.HasSqlTransform == true
+                && TryEvaluateValue(b.Right, out object? queryValue))
+            {
+                object? sqlValue = leftMember.TransformQueryValue(queryValue);
+                Visit(Expression.Constant(sqlValue));
+                rightResult = b.Right;
+            }
+            else if (IsCharMember(b.Left) && TryGetCharConstant(b.Right, out char character))
             {
                 AddToParentGroup(new WhereGroupConstantString(character.ToString()));
                 rightResult = b.Right;
@@ -576,6 +620,15 @@ namespace AventusSharp.Data.Manager.DB
             else
             {
                 rightResult = Visit(b.Right);
+            }
+
+            if (leftMember?.HasSqlTransform == true
+                && currentGroup is WhereGroup parameterGroup
+                && parameterGroup.Groups.LastOrDefault()
+                    is WhereGroupConstantParameter parameter)
+            {
+                databaseBuilder.WhereParamsInfo[parameter.Value]
+                    .SetQueryTransform(leftMember);
             }
 
             if (canSimplify && canSimplifyFct && leftResult is ConstantExpression cLeft && rightResult is ConstantExpression cRight)
@@ -598,6 +651,108 @@ namespace AventusSharp.Data.Manager.DB
             currentGroup = queryGroups.LastOrDefault();
 
             return b;
+        }
+
+        private TableMemberInfoSql? GetDirectQueryMember(
+            Expression expression)
+        {
+            while (expression is UnaryExpression unary
+                && unary.NodeType is ExpressionType.Convert
+                    or ExpressionType.ConvertChecked)
+            {
+                expression = unary.Operand;
+            }
+            if (expression is not MemberExpression member
+                || member.Expression is not ParameterExpression)
+            {
+                return null;
+            }
+            return databaseBuilder.Storage.GetTableInfo(typeof(T))?
+                .Members
+                .FirstOrDefault(item => item.Name == member.Member.Name);
+        }
+
+        private static bool IsReversibleComparison(ExpressionType type) =>
+            type is ExpressionType.Equal
+                or ExpressionType.NotEqual
+                or ExpressionType.LessThan
+                or ExpressionType.LessThanOrEqual
+                or ExpressionType.GreaterThan
+                or ExpressionType.GreaterThanOrEqual;
+
+        private static WhereGroupFctEnum ReverseComparison(
+            ExpressionType type) =>
+            type switch
+            {
+                ExpressionType.Equal => WhereGroupFctEnum.Equal,
+                ExpressionType.NotEqual => WhereGroupFctEnum.NotEqual,
+                ExpressionType.LessThan => WhereGroupFctEnum.GreaterThan,
+                ExpressionType.LessThanOrEqual =>
+                    WhereGroupFctEnum.GreaterThanOrEqual,
+                ExpressionType.GreaterThan => WhereGroupFctEnum.LessThan,
+                ExpressionType.GreaterThanOrEqual =>
+                    WhereGroupFctEnum.LessThanOrEqual,
+                _ => throw new NotSupportedException(
+                    $"The binary operator '{type}' cannot be reversed")
+            };
+
+        private static TableMemberInfoSql? GetFieldMember(
+            IWhereRootGroup? group)
+        {
+            if (group is not WhereGroup whereGroup)
+            {
+                return null;
+            }
+            return whereGroup.Groups
+                .Select(item => item switch
+                {
+                    WhereGroupField field => field.TableMemberInfo,
+                    WhereGroupSingleBool single => single.TableMemberInfo,
+                    _ => null
+                })
+                .FirstOrDefault(member => member != null);
+        }
+
+        private static bool TryEvaluateValue(
+            Expression expression,
+            out object? value)
+        {
+            if (ContainsParameter(expression))
+            {
+                value = null;
+                return false;
+            }
+            try
+            {
+                value = Expression.Lambda(expression)
+                    .Compile()
+                    .DynamicInvoke();
+                return true;
+            }
+            catch
+            {
+                value = null;
+                return false;
+            }
+        }
+
+        private static bool ContainsParameter(Expression expression)
+        {
+            ParameterDetector detector = new();
+            detector.Visit(expression);
+            return detector.Found;
+        }
+
+        private sealed class ParameterDetector : ExpressionVisitor
+        {
+            public bool Found { get; private set; }
+
+            protected override Expression VisitParameter(
+                ParameterExpression node)
+            {
+                Found = true;
+                return node;
+            }
         }
 
         private static bool IsCharMember(Expression expression)
@@ -1143,12 +1298,39 @@ namespace AventusSharp.Data.Manager.DB
                 fctMethodCall = (WhereGroupFctEnum)fct;
                 if (reverse)
                 {
+                    TableMemberInfoSql? listMember = node.Arguments
+                        .Select(GetDirectQueryMember)
+                        .FirstOrDefault(member => member?.HasSqlTransform == true);
                     foreach (Expression argument in node.Arguments)
                     {
                         Visit(argument);
                     }
                     AddToParentGroup(new WhereGroupFct(fctMethodCall));
-                    Visit(node.Object);
+                    if (!databaseBuilder.ReplaceWhereByParameters
+                        && listMember != null
+                        && node.Object != null
+                        && TryEvaluateValue(node.Object, out object? listValue)
+                        && listValue is IList values)
+                    {
+                        List<object?> transformedValues = values
+                            .Cast<object?>()
+                            .Select(listMember.TransformQueryValue)
+                            .ToList();
+                        Visit(Expression.Constant(transformedValues));
+                    }
+                    else
+                    {
+                        Visit(node.Object);
+                    }
+                    if (databaseBuilder.ReplaceWhereByParameters
+                        && listMember != null
+                        && currentGroup is WhereGroup listParameterGroup
+                        && listParameterGroup.Groups.LastOrDefault()
+                            is WhereGroupConstantParameter listParameter)
+                    {
+                        databaseBuilder.WhereParamsInfo[listParameter.Value]
+                            .SetQueryTransform(listMember);
+                    }
                 }
                 else
                 {

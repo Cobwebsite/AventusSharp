@@ -11,9 +11,18 @@ public sealed class DataSqlTransformQueryTests
     [SetUp]
     public async Task SetUp()
     {
-        var reset = await IntegrationEnvironment.Storage.Execute(
-            "DELETE FROM \"transformed_bool_records\";");
-        Assert.That(reset.Success, Is.True, IntegrationEnvironment.ErrorMessages(reset.Errors));
+        foreach (string table in new[]
+        {
+            "transformed_bool_records",
+            "transformed_number_records",
+            "throwing_query_transform_records"
+        })
+        {
+            var reset = await IntegrationEnvironment.Storage.Execute(
+                $"DELETE FROM \"{table}\";");
+            Assert.That(reset.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(reset.Errors));
+        }
     }
 
     [Test]
@@ -43,7 +52,6 @@ public sealed class DataSqlTransformQueryTests
     }
 
     [Test]
-    [Explicit("Specification: LambdaTranslator does not yet transform a negated boolean member to its SQL representation.")]
     public async Task Negated_boolean_member_uses_the_transformed_false_value()
     {
         await Seed();
@@ -57,7 +65,6 @@ public sealed class DataSqlTransformQueryTests
     }
 
     [Test]
-    [Explicit("Specification: LambdaTranslator does not yet transform a boolean member to its SQL representation.")]
     public async Task Boolean_member_uses_the_transformed_true_value()
     {
         await Seed();
@@ -72,7 +79,6 @@ public sealed class DataSqlTransformQueryTests
 
     [TestCase(false, "Active")]
     [TestCase(true, "Deleted")]
-    [Explicit("Specification: captured query values are not yet passed through the field SqlTransform.")]
     public async Task Captured_boolean_comparison_uses_the_field_transform(
         bool deleted,
         string expectedName)
@@ -87,6 +93,213 @@ public sealed class DataSqlTransformQueryTests
         Assert.That(result.Result!.Select(item => item.Name), Is.EqualTo(new[] { expectedName }));
     }
 
+    [Test]
+    public async Task Prepared_boolean_comparison_transforms_each_runtime_value()
+    {
+        await Seed();
+        var deleted = false;
+        var prepared = TransformedBoolRecord.StartQuery()
+            .WhereWithParameters(item => item.Deleted == deleted);
+
+        var active = await prepared.New()
+            .Prepare(false)
+            .RunWithError();
+        var removed = await prepared.New()
+            .Prepare(true)
+            .RunWithError();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(active.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(active.Errors));
+            Assert.That(active.Result!.Select(item => item.Name),
+                Is.EqualTo(new[] { "Active" }));
+            Assert.That(removed.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(removed.Errors));
+            Assert.That(removed.Result!.Select(item => item.Name),
+                Is.EqualTo(new[] { "Deleted" }));
+        });
+    }
+
+    [Test]
+    public async Task Numeric_transform_changes_value_and_database_type()
+    {
+        var created = await TransformedNumberRecord.Create(
+            new TransformedNumberRecord
+            {
+                Name = "Five",
+                Number = 5,
+                OtherNumber = 20
+            });
+
+        var raw = await IntegrationEnvironment.Storage.Query(
+            "SELECT \"Number\", \"OtherNumber\" " +
+            "FROM \"transformed_number_records\" " +
+            $"WHERE \"Id\" = {created!.Id};");
+        var loaded = await ((TransformedNumberRecordManager)
+                GenericDM.Get<TransformedNumberRecord>())
+            .GetByIdWithErrorNoCache<TransformedNumberRecord>(created.Id);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(raw.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(raw.Errors));
+            Assert.That(raw.Result![0]["Number"], Is.EqualTo("10005"));
+            Assert.That(raw.Result[0]["OtherNumber"], Is.EqualTo("10020"));
+            Assert.That(loaded.Result!.Number, Is.EqualTo(5));
+            Assert.That(loaded.Result.OtherNumber, Is.EqualTo(20));
+        });
+    }
+
+    [TestCase("equal")]
+    [TestCase("not-equal")]
+    [TestCase("less")]
+    [TestCase("less-or-equal")]
+    [TestCase("greater")]
+    [TestCase("greater-or-equal")]
+    public async Task Numeric_transform_is_applied_to_comparison_operators(
+        string comparison)
+    {
+        await SeedNumbers();
+
+        var query = TransformedNumberRecord.StartQuery();
+        switch (comparison)
+        {
+            case "equal":
+                query.Where(item => item.Number == 5);
+                break;
+            case "not-equal":
+                query.Where(item => item.Number != 5);
+                break;
+            case "less":
+                query.Where(item => item.Number < 5);
+                break;
+            case "less-or-equal":
+                query.Where(item => item.Number <= 5);
+                break;
+            case "greater":
+                query.Where(item => item.Number > 5);
+                break;
+            case "greater-or-equal":
+                query.Where(item => item.Number >= 5);
+                break;
+        }
+
+        var result = await query.RunWithError();
+
+        string[] expected = comparison switch
+        {
+            "equal" => ["Exact"],
+            "not-equal" => ["Low", "High"],
+            "less" => ["Low"],
+            "less-or-equal" => ["Low", "Exact"],
+            "greater" => ["High"],
+            _ => ["Exact", "High"]
+        };
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Name),
+            Is.EquivalentTo(expected));
+    }
+
+    [Test]
+    public async Task Numeric_transform_supports_value_on_the_left()
+    {
+        await SeedNumbers();
+        var expected = 5;
+
+        var result = await TransformedNumberRecord.StartQuery()
+            .Where(item => expected == item.Number)
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Name),
+            Is.EqualTo(new[] { "Exact" }));
+    }
+
+    [Test]
+    public async Task Numeric_transform_reverses_ordered_comparison_with_field_on_right()
+    {
+        await SeedNumbers();
+        var minimum = 5;
+
+        var result = await TransformedNumberRecord.StartQuery()
+            .Where(item => minimum < item.Number)
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Name),
+            Is.EqualTo(new[] { "High" }));
+    }
+
+    [Test]
+    public async Task Numeric_transform_is_applied_to_each_Contains_value()
+    {
+        await SeedNumbers();
+        var accepted = new List<int> { 2, 9 };
+
+        var result = await TransformedNumberRecord.StartQuery()
+            .Where(item => accepted.Contains(item.Number))
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Name),
+            Is.EquivalentTo(new[] { "Low", "High" }));
+    }
+
+    [Test]
+    public async Task Prepared_numeric_transform_supports_SetVariables()
+    {
+        await SeedNumbers();
+        var expected = 0;
+        var prepared = TransformedNumberRecord.StartQuery()
+            .WhereWithParameters(item => item.Number == expected);
+
+        var result = await prepared.New()
+            .SetVariables(set => set(nameof(expected), 9))
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Name),
+            Is.EqualTo(new[] { "High" }));
+    }
+
+    [Test]
+    public async Task Different_transformed_fields_keep_their_own_query_values()
+    {
+        await SeedNumbers();
+
+        var result = await TransformedNumberRecord.StartQuery()
+            .Where(item => item.Number == 5 && item.OtherNumber == 20)
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Name),
+            Is.EqualTo(new[] { "Exact" }));
+    }
+
+    [Test]
+    public async Task ToSql_exception_is_reported_when_the_query_runs()
+    {
+        var creation = await ThrowingQueryTransformRecord.CreateWithError(
+            new ThrowingQueryTransformRecord { Name = "Safe", Number = 1 });
+        Assert.That(creation.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(creation.Errors));
+
+        var query = ThrowingQueryTransformRecord.StartQuery()
+            .Where(item => item.Number == 13);
+        var result = await query.RunWithError();
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(IntegrationEnvironment.ErrorMessages(result.Errors),
+            Does.Contain("Query transform rejected 13"));
+    }
+
     private static async Task Seed()
     {
         var creation = await TransformedBoolRecord.CreateWithError(
@@ -95,5 +308,20 @@ public sealed class DataSqlTransformQueryTests
             new TransformedBoolRecord { Name = "Deleted", Deleted = true }
         ]);
         Assert.That(creation.Success, Is.True, IntegrationEnvironment.ErrorMessages(creation.Errors));
+    }
+
+    private static async Task SeedNumbers()
+    {
+        var creation = await TransformedNumberRecord.CreateWithError(
+        [
+            new TransformedNumberRecord
+                { Name = "Low", Number = 2, OtherNumber = 10 },
+            new TransformedNumberRecord
+                { Name = "Exact", Number = 5, OtherNumber = 20 },
+            new TransformedNumberRecord
+                { Name = "High", Number = 9, OtherNumber = 30 }
+        ]);
+        Assert.That(creation.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(creation.Errors));
     }
 }

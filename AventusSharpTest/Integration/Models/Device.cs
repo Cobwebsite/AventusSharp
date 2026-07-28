@@ -228,6 +228,67 @@ public sealed class BooleanAsYesNoAttribute : SqlTransform<bool>
     public override DbType? GetDbType(TableMemberInfoSql member) => DbType.String;
 }
 
+[SqlName("transformed_number_records")]
+public sealed class TransformedNumberRecord : Storable<TransformedNumberRecord>
+{
+    public string Name { get; set; } = "";
+
+    [OffsetNumber]
+    public int Number { get; set; }
+
+    [OffsetNumber]
+    public int OtherNumber { get; set; }
+}
+
+public sealed class TransformedNumberRecordManager
+    : DatabaseDM<TransformedNumberRecordManager, TransformedNumberRecord>
+{
+}
+
+public sealed class OffsetNumberAttribute : SqlTransform<int>
+{
+    public override object? ToSql(int value, TableMemberInfoSql member) =>
+        (long)value + 10_000L;
+
+    public override int FromSql(string? value, TableMemberInfoSql member) =>
+        checked((int)(long.Parse(value ?? "10000") - 10_000L));
+
+    public override DbType? GetDbType(TableMemberInfoSql member) => DbType.Int64;
+}
+
+[SqlName("throwing_query_transform_records")]
+public sealed class ThrowingQueryTransformRecord
+    : Storable<ThrowingQueryTransformRecord>
+{
+    public string Name { get; set; } = "";
+
+    [ThrowingQueryTransform]
+    public int Number { get; set; }
+}
+
+public sealed class ThrowingQueryTransformRecordManager
+    : DatabaseDM<ThrowingQueryTransformRecordManager,
+        ThrowingQueryTransformRecord>
+{
+}
+
+public sealed class ThrowingQueryTransformAttribute : SqlTransform<int>
+{
+    public override object? ToSql(int value, TableMemberInfoSql member)
+    {
+        if (value == 13)
+        {
+            throw new InvalidOperationException("Query transform rejected 13");
+        }
+        return value;
+    }
+
+    public override int FromSql(string? value, TableMemberInfoSql member) =>
+        int.Parse(value ?? "0");
+
+    public override DbType? GetDbType(TableMemberInfoSql member) => DbType.Int32;
+}
+
 public enum PrimitiveRecordState
 {
     Unknown,

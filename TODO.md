@@ -19,25 +19,6 @@ son implémentation et ses tests de régression sont terminés.
   `Invalid_many_to_many_link_in_second_buffer_rolls_back_all_buffers`
   restent explicites jusqu'à cette implémentation.
 
-### SqlTransform dans LambdaTranslator
-
-- [ ] Appliquer les `SqlTransform` aux valeurs utilisées dans les requêtes.
-- Cas de référence : une propriété `bool` stockée sous forme `Y/N`.
-- Tests de spécification existants dans `DataSqlTransformQueryTests` :
-  - `Negated_boolean_member_uses_the_transformed_false_value` ;
-  - `Boolean_member_uses_the_transformed_true_value` ;
-  - `Captured_boolean_comparison_uses_the_field_transform`.
-- Retirer leurs attributs `[Explicit]` après correction.
-- La correction doit couvrir :
-  - `p => p.Deleted` et `p => !p.Deleted` ;
-  - égalité et inégalité avec une constante ou une variable capturée ;
-  - paramètres préparés ;
-  - listes et `Contains` ;
-  - type SQL fourni par `GetDbType`.
-- Prévoir un contrat permettant au transformateur de refuser les opérations dont
-  il ne conserve pas la sémantique, par exemple les comparaisons d'ordre sur une
-  valeur chiffrée ou encryptée.
-
 ### `Nullable<T>.GetValueOrDefault` dans LambdaTranslator
 
 - [ ] Traduire `item.Value.GetValueOrDefault()` avec `COALESCE` et la valeur par

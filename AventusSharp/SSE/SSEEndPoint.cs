@@ -102,7 +102,16 @@ namespace AventusSharp.SSE
                     RouterMiddleware.ContextScope = null;
                     if (connections.TryRemove(connection, out _))
                     {
-                        await OnConnectionClose(connection);
+                        try
+                        {
+                            await OnConnectionClose(connection);
+                        }
+                        catch (Exception ex)
+                        {
+                            AventusLogger.Instance.LogError(
+                                ex,
+                                "An SSE connection close callback failed");
+                        }
                     }
                 }
             }

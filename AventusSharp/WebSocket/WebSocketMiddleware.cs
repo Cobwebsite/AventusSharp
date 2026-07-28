@@ -60,7 +60,8 @@ namespace AventusSharp.WebSocket
             WsEndPoint? endPoint = endPointInstances.Values.FirstOrDefault(p => p.GetType() == typeof(T));
             if (endPoint == null) return null;
 
-            WebSocketConnection? connection = endPoint.connections.FirstOrDefault(p => p.SessionId == sessionId);
+            WebSocketConnection? connection = endPoint.connections.Keys
+                .FirstOrDefault(p => p.SessionId == sessionId);
             return connection;
         }
 

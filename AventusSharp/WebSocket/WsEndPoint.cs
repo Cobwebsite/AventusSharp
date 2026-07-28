@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,7 +30,7 @@ namespace AventusSharp.WebSocket
     public abstract class WsEndPoint : IWsEndPoint
     {
         internal Dictionary<string, WebSocketRouteInfo> routesInfo = new Dictionary<string, WebSocketRouteInfo>();
-        internal readonly List<WebSocketConnection> connections = new();
+        internal readonly ConcurrentDictionary<WebSocketConnection, byte> connections = new();
         private readonly List<Func<WebSocketConnection, string, WebSocketRouterBody, string, Task<bool>>> middlewares = new();
         internal JsonSerializerSettings settings;
         public string Path { get; }
@@ -87,7 +88,7 @@ namespace AventusSharp.WebSocket
             if (CanOpenConnection(context, webSocket))
             {
                 WebSocketConnection connection = new(context, webSocket, this);
-                connections.Add(connection);
+                connections.TryAdd(connection, 0);
                 try
                 {
                     await OnConnectionOpen(connection);
@@ -117,10 +118,9 @@ namespace AventusSharp.WebSocket
         {
             try
             {
-                if (connections.Contains(connection))
+                if (connections.TryRemove(connection, out _))
                 {
                     await OnConnectionClose(connection);
-                    connections.Remove(connection);
                 }
             }
             catch
@@ -144,7 +144,7 @@ namespace AventusSharp.WebSocket
 
         public async Task Stop()
         {
-            List<WebSocketConnection> conns = connections.ToList();
+            List<WebSocketConnection> conns = GetConnectionsSnapshot();
             foreach (WebSocketConnection connection in conns)
             {
                 await connection.Close();
@@ -393,12 +393,11 @@ namespace AventusSharp.WebSocket
 
                 if (connections == null)
                 {
-                    connections = this.connections;
+                    connections = GetConnectionsSnapshot();
                 }
 
-                for (int i = 0; i < connections.Count; i++)
+                foreach (WebSocketConnection conn in connections.ToList())
                 {
-                    WebSocketConnection conn = connections.ElementAt(i);
                     if (omit.Contains(conn))
                     {
                         continue;
@@ -406,7 +405,6 @@ namespace AventusSharp.WebSocket
                     if (conn.GetWebSocket().State != System.Net.WebSockets.WebSocketState.Open)
                     {
                         RemoveInstance(conn);
-                        i--;
                     }
                     else
                     {
@@ -450,6 +448,16 @@ namespace AventusSharp.WebSocket
             {
                 AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
             }
+        }
+
+        internal List<WebSocketConnection> GetConnectionsSnapshot()
+        {
+            return connections.Keys.ToList();
+        }
+
+        internal bool TrackConnection(WebSocketConnection connection)
+        {
+            return connections.TryAdd(connection, 0);
         }
 
     }

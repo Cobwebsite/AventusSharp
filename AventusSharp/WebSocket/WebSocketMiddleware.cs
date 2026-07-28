@@ -373,6 +373,7 @@ namespace AventusSharp.WebSocket
                 try
                 {
                     configAction(config);
+                    configLoaded = true;
                 }
                 catch (Exception e)
                 {

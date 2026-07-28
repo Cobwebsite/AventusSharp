@@ -360,6 +360,7 @@ namespace AventusSharp.Routes
             if (!configLoaded)
             {
                 configAction(config);
+                configLoaded = true;
             }
         }
 

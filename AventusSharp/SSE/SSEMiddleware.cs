@@ -63,6 +63,7 @@ public class SSEMiddleware
             try
             {
                 configAction(config);
+                configLoaded = true;
             }
             catch (Exception e)
             {

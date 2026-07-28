@@ -127,6 +127,16 @@ public class DiagramObject
 
     public void Merge(DiagramObject newDiagram)
     {
+        var generatedTableNamesById = newDiagram.Tables
+            .ToDictionary(table => table.Id, table => table.Name);
+        var existingRelationshipIds = Relationships
+            .GroupBy(relationship => (
+                relationship.SourceTableId,
+                relationship.SourceFieldId,
+                relationship.TargetTableId,
+                relationship.TargetFieldId))
+            .ToDictionary(group => group.Key, group => group.First().Id);
+
         // 1. Fusionner les Areas
         var existingAreasByName = Areas.ToDictionary(a => a.Name, a => a);
         var mergedAreas = new List<Area>();
@@ -226,8 +236,8 @@ public class DiagramObject
             var relatedTableNames = newDiagram.Relationships
                 .Where(r => r.SourceTableId == newTable.Id || r.TargetTableId == newTable.Id)
                 .Select(r => r.SourceTableId == newTable.Id ?
-                    newDiagram.Tables.FirstOrDefault(t => t.Id == r.TargetTableId)?.Name :
-                    newDiagram.Tables.FirstOrDefault(t => t.Id == r.SourceTableId)?.Name)
+                    generatedTableNamesById.GetValueOrDefault(r.TargetTableId) :
+                    generatedTableNamesById.GetValueOrDefault(r.SourceTableId))
                 .Where(name => name != null)
                 .Distinct()
                 .ToList();
@@ -284,28 +294,38 @@ public class DiagramObject
         foreach (var newRel in newDiagram.Relationships)
         {
             // Retrouver les noms originaux des tables et champs liés depuis le nouveau schéma
-            var sourceTable = newDiagram.Tables.FirstOrDefault(t => t.Id == newRel.SourceTableId);
-            var targetTable = newDiagram.Tables.FirstOrDefault(t => t.Id == newRel.TargetTableId);
-
-            if (sourceTable == null || targetTable == null) continue;
+            if (!generatedTableNamesById.TryGetValue(newRel.SourceTableId, out var sourceTableName) ||
+                !generatedTableNamesById.TryGetValue(newRel.TargetTableId, out var targetTableName))
+            {
+                continue;
+            }
 
             // Extraire les noms simples des champs (ex: de "Bill.Id" -> "Id")
             var sourceFieldName = newRel.SourceFieldId.Contains('.') ? newRel.SourceFieldId.Split('.').Last() : newRel.SourceFieldId;
             var targetFieldName = newRel.TargetFieldId.Contains('.') ? newRel.TargetFieldId.Split('.').Last() : newRel.TargetFieldId;
 
             // Trouver les ID réels correspondants dans le schéma existant fusionné
-            if (tableIdMap.TryGetValue(sourceTable.Name, out var sourceTableId) &&
-                tableIdMap.TryGetValue(targetTable.Name, out var targetTableId) &&
-                fieldIdMap.TryGetValue($"{sourceTable.Name}.{sourceFieldName}", out var sourceFieldId) &&
-                fieldIdMap.TryGetValue($"{targetTable.Name}.{targetFieldName}", out var targetFieldId))
+            if (tableIdMap.TryGetValue(sourceTableName, out var sourceTableId) &&
+                tableIdMap.TryGetValue(targetTableName, out var targetTableId) &&
+                fieldIdMap.TryGetValue($"{sourceTableName}.{sourceFieldName}", out var sourceFieldId) &&
+                fieldIdMap.TryGetValue($"{targetTableName}.{targetFieldName}", out var targetFieldId))
             {
                 newRel.SourceTableId = sourceTableId;
                 newRel.TargetTableId = targetTableId;
                 newRel.SourceFieldId = sourceFieldId;
                 newRel.TargetFieldId = targetFieldId;
 
+                if (existingRelationshipIds.TryGetValue((
+                    sourceTableId,
+                    sourceFieldId,
+                    targetTableId,
+                    targetFieldId), out var existingRelationshipId))
+                {
+                    newRel.Id = existingRelationshipId;
+                }
+
                 // Optionnel : Générer un nom propre
-                newRel.Name = $"{sourceTable.Name}_{targetTable.Name}";
+                newRel.Name = $"{sourceTableName}_{targetTableName}";
 
                 finalRelationships.Add(newRel);
             }

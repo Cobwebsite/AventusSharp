@@ -192,12 +192,10 @@ namespace AventusSharp.Tools
         // }
 
 
-        private static JsonSerializer? _cloneConverter;
         private static JsonSerializer CloneNoConverter(JsonSerializer settings)
         {
-            if (_cloneConverter == null)
+            JsonSerializer serializer = JsonSerializer.Create();
             {
-                JsonSerializer serializer = JsonSerializer.Create();
                 // if (!CollectionUtils.IsNullOrEmpty(settings.Converters))
                 // {
                 //     // insert settings converters at the beginning so they take precedence
@@ -251,9 +249,8 @@ namespace AventusSharp.Tools
                 serializer.StringEscapeHandling = settings.StringEscapeHandling;
                 serializer.Culture = settings.Culture;
                 serializer.MaxDepth = settings.MaxDepth;
-                _cloneConverter = serializer;
             }
-            return _cloneConverter;
+            return serializer;
         }
     }
 }

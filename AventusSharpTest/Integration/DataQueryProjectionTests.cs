@@ -102,6 +102,52 @@ public sealed class DataQueryProjectionTests
         Assert.That(byId.Result, Is.Not.SameAs(projection.Result[0]));
     }
 
+    [Test]
+    [Repeat(5)]
+    public async Task Concurrent_projections_do_not_share_selected_fields()
+    {
+        var tasks = Enumerable.Range(0, 32)
+            .Select(index => Task.Run(async () =>
+            {
+                if (index % 2 == 0)
+                {
+                    return await Device.StartQuery()
+                        .Field(item => item.Name)
+                        .Where(item => item.Id == device.Id)
+                        .SingleWithError();
+                }
+                return await Device.StartQuery()
+                    .Field(item => item.Brightness)
+                    .Where(item => item.Id == device.Id)
+                    .SingleWithError();
+            }))
+            .ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        Assert.That(results.All(result => result.Success), Is.True,
+            string.Join(Environment.NewLine,
+                results.SelectMany(result => result.Errors)
+                    .Select(error => error.Message)));
+        Assert.Multiple(() =>
+        {
+            for (var index = 0; index < results.Length; index++)
+            {
+                var item = results[index].Result!;
+                if (index % 2 == 0)
+                {
+                    Assert.That(item.Name, Is.EqualTo("Projection"));
+                    Assert.That(item.Brightness, Is.Zero);
+                }
+                else
+                {
+                    Assert.That(item.Name, Is.Empty);
+                    Assert.That(item.Brightness, Is.EqualTo(65));
+                }
+            }
+        });
+    }
+
     private static Device NewDevice() =>
         new()
         {

@@ -274,6 +274,149 @@ public sealed class DataPreparedQueryTests
     }
 
     [Test]
+    [Repeat(5)]
+    public async Task Concurrent_prepared_updates_do_not_mix_parameters_or_payloads()
+    {
+        var name = "";
+        var prepared = Device.StartUpdate()
+            .Field(device => device.Brightness)
+            .WhereWithParameters(device => device.Name == name);
+
+        Task<AventusSharp.Tools.ResultWithError<List<Device>>> Run(
+            string itemName,
+            int brightness) =>
+            Task.Run(async () => await prepared.New()
+                .Prepare(itemName)
+                .RunWithError(new Device { Brightness = brightness }));
+
+        var updates = await Task.WhenAll(
+            Run("Low", 11),
+            Run("High", 99));
+        var rows = await IntegrationEnvironment.Storage.Query(
+            "SELECT \"Name\", \"Brightness\" FROM \"devices\" ORDER BY \"Name\";");
+        var values = rows.Result!.ToDictionary(
+            row => row["Name"]!,
+            row => row["Brightness"]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(updates.All(result => result.Success), Is.True,
+                string.Join(Environment.NewLine,
+                    updates.SelectMany(result => result.Errors)
+                        .Select(error => error.Message)));
+            Assert.That(updates, Has.All.Property("Result").Count.EqualTo(1));
+            Assert.That(values["Low"], Is.EqualTo("11"));
+            Assert.That(values["Medium"], Is.EqualTo("50"));
+            Assert.That(values["High"], Is.EqualTo("99"));
+        });
+    }
+
+    [Test]
+    [Repeat(5)]
+    public async Task Concurrent_prepared_deletes_do_not_mix_parameter_values()
+    {
+        var name = "";
+        var prepared = Device.StartDelete()
+            .WhereWithParameters(device => device.Name == name);
+
+        Task<AventusSharp.Tools.ResultWithError<List<Device>>> Run(string itemName) =>
+            Task.Run(async () => await prepared.New()
+                .Prepare(itemName)
+                .RunWithError());
+
+        var deletions = await Task.WhenAll(
+            Run("Low"),
+            Run("High"));
+        var rows = await IntegrationEnvironment.Storage.Query(
+            "SELECT \"Name\" FROM \"devices\" ORDER BY \"Name\";");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deletions.All(result => result.Success), Is.True,
+                string.Join(Environment.NewLine,
+                    deletions.SelectMany(result => result.Errors)
+                        .Select(error => error.Message)));
+            Assert.That(deletions, Has.All.Property("Result").Count.EqualTo(1));
+            Assert.That(rows.Result!.Select(row => row["Name"]),
+                Is.EqualTo(new[] { "Medium" }));
+        });
+    }
+
+    [Test]
+    public async Task Failed_concurrent_prepared_update_releases_the_valid_execution()
+    {
+        var name = "";
+        var prepared = Device.StartUpdate()
+            .Field(device => device.Brightness)
+            .WhereWithParameters(device => device.Name == name);
+
+        var invalidTask = Task.Run(async () => await prepared.New()
+            .RunWithError(new Device { Brightness = 77 }));
+        var validTask = Task.Run(async () => await prepared.New()
+            .Prepare("Low")
+            .RunWithError(new Device { Brightness = 11 }));
+        var allTasks = Task.WhenAll(invalidTask, validTask);
+        var completed = await Task.WhenAny(
+            allTasks,
+            Task.Delay(TimeSpan.FromSeconds(2)));
+
+        Assert.That(completed, Is.SameAs(allTasks),
+            "A failed prepared update must release the shared semaphore.");
+        var results = await allTasks;
+        var rows = await IntegrationEnvironment.Storage.Query(
+            "SELECT \"Name\", \"Brightness\" FROM \"devices\" ORDER BY \"Name\";");
+        var values = rows.Result!.ToDictionary(
+            row => row["Name"]!,
+            row => row["Brightness"]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(results[0].Success, Is.False);
+            Assert.That(IntegrationEnvironment.ErrorMessages(results[0].Errors),
+                Does.Contain(nameof(name)));
+            Assert.That(results[1].Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(results[1].Errors));
+            Assert.That(values["Low"], Is.EqualTo("11"));
+            Assert.That(values["Medium"], Is.EqualTo("50"));
+            Assert.That(values["High"], Is.EqualTo("90"));
+        });
+    }
+
+    [Test]
+    public async Task Failed_concurrent_prepared_delete_releases_the_valid_execution()
+    {
+        var name = "";
+        var prepared = Device.StartDelete()
+            .WhereWithParameters(device => device.Name == name);
+
+        var invalidTask = Task.Run(async () => await prepared.New().RunWithError());
+        var validTask = Task.Run(async () => await prepared.New()
+            .Prepare("High")
+            .RunWithError());
+        var allTasks = Task.WhenAll(invalidTask, validTask);
+        var completed = await Task.WhenAny(
+            allTasks,
+            Task.Delay(TimeSpan.FromSeconds(2)));
+
+        Assert.That(completed, Is.SameAs(allTasks),
+            "A failed prepared delete must release the shared semaphore.");
+        var results = await allTasks;
+        var rows = await IntegrationEnvironment.Storage.Query(
+            "SELECT \"Name\" FROM \"devices\" ORDER BY \"Name\";");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(results[0].Success, Is.False);
+            Assert.That(IntegrationEnvironment.ErrorMessages(results[0].Errors),
+                Does.Contain(nameof(name)));
+            Assert.That(results[1].Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(results[1].Errors));
+            Assert.That(rows.Result!.Select(row => row["Name"]),
+                Is.EqualTo(new[] { "Low", "Medium" }));
+        });
+    }
+
+    [Test]
     public async Task Prepared_builder_releases_its_lock_after_an_error_result()
     {
         var prepared = Device.StartQuery()

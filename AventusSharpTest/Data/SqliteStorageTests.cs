@@ -142,6 +142,60 @@ public class SqliteStorageTests
             Does.Contain(sql));
     }
 
+    [Test]
+    public async Task Invalid_sql_does_not_poison_the_next_command_or_connection()
+    {
+        var invalid = await _storage.Execute(
+            "INSERT INTO a_table_that_does_not_exist (value) VALUES (1);");
+        var create = await _storage.Execute(
+            "CREATE TABLE recovery_sample (id INTEGER PRIMARY KEY, value TEXT);" +
+            "INSERT INTO recovery_sample (id, value) VALUES (1, 'recovered');");
+        var query = await _storage.Query(
+            "SELECT value FROM recovery_sample WHERE id = 1;");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(invalid.Success, Is.False);
+            Assert.That(invalid.Errors, Is.Not.Empty);
+            Assert.That(create.Success, Is.True, ErrorMessages(create.Errors));
+            Assert.That(query.Success, Is.True, ErrorMessages(query.Errors));
+            Assert.That(query.Result!.Single()["value"], Is.EqualTo("recovered"));
+        });
+    }
+
+    [Test]
+    public async Task QueryStream_callback_exception_is_monadic_and_releases_the_connection()
+    {
+        var create = await _storage.Execute(
+            "CREATE TABLE throwing_stream_sample (id INTEGER PRIMARY KEY);" +
+            "INSERT INTO throwing_stream_sample (id) VALUES (1), (2), (3);");
+        Assert.That(create.Success, Is.True, ErrorMessages(create.Errors));
+        var visited = new List<string?>();
+
+        var stream = await _storage.QueryStream(
+            "SELECT id FROM throwing_stream_sample ORDER BY id;",
+            row =>
+            {
+                visited.Add(row["id"]);
+                if (row["id"] == "2")
+                    throw new InvalidOperationException("stream callback exception");
+                return Task.FromResult(new VoidWithError());
+            });
+        var afterFailure = await _storage.Query(
+            "SELECT COUNT(*) AS count FROM throwing_stream_sample;");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stream.Success, Is.False);
+            Assert.That(ErrorMessages(stream.Errors),
+                Does.Contain("stream callback exception"));
+            Assert.That(visited, Is.EqualTo(new[] { "1", "2" }));
+            Assert.That(afterFailure.Success, Is.True,
+                ErrorMessages(afterFailure.Errors));
+            Assert.That(afterFailure.Result!.Single()["count"], Is.EqualTo("3"));
+        });
+    }
+
     private static string ErrorMessages(IEnumerable<AventusSharp.Tools.GenericError> errors) =>
         string.Join(Environment.NewLine, errors.Select(error => error.Message));
 }

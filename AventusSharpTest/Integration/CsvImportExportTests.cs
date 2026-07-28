@@ -1,8 +1,10 @@
+using AventusSharp.Data;
 using AventusSharp.Data.Exporter;
 using AventusSharp.Data.Importer;
 using AventusSharp.Data.Manager;
 using AventusSharpTest.Integration.Models;
 using NUnit.Framework;
+using System.Globalization;
 
 namespace AventusSharpTest.Integration;
 
@@ -121,5 +123,200 @@ public sealed class CsvImportExportTests
         Assert.That(import.Success, Is.True,
             IntegrationEnvironment.ErrorMessages(import.Errors));
         Assert.That(loaded.Result, Is.Empty);
+    }
+
+    [Test]
+    public async Task Custom_mapper_renames_columns_for_export_and_import()
+    {
+        var exportConfig = new CSVExporterConfig<TestCsvItem>
+        {
+            mapper = mapper =>
+            {
+                mapper.Map(item => item.Name, "Label");
+                mapper.Map(item => item.Quantity, "Amount");
+                mapper.Ignore(item => item.Id);
+            }
+        };
+        var importConfig = new CSVImporterConfig<TestCsvItem>
+        {
+            mapper = mapper =>
+            {
+                mapper.Map(item => item.Name, "Label");
+                mapper.Map(item => item.Quantity, "Amount");
+            }
+        };
+
+        var export = CSVExporter.Export(
+            new List<TestCsvItem>
+            {
+                new() { Id = 91, Name = "Mapped", Quantity = 7 }
+            },
+            _csvPath,
+            exportConfig);
+        string csv = await File.ReadAllTextAsync(_csvPath);
+        var import = await CSVImporter.Import(_csvPath, importConfig);
+        var loaded = await ((TestCsvItemManager)GenericDM.Get<TestCsvItem>())
+            .WhereWithErrorNoCache<TestCsvItem>(item => item.Name == "Mapped");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(export.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(export.Errors));
+            Assert.That(csv, Does.StartWith("Label,Amount"));
+            Assert.That(csv, Does.Not.Contain("Id"));
+            Assert.That(import.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(import.Errors));
+            Assert.That(loaded.Result, Has.Count.EqualTo(1));
+            Assert.That(loaded.Result![0].Quantity, Is.EqualTo(7));
+            Assert.That(loaded.Result[0].Id, Is.Not.EqualTo(91));
+        });
+    }
+
+    [Test]
+    public void Append_writes_the_header_only_once()
+    {
+        var first = CSVExporter.Export(
+            new List<TestCsvItem>
+            {
+                new() { Name = "First", Quantity = 1 }
+            },
+            _csvPath);
+        var second = CSVExporter.Export(
+            new List<TestCsvItem>
+            {
+                new() { Name = "Second", Quantity = 2 }
+            },
+            _csvPath,
+            new CSVExporterConfig<TestCsvItem> { Append = true });
+
+        string[] lines = File.ReadAllLines(_csvPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(first.Errors));
+            Assert.That(second.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(second.Errors));
+            Assert.That(lines.Count(line => line.Contains("Name")), Is.EqualTo(1));
+            Assert.That(lines, Has.Some.Contains("First"));
+            Assert.That(lines, Has.Some.Contains("Second"));
+        });
+    }
+
+    [Test]
+    public async Task ExportAll_paginates_without_missing_or_duplicating_records()
+    {
+        const int recordCount = 7;
+        await TestCsvItem.BulkCreate(
+            Enumerable.Range(1, recordCount)
+                .Select(index => new TestCsvItem
+                {
+                    Name = $"Buffered-{index}",
+                    Quantity = index
+                })
+                .ToList());
+        var config = new CSVExporterConfig<TestCsvItem>(CultureInfo.InvariantCulture)
+        {
+            BufferSize = 3
+        };
+
+        var export = await CSVExporter.ExportAll(_csvPath, config);
+        string[] dataLines = File.ReadAllLines(_csvPath).Skip(1).ToArray();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(export.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(export.Errors));
+            Assert.That(dataLines, Has.Length.EqualTo(recordCount));
+            foreach (int index in Enumerable.Range(1, recordCount))
+            {
+                Assert.That(
+                    dataLines.Count(line => line.Contains($"Buffered-{index},")),
+                    Is.EqualTo(1),
+                    $"Buffered-{index} must be exported exactly once.");
+            }
+        });
+    }
+
+    [Test]
+    public async Task Import_with_id_preserves_the_csv_identifier()
+    {
+        const int expectedId = 900001;
+        await File.WriteAllTextAsync(
+            _csvPath,
+            $"Id,Name,Quantity\r\n{expectedId},Preserved,4\r\n");
+        var config = new CSVImporterConfig<TestCsvItem>
+        {
+            WithId = true
+        };
+
+        var import = await CSVImporter.Import(_csvPath, config);
+        var loaded = await ((TestCsvItemManager)GenericDM.Get<TestCsvItem>())
+            .WhereWithErrorNoCache<TestCsvItem>(item => item.Id == expectedId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(import.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(import.Errors));
+            Assert.That(loaded.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(loaded.Errors));
+            Assert.That(loaded.Result, Has.Count.EqualTo(1));
+            Assert.That(loaded.Result![0].Name, Is.EqualTo("Preserved"));
+            Assert.That(loaded.Result[0].Quantity, Is.EqualTo(4));
+        });
+    }
+
+    [Test]
+    public async Task Invalid_mapper_member_is_reported_and_import_is_rolled_back()
+    {
+        await File.WriteAllTextAsync(
+            _csvPath,
+            "Name,Quantity\r\nShouldNotPersist,5\r\n");
+        var config = new CSVImporterConfig<TestCsvItem>
+        {
+            mapper = mapper =>
+            {
+                mapper.Map(item => item.Name, "Name");
+                mapper.Map(item => item.Quantity, "Quantity");
+                mapper.Ignore("UnknownMember");
+            }
+        };
+
+        var import = await CSVImporter.Import(_csvPath, config);
+        var loaded = await ((TestCsvItemManager)GenericDM.Get<TestCsvItem>())
+            .WhereWithErrorNoCache<TestCsvItem>(
+                item => item.Name == "ShouldNotPersist");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(import.Success, Is.False);
+            Assert.That(import.Errors.Select(error => error.Code),
+                Has.Some.EqualTo((int)DataErrorCode.MemberNotFound));
+            Assert.That(loaded.Result, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task Invalid_row_in_a_later_buffer_rolls_back_earlier_buffers()
+    {
+        await File.WriteAllTextAsync(
+            _csvPath,
+            "Name,Quantity\r\nFirst,1\r\nSecond,2\r\nInvalid,not-a-number\r\n");
+        var config = new CSVImporterConfig<TestCsvItem>
+        {
+            BufferSize = 2
+        };
+
+        var import = await CSVImporter.Import(_csvPath, config);
+        var loaded = await ((TestCsvItemManager)GenericDM.Get<TestCsvItem>())
+            .WhereWithErrorNoCache<TestCsvItem>(item => item.Id > 0);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(import.Success, Is.False);
+            Assert.That(import.Errors, Is.Not.Empty);
+            Assert.That(loaded.Result, Is.Empty,
+                "The first flushed buffer must participate in the same transaction.");
+        });
     }
 }

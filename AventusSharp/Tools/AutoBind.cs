@@ -12,10 +12,11 @@ public static class Binder
         AutoBind(source, o);
         return o;
     }
-    public static void AutoBind(object source, Type target)
+    public static object AutoBind(object source, Type target)
     {
         object o = TypeTools.CreateNewObj(target);
         AutoBind(source, o);
+        return o;
     }
     public static void AutoBind(object source, object target)
     {

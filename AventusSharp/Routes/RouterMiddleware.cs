@@ -61,8 +61,11 @@ namespace AventusSharp.Routes
 
         public static VoidWithError Register(IEnumerable<Type> types)
         {
-            VoidWithRouteError result = new VoidWithRouteError();
-            LoadConfig();
+            VoidWithRouteError result = LoadConfig();
+            if (!result.Success)
+            {
+                return result.ToGeneric();
+            }
             Func<string, Dictionary<string, RouterParameterInfo>, Type, MethodInfo, Regex> transformPattern = config.transformPattern ?? PrepareUrl;
 
             foreach (Type t in types)
@@ -355,13 +358,24 @@ namespace AventusSharp.Routes
         }
 
 
-        private static void LoadConfig()
+        private static VoidWithRouteError LoadConfig()
         {
+            VoidWithRouteError result = new();
             if (!configLoaded)
             {
-                configAction(config);
-                configLoaded = true;
+                try
+                {
+                    configAction(config);
+                    configLoaded = true;
+                }
+                catch (Exception exception)
+                {
+                    result.Errors.Add(new RouteError(
+                        RouteErrorCode.ConfigError,
+                        exception));
+                }
             }
+            return result;
         }
 
         public static async Task<RouterResolve?> Resolve(HttpContext context)

@@ -14,6 +14,7 @@ namespace AventusSharp.Routes
         CantMoveFile,
         CantCreateFolders,
         RouteAlreadyExist,
+        ConfigError,
     }
     public class RouteError : GenericError<RouteErrorCode>
     {

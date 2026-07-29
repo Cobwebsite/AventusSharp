@@ -6,8 +6,26 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
-    <BaseOutputPath></BaseOutputPath>
-    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages> 
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <IsPackable>true</IsPackable>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>csharp-converter</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+
+    <PackageId>AventusSharp.Converter</PackageId>
+    <Version>0.0.11</Version>
+    <Authors>Cobwebsite</Authors>
+    <Company>ch.cobwebsite</Company>
+    <Copyright>Copyright © 2024 Cobwebsite</Copyright>
+    <Description>Convert AventusSharp code to Typescript or AventusJs.</Description>
+    <PackageTags>csharp typescript converter dotnet-tool</PackageTags>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Cobwebsite/AventusSharp</PackageProjectUrl>
+    <PackageIcon>logo_sharp.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +38,12 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.8" />
     <PackageReference Include="Google.Protobuf" Version="3.33.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="logo_sharp.png" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

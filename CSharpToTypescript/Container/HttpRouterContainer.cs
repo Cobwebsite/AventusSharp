@@ -102,7 +102,7 @@ namespace CSharpToTypescript.Container
                                         return value ?? string.Empty;
                                     }
                                     return match.Value;
-                                }).ToLower();
+                                });
 
                                 MatchCollection matches = Regex.Matches(finalRoute, @"\${(.*?)}");
 
@@ -459,7 +459,7 @@ namespace CSharpToTypescript.Container
                     return value ?? string.Empty;
                 }
                 return match.Value;
-            }).ToLower();
+            });
 
             MatchCollection matches = Regex.Matches(finalRoute, @"\${(.*?)}");
 

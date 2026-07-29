@@ -1,0 +1,1 @@
+dotnet-publish ../nupkg/AventusSharp.Converter.0.0.13.nupkg

@@ -1,20 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
-    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
-    <IsPackable>true</IsPackable>
-
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>csharp-converter</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
-
     <PackageId>AventusSharp.Converter</PackageId>
-    <Version>0.0.11</Version>
+    <Version>0.0.13</Version>
     <Authors>Cobwebsite</Authors>
     <Company>ch.cobwebsite</Company>
     <Copyright>Copyright © 2024 Cobwebsite</Copyright>
@@ -26,6 +14,18 @@
     <PackageIcon>logo_sharp.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <IsPackable>true</IsPackable>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>csharp-converter</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

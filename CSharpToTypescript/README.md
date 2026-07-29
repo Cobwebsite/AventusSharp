@@ -12,6 +12,12 @@ You can install this package with NuGet :
 dotnet tool install --global AventusSharp.Converter
 ```
 
+You can update this package with NuGet :
+
+```shell
+dotnet tool update --global AventusSharp.Converter
+```
+
 ## Documentation
 
 The documentation is available here [https://aventussharp.com/](https://aventussharp.com/).

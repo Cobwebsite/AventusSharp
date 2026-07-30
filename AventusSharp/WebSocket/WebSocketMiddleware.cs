@@ -478,6 +478,10 @@ namespace AventusSharp.WebSocket
                     System.Net.WebSockets.WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
                     await endPointInstances[newPath].StartNewInstance(context, webSocket);
                 }
+                else
+                {
+                    next();
+                }
                 //else
                 //{
                 //    context.Response.StatusCode = 404;
@@ -489,8 +493,10 @@ namespace AventusSharp.WebSocket
                 //    }
                 //}
             }
-
-            await next();
+            else
+            {
+                await next();
+            }
         }
     }
 }

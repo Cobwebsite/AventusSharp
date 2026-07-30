@@ -349,7 +349,32 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
+        public async Task<ResultWithError<List<X>>> Query<X>(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
+            if (commandResult.Result != null)
+            {
+                ResultWithError<List<X>> result = await Query<X>(commandResult.Result, null, callerPath, callerNo);
+                commandResult.Result.Dispose();
+                return result;
+            }
+            ResultWithError<List<X>> noCommand = new();
+            noCommand.Errors.AddRange(commandResult.Errors);
+            return noCommand;
+        }
+        public async Task<ResultWithError<List<X>>> Query<X>(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
+        {
+            ResultWithError<List<X>> result = new();
+            var dico = result.ExtractAsync(() => Query(command, dataParameters, callerPath, callerNo));
 
+            if (dico != null)
+            {
+
+            }
+
+            return result;
+
+        }
         public async Task<ResultWithError<List<Dictionary<string, string?>>>> Query(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);

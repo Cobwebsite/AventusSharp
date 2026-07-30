@@ -8,7 +8,7 @@ namespace AventusSharp.Routes
     [Export]
     public enum RouteErrorCode
     {
-        UnknowError,
+        UnknownError,
         FormContentTypeUnknown,
         CantGetValueFromBody,
         CantMoveFile,

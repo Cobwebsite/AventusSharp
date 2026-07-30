@@ -3,7 +3,7 @@ import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.
 namespace Routes {
 
 	export enum RouteErrorCode {
-		UnknowError,
+		UnknownError,
 		FormContentTypeUnknown,
 		CantGetValueFromBody,
 		CantMoveFile,

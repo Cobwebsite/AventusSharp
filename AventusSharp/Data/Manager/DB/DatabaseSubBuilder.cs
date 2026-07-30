@@ -155,7 +155,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                     }
                     catch (Exception e)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                     }
                 }
             }

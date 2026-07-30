@@ -55,7 +55,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         }
         catch (Exception e)
         {
-            result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
         }
         finally
         {
@@ -66,7 +66,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         return result;
@@ -104,7 +104,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
                 catch (Exception exception)
                 {
                     actionResult.Errors.Add(
-                        new DataError(DataErrorCode.UnknowError, exception));
+                        new DataError(DataErrorCode.UnknownError, exception));
                 }
                 rollbackActionsResult.Errors.AddRange(actionResult.Errors);
             }
@@ -114,7 +114,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         }
         catch (Exception e)
         {
-            result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
         }
         finally
         {
@@ -125,7 +125,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         return result;

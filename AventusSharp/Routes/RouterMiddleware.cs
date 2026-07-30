@@ -218,7 +218,7 @@ namespace AventusSharp.Routes
                                 }
                                 catch (Exception e)
                                 {
-                                    result.Errors.Add(new RouteError(RouteErrorCode.UnknowError, e));
+                                    result.Errors.Add(new RouteError(RouteErrorCode.UnknownError, e));
                                 }
                             }
                         }
@@ -579,7 +579,7 @@ namespace AventusSharp.Routes
                     routeException is AventusException aventusException
                         ? aventusException.Error
                         : new RouteError(
-                            RouteErrorCode.UnknowError,
+                            RouteErrorCode.UnknownError,
                             routeException);
                 int code = context.Response.StatusCode >= 400
                     ? context.Response.StatusCode

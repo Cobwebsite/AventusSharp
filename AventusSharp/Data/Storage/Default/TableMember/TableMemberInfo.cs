@@ -289,7 +289,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, e).Print();
+                new DataError(DataErrorCode.UnknownError, e).Print();
             }
             return new List<object>();
 
@@ -317,7 +317,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, e).Print();
+                new DataError(DataErrorCode.UnknownError, e).Print();
             }
             return null;
 
@@ -344,8 +344,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, "erreur for field " + Name + " on " + ReflectedType?.Name).Print();
-                new DataError(DataErrorCode.UnknowError, e).Print();
+                new DataError(DataErrorCode.UnknownError, "erreur for field " + Name + " on " + ReflectedType?.Name).Print();
+                new DataError(DataErrorCode.UnknownError, e).Print();
             }
         }
 
@@ -408,7 +408,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, e).Print();
+                new DataError(DataErrorCode.UnknownError, e).Print();
             }
             return null;
         }

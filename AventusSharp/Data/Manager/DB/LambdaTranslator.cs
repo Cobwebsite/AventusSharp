@@ -28,14 +28,14 @@ namespace AventusSharp.Data.Manager.DB
 
     public class LambdaStep
     {
-        public static List<LambdaStep> Create(List<string> pathes, List<Type> types)
+        public static List<LambdaStep> Create(List<string> paths, List<Type> types)
         {
             List<LambdaStep> steps = new List<LambdaStep>();
-            for (int i = 0; i < pathes.Count; i++)
+            for (int i = 0; i < paths.Count; i++)
             {
                 steps.Add(new LambdaStep()
                 {
-                    Name = pathes[i],
+                    Name = paths[i],
                     Type = types[i]
                 });
             }
@@ -329,7 +329,7 @@ namespace AventusSharp.Data.Manager.DB
     public class LambdaTranslator<T> : ExpressionVisitor
     {
         private static List<Type> _dateTypes = new List<Type>() { typeof(DateTime), typeof(Datetime), typeof(Date) };
-        public List<string> pathes = new();
+        public List<string> paths = new();
         public List<WhereGroupFctSqlEnum> sqlFcts = new();
         public bool alreadyAdded = false;
         public List<Type> types = new();
@@ -958,19 +958,19 @@ namespace AventusSharp.Data.Manager.DB
             }
             if (_dateTypes.Contains(m.Type))
             {
-                if (pathes.Count > 0)
+                if (paths.Count > 0)
                 {
                     WhereGroupFctSqlEnum? fct = null;
-                    if (pathes[0] == "Year") fct = WhereGroupFctSqlEnum.Year;
-                    else if (pathes[0] == "Month") fct = WhereGroupFctSqlEnum.Month;
-                    else if (pathes[0] == "Day") fct = WhereGroupFctSqlEnum.Day;
-                    else if (pathes[0] == "Hour") fct = WhereGroupFctSqlEnum.Hour;
-                    else if (pathes[0] == "Minute") fct = WhereGroupFctSqlEnum.Minute;
-                    else if (pathes[0] == "Second") fct = WhereGroupFctSqlEnum.Second;
+                    if (paths[0] == "Year") fct = WhereGroupFctSqlEnum.Year;
+                    else if (paths[0] == "Month") fct = WhereGroupFctSqlEnum.Month;
+                    else if (paths[0] == "Day") fct = WhereGroupFctSqlEnum.Day;
+                    else if (paths[0] == "Hour") fct = WhereGroupFctSqlEnum.Hour;
+                    else if (paths[0] == "Minute") fct = WhereGroupFctSqlEnum.Minute;
+                    else if (paths[0] == "Second") fct = WhereGroupFctSqlEnum.Second;
 
                     if (fct is WhereGroupFctSqlEnum realFct)
                     {
-                        pathes.RemoveAt(0);
+                        paths.RemoveAt(0);
                         types.RemoveAt(0);
                         isBase = types.Count == 0;
                         sqlFcts.Insert(0, realFct);
@@ -978,7 +978,7 @@ namespace AventusSharp.Data.Manager.DB
                 }
             }
 
-            pathes.Insert(0, m.Member.Name);
+            paths.Insert(0, m.Member.Name);
             types.Insert(0, m.Type);
 
             if (m.Expression != null)
@@ -1067,7 +1067,7 @@ namespace AventusSharp.Data.Manager.DB
             {
                 if (onParameter)
                 {
-                    List<LambdaStep> steps = LambdaStep.Create(pathes, types);
+                    List<LambdaStep> steps = LambdaStep.Create(paths, types);
                     LambdaIncludeResult lambdaResult = databaseBuilder.LambdaInclude(steps, null, false, null);
                     if (lambdaResult.IsExternal)
                     {
@@ -1075,7 +1075,7 @@ namespace AventusSharp.Data.Manager.DB
                     }
                     else
                     {
-                        string fullPath = string.Join(".", pathes.SkipLast(1));
+                        string fullPath = string.Join(".", paths.SkipLast(1));
                         KeyValuePair<TableMemberInfoSql?, string> memberInfo = databaseBuilder.InfoByPath[fullPath].GetTableMemberInfoAndAlias(m.Member.Name);
                         if (memberInfo.Key != null)
                         {
@@ -1117,7 +1117,7 @@ namespace AventusSharp.Data.Manager.DB
                         }
                     }
                 }
-                pathes.Clear();
+                paths.Clear();
                 types.Clear();
                 sqlFcts.Clear();
                 variableAccess.Clear();
@@ -1492,7 +1492,7 @@ namespace AventusSharp.Data.Manager.DB
 
     public class LambdaToPath : ExpressionVisitor
     {
-        private readonly List<string> Pathes = new();
+        private readonly List<string> Paths = new();
 
         private static LambdaToPath? instance;
         private static readonly SemaphoreSlim mutex = new(1, 1);
@@ -1502,16 +1502,16 @@ namespace AventusSharp.Data.Manager.DB
         {
             mutex.Wait();
             instance ??= new LambdaToPath();
-            instance.Pathes.Clear();
+            instance.Paths.Clear();
             instance.Visit(expression);
-            string result = string.Join(".", instance.Pathes);
+            string result = string.Join(".", instance.Paths);
             mutex.Release();
             return result;
         }
 
         protected override Expression VisitMember(MemberExpression m)
         {
-            Pathes.Insert(0, m.Member.Name);
+            Paths.Insert(0, m.Member.Name);
             return base.VisitMember(m);
         }
     }

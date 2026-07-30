@@ -10,7 +10,7 @@ namespace AventusSharp.WebSocket
     [Export]
     public enum WsErrorCode
     {
-        UnknowError,
+        UnknownError,
         CantDefineAssembly,
         ConfigError,
         MultipleMainEndpoint,

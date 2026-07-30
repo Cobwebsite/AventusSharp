@@ -3,7 +3,7 @@ import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.
 namespace SSE {
 
 	export enum SSEErrorCode {
-		UnknowError,
+		UnknownError,
 		CantDefineAssembly,
 		ConfigError,
 		MultipleMainEndpoint,

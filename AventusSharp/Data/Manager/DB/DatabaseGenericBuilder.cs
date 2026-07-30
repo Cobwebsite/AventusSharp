@@ -209,7 +209,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
         catch (Exception exception)
         {
-            Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+            Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
         }
     }
     protected void WhereGenericWithParameters(Expression<Func<T, bool>> expression)
@@ -234,7 +234,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
         catch (Exception exception)
         {
-            Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+            Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
         }
     }
     protected void PrepareGeneric(params object[] objects)

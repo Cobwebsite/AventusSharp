@@ -108,7 +108,7 @@ namespace AventusSharp.Data.Manager
         {
             return typeof(U);
         }
-        public virtual List<Type> DefineManualDependances()
+        public virtual List<Type> DefineManualDependencies()
         {
             return new List<Type>();
         }
@@ -209,7 +209,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
             return result;
         }
@@ -458,7 +458,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeGetAllWithError()
@@ -478,7 +478,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> AfterGetAllWithError<X>(ResultWithError<List<X>> result) where X : U
@@ -546,7 +546,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -611,7 +611,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeGetByIdWithError(int id)
@@ -631,7 +631,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> AfterGetByIdWithError<X>(int id, ResultWithError<X> result) where X : U
@@ -678,7 +678,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception ex)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, ex));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, ex));
             }
             PrintErrors(result);
             return result;
@@ -708,7 +708,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -782,7 +782,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeGetByIdsWithError(List<int> ids)
@@ -802,7 +802,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> AfterGetByIdsWithError<X>(List<int> ids, ResultWithError<List<X>> result) where X : U
@@ -876,7 +876,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -941,7 +941,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeWhereWithError<X>(Expression<Func<X, bool>> func) where X : U
@@ -961,7 +961,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> AfterWhereWithError<X>(Expression<Func<X, bool>> func, ResultWithError<List<X>> result) where X : U
@@ -1031,7 +1031,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1126,7 +1126,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1246,7 +1246,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1288,7 +1288,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeCreateWithError<X>(List<X> values) where X : U
@@ -1308,7 +1308,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
 
@@ -1380,7 +1380,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1411,7 +1411,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1538,7 +1538,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1608,7 +1608,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeUpdateWithError<X>(List<X> values) where X : U
@@ -1628,7 +1628,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> AfterUpdateWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
@@ -1698,7 +1698,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1797,7 +1797,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1865,7 +1865,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> BeforeDeleteWithError<X>(List<X> values) where X : U
@@ -1885,7 +1885,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
         protected virtual Task<List<GenericError>> AfterDeleteWithError<X>(List<X> values, ResultWithError<List<X>> result) where X : U
@@ -2013,7 +2013,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -2109,7 +2109,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -2192,7 +2192,7 @@ namespace AventusSharp.Data.Manager
                 {
                     Result = defaultValue
                 };
-                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
             }
             if (resultTemp.Success)
             {
@@ -2246,7 +2246,7 @@ namespace AventusSharp.Data.Manager
             catch (Exception exception)
             {
                 resultTemp = new VoidWithError();
-                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
             }
             if (resultTemp.Success)
             {
@@ -2287,7 +2287,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
 
 

@@ -69,7 +69,7 @@ namespace AventusSharp.WebSocket.Request
             }
             catch (Exception e)
             {
-                result.Errors.Add(new WsError(WsErrorCode.UnknowError, e));
+                result.Errors.Add(new WsError(WsErrorCode.UnknownError, e));
             }
             return result;
         }

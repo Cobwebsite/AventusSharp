@@ -10,7 +10,7 @@ namespace AventusSharp.SSE
     [Export]
     public enum SSEErrorCode
     {
-        UnknowError,
+        UnknownError,
         CantDefineAssembly,
         ConfigError,
         MultipleMainEndpoint,

@@ -127,7 +127,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 catch (Exception e)
                 {
-                    new DataError(DataErrorCode.UnknowError, e).Print();
+                    new DataError(DataErrorCode.UnknownError, e).Print();
                 }
             }
             return null;

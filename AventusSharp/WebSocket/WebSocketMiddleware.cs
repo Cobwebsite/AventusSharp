@@ -244,12 +244,12 @@ namespace AventusSharp.WebSocket
                         }
                     }
 
-                    if (infoMethod.pathes.Count == 0)
+                    if (infoMethod.paths.Count == 0)
                     {
-                        infoMethod.pathes.Add(prefix + Tools.GetDefaultMethodUrl(method));
+                        infoMethod.paths.Add(prefix + Tools.GetDefaultMethodUrl(method));
                     }
 
-                    foreach (string route in infoMethod.pathes)
+                    foreach (string route in infoMethod.paths)
                     {
                         Dictionary<string, WebSocketRouterParameterInfo> @params = fctParams.ToDictionary(p => p.name, p => p);
                         string urlPattern = route;
@@ -336,9 +336,9 @@ namespace AventusSharp.WebSocket
             if (attr is Path pathAttr)
             {
                 string pattern = prefix + pathAttr.pattern;
-                if (!info.pathes.Contains(pattern))
+                if (!info.paths.Contains(pattern))
                 {
-                    info.pathes.Add(pattern);
+                    info.paths.Add(pattern);
                 }
             }
             else if (attr is Attributes.EndPoint endPointAttr)

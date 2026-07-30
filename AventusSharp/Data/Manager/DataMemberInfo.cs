@@ -127,7 +127,7 @@ namespace AventusSharp.Data.Manager
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, e).Print();
+                new DataError(DataErrorCode.UnknownError, e).Print();
             }
             return new List<object>();
 

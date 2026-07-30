@@ -165,7 +165,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 }
                 else
                 {
-                    Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible"));
+                    Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible"));
                     return this;
                 }
 

@@ -3,7 +3,7 @@ import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.
 namespace WebSocket {
 
 	export enum WsErrorCode {
-		UnknowError,
+		UnknownError,
 		CantDefineAssembly,
 		ConfigError,
 		MultipleMainEndpoint,

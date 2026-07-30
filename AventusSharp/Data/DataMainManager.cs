@@ -90,9 +90,9 @@ namespace AventusSharp.Data
     public class DataManagerConfigLog
     {
         /// <summary>
-        /// Display dependances for all your models
+        /// Display dependencies for all your models
         /// </summary>
-        public bool monitorDataDependances = false;
+        public bool monitorDataDependencies = false;
         /// <summary>
         /// Show Analyze managers step
         /// </summary>
@@ -266,7 +266,7 @@ namespace AventusSharp.Data
                     {
                         return resultTemp;
                     }
-                    resultTemp = CalculateDataDependances().ToGeneric();
+                    resultTemp = CalculateDataDependencies().ToGeneric();
                     if (!resultTemp.Success)
                     {
                         return resultTemp;
@@ -294,7 +294,7 @@ namespace AventusSharp.Data
                 }
                 catch (Exception e)
                 {
-                    resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    resultTemp.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return resultTemp;
             }
@@ -324,15 +324,15 @@ namespace AventusSharp.Data
                     }
                 }
 
-                void addDependances(Type typeFrom, Type typeDependance, string name)
+                void addDependencies(Type typeFrom, Type typeDependency, string name)
                 {
-                    if (!managerInformations[typeFrom].dependances.ContainsKey(typeDependance))
+                    if (!managerInformations[typeFrom].dependencies.ContainsKey(typeDependency))
                     {
-                        managerInformations[typeFrom].dependances[typeDependance] = new List<string>();
+                        managerInformations[typeFrom].dependencies[typeDependency] = new List<string>();
                     }
-                    if (!managerInformations[typeFrom].dependances[typeDependance].Contains(name))
+                    if (!managerInformations[typeFrom].dependencies[typeDependency].Contains(name))
                     {
-                        managerInformations[typeFrom].dependances[typeDependance].Add(name);
+                        managerInformations[typeFrom].dependencies[typeDependency].Add(name);
                     }
                 }
 
@@ -358,13 +358,13 @@ namespace AventusSharp.Data
                     }
                     ManagerInformation info = new(manager)
                     {
-                        dependances = new Dictionary<Type, List<string>>(),
+                        dependencies = new Dictionary<Type, List<string>>(),
                     };
 
                     info.AddDataInformation(new DataInformation()
                     {
                         Data = manager.GetMainType(),
-                        dependances = new Dictionary<Type, List<string>>(),
+                        dependencies = new Dictionary<Type, List<string>>(),
                         membersInfo = new Dictionary<string, DataMemberInfo>()
 
                     });
@@ -375,16 +375,16 @@ namespace AventusSharp.Data
                     }
 
 
-                    List<Type> manualDependances = manager.DefineManualDependances();
-                    foreach (Type manualDependance in manualDependances)
+                    List<Type> manualDependencies = manager.DefineManualDependencies();
+                    foreach (Type manualDependency in manualDependencies)
                     {
-                        if (manualDependance.GetInterfaces().Contains(typeof(IStorable)))
+                        if (manualDependency.GetInterfaces().Contains(typeof(IStorable)))
                         {
-                            addDependances(managerType, manualDependance, "*manual");
+                            addDependencies(managerType, manualDependency, "*manual");
                         }
                         else
                         {
-                            new DataError(DataErrorCode.TypeNotStorable, "type " + manualDependance.Name + " is not storable, so you can't add it inside manual dependances of manager " + manager.Name).Print();
+                            new DataError(DataErrorCode.TypeNotStorable, "type " + manualDependency.Name + " is not storable, so you can't add it inside manual dependencies of manager " + manager.Name).Print();
                         }
                     }
 
@@ -394,9 +394,9 @@ namespace AventusSharp.Data
                 this.managerInformations = managerInformations.Values.ToList();
                 return result;
             }
-            private void AddDataDependance(Type typeFrom, Type? typeDependance, string name)
+            private void AddDataDependency(Type typeFrom, Type? typeDependency, string name)
             {
-                if (typeDependance == null || typeDependance == typeof(Object))
+                if (typeDependency == null || typeDependency == typeof(Object))
                 {
                     return;
                 }
@@ -404,35 +404,35 @@ namespace AventusSharp.Data
                 {
                     typeFrom = typeFrom.GetGenericTypeDefinition();
                 }
-                if (typeDependance.IsGenericType)
+                if (typeDependency.IsGenericType)
                 {
-                    if (!typeDependance.IsGenericTypeDefinition)
+                    if (!typeDependency.IsGenericTypeDefinition)
                     {
-                        foreach (Type type in typeDependance.GenericTypeArguments)
+                        foreach (Type type in typeDependency.GenericTypeArguments)
                         {
                             // TODO check how to prevent infinite loop
-                            AddDataDependance(typeFrom, type, name);
+                            AddDataDependency(typeFrom, type, name);
                         }
                     }
-                    typeDependance = typeDependance.GetGenericTypeDefinition();
+                    typeDependency = typeDependency.GetGenericTypeDefinition();
                 }
 
-                if (!dataInformations[typeFrom].dependances.ContainsKey(typeDependance))
+                if (!dataInformations[typeFrom].dependencies.ContainsKey(typeDependency))
                 {
-                    dataInformations[typeFrom].dependances[typeDependance] = new List<string>();
+                    dataInformations[typeFrom].dependencies[typeDependency] = new List<string>();
                 }
-                if (!dataInformations[typeFrom].dependances[typeDependance].Contains(name))
+                if (!dataInformations[typeFrom].dependencies[typeDependency].Contains(name))
                 {
-                    dataInformations[typeFrom].dependances[typeDependance].Add(name);
+                    dataInformations[typeFrom].dependencies[typeDependency].Add(name);
                 }
             }
-            private VoidWithDataError CalculateDataDependances()
+            private VoidWithDataError CalculateDataDependencies()
             {
                 VoidWithDataError result = new();
-                bool monitor = this.config.log.monitorDataDependances;
+                bool monitor = this.config.log.monitorDataDependencies;
                 if (monitor)
                 {
-                    AventusLogger.Instance.LogInformation("*********** Calculate data dependances **********");
+                    AventusLogger.Instance.LogInformation("*********** Calculate data dependencies **********");
                 }
                 List<Type> dataTypes = new();
                 foreach (Assembly assembly in searchingAssemblies)
@@ -443,7 +443,7 @@ namespace AventusSharp.Data
 
                 foreach (Type dataType in dataTypes)
                 {
-                    result = CalculateDataDependance(dataType);
+                    result = CalculateDataDependency(dataType);
                     if (!result.Success)
                     {
                         return result;
@@ -452,7 +452,7 @@ namespace AventusSharp.Data
 
                 return result;
             }
-            private VoidWithDataError CalculateDataDependance(Type dataType)
+            private VoidWithDataError CalculateDataDependency(Type dataType)
             {
                 VoidWithDataError result = new();
                 if (dataInformations.ContainsKey(dataType))
@@ -462,7 +462,7 @@ namespace AventusSharp.Data
                 DataInformation info = new()
                 {
                     Data = dataType,
-                    dependances = new Dictionary<Type, List<string>>(),
+                    dependencies = new Dictionary<Type, List<string>>(),
                     membersInfo = new Dictionary<string, DataMemberInfo>()
 
                 };
@@ -490,14 +490,14 @@ namespace AventusSharp.Data
                     if (interfaceTypeTemp.Success && interfaceTypeTemp.Result != null)
                     {
                         interfaceType = interfaceTypeTemp.Result;
-                        AddDataDependance(dataType, interfaceType, "*constraint");
+                        AddDataDependency(dataType, interfaceType, "*constraint");
                         if (dataInformations.ContainsKey(interfaceType))
                         {
                             dataInformations[interfaceType].GenericType = dataType;
                         }
                         else
                         {
-                            VoidWithDataError resultTemp = CalculateDataDependance(interfaceType);
+                            VoidWithDataError resultTemp = CalculateDataDependency(interfaceType);
                             if (!resultTemp.Success)
                             {
                                 result.Errors.AddRange(resultTemp.Errors);
@@ -509,7 +509,7 @@ namespace AventusSharp.Data
                 }
                 else if (dataType.IsAbstract && dataType.IsClass)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, "How did you do that for " + dataType.Name));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, "How did you do that for " + dataType.Name));
                     return result;
                 }
 
@@ -518,15 +518,15 @@ namespace AventusSharp.Data
                 if (parentType == null || parentType == typeof(Object)) { }
                 else if (parentType.IsInterface)
                 {
-                    AddDataDependance(dataType, parentType, "*parent");
+                    AddDataDependency(dataType, parentType, "*parent");
                 }
                 else if (parentType.IsAbstract && parentType.IsGenericType)
                 {
-                    AddDataDependance(dataType, parentType, "*parent");
+                    AddDataDependency(dataType, parentType, "*parent");
                 }
                 else if (config.allowNonAbstractExtension && !parentType.IsAbstract && !parentType.IsGenericType)
                 {
-                    AddDataDependance(dataType, parentType, "*parent");
+                    AddDataDependency(dataType, parentType, "*parent");
                 }
                 else
                 {
@@ -540,7 +540,7 @@ namespace AventusSharp.Data
                 {
                     if (_interface.GetInterfaces().Contains(typeof(IStorable)))
                     {
-                        AddDataDependance(dataType, _interface, "*interface");
+                        AddDataDependency(dataType, _interface, "*interface");
                     }
                 }
 
@@ -554,16 +554,16 @@ namespace AventusSharp.Data
                 foreach (FieldInfo field in fields)
                 {
                     DataMemberInfo memberInfo = new(field);
-                    if (!TypeTools.IsPrimitiveType(memberInfo.Type) && memberInfo.GetAttribute<IAvoidDependance>(false) == null)
+                    if (!TypeTools.IsPrimitiveType(memberInfo.Type) && memberInfo.GetAttribute<IAvoidDependency>(false) == null)
                     {
-                        AddDataDependance(dataType, memberInfo.Type, memberInfo.Name);
+                        AddDataDependency(dataType, memberInfo.Type, memberInfo.Name);
                     }
                     else
                     {
                         ForeignKey? foreignKeyAttr = memberInfo.GetAttribute<ForeignKey>(false);
                         if (foreignKeyAttr != null)
                         {
-                            AddDataDependance(dataType, foreignKeyAttr.Type, memberInfo.Name);
+                            AddDataDependency(dataType, foreignKeyAttr.Type, memberInfo.Name);
                         }
                     }
                     info.membersInfo.Add(memberInfo.Name, memberInfo);
@@ -575,17 +575,17 @@ namespace AventusSharp.Data
                     ForeignKey? foreignKeyAttr = memberInfo.GetAttribute<ForeignKey>(false);
                     if (foreignKeyAttr != null)
                     {
-                        AddDataDependance(dataType, foreignKeyAttr.Type, memberInfo.Name);
+                        AddDataDependency(dataType, foreignKeyAttr.Type, memberInfo.Name);
                     }
-                    else if (!TypeTools.IsPrimitiveType(memberInfo.Type) && memberInfo.GetAttribute<IAvoidDependance>(false) == null)
+                    else if (!TypeTools.IsPrimitiveType(memberInfo.Type) && memberInfo.GetAttribute<IAvoidDependency>(false) == null)
                     {
-                        AddDataDependance(dataType, memberInfo.Type, memberInfo.Name);
+                        AddDataDependency(dataType, memberInfo.Type, memberInfo.Name);
                     }
 
                     info.membersInfo.Add(memberInfo.Name, memberInfo);
                 }
 
-                if (config.log.monitorDataDependances)
+                if (config.log.monitorDataDependencies)
                 {
                     AventusLogger.Instance.LogInformation(info.ToString());
                 }
@@ -674,12 +674,12 @@ namespace AventusSharp.Data
 
                     waitingData.Add(dataInformation);
 
-                    List<Type> dependances = dataInformation.dependances.Keys.ToList();
-                    foreach (Type dependanceType in dependances)
+                    List<Type> dependencies = dataInformation.dependencies.Keys.ToList();
+                    foreach (Type dependencyType in dependencies)
                     {
-                        if (dataInformations.ContainsKey(dependanceType))
+                        if (dataInformations.ContainsKey(dependencyType))
                         {
-                            ResultWithDataError<int> insertIndexTemp = OrderDataLoop(dataInformations[dependanceType], waitingData);
+                            ResultWithDataError<int> insertIndexTemp = OrderDataLoop(dataInformations[dependencyType], waitingData);
                             if (!insertIndexTemp.Success)
                             {
                                 // its an error
@@ -695,7 +695,7 @@ namespace AventusSharp.Data
 
                     if (orderedData.Contains(dataInformation))
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependance, "Self referencing dependances found for Data " + dataInformation.Name));
+                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependency, "Self referencing dependencies found for Data " + dataInformation.Name));
                         return result;
                     }
                     orderedData.Insert(insertIndex, dataInformation);
@@ -703,7 +703,7 @@ namespace AventusSharp.Data
                 }
                 catch (Exception e)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 result.Result = orderedData.Count;
                 return result;
@@ -749,7 +749,7 @@ namespace AventusSharp.Data
                     }
                 }
 
-                // merge dependances and order data inside managers
+                // merge dependencies and order data inside managers
                 for (int i = 0; i < managerInformations.Count; i++)
                 {
                     managerInformations[i].PrepareOrderDataInformation();
@@ -758,21 +758,21 @@ namespace AventusSharp.Data
                 foreach (DataInformation dataInformation in orderedData)
                 {
                     dataInformation.ManagerInfo.AddDataInformation(dataInformation);
-                    foreach (KeyValuePair<Type, List<string>> dependance in dataInformation.dependances)
+                    foreach (KeyValuePair<Type, List<string>> dependencies in dataInformation.dependencies)
                     {
-                        Type dependanceType = dependance.Key;
-                        List<string> dependancePaths = dependance.Value;
-                        if (!dataInformation.ManagerInfo.UsedForType(dependanceType))
+                        Type dependencyType = dependencies.Key;
+                        List<string> dependencyPaths = dependencies.Value;
+                        if (!dataInformation.ManagerInfo.UsedForType(dependencyType))
                         {
-                            if (!dataInformation.ManagerInfo.dependances.ContainsKey(dependanceType))
+                            if (!dataInformation.ManagerInfo.dependencies.ContainsKey(dependencyType))
                             {
-                                dataInformation.ManagerInfo.dependances.Add(dependanceType, new List<string>());
+                                dataInformation.ManagerInfo.dependencies.Add(dependencyType, new List<string>());
                             }
-                            foreach (string dependancePath in dependancePaths)
+                            foreach (string dependencyPath in dependencyPaths)
                             {
-                                if (!dataInformation.ManagerInfo.dependances[dependanceType].Contains(dependancePath))
+                                if (!dataInformation.ManagerInfo.dependencies[dependencyType].Contains(dependencyPath))
                                 {
-                                    dataInformation.ManagerInfo.dependances[dependanceType].Add(dependancePath);
+                                    dataInformation.ManagerInfo.dependencies[dependencyType].Add(dependencyPath);
                                 }
                             }
                         }
@@ -854,12 +854,12 @@ namespace AventusSharp.Data
 
                     waitingData.Add(managerInformation);
 
-                    List<Type> dependances = managerInformation.dependances.Keys.ToList();
-                    foreach (Type dependanceType in dependances)
+                    List<Type> dependencies = managerInformation.dependencies.Keys.ToList();
+                    foreach (Type dependencyType in dependencies)
                     {
-                        if (dataInformations.ContainsKey(dependanceType))
+                        if (dataInformations.ContainsKey(dependencyType))
                         {
-                            ManagerInformation? managerInfo = dataInformations[dependanceType].ManagerInfo;
+                            ManagerInformation? managerInfo = dataInformations[dependencyType].ManagerInfo;
                             if (managerInfo != null)
                             {
                                 ResultWithDataError<int> insertIndexTemp = OrderManagerLoop(managerInfo, waitingData);
@@ -879,7 +879,7 @@ namespace AventusSharp.Data
 
                     if (orderedManager.Contains(managerInformation))
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependance, "Self referencing dependance found for Manager " + managerInformation.Manager.Name));
+                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependency, "Self referencing dependency found for Manager " + managerInformation.Manager.Name));
                         return result;
                     }
                     orderedManager.Insert(insertIndex, managerInformation);
@@ -887,7 +887,7 @@ namespace AventusSharp.Data
                 }
                 catch (Exception e)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 result.Result = orderedManager.Count;
                 return result;
@@ -959,7 +959,7 @@ namespace AventusSharp.Data
                 {
                     Type? constraint = null;
                     Type? parent = null;
-                    foreach (KeyValuePair<Type, List<string>> pair in dataInformation.dependances)
+                    foreach (KeyValuePair<Type, List<string>> pair in dataInformation.dependencies)
                     {
                         if (pair.Value.Contains("*constraint"))
                         {
@@ -985,7 +985,7 @@ namespace AventusSharp.Data
                         memberInfo: dataInformation.membersInfo.Values.ToList()
                     )
                     {
-                        dependances = dataInformation.dependances,
+                        dependencies = dataInformation.dependencies,
                         aliasType = constraint,
                         isForceInherit = dataInformation.IsForceInherit
                     };
@@ -1009,7 +1009,7 @@ namespace AventusSharp.Data
                                 }
                                 else
                                 {
-                                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Somthing went wrong when creating pyramid but I don't know why"));
+                                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Somthing went wrong when creating pyramid but I don't know why"));
                                     return result;
                                 }
                             }
@@ -1031,7 +1031,7 @@ namespace AventusSharp.Data
                                 }
                                 else
                                 {
-                                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Somthing went wrong when creating pyramid but I don't know why"));
+                                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Somthing went wrong when creating pyramid but I don't know why"));
                                     return result;
                                 }
                             }
@@ -1042,7 +1042,7 @@ namespace AventusSharp.Data
                         }
                         else
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Somthing went wrong when creating pyramid but I don't know why"));
+                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Somthing went wrong when creating pyramid but I don't know why"));
                             return result;
                         }
                     }
@@ -1075,7 +1075,7 @@ namespace AventusSharp.Data
                     }
                     catch (Exception e)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                         return result;
                     }
                 }
@@ -1129,7 +1129,7 @@ namespace AventusSharp.Data
                     }
                     ManagerInformation info = new(simpleManager)
                     {
-                        dependances = new Dictionary<Type, List<string>>(),
+                        dependencies = new Dictionary<Type, List<string>>(),
                         IsDummy = true,
                     };
                     info.AddDataInformation(dataInformation);
@@ -1138,7 +1138,7 @@ namespace AventusSharp.Data
                 }
                 catch (Exception e)
                 {
-                    result.Errors.Add(new(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new(DataErrorCode.UnknownError, e));
                 }
                 return result;
             }
@@ -1229,8 +1229,8 @@ namespace AventusSharp.Data
                         }
                         catch (Exception e)
                         {
-                            new DataError(DataErrorCode.UnknowError, e).Print();
-                            new DataError(DataErrorCode.UnknowError, args[i].ToString() + " on constraint " + type.Name + " on type " + type.Name).Print();
+                            new DataError(DataErrorCode.UnknownError, e).Print();
+                            new DataError(DataErrorCode.UnknownError, args[i].ToString() + " on constraint " + type.Name + " on type " + type.Name).Print();
                         }
                     }
                     result = type.GetGenericTypeDefinition().MakeGenericType(typesToUse);
@@ -1270,11 +1270,11 @@ namespace AventusSharp.Data
                 {
                     if (IsForceInherit)
                     {
-                        foreach (KeyValuePair<Type, List<string>> dependance in dependances)
+                        foreach (KeyValuePair<Type, List<string>> dependency in dependencies)
                         {
-                            if (dependance.Value.Contains("*parent") && dataInformations.ContainsKey(dependance.Key))
+                            if (dependency.Value.Contains("*parent") && dataInformations.ContainsKey(dependency.Key))
                             {
-                                return dataInformations[dependance.Key].IsMergeable(dataInformations);
+                                return dataInformations[dependency.Key].IsMergeable(dataInformations);
                             }
                         }
                         return false;
@@ -1293,7 +1293,7 @@ namespace AventusSharp.Data
 #pragma warning disable CS8618 // Un champ non-nullable doit contenir une valeur non-null lors de la fermeture du constructeur. Envisagez de déclarer le champ comme nullable.
             public ManagerInformation ManagerInfo { get; set; }
 #pragma warning restore CS8618 // Un champ non-nullable doit contenir une valeur non-null lors de la fermeture du constructeur. Envisagez de déclarer le champ comme nullable.
-            public Dictionary<Type, List<string>> dependances = new();
+            public Dictionary<Type, List<string>> dependencies = new();
             public Dictionary<string, DataMemberInfo> membersInfo = new();
             public override string ToString()
             {
@@ -1304,8 +1304,8 @@ namespace AventusSharp.Data
                 {
                     txt += "\t" + pair.Value.ToString() + "\r\n";
                 }
-                txt += "Has dependanceTypes with :\r\n";
-                foreach (KeyValuePair<Type, List<string>> pair in dependances)
+                txt += "Has dependencyTypes with :\r\n";
+                foreach (KeyValuePair<Type, List<string>> pair in dependencies)
                 {
                     txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\r\n";
                     foreach (string path in pair.Value)
@@ -1321,7 +1321,7 @@ namespace AventusSharp.Data
         public class ManagerInformation
         {
             public IGenericDM Manager { get; private set; }
-            public Dictionary<Type, List<string>> dependances = new();
+            public Dictionary<Type, List<string>> dependencies = new();
             public Dictionary<Type, DataInformation> dataInformations = new();
 
             public bool IsDummy
@@ -1394,8 +1394,8 @@ namespace AventusSharp.Data
                 }
 
 
-                txt += "Has dependanceTypes with :\r\n";
-                foreach (KeyValuePair<Type, List<string>> pair in dependances)
+                txt += "Has dependencyTypes with :\r\n";
+                foreach (KeyValuePair<Type, List<string>> pair in dependencies)
                 {
                     if (pair.Key.Assembly == Assembly.GetEntryAssembly())
                     {
@@ -1420,8 +1420,8 @@ namespace AventusSharp.Data
                 }
 
 
-                txt += "Has dependanceTypes with :\r\n";
-                foreach (KeyValuePair<Type, List<string>> pair in dependances)
+                txt += "Has dependencyTypes with :\r\n";
+                foreach (KeyValuePair<Type, List<string>> pair in dependencies)
                 {
                     txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\r\n";
                     foreach (string path in pair.Value)
@@ -1448,7 +1448,7 @@ namespace AventusSharp.Data
         public bool isForceInherit = false;
         public bool nonGenericExtension = false;
 
-        public Dictionary<Type, List<string>> dependances = new();
+        public Dictionary<Type, List<string>> dependencies = new();
 
         public PyramidInfo(Type type, List<DataMemberInfo> memberInfo)
         {

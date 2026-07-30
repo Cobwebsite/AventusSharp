@@ -133,7 +133,7 @@ namespace AventusSharp.Routes.Request
             }
             catch (Exception e)
             {
-                result.Errors.Add(new(RouteErrorCode.UnknowError, e));
+                result.Errors.Add(new(RouteErrorCode.UnknownError, e));
             }
             return result;
         }
@@ -151,7 +151,7 @@ namespace AventusSharp.Routes.Request
             }
             catch (Exception e)
             {
-                result.Errors.Add(new RouteError(RouteErrorCode.UnknowError, e));
+                result.Errors.Add(new RouteError(RouteErrorCode.UnknownError, e));
             }
             return result;
         }
@@ -327,7 +327,7 @@ namespace AventusSharp.Routes.Request
             }
             catch (Exception e)
             {
-                result.Errors.Add(new RouteError(RouteErrorCode.UnknowError, e));
+                result.Errors.Add(new RouteError(RouteErrorCode.UnknownError, e));
             }
             return result;
         }

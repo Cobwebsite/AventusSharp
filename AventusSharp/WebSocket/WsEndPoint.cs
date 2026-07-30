@@ -179,7 +179,7 @@ namespace AventusSharp.WebSocket
                     aventusException.Error is WsError wsError
                         ? wsError
                         : new WsError(
-                            WsErrorCode.UnknowError,
+                            WsErrorCode.UnknownError,
                             routeException);
                 ResultWithWsError<object> result = new();
                 result.Errors.Add(error);

@@ -58,13 +58,13 @@ namespace AventusSharp.WebSocket.Event
                     endPoint = infoMethod.endPoints[0];
                 }
 
-                if (infoMethod.pathes.Count == 0)
+                if (infoMethod.paths.Count == 0)
                 {
                     path = this.GetType().FullName ?? "";//prepare base on full classname;
                 }
                 else
                 {
-                    path = infoMethod.pathes[0];
+                    path = infoMethod.paths[0];
                 }
                 basePath = path;
                 if (!path.Contains("[") && !path.Contains("]"))

@@ -474,13 +474,13 @@ namespace AventusSharp.Data.Manager.DB
                     }
                     catch (Exception e)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                     }
                 }
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
 
             return result;
@@ -659,7 +659,7 @@ namespace AventusSharp.Data.Manager.DB
                 }
                 catch (Exception e)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
                 return result;
             });

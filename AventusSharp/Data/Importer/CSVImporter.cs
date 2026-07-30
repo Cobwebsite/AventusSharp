@@ -135,7 +135,7 @@ public class CSVImporter
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
             return result;
         }));

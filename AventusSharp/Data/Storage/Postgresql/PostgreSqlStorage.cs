@@ -102,17 +102,17 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
                     catch (Exception e2)
                     {
                         useDatabase = true;
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e2));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, e2));
                     }
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                 }
             }
             else
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
         }
 
@@ -132,7 +132,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         }
         catch (Exception e)
         {
-            result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+            result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
         }
         return result;
     }

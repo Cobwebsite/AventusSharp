@@ -268,7 +268,7 @@ namespace AventusSharp.Data
                     {
                         return new List<GenericError>();
                     }
-                    return new List<GenericError>() { new DataError(DataErrorCode.UnknowError, "Element is overrided => impossible") };
+                    return new List<GenericError>() { new DataError(DataErrorCode.UnknownError, "Element is overrided => impossible") };
                 }
                 return result.Errors;
 
@@ -359,7 +359,7 @@ namespace AventusSharp.Data
                     {
                         return result.Errors;
                     }
-                    return new List<GenericError>() { new DataError(DataErrorCode.UnknowError, "Element is overrided => impossible") };
+                    return new List<GenericError>() { new DataError(DataErrorCode.UnknownError, "Element is overrided => impossible") };
                 }
                 return result.Errors;
             }
@@ -532,7 +532,7 @@ namespace AventusSharp.Data
             return new List<DataError>();
         }
 
-        #region Load Dependances
+        #region Load Dependencies
 
         /// <summary>
         /// Allow to load the a real object from an id on the same element

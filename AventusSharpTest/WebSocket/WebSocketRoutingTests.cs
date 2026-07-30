@@ -519,7 +519,7 @@ public sealed class WebSocketRoutingTests
             Assert.That(message["uid"]?.Value<string>(),
                 Is.EqualTo("error-request"));
             Assert.That(data["Errors"]?[0]?["Code"]?.Value<int>(),
-                Is.EqualTo((int)WsErrorCode.UnknowError));
+                Is.EqualTo((int)WsErrorCode.UnknownError));
             Assert.That(data["Errors"]?[0]?["Message"]?.Value<string>(),
                 Does.Contain(expectedMessage));
             Assert.That(RouterMiddleware.ContextScope, Is.Null);
@@ -836,7 +836,7 @@ public sealed class WebSocketRoutingTests
         [WsPath("/throw-aventus")]
         public object ThrowAventus() =>
             throw new WsError(
-                WsErrorCode.UnknowError,
+                WsErrorCode.UnknownError,
                 "expected websocket failure").GetException();
 
         [WsPath("/throw-async")]

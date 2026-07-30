@@ -56,7 +56,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             else
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible case"));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible case"));
             }
             return result;
         }
@@ -230,7 +230,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
             return result;
         }

@@ -50,7 +50,7 @@ public class ImageFile
         }
         catch (Exception e)
         {
-            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, e));
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, e));
         }
         return result;
     }
@@ -120,7 +120,7 @@ public class ImageFile
                 string? extensionName = Enum.GetName(format);
                 if (extensionName == null)
                 {
-                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, "File format isn't inside extension enum"));
+                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, "File format isn't inside extension enum"));
                     return result;
                 }
                 pathWithExtension.Add(extensionName.ToLower());
@@ -140,7 +140,7 @@ public class ImageFile
         }
         catch (Exception e)
         {
-            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, e));
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, e));
         }
         return result;
 
@@ -224,7 +224,7 @@ public class ImageFile
         }
         catch (Exception e)
         {
-            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, e));
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, e));
         }
         return result;
     }
@@ -285,7 +285,7 @@ public class ImageFile
                             string? name = Enum.GetName<SKEncodedImageFormat>(format);
                             if (name == null)
                             {
-                                result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, "File format isn't inside extension enum"));
+                                result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, "File format isn't inside extension enum"));
                                 return result;
                             }
                             savePath = path.Replace(".svg", "." + name.ToLower());
@@ -302,7 +302,7 @@ public class ImageFile
         }
         catch (Exception e)
         {
-            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, e));
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, e));
         }
         return result;
 
@@ -325,7 +325,7 @@ public class ImageFile
         }
         catch (Exception e)
         {
-            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, e));
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, e));
         }
 
         return result;
@@ -369,7 +369,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
         }
         catch (Exception e)
         {
-            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknowError, e));
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, e));
         }
         return result;
     }
@@ -404,7 +404,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
 [Export]
 public enum ImageFileErrorCode
 {
-    UnknowError,
+    UnknownError,
     NotValidImage,
     FileNotSvg,
     NoSize,

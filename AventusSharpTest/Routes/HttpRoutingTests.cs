@@ -627,7 +627,7 @@ public sealed class HttpRoutingTests
         [HttpPath("/throw-aventus")]
         public string ThrowAventus() =>
             throw new RouteError(
-                RouteErrorCode.UnknowError,
+                RouteErrorCode.UnknownError,
                 "expected route failure").GetException();
 
         [Get]

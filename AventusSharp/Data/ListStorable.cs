@@ -155,7 +155,7 @@ public static class ListStorable
 
     #endregion
 
-    #region Load Dependances
+    #region Load Dependencies
     /// <summary>
     /// Allow to load the a real object from an id on the same element
     /// </summary>

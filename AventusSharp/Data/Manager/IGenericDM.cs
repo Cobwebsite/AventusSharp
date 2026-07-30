@@ -20,7 +20,7 @@ namespace AventusSharp.Data.Manager
         ResultWithError<PyramidInfo> GetPyramidsInfo<X>();
         ResultWithError<DataMemberInfo> GetMemberInfo<X>(string name);
         ResultWithError<List<DataMemberInfo>> GetMembersInfo<X, Y>();
-        List<Type> DefineManualDependances();
+        List<Type> DefineManualDependencies();
         string Name { get; }
         bool IsInit { get; }
 

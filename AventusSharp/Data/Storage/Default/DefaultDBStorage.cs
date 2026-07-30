@@ -158,7 +158,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
             return result;
         }
@@ -179,7 +179,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknowError, e.Message).Print();
+                new DataError(DataErrorCode.UnknownError, e.Message).Print();
             }
         }
 
@@ -255,12 +255,12 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     catch (Exception e)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, e.Message, callerPath, callerNo));
                     }
                 }
                 catch (Exception e)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e.Message, callerPath, callerNo));
                 }
                 finally
                 {
@@ -268,7 +268,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
             return result;
         }
@@ -330,12 +330,12 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     catch (Exception e)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, e.Message, callerPath, callerNo));
                     }
                 }
                 catch (Exception e)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message, callerPath, callerNo));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, e.Message, callerPath, callerNo));
                 }
                 finally
                 {
@@ -344,7 +344,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
             return result;
         }
@@ -486,14 +486,14 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 catch (Exception e)
                 {
-                    DataError error = new DataError(DataErrorCode.UnknowError, e.Message + "\nSQL: " + command.CommandText);
+                    DataError error = new DataError(DataErrorCode.UnknownError, e.Message + "\nSQL: " + command.CommandText);
                     error.Details.Add(command.CommandText);
                     result.Errors.Add(error);
                 }
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e.Message + "\nSQL: " + command.CommandText, callerPath, callerNo));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e.Message + "\nSQL: " + command.CommandText, callerPath, callerNo));
             }
 
             return result;
@@ -557,7 +557,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknowError, e));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
 
 
@@ -1202,7 +1202,7 @@ namespace AventusSharp.Data.Storage.Default
                         }
                         else
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible to cast " + resultTemp.Result.GetType().Name + " into " + typeof(X).Name));
+                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible to cast " + resultTemp.Result.GetType().Name + " into " + typeof(X).Name));
                         }
                     }
                     else
@@ -1242,7 +1242,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknowError, "Impossible to cast " + objectTemp.GetType().Name + " into " + typeof(X).Name));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible to cast " + objectTemp.GetType().Name + " into " + typeof(X).Name));
                     }
                 }
                 return result;
@@ -1343,7 +1343,7 @@ namespace AventusSharp.Data.Storage.Default
                             }
                             else
                             {
-                                result.Errors.Add(new DataError(DataErrorCode.UnknowError, "impossible?"));
+                                result.Errors.Add(new DataError(DataErrorCode.UnknownError, "impossible?"));
                             }
                         }
                     }
@@ -2550,7 +2550,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     Result = defaultValue
                 };
-                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
             }
             if (resultTemp.Success)
             {
@@ -2600,7 +2600,7 @@ namespace AventusSharp.Data.Storage.Default
             catch (Exception exception)
             {
                 resultTemp = new VoidWithError();
-                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknowError, exception));
+                resultTemp.Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
             }
             if (resultTemp.Success)
             {

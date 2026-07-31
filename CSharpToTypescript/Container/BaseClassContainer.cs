@@ -500,6 +500,8 @@ namespace CSharpToTypescript.Container
             {
                 throw new Exception("Impossible");
             }
+            MemberInfo? memberInfo = Tools.GetMemberInfo(symbol, realType);
+            if (memberInfo == null) throw new Exception("Impossible");
             if (type.EndsWith("[]"))
             {
                 return "[]";
@@ -510,35 +512,43 @@ namespace CSharpToTypescript.Container
             }
 
             string result = "undefined";
-            var equalsSyntax = symbol.DeclaringSyntaxReferences[0].GetSyntax() switch
+            Export? exportAttr = memberInfo.GetCustomAttribute<Export>();
+            if (exportAttr != null && exportAttr.DefaultValue != null)
             {
-                PropertyDeclarationSyntax property => property.Initializer,
-                VariableDeclaratorSyntax variable => variable.Initializer,
-                _ => null
-            };
-            if (equalsSyntax is not null)
+                result = exportAttr.DefaultValue;
+            }
+            else
             {
-                if (equalsSyntax.Value is ObjectCreationExpressionSyntax newSyntax && newSyntax.Type is IdentifierNameSyntax nameSyntax)
+                var equalsSyntax = symbol.DeclaringSyntaxReferences[0].GetSyntax() switch
                 {
-                    SymbolInfo temp = ProjectManager.Compilation.GetSemanticModel(nameSyntax.SyntaxTree).GetSymbolInfo(newSyntax);
-                    if (temp.Symbol is IMethodSymbol methodSymbol)
+                    PropertyDeclarationSyntax property => property.Initializer,
+                    VariableDeclaratorSyntax variable => variable.Initializer,
+                    _ => null
+                };
+                if (equalsSyntax is not null)
+                {
+                    if (equalsSyntax.Value is ObjectCreationExpressionSyntax newSyntax && newSyntax.Type is IdentifierNameSyntax nameSyntax)
                     {
-                        string typeName = this.GetTypeName(methodSymbol.ContainingType);
-                        result = "new " + typeName + "()";
-                        // TODO code it when example found
-                        //foreach (IParameterSymbol parameter in methodSymbol.Parameters)
-                        //{
+                        SymbolInfo temp = ProjectManager.Compilation.GetSemanticModel(nameSyntax.SyntaxTree).GetSymbolInfo(newSyntax);
+                        if (temp.Symbol is IMethodSymbol methodSymbol)
+                        {
+                            string typeName = this.GetTypeName(methodSymbol.ContainingType);
+                            result = "new " + typeName + "()";
+                            // TODO code it when example found
+                            //foreach (IParameterSymbol parameter in methodSymbol.Parameters)
+                            //{
 
-                        //}
+                            //}
+                        }
+                        else
+                        {
+                            result = equalsSyntax.Value.ToString();
+                        }
                     }
                     else
                     {
                         result = equalsSyntax.Value.ToString();
                     }
-                }
-                else
-                {
-                    result = equalsSyntax.Value.ToString();
                 }
             }
             if (result == "default")

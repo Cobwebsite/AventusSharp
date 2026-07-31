@@ -345,6 +345,12 @@ namespace CSharpToTypescript
             return GetMethodInfo(methodSymbol.MethodName, methodSymbol.Params, @class);
         }
 
+        public static MemberInfo? GetMemberInfo(ISymbol memberSymbol, Type @class)
+        {
+            if (memberSymbol is IPropertySymbol propertySymbol) return GetPropertyInfo(propertySymbol, @class);
+            if (memberSymbol is IFieldSymbol fieldSymbol) return GetFieldInfo(fieldSymbol, @class);
+            return null;
+        }
         public static PropertyInfo GetPropertyInfo(IPropertySymbol memberSymbol, Type @class)
         {
             List<PropertyInfo> members = @class.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ToList();

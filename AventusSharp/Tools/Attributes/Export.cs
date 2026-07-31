@@ -2,11 +2,13 @@
 
 namespace AventusSharp.Tools.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Interface)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Interface | AttributeTargets.Field | AttributeTargets.Property)]
     public class Export : Attribute
     {
         public string? Namespace;
         public bool? Internal;
+
+        public string? DefaultValue;
 
         public Export() { }
 
@@ -24,6 +26,13 @@ namespace AventusSharp.Tools.Attributes
         {
             Namespace = _namespace;
             Internal = _internal;
+        }
+
+        public Export(string? _namespace = null, bool _internal = false, string? defaultValue = null)
+        {
+            Namespace = _namespace;
+            Internal = _internal;
+            DefaultValue = defaultValue;
         }
     }
 

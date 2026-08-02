@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Environment = System.Environment;
 
 namespace AventusSharp;
 
@@ -174,7 +175,7 @@ public static class AventusExtension
                     NullValueHandling = NullValueHandling.Ignore
                 });
                 if (Environment.NewLine != "\n")
-                    txt = txt.Replace("\n", Environment.NewLine);
+                    txt = txt.Replace(Environment.NewLine, "\n");
                 File.WriteAllText(writePath, txt);
             }
 

@@ -38,7 +38,7 @@ internal class CreateIntermediateTable
         List<string> schema = new();
         List<string> primaryConstraint = new();
         List<string> foreignConstraint = new();
-        string separator = ",\r\n";
+        string separator = ",\n";
 
         string intermediateName = "[" + memberMultiple.TableIntermediateKey1 + "]";
         string schemaProp = "\t" + intermediateName + " " + storage.GetSqlColumnType(primary.SqlType, instance.Primary);
@@ -69,7 +69,7 @@ internal class CreateIntermediateTable
 
 
 
-        string sql = "CREATE TABLE [" + intermediateTableName + "] (\r\n";
+        string sql = "CREATE TABLE [" + intermediateTableName + "] (\n";
         sql += string.Join(separator, schema);
         if (primaryConstraint.Count > 0)
         {

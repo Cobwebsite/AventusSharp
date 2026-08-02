@@ -153,7 +153,7 @@ namespace CSharpToTypescript.Container
                                     AddTxtOpen("public " + methodTemp.Name + "() {", resultTemp);
                                     AddTxt("return \"" + o.ToString() + "\";", resultTemp);
                                     AddTxtClose("}", resultTemp);
-                                    return string.Join("\r\n", resultTemp);
+                                    return string.Join("\n", resultTemp);
                                 };
 
                                 functionNeeded.Add(methodTemp.Name, getTxt);
@@ -189,7 +189,7 @@ namespace CSharpToTypescript.Container
                 RemoveIndent();
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         private string GetAbstract()
@@ -274,7 +274,7 @@ namespace CSharpToTypescript.Container
                 result.Add(fct.Value());
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         protected override string? CustomReplacer(ISymbol? type, string fullname, string? result)

@@ -11,14 +11,14 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
     {
         public static List<string> GetQuery(TableInfo table, SqliteStorage storage)
         {
-            string sql = "CREATE TABLE \"" + table.SqlTableName + "\" (\r\n";
+            string sql = "CREATE TABLE \"" + table.SqlTableName + "\" (\n";
 
             List<string> schema = new();
             List<string> primaryConstraint = new();
             List<string> foreignConstraint = new();
             List<string> uniqueConstraint = new();
             List<string> queries = new();
-            string separator = ",\r\n";
+            string separator = ",\n";
 
             // key is sql_table_name
             Dictionary<string, Dictionary<string, List<TableMemberInfoSql>>> primariesByClass = new();

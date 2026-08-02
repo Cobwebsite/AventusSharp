@@ -52,14 +52,14 @@ namespace CSharpToTypescript.Container
                 }
                 shouldBe++;
             }
-            result.Add(string.Join(",\r\n", fields));
+            result.Add(string.Join(",\n", fields));
             AddTxtClose("}", result);
             if (ProjectManager.Config.useNamespace)
             {
                 RemoveIndent();
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
     }
 }

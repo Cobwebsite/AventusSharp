@@ -267,7 +267,7 @@ namespace CSharpToTypescript.Container
                         AddTxtOpen("public " + method.Name + "() {", resultTemp);
                         AddTxt("return \"" + o.ToString() + "\";", resultTemp);
                         AddTxtClose("}", resultTemp);
-                        return string.Join("\r\n", resultTemp);
+                        return string.Join("\n", resultTemp);
                     };
                     additionalFcts.Add(method.Name, getFct);
                 }
@@ -283,7 +283,7 @@ namespace CSharpToTypescript.Container
                     AddTxtOpen("public override getPrefix(): string {", resultTemp);
                     AddTxt("return \"" + prefix + "\";", resultTemp);
                     AddTxtClose("}", resultTemp);
-                    return string.Join("\r\n", resultTemp);
+                    return string.Join("\n", resultTemp);
                 };
                 additionalFcts.Add("getPrefix", getFct);
             }
@@ -433,7 +433,7 @@ namespace CSharpToTypescript.Container
                 RemoveIndent();
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         private string GetAbstract()
@@ -503,7 +503,7 @@ namespace CSharpToTypescript.Container
 
 
 
-                result.Add(string.Join("\r\n", eventList));
+                result.Add(string.Join("\n", eventList));
             }
 
             foreach (WsRouteContainer route in routes)
@@ -535,7 +535,7 @@ namespace CSharpToTypescript.Container
 
 
 
-            return string.Join("\r\n\r\n", result);
+            return string.Join("\n\n", result);
         }
 
 
@@ -588,7 +588,7 @@ namespace CSharpToTypescript.Container
                 AddTxtClose("}", eventContent);
             }
 
-            return string.Join("\r\n", eventContent);
+            return string.Join("\n", eventContent);
         }
 
         protected override string? CustomReplacer(ISymbol? type, string fullname, string? result)
@@ -930,7 +930,7 @@ namespace CSharpToTypescript.Container
                                     parent.AddTxtOpen("public " + methodTemp.Name + "() {", resultTemp);
                                     parent.AddTxt("return \"" + o.ToString() + "\";", resultTemp);
                                     parent.AddTxtClose("}", resultTemp);
-                                    return string.Join("\r\n", resultTemp);
+                                    return string.Join("\n", resultTemp);
                                 };
 
                                 functionNeeded.Add(methodTemp.Name, getTxt);
@@ -1057,7 +1057,7 @@ namespace CSharpToTypescript.Container
             parent.AddTxt(fctTxt, result);
             parent.AddTxtClose("}", result);
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
     }
 

@@ -37,7 +37,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             List<string> schema = new();
             List<string> primaryConstraint = new();
             List<string> foreignConstraint = new();
-            string separator = ",\r\n";
+            string separator = ",\n";
 
             string intermediateName = "`" + memberMultiple.TableIntermediateKey1 + "`";
             string schemaProp = "\t" + intermediateName + " " + storage.GetSqlColumnType(primary.SqlType, instance.Primary);
@@ -68,7 +68,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             
 
 
-            string sql = "CREATE TABLE `" + intermediateTableName + "` (\r\n";
+            string sql = "CREATE TABLE `" + intermediateTableName + "` (\n";
             sql += string.Join(separator, schema);
             if (primaryConstraint.Count > 0)
             {

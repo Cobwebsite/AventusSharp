@@ -150,7 +150,7 @@ namespace CSharpToTypescript.Container
                 RemoveIndent();
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
 
@@ -425,7 +425,7 @@ namespace CSharpToTypescript.Container
                 }
             }
             GetContentAfter(result);
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         protected void AdditionalContentProperty(IPropertySymbol property, List<string> result)

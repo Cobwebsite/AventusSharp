@@ -79,7 +79,7 @@ namespace CSharpToTypescript.Container
                 RemoveIndent();
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         private string GetAbstract()
@@ -135,7 +135,7 @@ namespace CSharpToTypescript.Container
                 AddTxt("return \"" + path + "\";", result);
                 AddTxtClose("}", result);
             }
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         protected override string? CustomReplacer(ISymbol? type, string fullname, string? result)

@@ -226,7 +226,7 @@ namespace CSharpToTypescript.Container
                 RemoveIndent();
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         private string GetContent()
@@ -259,7 +259,7 @@ namespace CSharpToTypescript.Container
                     result.Add(fct.Value());
                 }
             }
-            return string.Join("\r\n\r\n", result);
+            return string.Join("\n\n", result);
         }
 
         private string GetAbstract()
@@ -378,7 +378,7 @@ namespace CSharpToTypescript.Container
                         AddTxtOpen("public " + method.Name + "() {", resultTemp);
                         AddTxt("return \"" + o.ToString() + "\";", resultTemp);
                         AddTxtClose("}", resultTemp);
-                        return string.Join("\r\n", resultTemp);
+                        return string.Join("\n", resultTemp);
                     };
                     additionalFcts.Add(method.Name, getFct);
                 }
@@ -794,7 +794,7 @@ namespace CSharpToTypescript.Container
                                     parent.AddTxtOpen("public " + methodTemp.Name + "() {", resultTemp);
                                     parent.AddTxt("return \"" + o.ToString() + "\";", resultTemp);
                                     parent.AddTxtClose("}", resultTemp);
-                                    return string.Join("\r\n", resultTemp);
+                                    return string.Join("\n", resultTemp);
                                 };
 
                                 functionNeeded.Add(methodTemp.Name, getTxt);
@@ -1121,7 +1121,7 @@ namespace CSharpToTypescript.Container
                 parent.AddTxtClose("}", result);
             }
 
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
     }
 }

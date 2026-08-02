@@ -657,7 +657,7 @@ namespace AventusSharp.Data
                         return result;
                     }
                     string msgError = "Infinite loop found for Data " + dataInformation.Name + "\n";
-                    msgError += "Elements in loop : \r\n\t - " + string.Join("\r\n\t - ", waitingData.Select(d => d.Name)) + "\r\n\t - " + dataInformation.Name;
+                    msgError += "Elements in loop : \n\t - " + string.Join("\n\t - ", waitingData.Select(d => d.Name)) + "\n\t - " + dataInformation.Name;
                     result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, msgError));
                     return result;
                 }
@@ -837,7 +837,7 @@ namespace AventusSharp.Data
                         return result;
                     }
                     string msgError = "Infinite loop found for Manager " + managerInformation.Manager.Name + "\n";
-                    msgError += "Elements in loop : \r\n\t- " + string.Join("\r\n\t- ", waitingData.Select(d => d.Manager.Name)) + "\r\n\t- " + managerInformation.Manager.Name;
+                    msgError += "Elements in loop : \n\t- " + string.Join("\n\t- ", waitingData.Select(d => d.Manager.Name)) + "\n\t- " + managerInformation.Manager.Name;
                     result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, msgError));
                     return result;
                 }
@@ -1297,23 +1297,23 @@ namespace AventusSharp.Data
             public Dictionary<string, DataMemberInfo> membersInfo = new();
             public override string ToString()
             {
-                string txt = "**********************\r\n";
-                txt += "Data " + Name + "\r\n";
-                txt += "Has members :\r\n";
+                string txt = "**********************\n";
+                txt += "Data " + Name + "\n";
+                txt += "Has members :\n";
                 foreach (KeyValuePair<string, DataMemberInfo> pair in membersInfo)
                 {
-                    txt += "\t" + pair.Value.ToString() + "\r\n";
+                    txt += "\t" + pair.Value.ToString() + "\n";
                 }
-                txt += "Has dependencyTypes with :\r\n";
+                txt += "Has dependencyTypes with :\n";
                 foreach (KeyValuePair<Type, List<string>> pair in dependencies)
                 {
-                    txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\r\n";
+                    txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\n";
                     foreach (string path in pair.Value)
                     {
-                        txt += "\t\t" + path + "\r\n";
+                        txt += "\t\t" + path + "\n";
                     }
                 }
-                txt += "**********************\r\n";
+                txt += "**********************\n";
                 return txt;
             }
         }
@@ -1385,51 +1385,51 @@ namespace AventusSharp.Data
             public string PrintCurrentAssembly()
             {
 
-                string txt = "**********************\r\n";
-                txt += "Manager " + Manager.Name + "\r\n";
-                txt += "Used for types :\r\n";
+                string txt = "**********************\n";
+                txt += "Manager " + Manager.Name + "\n";
+                txt += "Used for types :\n";
                 foreach (DataInformation data in dataInformations.Values)
                 {
-                    txt += "\t" + data.Name + "\r\n";
+                    txt += "\t" + data.Name + "\n";
                 }
 
 
-                txt += "Has dependencyTypes with :\r\n";
+                txt += "Has dependencyTypes with :\n";
                 foreach (KeyValuePair<Type, List<string>> pair in dependencies)
                 {
                     if (pair.Key.Assembly == Assembly.GetEntryAssembly())
                     {
-                        txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\r\n";
+                        txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\n";
                         foreach (string path in pair.Value)
                         {
-                            txt += "\t\t" + path + "\r\n";
+                            txt += "\t\t" + path + "\n";
                         }
                     }
                 }
-                txt += "**********************\r\n";
+                txt += "**********************\n";
                 return txt;
             }
             public override string ToString()
             {
-                string txt = "**********************\r\n";
-                txt += "Manager " + Manager.Name + "\r\n";
-                txt += "Used for types :\r\n";
+                string txt = "**********************\n";
+                txt += "Manager " + Manager.Name + "\n";
+                txt += "Used for types :\n";
                 foreach (DataInformation data in dataInformations.Values)
                 {
-                    txt += "\t" + data.Name + "\r\n";
+                    txt += "\t" + data.Name + "\n";
                 }
 
 
-                txt += "Has dependencyTypes with :\r\n";
+                txt += "Has dependencyTypes with :\n";
                 foreach (KeyValuePair<Type, List<string>> pair in dependencies)
                 {
-                    txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\r\n";
+                    txt += "\t" + pair.Key.Name + " (" + pair.Key.Assembly.GetName().Name + ")\n";
                     foreach (string path in pair.Value)
                     {
-                        txt += "\t\t" + path + "\r\n";
+                        txt += "\t\t" + path + "\n";
                     }
                 }
-                txt += "**********************\r\n";
+                txt += "**********************\n";
                 return txt;
             }
         }

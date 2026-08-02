@@ -177,7 +177,7 @@ namespace CSharpToTypescript.Container
             Match match = Regex.Match(commentTxt, @"<summary>([\s|\S]*)</summary>");
             if (match.Success)
             {
-                string[] comments = match.Groups[1].Value.Trim().Split("\r\n");
+                string[] comments = match.Groups[1].Value.Trim().Split("\n");
                 AddTxt("/**", result);
                 foreach (string comment in comments)
                 {
@@ -186,7 +186,7 @@ namespace CSharpToTypescript.Container
 
                 AddTxt(" */", result);
             }
-            return string.Join("\r\n", result);
+            return string.Join("\n", result);
         }
 
         protected IMethodSymbol? GetMethod(MethodInfo method)

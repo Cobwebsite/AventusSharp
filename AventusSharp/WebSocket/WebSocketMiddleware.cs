@@ -480,7 +480,7 @@ namespace AventusSharp.WebSocket
                 }
                 else
                 {
-                    next();
+                    await next();
                 }
                 //else
                 //{

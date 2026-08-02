@@ -44,7 +44,7 @@ namespace AventusSharp.Routes.Form
 
         public override string ToString()
         {
-            return "file " + name + " (" + type + ")\r\n" + pathTemp;
+            return "file " + name + " (" + type + ")\n" + pathTemp;
         }
     }
 

@@ -284,7 +284,7 @@ namespace CSharpToTypescript
                 Directory.CreateDirectory(dirName);
             }
 
-            File.WriteAllText(path + Extension, string.Join("\r\n", txt));
+            File.WriteAllText(path + Extension, string.Join("\n", txt));
         }
 
         public static void AddOthersFiles()

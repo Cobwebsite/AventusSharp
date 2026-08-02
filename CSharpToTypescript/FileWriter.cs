@@ -64,7 +64,7 @@ namespace CSharpToTypescript
 
         public string GetContent()
         {
-            return string.Join("\r\n", content);
+            return string.Join("\n", content);
         }
     }
 }

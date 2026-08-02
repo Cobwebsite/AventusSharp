@@ -2,7 +2,7 @@
     "scripts": {
         "dev": "dotnet build AventusSharp.csproj",
         "build": "dotnet build AventusSharp.csproj -c Release",
-        "publish": "dotnet-publish bin\\Release\\AventusSharp.0.0.13.nupkg",
+        "publish": "dotnet-publish bin\\Release\\AventusSharp.0.0.14.nupkg",
         "converter": "D:\\Aventus\\AventusSharp\\CSharpToTypescript\\publish.cmd",
         "dev:converter": "../CSharpToTypescript/scripts/dev.cmd",
         "pack:converter": "../CSharpToTypescript/scripts/pack.cmd",

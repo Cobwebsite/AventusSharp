@@ -71,7 +71,7 @@ public sealed class CsvImportExportTests
         {
             "Comma, value",
             "Quoted \"value\"",
-            "First line\r\nSecond line",
+            "First line\nSecond line",
             "Éclairage 日本語"
         };
         await TestCsvItem.BulkCreate(expectedNames
@@ -100,7 +100,7 @@ public sealed class CsvImportExportTests
     {
         await File.WriteAllTextAsync(
             _csvPath,
-            "Name,Quantity\r\nValid,1\r\nInvalid,not-a-number\r\n");
+            "Name,Quantity\nValid,1\nInvalid,not-a-number\n");
 
         var import = await CSVImporter.Import<TestCsvItem>(_csvPath);
         var loaded = await ((TestCsvItemManager)GenericDM.Get<TestCsvItem>())
@@ -114,7 +114,7 @@ public sealed class CsvImportExportTests
     [Test]
     public async Task Header_only_file_imports_successfully_without_rows()
     {
-        await File.WriteAllTextAsync(_csvPath, "Name,Quantity\r\n");
+        await File.WriteAllTextAsync(_csvPath, "Name,Quantity\n");
 
         var import = await CSVImporter.Import<TestCsvItem>(_csvPath);
         var loaded = await ((TestCsvItemManager)GenericDM.Get<TestCsvItem>())
@@ -244,7 +244,7 @@ public sealed class CsvImportExportTests
         const int expectedId = 900001;
         await File.WriteAllTextAsync(
             _csvPath,
-            $"Id,Name,Quantity\r\n{expectedId},Preserved,4\r\n");
+            $"Id,Name,Quantity\n{expectedId},Preserved,4\n");
         var config = new CSVImporterConfig<TestCsvItem>
         {
             WithId = true
@@ -271,7 +271,7 @@ public sealed class CsvImportExportTests
     {
         await File.WriteAllTextAsync(
             _csvPath,
-            "Name,Quantity\r\nShouldNotPersist,5\r\n");
+            "Name,Quantity\nShouldNotPersist,5\n");
         var config = new CSVImporterConfig<TestCsvItem>
         {
             mapper = mapper =>
@@ -301,7 +301,7 @@ public sealed class CsvImportExportTests
     {
         await File.WriteAllTextAsync(
             _csvPath,
-            "Name,Quantity\r\nFirst,1\r\nSecond,2\r\nInvalid,not-a-number\r\n");
+            "Name,Quantity\nFirst,1\nSecond,2\nInvalid,not-a-number\n");
         var config = new CSVImporterConfig<TestCsvItem>
         {
             BufferSize = 2

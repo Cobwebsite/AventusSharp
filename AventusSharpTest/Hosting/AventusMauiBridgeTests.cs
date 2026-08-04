@@ -1,6 +1,7 @@
 using System.Text;
 using AventusSharp.Hosting;
 using AventusSharp.Maui;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 namespace AventusSharpTest.Hosting;
@@ -11,7 +12,10 @@ public sealed class AventusMauiBridgeTests
     public async Task Bridge_maps_a_WebView_request_and_response_without_AspNetCore()
     {
         var dispatcher = new CapturingDispatcher();
-        var bridge = new AventusMauiBridge(dispatcher, () => new EmptyServiceProvider());
+        using var services = new ServiceCollection().BuildServiceProvider();
+        var bridge = new AventusMauiBridge(
+            dispatcher,
+            services.GetRequiredService<IServiceScopeFactory>());
 
         AventusBridgeResponse response = await bridge.ExecuteAsync(
             new AventusBridgeRequest(
@@ -44,10 +48,5 @@ public sealed class AventusMauiBridgeTests
             context.Response.ContentType = "text/plain";
             await context.Response.Body.WriteAsync(Encoding.UTF8.GetBytes("response"));
         }
-    }
-
-    private sealed class EmptyServiceProvider : IServiceProvider
-    {
-        public object? GetService(Type serviceType) => null;
     }
 }

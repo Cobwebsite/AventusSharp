@@ -1,4 +1,5 @@
 using AventusSharp.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AventusSharp.Maui;
 
@@ -8,14 +9,14 @@ namespace AventusSharp.Maui;
 public sealed class AventusMauiBridge
 {
     private readonly IAventusRequestDispatcher dispatcher;
-    private readonly Func<IServiceProvider> serviceProviderFactory;
+    private readonly IServiceScopeFactory scopeFactory;
 
     public AventusMauiBridge(
         IAventusRequestDispatcher dispatcher,
-        Func<IServiceProvider> serviceProviderFactory)
+        IServiceScopeFactory scopeFactory)
     {
         this.dispatcher = dispatcher;
-        this.serviceProviderFactory = serviceProviderFactory;
+        this.scopeFactory = scopeFactory;
     }
 
     public async Task<AventusBridgeResponse> ExecuteAsync(
@@ -24,6 +25,7 @@ public sealed class AventusMauiBridge
     {
         ArgumentNullException.ThrowIfNull(bridgeRequest);
 
+        using IServiceScope scope = scopeFactory.CreateScope();
         var uri = new Uri(bridgeRequest.Url, UriKind.Absolute);
         var request = new AventusRequest
         {
@@ -45,7 +47,7 @@ public sealed class AventusMauiBridge
         var context = new AventusContext(
             request,
             response,
-            serviceProviderFactory(),
+            scope.ServiceProvider,
             cancellationToken);
 
         await dispatcher.DispatchAsync(context);

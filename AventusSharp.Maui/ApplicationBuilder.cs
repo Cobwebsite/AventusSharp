@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Hosting;
+using System.Reflection;
 
 namespace AventusSharp;
 
@@ -28,7 +29,7 @@ public static class AventusMauiExtension
         builder.Services.TryAddSingleton<AventusMauiBridge>(services =>
             new AventusMauiBridge(
                 services.GetRequiredService<IAventusRequestDispatcher>(),
-                () => services));
+                services.GetRequiredService<IServiceScopeFactory>()));
 
         return builder;
     }
@@ -41,7 +42,22 @@ public static class AventusMauiExtension
         this MauiApp app,
         Action<DataManagerConfig>? config = null)
     {
+        return app.UseAventusData(
+            [Assembly.GetEntryAssembly()],
+            config);
+    }
+
+    /// <summary>
+    /// Initializes the AventusSharp data managers by scanning the supplied
+    /// assemblies for models and managers.
+    /// </summary>
+    public static MauiApp UseAventusData(
+        this MauiApp app,
+        IEnumerable<Assembly?> assemblies,
+        Action<DataManagerConfig>? config = null)
+    {
         ArgumentNullException.ThrowIfNull(app);
+        ArgumentNullException.ThrowIfNull(assemblies);
         InitializeLogger(app);
 
         if (config is not null)
@@ -49,7 +65,9 @@ public static class AventusMauiExtension
             DataMainManager.Configure(config);
         }
 
-        VoidWithError result = DataMainManager.Init().GetAwaiter().GetResult();
+        VoidWithError result = DataMainManager.Init(assemblies.ToList())
+            .GetAwaiter()
+            .GetResult();
         ThrowOnError(result);
         return app;
     }

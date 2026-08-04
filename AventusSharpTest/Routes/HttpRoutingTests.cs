@@ -55,7 +55,7 @@ public sealed class HttpRoutingTests
         var services = new ServiceCollection().BuildServiceProvider();
         var bridge = new AventusMauiBridge(
             new AventusRequestDispatcher(),
-            () => services);
+            services.GetRequiredService<IServiceScopeFactory>());
 
         AventusBridgeResponse response = await bridge.ExecuteAsync(
             new AventusBridgeRequest(

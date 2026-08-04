@@ -1,53 +1,53 @@
 ﻿{
-  "outputPath": "./AventusJs/src/generated",
-  "csProj": "./AventusSharp.csproj",
+  "outputPath": "../AventusJs/src/generated",
+  "csProj": "./AventusSharp.Core.csproj",
   "replacer": {
     "all": {
       "type": {},
       "result": {
         "AventusSharp.WebSocket.EndPoint": {
           "result": "EndPoint",
-          "file": "./AventusJs/src/WebSocket/EndPoint.lib.avt"
+          "file": "../AventusJs/src/WebSocket/EndPoint.lib.avt"
         },
         "AventusSharp.WebSocket.WsEvent": {
           "result": "WsEvent",
-          "file": "./AventusJs/src/WebSocket/WsEvent.lib.avt"
+          "file": "../AventusJs/src/WebSocket/WsEvent.lib.avt"
         },
         "AventusSharp.WebSocket.Router": {
           "result": "Router",
-          "file": "./AventusJs/src/WebSocket/Router.lib.avt"
+          "file": "../AventusJs/src/WebSocket/Router.lib.avt"
         },
         "AventusSharp.Data.SharpClass": {
           "result": "SharpClass",
-          "file": "./AventusJs/src/Data/SharpClass.lib.avt"
+          "file": "../AventusJs/src/Data/SharpClass.lib.avt"
         },
         "AventusSharp.Tools.ResultWithError": {
           "result": "ResultWithError",
-          "file": "./AventusJs/src/Tools/ResultWithError.lib.avt"
+          "file": "../AventusJs/src/Tools/ResultWithError.lib.avt"
         },
         "ResultWithError": {
           "result": "ResultWithError",
-          "file": "./AventusJs/src/Tools/ResultWithError.lib.avt"
+          "file": "../AventusJs/src/Tools/ResultWithError.lib.avt"
         },
         "AventusSharp.Tools.VoidWithError": {
           "result": "VoidWithError",
-          "file": "./AventusJs/src/Tools/ResultWithError.lib.avt"
+          "file": "../AventusJs/src/Tools/ResultWithError.lib.avt"
         },
         "VoidWithError": {
           "result": "VoidWithError",
-          "file": "./AventusJs/src/Tools/ResultWithError.lib.avt"
+          "file": "../AventusJs/src/Tools/ResultWithError.lib.avt"
         },
         "AventusSharp.Routes.Response.Resource": {
           "result": "Resource",
-          "file": "./AventusJs/src/Route/Response/Resource.lib.avt"
+          "file": "../AventusJs/src/Routes/Response/Resource.lib.avt"
         },
         "AventusSharp.Routes.StorableRouter": {
           "result": "StorableRouter",
-          "file": "./AventusJs/src/Route/StorableRouter.lib.avt"
+          "file": "../AventusJs/src/Routes/StorableRouter.lib.avt"
         },
         "AventusFile": {
           "result": "AventusFile",
-          "file": "./AventusJs/src/Data/AventusFile.lib.avt"
+          "file": "../AventusJs/src/Data/AventusFile.lib.avt"
         }
       }
     }

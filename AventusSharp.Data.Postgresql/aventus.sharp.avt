@@ -1,0 +1,4 @@
+{
+  "outputPath": "../AventusJs/src/generated",
+  "csProj": "./AventusSharp.Data.Postgresql.csproj"
+}

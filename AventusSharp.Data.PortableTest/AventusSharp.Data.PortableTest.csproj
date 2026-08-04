@@ -20,4 +20,9 @@
     <ProjectReference Include="..\AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\AventusSharpTest\Data\SqliteStorageTests.cs"
+             Link="Shared\SqliteStorageTests.cs" />
+  </ItemGroup>
+
 </Project>

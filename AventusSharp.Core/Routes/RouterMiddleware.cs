@@ -61,6 +61,18 @@ namespace AventusSharp.Routes
             return Register(types);
         }
 
+        public static VoidWithError Register(IEnumerable<Assembly?> assemblies)
+        {
+            ArgumentNullException.ThrowIfNull(assemblies);
+            List<Type> types = assemblies
+                .Where(assembly => assembly is not null)
+                .SelectMany(assembly => assembly!.GetTypes())
+                .Where(type => type.GetInterfaces().Contains(typeof(IRouter)))
+                .Distinct()
+                .ToList();
+            return Register(types);
+        }
+
         public static VoidWithError Register(IEnumerable<Type> types)
         {
             VoidWithRouteError result = LoadConfig();

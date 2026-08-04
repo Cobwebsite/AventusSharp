@@ -80,7 +80,21 @@ public static class AventusMauiExtension
         this MauiApp app,
         Action<RouterConfig>? config = null)
     {
+        return app.UseAventusHttp(
+            [Assembly.GetEntryAssembly()],
+            config);
+    }
+
+    /// <summary>
+    /// Registers AventusSharp routes found in the supplied assemblies.
+    /// </summary>
+    public static MauiApp UseAventusHttp(
+        this MauiApp app,
+        IEnumerable<Assembly?> assemblies,
+        Action<RouterConfig>? config = null)
+    {
         ArgumentNullException.ThrowIfNull(app);
+        ArgumentNullException.ThrowIfNull(assemblies);
         InitializeLogger(app);
 
         if (config is not null)
@@ -88,7 +102,7 @@ public static class AventusMauiExtension
             RouterMiddleware.Configure(config);
         }
 
-        VoidWithError result = RouterMiddleware.Register();
+        VoidWithError result = RouterMiddleware.Register(assemblies);
         ThrowOnError(result);
 
         // Fail at startup with a clear DI error if AddAventus was omitted.

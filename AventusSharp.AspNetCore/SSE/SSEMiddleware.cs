@@ -41,6 +41,18 @@ public class SSEMiddleware
         return Register(typesEndpoint);
     }
 
+    public static VoidWithError Register(IEnumerable<Assembly?> assemblies)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
+        List<Type> typesEndpoint = assemblies
+            .Where(assembly => assembly is not null)
+            .SelectMany(assembly => assembly!.GetTypes())
+            .Where(type => type.GetInterfaces().Contains(typeof(ISSEEndPoint)))
+            .Distinct()
+            .ToList();
+        return Register(typesEndpoint);
+    }
+
     public static VoidWithError Register(IEnumerable<Type> typesEndpoint)
     {
         VoidWithError result;

@@ -51,13 +51,20 @@ public static class AventusExtension
     }
     public static IApplicationBuilder UseAventusData(this IApplicationBuilder app, Action<DataManagerConfig>? config = null)
     {
+        return app.UseAventusData([Assembly.GetEntryAssembly()], config);
+    }
+
+    public static IApplicationBuilder UseAventusData(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<DataManagerConfig>? config = null)
+    {
         if (IsExportCommand) return app;
+
+        ArgumentNullException.ThrowIfNull(assemblies);
 
         AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             DataMainManager.Configure(config);
-        VoidWithError result = DataMainManager.Init().GetAwaiter().GetResult();
+        VoidWithError result = DataMainManager.Init(assemblies.ToList()).GetAwaiter().GetResult();
         if (!result.Success)
         {
             throw result.Errors[0].GetException();
@@ -67,11 +74,17 @@ public static class AventusExtension
 
     public static IApplicationBuilder UseAventusHttp(this IApplicationBuilder app, Action<RouterConfig>? config = null)
     {
+        return app.UseAventusHttp([Assembly.GetEntryAssembly()], config);
+    }
+
+    public static IApplicationBuilder UseAventusHttp(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<RouterConfig>? config = null)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
         AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             Routes.RouterMiddleware.Configure(config);
-        VoidWithError result = Routes.RouterMiddleware.Register();
+        VoidWithError result = Routes.RouterMiddleware.Register(assemblies);
         if (!result.Success)
         {
             throw result.Errors[0].GetException();
@@ -83,11 +96,17 @@ public static class AventusExtension
 
     public static IApplicationBuilder UseAventusWebsocket(this IApplicationBuilder app, Action<WebSocketConfig>? config = null)
     {
+        return app.UseAventusWebsocket([Assembly.GetEntryAssembly()], config);
+    }
+
+    public static IApplicationBuilder UseAventusWebsocket(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<WebSocketConfig>? config = null)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
         AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             WebSocketMiddleware.Configure(config);
-        VoidWithError result = WebSocketMiddleware.Register();
+        VoidWithError result = WebSocketMiddleware.Register(assemblies);
         if (!result.Success)
         {
             throw result.Errors[0].GetException();
@@ -103,11 +122,17 @@ public static class AventusExtension
     }
     public static IApplicationBuilder UseAventusSSE(this IApplicationBuilder app, Action<SSEConfig>? config = null)
     {
+        return app.UseAventusSSE([Assembly.GetEntryAssembly()], config);
+    }
+
+    public static IApplicationBuilder UseAventusSSE(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<SSEConfig>? config = null)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
         AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             SSEMiddleware.Configure(config);
-        VoidWithError result = SSEMiddleware.Register();
+        VoidWithError result = SSEMiddleware.Register(assemblies);
         if (!result.Success)
         {
             throw result.Errors[0].GetException();

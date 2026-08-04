@@ -92,6 +92,19 @@ namespace AventusSharp.WebSocket
             return Register(typesEndpoint, typesRoute);
         }
 
+        public static VoidWithError Register(IEnumerable<Assembly?> assemblies)
+        {
+            ArgumentNullException.ThrowIfNull(assemblies);
+            List<Type> types = assemblies
+                .Where(assembly => assembly is not null)
+                .SelectMany(assembly => assembly!.GetTypes())
+                .Distinct()
+                .ToList();
+            return Register(
+                types.Where(type => type.GetInterfaces().Contains(typeof(IWsEndPoint))),
+                types.Where(type => type.GetInterfaces().Contains(typeof(IWsRouter))));
+        }
+
         public static VoidWithError Register(IEnumerable<Type> typesEndpoint, IEnumerable<Type> typesRoute)
         {
             VoidWithError result;

@@ -15,3 +15,9 @@
 - Une application MAUI peut référencer Core et SQLite sans restaurer les drivers SQL serveur.
 - Les applications serveur peuvent sélectionner leurs fournisseurs indépendamment.
 
+## Avancement
+
+- `AventusSharp.Data` contient le moteur commun sans fournisseur concret.
+- `AventusSharp.Data.Sqlite` contient le fournisseur SQLite et référence uniquement Data et Core.
+- SQL Server, MySQL et PostgreSQL sont absents du graphe Android.
+- Une suite portable ouvre une base SQLite et exécute une commande réelle.

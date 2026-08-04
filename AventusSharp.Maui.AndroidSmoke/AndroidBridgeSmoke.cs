@@ -1,6 +1,7 @@
 using AventusSharp.Hosting;
 using AventusSharp.Maui;
 using AventusSharp.Data;
+using AventusSharp.Data.Storage.Sqlite;
 
 namespace AventusSharp.Maui.AndroidSmoke;
 
@@ -12,6 +13,8 @@ public static class AndroidBridgeSmoke
     {
         return new AventusMauiBridge(dispatcher, () => services);
     }
+
+    public static SqliteStorage CreateLocalStorage(string databasePath) => new(databasePath);
 }
 
 public sealed class AndroidSmokeRecord : Storable<AndroidSmokeRecord>

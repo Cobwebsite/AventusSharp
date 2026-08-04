@@ -133,7 +133,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
     public override async Task<ResultWithError<bool>> ResetStorage()
     {
         ResultWithError<bool> result = new();
-        if (AventusExtension.IsExportCommand)
+        if (Environment.GetCommandLineArgs().Contains("--export-info"))
         {
             result.Result = true;
             return result;

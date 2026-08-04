@@ -36,6 +36,7 @@
     <Compile Include="..\AventusSharp\Routes\RouteError.cs"
              Link="Routes\RouteError.cs" />
     <Compile Include="Compatibility\*.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>

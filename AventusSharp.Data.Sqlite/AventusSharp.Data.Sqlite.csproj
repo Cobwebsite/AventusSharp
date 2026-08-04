@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.0.14</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <NoWarn>1701;1702;CS0728;1587;1591</NoWarn>
+    <PackageId>AventusSharp.Data.Sqlite</PackageId>
+    <Title>AventusSharp Data SQLite</Title>
+    <Description>SQLite provider for the portable AventusSharp data engine.</Description>
+    <Authors>Cobwebsite</Authors>
+    <Company>ch.cobwebsite</Company>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+    <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AventusSharp\Data\Storage\Sqlite\**\*.cs"
+             Link="Storage\Sqlite\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="Compatibility\*.cs" />
+    <Compile Include="..\AventusSharp\Data\Storage\Mysql\Tools\Utils.cs"
+             Link="Shared\MysqlUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0-preview.5.26302.115" />
+  </ItemGroup>
+
+</Project>

@@ -1,17 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-android</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+    <PackageReference Include="NUnit" Version="3.13.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
     <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
     <ProjectReference Include="..\AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj" />
-    <ProjectReference Include="..\AventusSharp.Maui\AventusSharp.Maui.csproj" />
   </ItemGroup>
 
 </Project>

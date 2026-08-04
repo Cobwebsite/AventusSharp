@@ -365,11 +365,23 @@ namespace AventusSharp.Data.Storage.Default
         public async Task<ResultWithError<List<X>>> Query<X>(DbCommand command, List<Dictionary<string, object?>>? dataParameters, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithError<List<X>> result = new();
-            var dico = result.ExtractAsync(() => Query(command, dataParameters, callerPath, callerNo));
+            var dico = await result.ExtractAsync(() => Query(command, dataParameters, callerPath, callerNo));
 
             if (dico != null)
             {
-
+                result.Result = new();
+                foreach (Dictionary<string, string?> line in dico)
+                {
+                    X? obj = result.Extract(() => TypeCreator.CreateObj<X>(line));
+                    if (obj != null)
+                    {
+                        result.Result.Add(obj);
+                    }
+                    else if(!result.Success)
+                    {
+                        return result;
+                    }
+                }
             }
 
             return result;

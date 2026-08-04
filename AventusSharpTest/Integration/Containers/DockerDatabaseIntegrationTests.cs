@@ -3,6 +3,7 @@ using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
+using AventusSharpTest.Integration.Models;
 using NUnit.Framework;
 using System.Data;
 
@@ -292,6 +293,24 @@ public sealed class DockerDatabaseIntegrationTests
             DatabaseContainers.MsSql);
 
     [Test]
+    public Task MySql_typed_command_query_applies_SqlTransform() =>
+        VerifyTypedTransformedQuery(
+            (AventusSharp.Data.Storage.Mysql.MySQLStorage)
+            DatabaseContainers.MySql);
+
+    [Test]
+    public Task PostgreSql_typed_command_query_applies_SqlTransform() =>
+        VerifyTypedTransformedQuery(
+            (AventusSharp.Data.Storage.Postgresql.PostgreSqlStorage)
+            DatabaseContainers.PostgreSql);
+
+    [Test]
+    public Task SqlServer_typed_command_query_applies_SqlTransform() =>
+        VerifyTypedTransformedQuery(
+            (AventusSharp.Data.Storage.Mssql.MsSqlStorage)
+            DatabaseContainers.MsSql);
+
+    [Test]
     public Task MySql_missing_raw_parameter_does_not_reuse_the_previous_value() =>
         VerifyMissingRawParameter(
             (AventusSharp.Data.Storage.Mysql.MySQLStorage)
@@ -354,6 +373,53 @@ public sealed class DockerDatabaseIntegrationTests
         Assert.That(result.Result[0]["null_text"], Is.Null);
         Assert.That(result.Result[1]["value_text"], Is.EqualTo("éclairage 東京"));
         Assert.That(result.Result[1]["null_text"], Is.EqualTo("present"));
+    }
+
+    private static async Task VerifyTypedTransformedQuery<T>(
+        DefaultDBStorage<T> storage)
+        where T : IDBStorage
+    {
+        var commandResult = storage.CreateCmd(
+            "SELECT @id AS \"Id\", @name AS \"Name\", " +
+            "@deleted AS \"Deleted\";");
+        Assert.That(commandResult.Success, Is.True,
+            string.Join(Environment.NewLine,
+                commandResult.Errors.Select(error => error.Message)));
+        Assert.That(commandResult.Result, Is.Not.Null);
+        using var command = commandResult.Result!;
+
+        foreach ((string name, DbType type) in new[]
+        {
+            ("@id", DbType.Int32),
+            ("@name", DbType.String),
+            ("@deleted", DbType.String)
+        })
+        {
+            var parameter = storage.GetDbParameter();
+            parameter.ParameterName = name;
+            parameter.DbType = type;
+            command.Parameters.Add(parameter);
+        }
+
+        var result = await storage.Query<TransformedBoolRecord>(command,
+        [
+            new Dictionary<string, object?>
+                { ["@id"] = 901, ["@name"] = "Active", ["@deleted"] = "N" },
+            new Dictionary<string, object?>
+                { ["@id"] = 902, ["@name"] = "Deleted", ["@deleted"] = "Y" }
+        ]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True,
+                string.Join(Environment.NewLine,
+                    result.Errors.Select(error => error.Message)));
+            Assert.That(result.Result, Has.Count.EqualTo(2));
+            Assert.That(result.Result![0].Id, Is.EqualTo(901));
+            Assert.That(result.Result[0].Deleted, Is.False);
+            Assert.That(result.Result[1].Id, Is.EqualTo(902));
+            Assert.That(result.Result[1].Deleted, Is.True);
+        });
     }
 
     private static async Task VerifyMissingRawParameter<T>(

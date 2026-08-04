@@ -1,4 +1,5 @@
 using AventusSharp.Data.Manager;
+using System.Data;
 using AventusSharpTest.Integration.Models;
 using NUnit.Framework;
 
@@ -49,6 +50,104 @@ public sealed class DataSqlTransformQueryTests
         Assert.That(raw.Result!.Single(row => row["Name"] == "Deleted")["Deleted"], Is.EqualTo("Y"));
         Assert.That(loadedActive.Result!.Deleted, Is.False);
         Assert.That(loadedDeleted.Result!.Deleted, Is.True);
+    }
+
+    [Test]
+    public async Task Typed_command_query_maps_each_parameter_set_and_applies_FromSql()
+    {
+        await Seed();
+        var storage = IntegrationEnvironment.Storage;
+        var commandResult = storage.CreateCmd(
+            "SELECT \"Id\", \"Name\", \"Deleted\" " +
+            "FROM \"transformed_bool_records\" " +
+            "WHERE \"Deleted\" = @deleted ORDER BY \"Id\";");
+        Assert.That(commandResult.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(commandResult.Errors));
+        Assert.That(commandResult.Result, Is.Not.Null);
+        using var command = commandResult.Result!;
+
+        var deletedParameter = storage.GetDbParameter();
+        deletedParameter.ParameterName = "@deleted";
+        deletedParameter.DbType = DbType.String;
+        command.Parameters.Add(deletedParameter);
+
+        var result = await storage.Query<TransformedBoolRecord>(command,
+        [
+            new Dictionary<string, object?> { ["@deleted"] = "N" },
+            new Dictionary<string, object?> { ["@deleted"] = "Y" }
+        ]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(result.Errors));
+            Assert.That(result.Result, Has.Count.EqualTo(2));
+            Assert.That(result.Result![0].Name, Is.EqualTo("Active"));
+            Assert.That(result.Result[0].Deleted, Is.False,
+                "SqlTransform.FromSql must convert N to false.");
+            Assert.That(result.Result[1].Name, Is.EqualTo("Deleted"));
+            Assert.That(result.Result[1].Deleted, Is.True,
+                "SqlTransform.FromSql must convert Y to true.");
+        });
+    }
+
+    [Test]
+    public async Task Typed_command_query_reports_FromSql_failure_monadically()
+    {
+        var storage = IntegrationEnvironment.Storage;
+        var commandResult = storage.CreateCmd(
+            "SELECT 1 AS \"Id\", 'safe' AS \"NormalizedBeforeFailure\", " +
+            "'TRIGGER' AS \"FailingValue\";");
+        Assert.That(commandResult.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(commandResult.Errors));
+        Assert.That(commandResult.Result, Is.Not.Null);
+        using var command = commandResult.Result!;
+
+        var result = await storage.Query<FailingBulkTransformRecord>(command, null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Result, Is.Not.Null);
+            Assert.That(result.Result, Is.Empty);
+            Assert.That(IntegrationEnvironment.ErrorMessages(result.Errors),
+                Does.Contain("intentional FromSql failure"));
+        });
+    }
+
+    [Test]
+    public async Task Typed_command_query_maps_Count_to_an_int_projection()
+    {
+        await Seed();
+        var storage = IntegrationEnvironment.Storage;
+        var commandResult = storage.CreateCmd(
+            "SELECT COUNT(*) AS \"Count\" " +
+            "FROM \"transformed_bool_records\" " +
+            "WHERE \"Deleted\" = @deleted;");
+        Assert.That(commandResult.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(commandResult.Errors));
+        Assert.That(commandResult.Result, Is.Not.Null);
+        using var command = commandResult.Result!;
+
+        var deletedParameter = storage.GetDbParameter();
+        deletedParameter.ParameterName = "@deleted";
+        deletedParameter.DbType = DbType.String;
+        command.Parameters.Add(deletedParameter);
+
+        var result = await storage.Query<CountProjection>(command,
+        [
+            new Dictionary<string, object?> { ["@deleted"] = "N" },
+            new Dictionary<string, object?> { ["@deleted"] = "Y" }
+        ]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(result.Errors));
+            Assert.That(result.Result, Has.Count.EqualTo(2));
+            Assert.That(result.Result![0].Count, Is.EqualTo(1));
+            Assert.That(result.Result[1].Count, Is.EqualTo(1));
+        });
     }
 
     [Test]
@@ -324,4 +423,9 @@ public sealed class DataSqlTransformQueryTests
         Assert.That(creation.Success, Is.True,
             IntegrationEnvironment.ErrorMessages(creation.Errors));
     }
+}
+
+public sealed class CountProjection
+{
+    public int Count { get; set; }
 }

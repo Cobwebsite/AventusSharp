@@ -10,7 +10,15 @@
     <PackageId>AventusSharp.Data.Mssql</PackageId>
     <Title>AventusSharp Data SQL Server</Title>
     <Description>SQL Server provider for the portable AventusSharp data engine.</Description>
+    <PackageIcon>logo_sharp.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\logo_sharp.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />

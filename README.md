@@ -1,16 +1,29 @@
 # AventusSharp
 
-AventusSharp is a versatile C# package designed to streamline the development of modern applications. By providing robust tools for data modeling, business logic management, API routing, and frontend integration, AventusSharp empowers developers to focus on building features rather than handling repetitive tasks.
+AventusSharp provides data modeling, business logic, routing and frontend generation for ASP.NET Core and .NET MAUI applications. The packages are split so an application only references its host integration and the database providers it uses.
 
-Whether you're working on a small project or a large-scale application, AventusSharp simplifies complex processes, ensuring consistency, efficiency, and flexibility across your application stack.
+## Installation
 
-## Install
-
-You can install this package with NuGet :
+Choose one host integration:
 
 ```shell
-dotnet add package AventusSharp
+dotnet add package AventusSharp.AspNetCore
+# or
+dotnet add package AventusSharp.Maui
 ```
+
+Then add one or more database providers:
+
+```shell
+dotnet add package AventusSharp.Data.Sqlite
+dotnet add package AventusSharp.Data.Mysql
+dotnet add package AventusSharp.Data.Postgresql
+dotnet add package AventusSharp.Data.Mssql
+```
+
+`AventusSharp.Core` is brought transitively by the host and provider packages. It can also be referenced directly for host-independent code.
+
+Each project contains an `aventus.sharp.avt` configuration. The generated Aventus files are centralized under `AventusJs/src/generated`.
 
 ## Documentation
 
@@ -25,6 +38,21 @@ Run the complete local test suite with:
 
 ```shell
 dotnet test AventusSharpTest/AventusSharpTest.csproj
+```
+
+## Publication
+
+All NuGet packages share the same version and are built before publication:
+
+```shell
+npm run release -- 1.2.3
+```
+
+The script updates every package project, builds the complete solution, creates the packages under `artifacts/packages`, then calls the custom `dotnet-publish` command for each package. To validate locally without publishing:
+
+```shell
+npm run release -- 1.2.3 --skip-publish
+npm run release -- 1.2.3 --dry-run
 ```
 
 ## Contributor

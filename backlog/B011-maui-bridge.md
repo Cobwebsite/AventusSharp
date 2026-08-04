@@ -18,3 +18,9 @@ Héberger localement le routeur AventusSharp derrière un `BlazorWebView` sans s
 - Les mêmes cas produisent les mêmes réponses sous ASP.NET Core et MAUI.
 - Android et Windows sont testés pour le chemin WebView.
 
+## Avancement
+
+- Package `AventusSharp.Maui` créé sans référence ASP.NET Core.
+- Bridge méthode/URI/query/headers/body vers `IAventusContext` implémenté.
+- Statut, headers, content type et contenu sont restitués dans une réponse portable.
+- Le bridge dépend de `IAventusRequestDispatcher`; le branchement au routeur réel reste à faire après extraction de sa résolution.

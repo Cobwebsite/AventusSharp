@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.0.14</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <NoWarn>1701;1702;CS0728;1587;1591</NoWarn>
+    <PackageId>AventusSharp.Maui</PackageId>
+    <Title>AventusSharp MAUI</Title>
+    <Description>In-process MAUI bridge for AventusSharp.</Description>
+    <Authors>Cobwebsite</Authors>
+    <Company>ch.cobwebsite</Company>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+  </ItemGroup>
+
+</Project>

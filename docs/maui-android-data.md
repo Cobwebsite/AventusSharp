@@ -15,9 +15,9 @@ Pendant le développement dans cette solution :
 ```
 
 Après publication, l'application choisit de la même façon son hôte
-`AventusSharp.Maui` et son provider `AventusSharp.Data.Sqlite`. Core, Data et le
-runtime sont obtenus transitivement, mais restent référençables directement pour
-les usages avancés.
+`AventusSharp.Maui` et son provider `AventusSharp.Data.Sqlite`.
+`AventusSharp.Core`, qui contient également le moteur Data et le routeur partagé,
+est obtenu transitivement mais reste référençable directement pour les usages avancés.
 
 ## Modèle et stockage local
 

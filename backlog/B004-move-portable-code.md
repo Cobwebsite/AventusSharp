@@ -30,7 +30,8 @@ Alimenter `AventusSharp.Core` uniquement avec du code qui ne dépend pas d'ASP.N
 
 ### Moteur Data portable — terminé
 
-- Assembly `AventusSharp.Data` créé avec modèles, managers, builders, migrations et stockage abstrait.
+- Le moteur Data portable, avec modèles, managers, builders, migrations et stockage
+  abstrait, est intégré à l'assembly `AventusSharp.Core`.
 - Fournisseurs SQL Server, MySQL, PostgreSQL et SQLite exclus de cet assembly.
 - Faux imports vers les packages des fournisseurs supprimés.
 - Le projet Android témoin compile un véritable modèle `Storable<T>` depuis cet assembly.

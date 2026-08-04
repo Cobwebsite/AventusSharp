@@ -17,8 +17,8 @@
 
 ## Avancement
 
-- `AventusSharp.Data` contient le moteur commun sans fournisseur concret.
-- `AventusSharp.Data.Sqlite` contient le fournisseur SQLite et référence uniquement Data et Core.
+- `AventusSharp.Core` contient le moteur commun sans fournisseur concret.
+- `AventusSharp.Data.Sqlite` contient le fournisseur SQLite et référence uniquement Core.
 - SQL Server, MySQL et PostgreSQL sont absents du graphe Android.
 - Une suite portable ouvre une base SQLite et exécute une commande réelle.
 - La suite de régression SQLite historique est également exécutée depuis le projet de tests portable.
@@ -33,7 +33,14 @@ séparés des dépendances d'hébergement et des pilotes SQL serveur.
 ### Découpage physique final
 
 - Les quatre providers possèdent leurs sources dans leurs propres projets.
-- Les utilitaires SQL communs sont dans `AventusSharp.Data/Data/Storage/Relational`.
+- Les utilitaires SQL communs sont dans `AventusSharp.Core/Data/Storage/Relational`.
 - Aucun projet Data ne compile un fichier externe avec `Compile Include` et `Link`.
 - `AventusSharp.AspNetCore` et `AventusSharp.Maui` ne choisissent aucun provider.
 - Le package historique `AventusSharp` a été retiré de la solution.
+
+### Fusion du socle portable
+
+- `AventusSharp.Data` et `AventusSharp.Runtime` ont été fusionnés physiquement dans
+  `AventusSharp.Core`.
+- Les namespaces publics Data et Routes sont conservés.
+- Un hôte et chaque provider ne possèdent plus qu'une dépendance commune : Core.

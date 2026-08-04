@@ -31,7 +31,7 @@ public sealed class SqlitePortableTests
     {
         Assert.That(typeof(PortableRecord).BaseType, Is.Not.Null);
 
-        string dataProject = FindProject("AventusSharp.Data");
+        string dataProject = FindProject("AventusSharp.Core");
         string sqliteProject = FindProject("AventusSharp.Data.Sqlite");
         string projectGraph = File.ReadAllText(dataProject) + File.ReadAllText(sqliteProject);
 

@@ -8,8 +8,9 @@ providers de données.
 - `AventusSharp.AspNetCore` : HTTP, WebSocket, SSE et adaptation de `HttpContext`.
 - `AventusSharp.Maui` : bridge local MAUI utilisant le contexte portable.
 
-Les deux référencent `AventusSharp.Runtime`, `AventusSharp.Data` et
-`AventusSharp.Core`. Ils ne sélectionnent aucun moteur de base de données.
+Les deux référencent `AventusSharp.Core`, qui contient les contrats, le moteur Data,
+le routeur et les services partagés. Ils ne sélectionnent aucun moteur de base de
+données.
 
 ## Providers
 
@@ -18,9 +19,9 @@ Les deux référencent `AventusSharp.Runtime`, `AventusSharp.Data` et
 - `AventusSharp.Data.Postgresql`
 - `AventusSharp.Data.Mssql`
 
-Chaque provider possède physiquement ses sources, référence le moteur
-`AventusSharp.Data` et ne référence aucun autre provider. Plusieurs providers peuvent
-être installés dans la même application.
+Chaque provider possède physiquement ses sources, référence `AventusSharp.Core` et
+ne référence aucun autre provider. Plusieurs providers peuvent être installés dans
+la même application.
 
 ## Exemples
 

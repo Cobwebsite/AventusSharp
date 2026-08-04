@@ -6,9 +6,7 @@ public sealed class PortableDependencyTests
 {
     [TestCase("AventusSharp.Core")]
     [TestCase("AventusSharp.Maui")]
-    [TestCase("AventusSharp.Data")]
     [TestCase("AventusSharp.Data.Sqlite")]
-    [TestCase("AventusSharp.Runtime")]
     [TestCase("AventusSharp.Data.Mysql")]
     [TestCase("AventusSharp.Data.Postgresql")]
     [TestCase("AventusSharp.Data.Mssql")]
@@ -48,7 +46,6 @@ public sealed class PortableDependencyTests
         Assert.That(content, Does.Not.Contain("AventusSharp.Data.Mssql"));
     }
 
-    [TestCase("AventusSharp.Data")]
     [TestCase("AventusSharp.Data.Sqlite")]
     [TestCase("AventusSharp.Data.Mysql")]
     [TestCase("AventusSharp.Data.Postgresql")]

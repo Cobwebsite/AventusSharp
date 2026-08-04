@@ -32,6 +32,30 @@ public class ResponseTests
     }
 
     [Test]
+    public void Concrete_route_responses_keep_the_IResponse_contract()
+    {
+        Type[] expectedTypes =
+        [
+            typeof(ByteResponse),
+            typeof(DummyResponse),
+            typeof(Json),
+            typeof(NoResponse),
+            typeof(Redirect),
+            typeof(StreamResponse),
+            typeof(TextResponse),
+            typeof(View),
+            typeof(ViewDynamic)
+        ];
+
+        Assert.That(
+            expectedTypes,
+            Is.All.Matches<Type>(type => typeof(IResponse).IsAssignableFrom(type)));
+        Assert.That(
+            typeof(IResponse).GetMethod(nameof(IResponse.send))?.ReturnType,
+            Is.EqualTo(typeof(Task)));
+    }
+
+    [Test]
     public async Task Text_response_sets_status_content_type_and_body()
     {
         var context = CreateContext();

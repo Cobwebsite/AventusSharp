@@ -15,3 +15,6 @@ Garantir que le routeur continue à répondre avec les types de `AventusSharp.Ro
 - Les tests échouent si une route ne retourne plus son `IResponse` attendu.
 - Le contenu écrit reste identique à la référence.
 
+## État
+
+Terminé. La suite couvre les neuf réponses concrètes, leurs statuts, content types, corps, redirections, flux, vues statiques et dynamiques ainsi que le contrat `IResponse`. Le changement futur de contexte devra conserver ces assertions.

@@ -22,18 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\AventusSharp\Tools\*.cs"
-             Exclude="..\AventusSharp\Tools\AventusLogger.cs;..\AventusSharp\Tools\DateTimeExtension.cs;..\AventusSharp\Tools\InterfaceDumperExtension.cs;..\AventusSharp\Tools\ListExtension.cs;..\AventusSharp\Tools\NumberExtension.cs;..\AventusSharp\Tools\ObjectExtension.cs;..\AventusSharp\Tools\TypeExtension.cs"
-             Link="Tools\%(Filename)%(Extension)" />
-    <Compile Include="..\AventusSharp\Tools\Attributes\EnvName.cs"
-             Link="Tools\Attributes\EnvName.cs" />
-    <Compile Include="..\AventusSharp\Chart\Schema.cs"
-             Link="Chart\Schema.cs" />
-    <Compile Include="..\AventusSharp\Routes\RouteError.cs"
-             Link="Routes\RouteError.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="File.TypeChecker" Version="4.4.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />

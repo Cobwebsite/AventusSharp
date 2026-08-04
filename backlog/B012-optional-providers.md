@@ -29,3 +29,11 @@
 
 Terminé pour le besoin MAUI Android : Core, moteur Data, SQLite et bridge MAUI sont
 séparés des dépendances d'hébergement et des pilotes SQL serveur.
+
+### Découpage physique final
+
+- Les quatre providers possèdent leurs sources dans leurs propres projets.
+- Les utilitaires SQL communs sont dans `AventusSharp.Data/Data/Storage/Relational`.
+- Aucun projet Data ne compile un fichier externe avec `Compile Include` et `Link`.
+- `AventusSharp.AspNetCore` et `AventusSharp.Maui` ne choisissent aucun provider.
+- Le package historique `AventusSharp` a été retiré de la solution.

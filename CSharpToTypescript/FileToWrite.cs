@@ -1,9 +1,8 @@
-﻿using AventusSharp.Routes;
+using AventusSharp.Routes;
 using CSharpToTypescript.Container;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Hosting;
-using MySqlX.XDevAPI.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;

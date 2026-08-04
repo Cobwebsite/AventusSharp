@@ -1,4 +1,4 @@
-﻿using AventusSharp.Data;
+using AventusSharp.Data;
 using AventusSharp.Data.CustomTableMembers;
 using AventusSharp.Routes;
 using AventusSharp.Routes.Request;
@@ -8,7 +8,6 @@ using AventusSharp.WebSocket;
 using AventusSharp.WebSocket.Event;
 using Microsoft.Build.Framework;
 using Microsoft.CodeAnalysis;
-using MySqlX.XDevAPI.Common;
 using System;
 using System.Collections;
 using System.Collections.Generic;

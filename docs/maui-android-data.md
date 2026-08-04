@@ -9,16 +9,15 @@ Pendant le développement dans cette solution :
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
-  <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
   <ProjectReference Include="..\AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj" />
   <ProjectReference Include="..\AventusSharp.Maui\AventusSharp.Maui.csproj" />
 </ItemGroup>
 ```
 
-Après publication des packages, les références équivalentes sont
-`AventusSharp.Core`, `AventusSharp.Data`, `AventusSharp.Data.Sqlite` et
-`AventusSharp.Maui`.
+Après publication, l'application choisit de la même façon son hôte
+`AventusSharp.Maui` et son provider `AventusSharp.Data.Sqlite`. Core, Data et le
+runtime sont obtenus transitivement, mais restent référençables directement pour
+les usages avancés.
 
 ## Modèle et stockage local
 

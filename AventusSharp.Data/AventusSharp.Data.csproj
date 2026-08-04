@@ -5,7 +5,6 @@
     <Version>0.0.14</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
     <NoWarn>1701;1702;CS0728;1587;1591</NoWarn>
@@ -23,9 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\AventusSharp\Data\**\*.cs"
-             Exclude="..\AventusSharp\Data\Storage\Mssql\**\*.cs;..\AventusSharp\Data\Storage\Mysql\**\*.cs;..\AventusSharp\Data\Storage\Postgresql\**\*.cs;..\AventusSharp\Data\Storage\Sqlite\**\*.cs"
-             Link="Data\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\AventusSharp\Tools\*.cs"
              Exclude="..\AventusSharp\Tools\AventusLogger.cs;..\AventusSharp\Tools\DateTimeExtension.cs;..\AventusSharp\Tools\InterfaceDumperExtension.cs;..\AventusSharp\Tools\ListExtension.cs;..\AventusSharp\Tools\NumberExtension.cs;..\AventusSharp\Tools\ObjectExtension.cs;..\AventusSharp\Tools\TypeExtension.cs"
              Link="Tools\%(Filename)%(Extension)" />
@@ -35,8 +31,6 @@
              Link="Chart\Schema.cs" />
     <Compile Include="..\AventusSharp\Routes\RouteError.cs"
              Link="Routes\RouteError.cs" />
-    <Compile Include="Compatibility\*.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>

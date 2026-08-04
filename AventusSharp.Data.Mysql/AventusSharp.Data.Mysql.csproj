@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.0.14</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <NoWarn>1701;1702;CS0728;1587;1591</NoWarn>
+    <PackageId>AventusSharp.Data.Mysql</PackageId>
+    <Title>AventusSharp Data MySQL</Title>
+    <Description>MySQL provider for the portable AventusSharp data engine.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
+    <PackageReference Include="MySql.Data" Version="9.7.0" />
+  </ItemGroup>
+</Project>

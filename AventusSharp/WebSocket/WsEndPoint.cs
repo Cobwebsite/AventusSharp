@@ -223,6 +223,7 @@ namespace AventusSharp.WebSocket
                         {  typeof(WebSocketConnection), connection },
                         {  typeof(WsEndPoint), this },
                         {  typeof(HttpContext), connection.GetContext() },
+                        {  typeof(AventusSharp.Hosting.IAventusContext), new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(connection.GetContext()) },
                         {  typeof(System.Net.WebSockets.WebSocket), connection.GetWebSocket() },
                     };
                     foreach (WebSocketRouterParameterInfo parameter in routeInfo.parameters.Values)

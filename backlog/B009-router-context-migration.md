@@ -41,3 +41,9 @@ Remplacer progressivement `HttpContext` par le contrat Aventus tout en conservan
 - Les middlewares de route utilisent le contexte portable.
 - L'injection de `HttpContext` reste disponible sous ASP.NET pendant la transition.
 - `AventusRequestDispatcher` expose le routeur existant à MAUI sans changer sa résolution.
+
+### Sous-lot routeurs CRUD — terminé
+
+- Les API publiques et points d'extension de `StorableRouter` reçoivent `IAventusContext`.
+- Les API équivalentes de `StorableWsRouter` reçoivent le même contrat.
+- L'hôte WebSocket injecte le contexte portable en plus des objets natifs historiques.

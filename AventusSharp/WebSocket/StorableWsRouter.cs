@@ -5,6 +5,7 @@ using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
 using AventusSharp.WebSocket.Event;
 using Microsoft.AspNetCore.Http;
+using AventusSharp.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -86,7 +87,7 @@ namespace AventusSharp.WebSocket
         protected abstract IGenericDM<T>? GetDM();
 
         [Path("/[StorableName]")]
-        public virtual async Task<ResultWithError<List<R>>> GetAll(HttpContext context)
+        public virtual async Task<ResultWithError<List<R>>> GetAll(IAventusContext context)
         {
             ResultWithError<List<R>> result = new();
             List<T>? list = await result.ExtractAsync(() => DM_GetAll(context));
@@ -100,13 +101,13 @@ namespace AventusSharp.WebSocket
             }
             return result;
         }
-        protected virtual async Task<ResultWithError<List<T>>> DM_GetAll(HttpContext context)
+        protected virtual async Task<ResultWithError<List<T>>> DM_GetAll(IAventusContext context)
         {
             return (await Storable<T>.GetAllWithError()).ToGeneric();
         }
 
         [Path("/[StorableName]/Create"), Broadcast]
-        public virtual async Task<ResultWithError<S>> Create(HttpContext context, U request)
+        public virtual async Task<ResultWithError<S>> Create(IAventusContext context, U request)
         {
             T item = ConvertRequest(context, request);
             PreventEmitCreated = true;
@@ -119,13 +120,13 @@ namespace AventusSharp.WebSocket
             PreventEmitCreated = false;
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_Create(HttpContext context, T item)
+        protected virtual async Task<ResultWithError<T>> DM_Create(IAventusContext context, T item)
         {
             return (await Storable<T>.CreateWithError(item)).ToGeneric();
         }
 
         [Path("/[StorableName]/CreateMany"), Broadcast]
-        public virtual async Task<StorableWsRoute_CreateMany<S>> CreateMany(HttpContext context, List<U> list)
+        public virtual async Task<StorableWsRoute_CreateMany<S>> CreateMany(IAventusContext context, List<U> list)
         {
             PreventEmitCreated = true;
             List<T> _list = new();
@@ -148,13 +149,13 @@ namespace AventusSharp.WebSocket
             PreventEmitCreated = false;
             return new StorableWsRoute_CreateMany<S>(result, StorableName);
         }
-        protected virtual async Task<ResultWithError<List<T>>> DM_CreateMany(HttpContext context, List<T> list)
+        protected virtual async Task<ResultWithError<List<T>>> DM_CreateMany(IAventusContext context, List<T> list)
         {
             return (await Storable<T>.CreateWithError(list)).ToGeneric();
         }
 
         [Path("/[StorableName]/{id}")]
-        public virtual async Task<ResultWithError<S>> GetById(HttpContext context, int id)
+        public virtual async Task<ResultWithError<S>> GetById(IAventusContext context, int id)
         {
             ResultWithError<S> result = new();
             T? item = await result.ExtractAsync(() => DM_GetById(context, id));
@@ -168,13 +169,13 @@ namespace AventusSharp.WebSocket
             }
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_GetById(HttpContext context, int id)
+        protected virtual async Task<ResultWithError<T>> DM_GetById(IAventusContext context, int id)
         {
             return (await Storable<T>.GetByIdWithError(id)).ToGeneric();
         }
 
         [Path("/[StorableName]/getbyids")]
-        public virtual async Task<ResultWithError<List<S>>> GetByIds(HttpContext context, List<int> ids)
+        public virtual async Task<ResultWithError<List<S>>> GetByIds(IAventusContext context, List<int> ids)
         {
             ResultWithError<List<S>> result = new();
             List<T>? listTemp = await result.ExtractAsync(() => DM_GetByIds(context, ids));
@@ -188,7 +189,7 @@ namespace AventusSharp.WebSocket
             }
             return result;
         }
-        protected virtual async Task<ResultWithError<List<T>>> DM_GetByIds(HttpContext context, List<int> ids)
+        protected virtual async Task<ResultWithError<List<T>>> DM_GetByIds(IAventusContext context, List<int> ids)
         {
             return (await Storable<T>.GetByIdsWithError(ids)).ToGeneric();
         }
@@ -196,7 +197,7 @@ namespace AventusSharp.WebSocket
 
 
         [Path("/[StorableName]/{id}/Update"), Broadcast]
-        public virtual async Task<ResultWithError<S>> Update(HttpContext context, int id, U request)
+        public virtual async Task<ResultWithError<S>> Update(IAventusContext context, int id, U request)
         {
             PreventEmitUpdated = true;
             ResultWithError<S> result = new();
@@ -210,13 +211,13 @@ namespace AventusSharp.WebSocket
             PreventEmitUpdated = false;
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_Update(HttpContext context, T item)
+        protected virtual async Task<ResultWithError<T>> DM_Update(IAventusContext context, T item)
         {
             return (await Storable<T>.UpdateWithError(item)).ToGeneric();
         }
 
         [Path("/[StorableName]/UpdateMany"), Broadcast]
-        public virtual async Task<StorableWsRoute_UpdateMany<S>> UpdateMany(HttpContext context, List<U> list)
+        public virtual async Task<StorableWsRoute_UpdateMany<S>> UpdateMany(IAventusContext context, List<U> list)
         {
             PreventEmitUpdated = true;
             ResultWithError<List<S>> result = new();
@@ -238,13 +239,13 @@ namespace AventusSharp.WebSocket
             return new StorableWsRoute_UpdateMany<S>(result, StorableName);
         }
 
-        protected virtual async Task<ResultWithError<List<T>>> DM_UpdateMany(HttpContext context, List<T> list)
+        protected virtual async Task<ResultWithError<List<T>>> DM_UpdateMany(IAventusContext context, List<T> list)
         {
             return (await Storable<T>.UpdateWithError(list)).ToGeneric();
         }
 
         [Path("/[StorableName]/{id}/Delete"), Broadcast]
-        public virtual async Task<ResultWithError<int>> Delete(HttpContext context, int id)
+        public virtual async Task<ResultWithError<int>> Delete(IAventusContext context, int id)
         {
             PreventEmitDeleted = true;
             ResultWithError<int> result = new();
@@ -253,13 +254,13 @@ namespace AventusSharp.WebSocket
             PreventEmitDeleted = false;
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_Delete(HttpContext context, int id)
+        protected virtual async Task<ResultWithError<T>> DM_Delete(IAventusContext context, int id)
         {
             return (await Storable<T>.DeleteWithError(id)).ToGeneric();
         }
 
         [Path("/[StorableName]/DeleteMany"), Broadcast]
-        public virtual async Task<StorableWsRoute_DeleteMany> DeleteMany(HttpContext context, List<int> ids)
+        public virtual async Task<StorableWsRoute_DeleteMany> DeleteMany(IAventusContext context, List<int> ids)
         {
             PreventEmitDeleted = true;
             ResultWithError<List<int>> result = new();
@@ -276,7 +277,7 @@ namespace AventusSharp.WebSocket
             return new StorableWsRoute_DeleteMany(result, StorableName);
         }
 
-        protected virtual async Task<ResultWithError<List<T>>> DM_DeleteMany(HttpContext context, List<int> ids)
+        protected virtual async Task<ResultWithError<List<T>>> DM_DeleteMany(IAventusContext context, List<int> ids)
         {
             return (await Storable<T>.DeleteWithError(ids)).ToGeneric();
         }
@@ -284,15 +285,15 @@ namespace AventusSharp.WebSocket
 
 
 
-        protected virtual T ConvertRequest(HttpContext context, U item)
+        protected virtual T ConvertRequest(IAventusContext context, U item)
         {
             return Binder.AutoBind<T>(item);
         }
-        protected virtual R ConvertResource(HttpContext context, T item)
+        protected virtual R ConvertResource(IAventusContext context, T item)
         {
             return Binder.AutoBind<R>(item);
         }
-        protected virtual S ConvertResourceDetails(HttpContext context, T item)
+        protected virtual S ConvertResourceDetails(IAventusContext context, T item)
         {
             return Binder.AutoBind<S>(item);
         }
@@ -304,7 +305,7 @@ namespace AventusSharp.WebSocket
        where U : Routes.Request.Request
        where R : Routes.Response.Resource
     {
-        protected override sealed R ConvertResourceDetails(HttpContext context, T item)
+        protected override sealed R ConvertResourceDetails(IAventusContext context, T item)
         {
             return ConvertResource(context, item);
         }
@@ -377,7 +378,7 @@ namespace AventusSharp.WebSocket
         protected abstract IGenericDM<T>? GetDM();
 
         [Path("/[StorableName]")]
-        public virtual async Task<ResultWithError<List<T>>> GetAll(HttpContext context)
+        public virtual async Task<ResultWithError<List<T>>> GetAll(IAventusContext context)
         {
             ResultWithError<List<T>> result = await DM_GetAll(context);
             if (result.Result != null)
@@ -391,13 +392,13 @@ namespace AventusSharp.WebSocket
             }
             return result;
         }
-        protected virtual async Task<ResultWithError<List<T>>> DM_GetAll(HttpContext context)
+        protected virtual async Task<ResultWithError<List<T>>> DM_GetAll(IAventusContext context)
         {
             return (await Storable<T>.GetAllWithError()).ToGeneric();
         }
 
         [Path("/[StorableName]/Create"), Broadcast]
-        public virtual async Task<ResultWithError<T>> Create(HttpContext context, T item)
+        public virtual async Task<ResultWithError<T>> Create(IAventusContext context, T item)
         {
             PreventEmitCreated = true;
             item = OnReceive(item);
@@ -409,13 +410,13 @@ namespace AventusSharp.WebSocket
             PreventEmitCreated = false;
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_Create(HttpContext context, T item)
+        protected virtual async Task<ResultWithError<T>> DM_Create(IAventusContext context, T item)
         {
             return (await Storable<T>.CreateWithError(item)).ToGeneric();
         }
 
         [Path("/[StorableName]/CreateMany"), Broadcast]
-        public virtual async Task<StorableWsRoute_CreateMany<T>> CreateMany(HttpContext context, List<T> list)
+        public virtual async Task<StorableWsRoute_CreateMany<T>> CreateMany(IAventusContext context, List<T> list)
         {
             PreventEmitCreated = true;
             List<T> _list = new();
@@ -436,13 +437,13 @@ namespace AventusSharp.WebSocket
             PreventEmitCreated = false;
             return new StorableWsRoute_CreateMany<T>(result, StorableName);
         }
-        protected virtual async Task<ResultWithError<List<T>>> DM_CreateMany(HttpContext context, List<T> list)
+        protected virtual async Task<ResultWithError<List<T>>> DM_CreateMany(IAventusContext context, List<T> list)
         {
             return (await Storable<T>.CreateWithError(list)).ToGeneric();
         }
 
         [Path("/[StorableName]/{id}")]
-        public virtual async Task<ResultWithError<T>> GetById(HttpContext context, int id)
+        public virtual async Task<ResultWithError<T>> GetById(IAventusContext context, int id)
         {
             ResultWithError<T> result = await DM_GetById(context, id);
             if (result.Result != null)
@@ -451,13 +452,13 @@ namespace AventusSharp.WebSocket
             }
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_GetById(HttpContext context, int id)
+        protected virtual async Task<ResultWithError<T>> DM_GetById(IAventusContext context, int id)
         {
             return (await Storable<T>.GetByIdWithError(id)).ToGeneric();
         }
 
         [Path("/[StorableName]/getbyids")]
-        public virtual async Task<ResultWithError<List<T>>> GetByIds(HttpContext context, List<int> ids)
+        public virtual async Task<ResultWithError<List<T>>> GetByIds(IAventusContext context, List<int> ids)
         {
             ResultWithError<List<T>> result = await DM_GetByIds(context, ids);
             if (result.Result != null)
@@ -471,7 +472,7 @@ namespace AventusSharp.WebSocket
             }
             return result;
         }
-        protected virtual async Task<ResultWithError<List<T>>> DM_GetByIds(HttpContext context, List<int> ids)
+        protected virtual async Task<ResultWithError<List<T>>> DM_GetByIds(IAventusContext context, List<int> ids)
         {
             return (await Storable<T>.GetByIdsWithError(ids)).ToGeneric();
         }
@@ -479,7 +480,7 @@ namespace AventusSharp.WebSocket
 
 
         [Path("/[StorableName]/{id}/Update"), Broadcast]
-        public virtual async Task<ResultWithError<T>> Update(HttpContext context, int id, T item)
+        public virtual async Task<ResultWithError<T>> Update(IAventusContext context, int id, T item)
         {
             PreventEmitUpdated = true;
             item.Id = id;
@@ -492,13 +493,13 @@ namespace AventusSharp.WebSocket
             PreventEmitUpdated = false;
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_Update(HttpContext context, T item)
+        protected virtual async Task<ResultWithError<T>> DM_Update(IAventusContext context, T item)
         {
             return (await Storable<T>.UpdateWithError(item)).ToGeneric();
         }
 
         [Path("/[StorableName]/UpdateMany"), Broadcast]
-        public virtual async Task<StorableWsRoute_UpdateMany<T>> UpdateMany(HttpContext context, List<T> list)
+        public virtual async Task<StorableWsRoute_UpdateMany<T>> UpdateMany(IAventusContext context, List<T> list)
         {
             PreventEmitUpdated = true;
             List<T> _list = new();
@@ -520,13 +521,13 @@ namespace AventusSharp.WebSocket
             return new StorableWsRoute_UpdateMany<T>(result, StorableName);
         }
 
-        protected virtual async Task<ResultWithError<List<T>>> DM_UpdateMany(HttpContext context, List<T> list)
+        protected virtual async Task<ResultWithError<List<T>>> DM_UpdateMany(IAventusContext context, List<T> list)
         {
             return (await Storable<T>.UpdateWithError(list)).ToGeneric();
         }
 
         [Path("/[StorableName]/{id}/Delete"), Broadcast]
-        public virtual async Task<ResultWithError<T>> Delete(HttpContext context, int id)
+        public virtual async Task<ResultWithError<T>> Delete(IAventusContext context, int id)
         {
             PreventEmitDeleted = true;
             ResultWithError<T> result = await DM_Delete(context, id);
@@ -537,13 +538,13 @@ namespace AventusSharp.WebSocket
             PreventEmitDeleted = false;
             return result;
         }
-        protected virtual async Task<ResultWithError<T>> DM_Delete(HttpContext context, int id)
+        protected virtual async Task<ResultWithError<T>> DM_Delete(IAventusContext context, int id)
         {
             return (await Storable<T>.DeleteWithError(id)).ToGeneric();
         }
 
         [Path("/[StorableName]/DeleteMany"), Broadcast]
-        public virtual async Task<StorableWsRoute_DeleteMany<T>> DeleteMany(HttpContext context, List<int> ids)
+        public virtual async Task<StorableWsRoute_DeleteMany<T>> DeleteMany(IAventusContext context, List<int> ids)
         {
             PreventEmitDeleted = true;
             ResultWithError<List<T>> result = await DM_DeleteMany(context, ids);
@@ -560,7 +561,7 @@ namespace AventusSharp.WebSocket
             return new StorableWsRoute_DeleteMany<T>(result, StorableName);
         }
 
-        protected virtual async Task<ResultWithError<List<T>>> DM_DeleteMany(HttpContext context, List<int> ids)
+        protected virtual async Task<ResultWithError<List<T>>> DM_DeleteMany(IAventusContext context, List<int> ids)
         {
             return (await Storable<T>.DeleteWithError(ids)).ToGeneric();
         }

@@ -1,5 +1,3 @@
-using System;
-
 namespace AventusSharp.Tools.Attributes;
 
 [AttributeUsage(AttributeTargets.Property)]

@@ -43,6 +43,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="File.TypeChecker" Version="4.4.0" />
     <PackageReference Include="HttpMultipartParser" Version="10.0.0" />

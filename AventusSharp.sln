@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpToTypescript", "CShar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Core", "AventusSharp.Core\AventusSharp.Core.csproj", "{48FC14B5-6EA5-4108-8D8D-1A2A82CCA757}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.AspNetCore", "AventusSharp.AspNetCore\AventusSharp.AspNetCore.csproj", "{B9EC6199-1DC4-421A-9DCE-FD4E021EFD69}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{48FC14B5-6EA5-4108-8D8D-1A2A82CCA757}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48FC14B5-6EA5-4108-8D8D-1A2A82CCA757}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48FC14B5-6EA5-4108-8D8D-1A2A82CCA757}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9EC6199-1DC4-421A-9DCE-FD4E021EFD69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9EC6199-1DC4-421A-9DCE-FD4E021EFD69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9EC6199-1DC4-421A-9DCE-FD4E021EFD69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9EC6199-1DC4-421A-9DCE-FD4E021EFD69}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

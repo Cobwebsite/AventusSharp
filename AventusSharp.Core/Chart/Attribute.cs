@@ -1,5 +1,3 @@
-using System;
-
 namespace AventusSharp.Chart;
 
 [AttributeUsage(AttributeTargets.Class)]
@@ -9,6 +7,7 @@ public class Diagram : Attribute
     public readonly string? Area;
     public readonly string? AreaColor;
     public readonly string? TableColor;
+
     public Diagram(string? name = null, string? area = null, string? areaColor = null, string? tableColor = null)
     {
         Name = name;

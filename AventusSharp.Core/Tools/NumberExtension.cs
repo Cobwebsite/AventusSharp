@@ -1,7 +1,4 @@
-using System;
-
 namespace AventusSharp.Tools;
-
 
 public static class LongExtension
 {
@@ -16,13 +13,13 @@ public static class IntExtension
     public static int Min(this int value) => value;
     public static int Abs(this int value) => Math.Abs(value);
 }
+
 public static class ShortExtension
 {
     public static short Max(this short value) => value;
     public static short Min(this short value) => value;
     public static short Abs(this short value) => Math.Abs(value);
 }
-
 
 public static class DoubleExtension
 {
@@ -49,7 +46,7 @@ public static class DecimalExtension
     public static decimal Max(this decimal value) => value;
     public static decimal Min(this decimal value) => value;
     public static decimal Abs(this decimal value) => Math.Abs(value);
-    public static decimal Round(this decimal value) => Math.Round((decimal)value);
-    public static decimal Ceil(this decimal value) => Math.Ceiling((decimal)value);
-    public static decimal Floor(this decimal value) => Math.Floor((decimal)value);
+    public static decimal Round(this decimal value) => Math.Round(value);
+    public static decimal Ceil(this decimal value) => Math.Ceiling(value);
+    public static decimal Floor(this decimal value) => Math.Floor(value);
 }

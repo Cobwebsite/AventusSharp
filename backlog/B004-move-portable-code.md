@@ -16,3 +16,14 @@ Alimenter `AventusSharp.Core` uniquement avec du code qui ne dépend pas d'ASP.N
 - Chaque lot compile et passe les tests avant le lot suivant.
 - `AventusSharp.Core` reste indépendant d'ASP.NET Core.
 
+## Avancement
+
+### Lot 1 — terminé
+
+- `ConfigSection` et `ConfigIgnore` déplacés dans Core.
+- `Export` et `NoExport` déplacés dans Core.
+- `FctName` déplacé dans Core.
+- `NoRoute` déplacé dans Core.
+- Namespaces et API publiques conservés.
+- 54 tests ciblés réussis.
+- Suite de référence hors échec WebSocket initial : 598 réussis, 64 ignorés, aucun échec.

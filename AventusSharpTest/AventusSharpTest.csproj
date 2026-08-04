@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\AventusSharp.AspNetCore\AventusSharp.AspNetCore.csproj" />
     <ProjectReference Include="..\AventusSharp\AventusSharp.csproj" />
   </ItemGroup>
 

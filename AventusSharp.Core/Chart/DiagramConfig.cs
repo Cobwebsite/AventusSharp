@@ -8,7 +8,7 @@ public class DiagramConfig
 
     public DiagramConfigInternal ToInternal()
     {
-        return new DiagramConfigInternal()
+        return new DiagramConfigInternal
         {
             MainName = MainName,
             GenerateMain = GenerateMain

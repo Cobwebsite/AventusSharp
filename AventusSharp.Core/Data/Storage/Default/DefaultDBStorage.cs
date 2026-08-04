@@ -79,6 +79,8 @@ namespace AventusSharp.Data.Storage.Default
 
     public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {
+        public virtual bool SupportsNativeBoolean => false;
+
         protected string host { get => credentials.host; }
         protected uint? port { get => credentials.port; }
         protected string username { get => credentials.username; }

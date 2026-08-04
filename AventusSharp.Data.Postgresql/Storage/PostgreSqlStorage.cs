@@ -16,7 +16,7 @@ namespace AventusSharp.Data.Storage.Postgresql;
 
 public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
 {
-    public bool SupportsNativeBoolean => true;
+    public override bool SupportsNativeBoolean => true;
     private bool useDatabase = true;
     protected bool CreateDatabase { get; set; }
     protected PostgreSqlMigrationProvider MigrationProvider { get; }

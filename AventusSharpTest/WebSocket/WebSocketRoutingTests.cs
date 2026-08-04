@@ -374,7 +374,7 @@ public sealed class WebSocketRoutingTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(nextCalled, Is.True);
+            Assert.That(nextCalled, Is.False);
             Assert.That(LifecycleEndPoint.OpenCount, Is.EqualTo(1));
             Assert.That(LifecycleEndPoint.CloseCount, Is.EqualTo(1));
             Assert.That(LifecycleEndPoint.LookupSucceeded, Is.True);

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+    <ProjectReference Include="..\AventusSharp.Maui\AventusSharp.Maui.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.AspNetCore", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Maui", "AventusSharp.Maui\AventusSharp.Maui.csproj", "{79776DB7-D76E-4108-BF43-610DF646057D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Maui.AndroidSmoke", "AventusSharp.Maui.AndroidSmoke\AventusSharp.Maui.AndroidSmoke.csproj", "{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Sqlite", "AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj", "{40C11653-D2A0-4FBE-8472-B5B93D5CF179}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.PortableTest", "AventusSharp.Data.PortableTest\AventusSharp.Data.PortableTest.csproj", "{3871541A-78A0-40EF-913B-952B2B17346A}"
@@ -95,18 +93,6 @@ Global
 		{79776DB7-D76E-4108-BF43-610DF646057D}.Release|x64.Build.0 = Release|Any CPU
 		{79776DB7-D76E-4108-BF43-610DF646057D}.Release|x86.ActiveCfg = Release|Any CPU
 		{79776DB7-D76E-4108-BF43-610DF646057D}.Release|x86.Build.0 = Release|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Debug|x64.Build.0 = Debug|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Debug|x86.Build.0 = Debug|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x64.ActiveCfg = Release|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x64.Build.0 = Release|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x86.ActiveCfg = Release|Any CPU
-		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x86.Build.0 = Release|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Debug|x64.ActiveCfg = Debug|Any CPU

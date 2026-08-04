@@ -29,11 +29,6 @@ Each project contains an `aventus.sharp.avt` configuration. The generated Aventu
 
 The documentation is available here [https://sharp.aventusjs.com](https://sharp.aventusjs.com).
 
-Developer references in this repository:
-
-- [AI usage guide](docs/AVENTUSSHARP_AI_GUIDE.md)
-- [Testing strategy](docs/TESTING.md)
-
 Run the complete local test suite with:
 
 ```shell

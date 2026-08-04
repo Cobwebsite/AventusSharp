@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes
 {
@@ -15,7 +16,7 @@ namespace AventusSharp.Routes
         /// <summary>
         /// Define where to look for the view based on the current context and the router
         /// </summary>
-        public Func<HttpContext, IRouter?, string> ViewDir { get; set; }
+        public Func<IAventusContext, IRouter?, string> ViewDir { get; set; }
 
         /// <summary>
         /// Define where to save temp file for upload
@@ -55,7 +56,7 @@ namespace AventusSharp.Routes
 
         public RouterConfig()
         {
-            ViewDir = (HttpContext context, IRouter? from) =>
+            ViewDir = (IAventusContext context, IRouter? from) =>
             {
                 return Path.Combine(Environment.CurrentDirectory, "Views");
             };

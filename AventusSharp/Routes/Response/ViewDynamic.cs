@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes.Response
 {
@@ -19,7 +20,7 @@ namespace AventusSharp.Routes.Response
             this.viewName = viewName;
             this.model = model;
         }
-        public async Task send(HttpContext context, IRouter? from)
+        public async Task send(IAventusContext context, IRouter? from)
         {
             string directory = RouterMiddleware.config.ViewDir(context, from);
             string path = Path.Combine(directory, viewName);
@@ -36,14 +37,14 @@ namespace AventusSharp.Routes.Response
                 byte[] bytes = Encoding.UTF8.GetBytes(html);
                 context.Response.StatusCode = 200;
                 context.Response.ContentType = "text/html";
-                context.Response.Headers.Append("content-length", bytes.Length + "");
+                context.Response.ContentLength = bytes.Length;
                 await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
             }
             else
             {
                 byte[] bytes = Encoding.ASCII.GetBytes("View " + path + " not found");
                 context.Response.StatusCode = 400;
-                context.Response.Headers.Append("content-length", bytes.Length + "");
+                context.Response.ContentLength = bytes.Length;
                 await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
             }
         }

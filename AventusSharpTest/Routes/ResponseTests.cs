@@ -3,6 +3,8 @@ using AventusSharp.Routes;
 using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Response;
 using Microsoft.AspNetCore.Http;
+using AventusSharp.AspNetCore.Hosting;
+using AventusSharp.Hosting;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using IOPath = System.IO.Path;
@@ -14,7 +16,7 @@ namespace AventusSharpTest.Routes;
 [NonParallelizable]
 public class ResponseTests
 {
-    private Func<HttpContext, IRouter?, string>? originalViewDir;
+    private Func<IAventusContext, IRouter?, string>? originalViewDir;
 
     [SetUp]
     public void SaveViewConfiguration()
@@ -60,7 +62,7 @@ public class ResponseTests
     {
         var context = CreateContext();
 
-        await new TextResponse("hello", 201).send(context);
+        await new TextResponse("hello", 201).send(Adapt(context));
 
         Assert.Multiple(() =>
         {
@@ -75,7 +77,7 @@ public class ResponseTests
     {
         var context = CreateContext();
 
-        await new Json(new { Name = "Aventus", Stable = true }).send(context);
+        await new Json(new { Name = "Aventus", Stable = true }).send(Adapt(context));
 
         Assert.That(context.Response.ContentType, Does.StartWith("application/json"));
         var body = JObject.Parse(ReadBody(context));
@@ -94,7 +96,7 @@ public class ResponseTests
         var context = CreateContext();
         var bytes = new byte[] { 1, 2, 3 };
 
-        await new ByteResponse(bytes, "application/test", 202).send(context);
+        await new ByteResponse(bytes, "application/test", 202).send(Adapt(context));
 
         Assert.That(context.Response.StatusCode, Is.EqualTo(202));
         Assert.That(context.Response.ContentType, Does.StartWith("application/test"));
@@ -106,7 +108,7 @@ public class ResponseTests
     {
         var context = CreateContext();
 
-        await new Redirect("/target").send(context);
+        await new Redirect("/target").send(Adapt(context));
 
         Assert.Multiple(() =>
         {
@@ -124,7 +126,7 @@ public class ResponseTests
         var context = CreateContext();
 
         await new StreamResponse(source, "application/custom", 206)
-            .send(context);
+            .send(Adapt(context));
 
         Assert.Multiple(() =>
         {
@@ -143,7 +145,7 @@ public class ResponseTests
         context.Response.StatusCode = 202;
         await context.Response.WriteAsync("already written");
 
-        await new NoResponse().send(context);
+        await new NoResponse().send(Adapt(context));
 
         Assert.Multiple(() =>
         {
@@ -158,7 +160,7 @@ public class ResponseTests
         var context = CreateContext();
         var viewName = $"missing-{Guid.NewGuid():N}";
 
-        await new View(viewName).send(context);
+        await new View(viewName).send(Adapt(context));
 
         Assert.Multiple(() =>
         {
@@ -179,7 +181,7 @@ public class ResponseTests
         RouterMiddleware.config.ViewDir = (_, _) => directory;
         var context = CreateContext();
 
-        await new View("plain").send(context);
+        await new View("plain").send(Adapt(context));
 
         Assert.Multiple(() =>
         {
@@ -201,7 +203,7 @@ public class ResponseTests
         var context = CreateContext();
 
         await new ViewDynamic("device", new { Name = "Light", Value = 42 })
-            .send(context, null);
+            .send(Adapt(context), null);
 
         Assert.Multiple(() =>
         {
@@ -227,12 +229,12 @@ public class ResponseTests
         RouterMiddleware.config.ViewDir = (_, _) => firstDirectory;
         var firstContext = CreateContext();
         await new ViewDynamic(viewName, new { Name = "A" })
-            .send(firstContext, null);
+            .send(Adapt(firstContext), null);
 
         RouterMiddleware.config.ViewDir = (_, _) => secondDirectory;
         var secondContext = CreateContext();
         await new ViewDynamic(viewName, new { Name = "B" })
-            .send(secondContext, null);
+            .send(Adapt(secondContext), null);
 
         Assert.Multiple(() =>
         {
@@ -249,7 +251,7 @@ public class ResponseTests
         var context = CreateContext();
 
         await new ViewDynamic("missing-template", new { Name = "Unused" })
-            .send(context, null);
+            .send(Adapt(context), null);
 
         Assert.Multiple(() =>
         {
@@ -277,7 +279,7 @@ public class ResponseTests
                 await new ViewDynamic(
                         viewName,
                         new { Name = "item", Value = index })
-                    .send(context, null);
+                    .send(Adapt(context), null);
                 return (context, body: ReadBody(context), index);
             })
             .ToArray();
@@ -316,6 +318,8 @@ public class ResponseTests
         context.Response.Body = new MemoryStream();
         return context;
     }
+
+    private static AspNetCoreAventusContext Adapt(HttpContext context) => new(context);
 
     private static string ReadBody(HttpContext context)
     {

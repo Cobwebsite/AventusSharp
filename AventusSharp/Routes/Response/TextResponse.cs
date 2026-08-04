@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Text;
 using System.Threading.Tasks;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes.Response
 {
@@ -13,7 +14,7 @@ namespace AventusSharp.Routes.Response
             this.text = text;
             this.code = code;
         }
-        public async Task send(HttpContext context, IRouter? from = null)
+        public async Task send(IAventusContext context, IRouter? from = null)
         {
             var bytes = Encoding.UTF8.GetBytes(text);
             context.Response.ContentType = "text/plain";

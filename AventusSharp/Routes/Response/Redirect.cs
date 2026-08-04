@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes.Response
 {
@@ -10,9 +11,10 @@ namespace AventusSharp.Routes.Response
         {
             this.uri = uri;
         }
-        public Task send(HttpContext context, IRouter? from = null)
+        public Task send(IAventusContext context, IRouter? from = null)
         {
-           context.Response.Redirect(uri);
+           context.Response.StatusCode = 302;
+           context.Response.Headers["Location"] = [uri];
            return Task.CompletedTask;
         }
     }

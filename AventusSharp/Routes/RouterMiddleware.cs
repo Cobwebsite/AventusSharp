@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using AventusSharp.AspNetCore.Hosting;
 
 namespace AventusSharp.Routes
 {
@@ -434,7 +435,7 @@ namespace AventusSharp.Routes
                                                     if (!resultTemp.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
-                                                        await new Json(resultTemp, 422).send(context, routerInfo.router);
+                                                        await new Json(resultTemp, 422).send(new AspNetCoreAventusContext(context), routerInfo.router);
                                                         return null;
                                                     }
                                                 }
@@ -452,7 +453,7 @@ namespace AventusSharp.Routes
                                                     if (!bodyPart.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
-                                                        await new Json(bodyPart, 422).send(context, routerInfo.router);
+                                                        await new Json(bodyPart, 422).send(new AspNetCoreAventusContext(context), routerInfo.router);
                                                         return null;
                                                     }
                                                     value = bodyPart.Result;
@@ -506,6 +507,7 @@ namespace AventusSharp.Routes
 
         public static async Task OnRequest(HttpContext context, RouterResolve routerResolve)
         {
+            var aventusContext = new AspNetCoreAventusContext(context);
             RouteInfo routerInfo = routerResolve.RouteInfo;
             bool canContinue = true;
             ContextScope = context;
@@ -552,19 +554,19 @@ namespace AventusSharp.Routes
 
                     if (o is IResponse response)
                     {
-                        await response.send(context, routerInfo.router);
+                        await response.send(aventusContext, routerInfo.router);
                     }
                     else if (o is byte[] bytes)
                     {
-                        await new ByteResponse(bytes).send(context, routerInfo.router);
+                        await new ByteResponse(bytes).send(aventusContext, routerInfo.router);
                     }
                     else if (o is string txt)
                     {
-                        await new TextResponse(txt).send(context, routerInfo.router);
+                        await new TextResponse(txt).send(aventusContext, routerInfo.router);
                     }
                     else
                     {
-                        await new Json(o).send(context, routerInfo.router);
+                        await new Json(o).send(aventusContext, routerInfo.router);
                     }
                 }
             }
@@ -585,7 +587,7 @@ namespace AventusSharp.Routes
                     ? context.Response.StatusCode
                     : 500;
                 VoidWithError error = new() { Errors = [routeError] };
-                await new Json(error, code).send(context);
+                await new Json(error, code).send(aventusContext);
             }
             ContextScope = null;
         }

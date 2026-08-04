@@ -43,6 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.AspNetCore\AventusSharp.AspNetCore.csproj" />
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
   </ItemGroup>
 

@@ -17,3 +17,12 @@ Remplacer progressivement `HttpContext` par le contrat Aventus tout en conservan
 - Les mêmes types `IResponse` sont produits.
 - Les tests de référence restent au vert.
 
+## Avancement
+
+### Sous-lot réponses — terminé
+
+- `IResponse.send` reçoit maintenant `IAventusContext`.
+- Toutes les réponses concrètes écrivent via `IAventusResponse`.
+- `RouterConfig.ViewDir` reçoit le contexte portable.
+- Le middleware ASP.NET construit temporairement l'adaptateur avant d'écrire la réponse.
+- La résolution, l'invocation des routes et les types de réponse sont inchangés.

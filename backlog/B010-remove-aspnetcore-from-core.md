@@ -16,3 +16,8 @@ Rendre le graphe portable vers MAUI/Android.
 - Core compile sans framework reference ASP.NET Core.
 - Le projet témoin MAUI Android restaure et compile.
 
+## Avancement
+
+- `AventusSharp.Core` ne contient aucune référence ou directive ASP.NET Core.
+- `AventusSharp.Maui` ne contient aucune référence ou directive ASP.NET Core.
+- Les usages restants dans le projet historique sont limités à `ApplicationBuilder`, au middleware HTTP et aux hôtes WebSocket/SSE.

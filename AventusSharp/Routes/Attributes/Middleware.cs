@@ -1,7 +1,6 @@
-using System;
+﻿using System;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes.Attributes

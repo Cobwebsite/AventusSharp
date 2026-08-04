@@ -4,7 +4,6 @@ using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
 using AventusSharp.WebSocket.Event;
-using Microsoft.AspNetCore.Http;
 using AventusSharp.Hosting;
 using Microsoft.Extensions.Logging;
 using System;

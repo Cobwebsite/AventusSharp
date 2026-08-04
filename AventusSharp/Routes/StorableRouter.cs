@@ -3,7 +3,6 @@ using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Response;
 using AventusSharp.Routes.Request;
 using AventusSharp.Tools;
-using Microsoft.AspNetCore.Http;
 using AventusSharp.Hosting;
 using System;
 using System.Collections.Generic;

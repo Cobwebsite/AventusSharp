@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Scriban;
+﻿using Scriban;
 using System;
 using System.Collections.Concurrent;
 using System.IO;

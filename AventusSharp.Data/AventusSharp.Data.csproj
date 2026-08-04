@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.0.14</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <NoWarn>1701;1702;CS0728;1587;1591</NoWarn>
+    <PackageId>AventusSharp.Data</PackageId>
+    <Title>AventusSharp Data</Title>
+    <Description>Portable data engine for AventusSharp.</Description>
+    <Authors>Cobwebsite</Authors>
+    <Company>ch.cobwebsite</Company>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AventusSharp\Data\**\*.cs"
+             Exclude="..\AventusSharp\Data\Storage\Mssql\**\*.cs;..\AventusSharp\Data\Storage\Mysql\**\*.cs;..\AventusSharp\Data\Storage\Postgresql\**\*.cs;..\AventusSharp\Data\Storage\Sqlite\**\*.cs"
+             Link="Data\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\AventusSharp\Tools\*.cs"
+             Exclude="..\AventusSharp\Tools\AventusLogger.cs;..\AventusSharp\Tools\DateTimeExtension.cs;..\AventusSharp\Tools\InterfaceDumperExtension.cs;..\AventusSharp\Tools\ListExtension.cs;..\AventusSharp\Tools\NumberExtension.cs;..\AventusSharp\Tools\ObjectExtension.cs;..\AventusSharp\Tools\TypeExtension.cs"
+             Link="Tools\%(Filename)%(Extension)" />
+    <Compile Include="..\AventusSharp\Tools\Attributes\EnvName.cs"
+             Link="Tools\Attributes\EnvName.cs" />
+    <Compile Include="..\AventusSharp\Chart\Schema.cs"
+             Link="Chart\Schema.cs" />
+    <Compile Include="..\AventusSharp\Routes\RouteError.cs"
+             Link="Routes\RouteError.cs" />
+    <Compile Include="Compatibility\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="File.TypeChecker" Version="4.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

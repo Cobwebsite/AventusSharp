@@ -115,7 +115,7 @@ public class ImageFile
 
             if (encodedImage.Size < previousSize)
             {
-                List<string> pathWithExtension = savePath.Split('.').ToList<string>();
+                List<string> pathWithExtension = savePath.Split('.').ToList();
                 pathWithExtension.RemoveAt(pathWithExtension.Count - 1);
                 string? extensionName = Enum.GetName(format);
                 if (extensionName == null)

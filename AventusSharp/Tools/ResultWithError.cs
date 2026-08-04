@@ -1,6 +1,5 @@
 ﻿using AventusSharp.Data;
 using AventusSharp.Tools.Attributes;
-using AventusSharp.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;

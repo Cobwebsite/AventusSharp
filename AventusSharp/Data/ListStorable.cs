@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +6,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
-using MySqlX.XDevAPI.Common;
 
 namespace AventusSharp.Data;
 

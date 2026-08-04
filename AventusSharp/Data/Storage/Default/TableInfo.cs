@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using AventusSharp.Tools;
 using AventusSharp.Data.Storage.Default.TableMember;
-using SQLitePCL;
 using System.Linq.Expressions;
 
 namespace AventusSharp.Data.Storage.Default

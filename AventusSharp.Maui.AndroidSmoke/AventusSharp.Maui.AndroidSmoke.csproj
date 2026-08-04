@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+    <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
     <ProjectReference Include="..\AventusSharp.Maui\AventusSharp.Maui.csproj" />
   </ItemGroup>
 

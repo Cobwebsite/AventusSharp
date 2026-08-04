@@ -1,7 +1,7 @@
 ﻿using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
-using AventusSharp.Routes;
+using AventusSharp.Hosting;
 using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
@@ -488,7 +488,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                 LambdaExpression relationExpression = LambdaTranslator.MergePart<T>(lambdaResult.Steps);
                 foreach (IScope scope in scopesToApply)
                 {
-                    LambdaExpression? scopeExpression = scope.Where(RouterMiddleware.AventusContextScope);
+                    LambdaExpression? scopeExpression = scope.Where(AventusContextAccessor.Current);
                     if (scopeExpression == null)
                     {
                         continue;
@@ -725,7 +725,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         bool hasScope = false;
         foreach (var scope in scopes)
         {
-            var scopeFct = scope.Where(RouterMiddleware.AventusContextScope);
+            var scopeFct = scope.Where(AventusContextAccessor.Current);
             if (scopeFct != null)
             {
                 hasScope = true;

@@ -29,7 +29,6 @@ namespace AventusSharp.Routes
         private static Dictionary<Type, object> injected = new Dictionary<Type, object>();
 
         private static AsyncLocal<HttpContext?> _contextScope = new();
-        private static AsyncLocal<IAventusContext?> _aventusContextScope = new();
         public static HttpContext? ContextScope
         {
             get => _contextScope.Value;
@@ -37,8 +36,8 @@ namespace AventusSharp.Routes
         }
         public static IAventusContext? AventusContextScope
         {
-            get => _aventusContextScope.Value;
-            internal set => _aventusContextScope.Value = value;
+            get => AventusContextAccessor.Current;
+            internal set => AventusContextAccessor.Current = value;
         }
 
         public static void Configure(Action<RouterConfig> configAction)

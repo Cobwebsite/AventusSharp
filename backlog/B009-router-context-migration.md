@@ -26,3 +26,10 @@ Remplacer progressivement `HttpContext` par le contrat Aventus tout en conservan
 - `RouterConfig.ViewDir` reçoit le contexte portable.
 - Le middleware ASP.NET construit temporairement l'adaptateur avant d'écrire la réponse.
 - La résolution, l'invocation des routes et les types de réponse sont inchangés.
+
+### Sous-lot scopes Data — terminé
+
+- `Scope<T>.Where` et `IScope.Where` reçoivent `IAventusContext`.
+- Un contexte ambiant portable accompagne temporairement le `HttpContext` ambiant historique.
+- HTTP, WebSocket et SSE initialisent et libèrent les deux contextes pendant la transition.
+- Les constructeurs de requêtes Data appliquent les scopes avec le contexte portable.

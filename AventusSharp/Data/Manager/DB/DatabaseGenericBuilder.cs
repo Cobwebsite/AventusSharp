@@ -488,7 +488,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                 LambdaExpression relationExpression = LambdaTranslator.MergePart<T>(lambdaResult.Steps);
                 foreach (IScope scope in scopesToApply)
                 {
-                    LambdaExpression? scopeExpression = scope.Where(RouterMiddleware.ContextScope);
+                    LambdaExpression? scopeExpression = scope.Where(RouterMiddleware.AventusContextScope);
                     if (scopeExpression == null)
                     {
                         continue;
@@ -725,7 +725,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         bool hasScope = false;
         foreach (var scope in scopes)
         {
-            var scopeFct = scope.Where(RouterMiddleware.ContextScope);
+            var scopeFct = scope.Where(RouterMiddleware.AventusContextScope);
             if (scopeFct != null)
             {
                 hasScope = true;

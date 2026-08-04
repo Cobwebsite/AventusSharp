@@ -162,6 +162,7 @@ namespace AventusSharp.WebSocket
         public async Task Route(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid = "")
         {
             RouterMiddleware.ContextScope = connection.GetContext();
+            RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(connection.GetContext());
             try
             {
                 await RouteInternal(connection, path, body, uid);
@@ -188,6 +189,7 @@ namespace AventusSharp.WebSocket
             finally
             {
                 RouterMiddleware.ContextScope = null;
+                RouterMiddleware.AventusContextScope = null;
             }
         }
 
@@ -198,6 +200,7 @@ namespace AventusSharp.WebSocket
                 if (!await middleware(connection, path, body, uid))
                 {
                     RouterMiddleware.ContextScope = null;
+                    RouterMiddleware.AventusContextScope = null;
                     return;
                 }
             }
@@ -251,6 +254,7 @@ namespace AventusSharp.WebSocket
                                             {
                                                 await connection.Send(path, bodyPart, uid);
                                                 RouterMiddleware.ContextScope = null;
+                                                RouterMiddleware.AventusContextScope = null;
                                                 return;
                                             }
                                             value = bodyPart.Result;
@@ -318,6 +322,7 @@ namespace AventusSharp.WebSocket
                 }
             }
             RouterMiddleware.ContextScope = null;
+            RouterMiddleware.AventusContextScope = null;
         }
 
 

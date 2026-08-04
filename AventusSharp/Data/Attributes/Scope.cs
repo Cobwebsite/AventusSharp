@@ -1,20 +1,21 @@
 using System;
 using System.Linq.Expressions;
 using Microsoft.AspNetCore.Http;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Data.Attributes;
 
 
 public interface IScope
 {
-    public Expression<Func<object, bool>>? Where(HttpContext? context);
+    public Expression<Func<object, bool>>? Where(IAventusContext? context);
 }
 [AttributeUsage(AttributeTargets.Class)]
 public abstract class Scope<T> : Attribute, IScope
 {
-    public abstract Expression<Func<T, bool>>? Where(HttpContext? context);
+    public abstract Expression<Func<T, bool>>? Where(IAventusContext? context);
 
-    Expression<Func<object, bool>>? IScope.Where(HttpContext? context)
+    Expression<Func<object, bool>>? IScope.Where(IAventusContext? context)
     {
         var originalExpression = Where(context);
         if(originalExpression == null) return null;

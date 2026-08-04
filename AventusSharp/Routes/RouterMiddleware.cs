@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using AventusSharp.AspNetCore.Hosting;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes
 {
@@ -28,10 +29,16 @@ namespace AventusSharp.Routes
         private static Dictionary<Type, object> injected = new Dictionary<Type, object>();
 
         private static AsyncLocal<HttpContext?> _contextScope = new();
+        private static AsyncLocal<IAventusContext?> _aventusContextScope = new();
         public static HttpContext? ContextScope
         {
             get => _contextScope.Value;
             internal set => _contextScope.Value = value;
+        }
+        public static IAventusContext? AventusContextScope
+        {
+            get => _aventusContextScope.Value;
+            internal set => _aventusContextScope.Value = value;
         }
 
         public static void Configure(Action<RouterConfig> configAction)
@@ -511,6 +518,7 @@ namespace AventusSharp.Routes
             RouteInfo routerInfo = routerResolve.RouteInfo;
             bool canContinue = true;
             ContextScope = context;
+            AventusContextScope = aventusContext;
             try
             {
                 foreach (Middleware middleware in routerInfo.middlewares)
@@ -528,6 +536,7 @@ namespace AventusSharp.Routes
                 if (!canContinue)
                 {
                     ContextScope = null;
+                    AventusContextScope = null;
                     return;
                 }
 
@@ -547,6 +556,7 @@ namespace AventusSharp.Routes
                         {
                             context.Response.StatusCode = 204;
                             ContextScope = null;
+                            AventusContextScope = null;
                             return;
                         }
                         o = ((dynamic)task).Result;
@@ -590,6 +600,7 @@ namespace AventusSharp.Routes
                 await new Json(error, code).send(aventusContext);
             }
             ContextScope = null;
+            AventusContextScope = null;
         }
 
 

@@ -90,6 +90,7 @@ namespace AventusSharp.SSE
                 try
                 {
                     RouterMiddleware.ContextScope = context;
+                    RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(context);
                     await OnConnectionOpen(connection);
                     await connection.WaitForShutdown;
                 }
@@ -100,6 +101,7 @@ namespace AventusSharp.SSE
                 finally
                 {
                     RouterMiddleware.ContextScope = null;
+                    RouterMiddleware.AventusContextScope = null;
                     if (connections.TryRemove(connection, out _))
                     {
                         try

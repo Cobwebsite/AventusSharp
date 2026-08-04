@@ -6,6 +6,7 @@ using System.Data;
 using Microsoft.AspNetCore.Http;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
+using AventusSharp.Hosting;
 
 namespace AventusSharpTest.Integration.Models;
 
@@ -74,13 +75,13 @@ public sealed class ScopedRecordManager : DatabaseDM<ScopedRecordManager, Scoped
 
 public sealed class VisibleScopedRecordAttribute : Scope<ScopedRecord>
 {
-    public override Expression<Func<ScopedRecord, bool>>? Where(HttpContext? context) =>
+    public override Expression<Func<ScopedRecord, bool>>? Where(IAventusContext? context) =>
         item => item.IsVisible;
 }
 
 public sealed class HighValueScopedRecord : Scope<ScopedRecord>
 {
-    public override Expression<Func<ScopedRecord, bool>>? Where(HttpContext? context) =>
+    public override Expression<Func<ScopedRecord, bool>>? Where(IAventusContext? context) =>
         item => item.Value >= 50;
 }
 
@@ -94,13 +95,13 @@ public sealed class IncludedScopedRecord : Storable<IncludedScopedRecord>
 
 public sealed class VisibleIncludedRecordAttribute : Scope<IncludedScopedRecord>
 {
-    public override Expression<Func<IncludedScopedRecord, bool>>? Where(HttpContext? context) =>
+    public override Expression<Func<IncludedScopedRecord, bool>>? Where(IAventusContext? context) =>
         item => item.IsVisible;
 }
 
 public sealed class NamedIncludedRecordScope : Scope<IncludedScopedRecord>
 {
-    public override Expression<Func<IncludedScopedRecord, bool>>? Where(HttpContext? context) =>
+    public override Expression<Func<IncludedScopedRecord, bool>>? Where(IAventusContext? context) =>
         item => item.Name.StartsWith("Manual");
 }
 

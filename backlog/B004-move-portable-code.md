@@ -28,9 +28,11 @@ Alimenter `AventusSharp.Core` uniquement avec du code qui ne dépend pas d'ASP.N
 - 54 tests ciblés réussis.
 - Suite de référence hors échec WebSocket initial : 598 réussis, 64 ignorés, aucun échec.
 
-### Moteur Data portable — en cours
+### Moteur Data portable — terminé
 
 - Assembly `AventusSharp.Data` créé avec modèles, managers, builders, migrations et stockage abstrait.
 - Fournisseurs SQL Server, MySQL, PostgreSQL et SQLite exclus de cet assembly.
 - Faux imports vers les packages des fournisseurs supprimés.
 - Le projet Android témoin compile un véritable modèle `Storable<T>` depuis cet assembly.
+- La suite SQLite historique est réutilisée contre les nouveaux assemblies portables.
+- Le moteur portable et son provider SQLite sont empaquetables séparément.

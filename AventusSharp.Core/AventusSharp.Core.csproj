@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>0.0.14</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+
+    <PackageId>AventusSharp.Core</PackageId>
+    <Title>AventusSharp Core</Title>
+    <Description>Portable core contracts and features for AventusSharp.</Description>
+    <Authors>Cobwebsite</Authors>
+    <Company>ch.cobwebsite</Company>
+    <Copyright>Copyright © 2024 Cobwebsite</Copyright>
+    <PackageTags>C#;NuGet;AventusSharp;Core;Cobwebsite</PackageTags>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Cobwebsite/AventusSharp</PackageProjectUrl>
+  </PropertyGroup>
+
+</Project>

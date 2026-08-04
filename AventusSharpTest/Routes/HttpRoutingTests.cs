@@ -3,6 +3,8 @@ using AventusSharp.Routes;
 using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Request;
 using Microsoft.AspNetCore.Http;
+using AventusSharp.Hosting;
+using AventusSharp.Maui;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -44,6 +46,27 @@ public sealed class HttpRoutingTests
                 route.baseUrl == "/tests/number/{id}");
             Assert.That(number.parameters["id"].type, Is.EqualTo(typeof(int)));
             Assert.That(number.parameters["id"].positionUrl, Is.EqualTo(0));
+        });
+    }
+
+    [Test]
+    public async Task Portable_dispatcher_executes_the_existing_router_for_Maui()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var bridge = new AventusMauiBridge(
+            new AventusRequestDispatcher(),
+            () => services);
+
+        AventusBridgeResponse response = await bridge.ExecuteAsync(
+            new AventusBridgeRequest(
+                "GET",
+                "https://0.0.0.1/tests/hello/Maui"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.Status, Is.EqualTo(200));
+            Assert.That(Encoding.UTF8.GetString(response.Content), Is.EqualTo("Hello Maui"));
+            Assert.That(response.Headers["Content-Type"][0], Does.StartWith("text/plain"));
         });
     }
 
@@ -734,7 +757,7 @@ public sealed class HttpRoutingTests
         public static void Reset() => Routes.Clear();
 
         public override async Task Run(
-            HttpContext context,
+            IAventusContext context,
             RouteInfo info,
             Func<Task> next)
         {
@@ -746,12 +769,12 @@ public sealed class HttpRoutingTests
     public sealed class BlockingMiddlewareAttribute : Middleware
     {
         public override async Task Run(
-            HttpContext context,
+            IAventusContext context,
             RouteInfo info,
             Func<Task> next)
         {
             context.Response.StatusCode = 403;
-            await context.Response.WriteAsync("blocked");
+            await context.Response.Body.WriteAsync(System.Text.Encoding.UTF8.GetBytes("blocked"));
         }
     }
 

@@ -11,15 +11,16 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes.Request
 {
     public class RouterBody
     {
         private Dictionary<string, HttpFile> files = new Dictionary<string, HttpFile>();
-        private HttpContext context;
+        private IAventusContext context;
         private JObject data = new JObject();
-        public RouterBody(HttpContext context)
+        public RouterBody(IAventusContext context)
         {
             this.context = context;
         }

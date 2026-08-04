@@ -2,6 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using AventusSharp.Hosting;
 
 namespace AventusSharp.Routes.Attributes
 {
@@ -14,6 +15,6 @@ namespace AventusSharp.Routes.Attributes
 
         }
 
-        public abstract Task Run(HttpContext context, RouteInfo info, Func<Task> next);
+        public abstract Task Run(IAventusContext context, RouteInfo info, Func<Task> next);
     }
 }

@@ -23,4 +23,4 @@ Héberger localement le routeur AventusSharp derrière un `BlazorWebView` sans s
 - Package `AventusSharp.Maui` créé sans référence ASP.NET Core.
 - Bridge méthode/URI/query/headers/body vers `IAventusContext` implémenté.
 - Statut, headers, content type et contenu sont restitués dans une réponse portable.
-- Le bridge dépend de `IAventusRequestDispatcher`; le branchement au routeur réel reste à faire après extraction de sa résolution.
+- Le bridge est branché au routeur réel via `AventusRequestDispatcher` et couvert par un test de route de bout en bout.

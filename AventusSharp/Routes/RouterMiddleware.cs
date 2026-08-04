@@ -183,7 +183,7 @@ namespace AventusSharp.Routes
                                 }
                                 if (!hasInParam)
                                 {
-                                    if (parameter.type != typeof(HttpContext) && !injected.ContainsKey(parameter.type))
+                                    if (parameter.type != typeof(HttpContext) && parameter.type != typeof(IAventusContext) && !injected.ContainsKey(parameter.type))
                                     {
                                         hasBody = true;
                                     }
@@ -388,12 +388,17 @@ namespace AventusSharp.Routes
 
         public static async Task<RouterResolve?> Resolve(HttpContext context)
         {
+            return await Resolve(new AspNetCoreAventusContext(context));
+        }
+
+        public static async Task<RouterResolve?> Resolve(IAventusContext context)
+        {
             if (context.Items.ContainsKey("routerResolve") && context.Items["routerResolve"] is RouterResolve router)
             {
                 return router;
             }
 
-            string url = context.Request.Path.ToString();
+            string url = context.Request.Path;
 
             foreach (KeyValuePair<string, RouteInfo> routeInfo in routesInfo)
             {
@@ -416,9 +421,16 @@ namespace AventusSharp.Routes
                             {
                                 if (parameter.positionUrl == -1)
                                 {
-                                    if (parameter.type == typeof(HttpContext))
+                                    if (parameter.type == typeof(IAventusContext))
                                     {
                                         param[parameter.positionCSharp] = context;
+                                    }
+                                    else if (parameter.type == typeof(HttpContext))
+                                    {
+                                        param[parameter.positionCSharp] =
+                                            context is AspNetCoreAventusContext aspNetCoreContext
+                                                ? aspNetCoreContext.NativeContext
+                                                : null;
                                     }
                                     else
                                     {
@@ -432,7 +444,7 @@ namespace AventusSharp.Routes
                                         // check if body
                                         else
                                         {
-                                            value = context.RequestServices.GetService(parameter.type);
+                                            value = context.Services.GetService(parameter.type);
                                             if (value == null)
                                             {
                                                 if (body == null)
@@ -442,7 +454,7 @@ namespace AventusSharp.Routes
                                                     if (!resultTemp.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
-                                                        await new Json(resultTemp, 422).send(new AspNetCoreAventusContext(context), routerInfo.router);
+                                                        await new Json(resultTemp, 422).send(context, routerInfo.router);
                                                         return null;
                                                     }
                                                 }
@@ -460,7 +472,7 @@ namespace AventusSharp.Routes
                                                     if (!bodyPart.Success)
                                                     {
                                                         context.Response.StatusCode = 422;
-                                                        await new Json(bodyPart, 422).send(new AspNetCoreAventusContext(context), routerInfo.router);
+                                                        await new Json(bodyPart, 422).send(context, routerInfo.router);
                                                         return null;
                                                     }
                                                     value = bodyPart.Result;
@@ -514,10 +526,16 @@ namespace AventusSharp.Routes
 
         public static async Task OnRequest(HttpContext context, RouterResolve routerResolve)
         {
-            var aventusContext = new AspNetCoreAventusContext(context);
+            await OnRequest(new AspNetCoreAventusContext(context), routerResolve);
+        }
+
+        public static async Task OnRequest(IAventusContext aventusContext, RouterResolve routerResolve)
+        {
             RouteInfo routerInfo = routerResolve.RouteInfo;
             bool canContinue = true;
-            ContextScope = context;
+            ContextScope = aventusContext is AspNetCoreAventusContext aspNetCoreContext
+                ? aspNetCoreContext.NativeContext
+                : null;
             AventusContextScope = aventusContext;
             try
             {
@@ -525,7 +543,7 @@ namespace AventusSharp.Routes
                 {
                     if (!canContinue) return;
                     canContinue = false;
-                    await middleware.Run(context, routerInfo, () =>
+                    await middleware.Run(aventusContext, routerInfo, () =>
                     {
                         return Task.Run(() =>
                         {
@@ -544,7 +562,7 @@ namespace AventusSharp.Routes
                 if (routerInfo.action.ReturnType == typeof(void))
                 {
                     routerInfo.action.Invoke(routerInfo.router, param);
-                    context.Response.StatusCode = 204;
+                    aventusContext.Response.StatusCode = 204;
                 }
                 else
                 {
@@ -554,7 +572,7 @@ namespace AventusSharp.Routes
                         await (dynamic)task;
                         if (!routerInfo.action.ReturnType.IsGenericType)
                         {
-                            context.Response.StatusCode = 204;
+                            aventusContext.Response.StatusCode = 204;
                             ContextScope = null;
                             AventusContextScope = null;
                             return;
@@ -593,8 +611,8 @@ namespace AventusSharp.Routes
                         : new RouteError(
                             RouteErrorCode.UnknownError,
                             routeException);
-                int code = context.Response.StatusCode >= 400
-                    ? context.Response.StatusCode
+                int code = aventusContext.Response.StatusCode >= 400
+                    ? aventusContext.Response.StatusCode
                     : 500;
                 VoidWithError error = new() { Errors = [routeError] };
                 await new Json(error, code).send(aventusContext);

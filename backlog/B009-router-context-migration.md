@@ -33,3 +33,11 @@ Remplacer progressivement `HttpContext` par le contrat Aventus tout en conservan
 - Un contexte ambiant portable accompagne temporairement le `HttpContext` ambiant historique.
 - HTTP, WebSocket et SSE initialisent et libèrent les deux contextes pendant la transition.
 - Les constructeurs de requêtes Data appliquent les scopes avec le contexte portable.
+
+### Sous-lot dispatcher portable — terminé
+
+- `Resolve` et l'exécution du routeur acceptent `IAventusContext`.
+- Le body parser lit désormais `IAventusRequest`.
+- Les middlewares de route utilisent le contexte portable.
+- L'injection de `HttpContext` reste disponible sous ASP.NET pendant la transition.
+- `AventusRequestDispatcher` expose le routeur existant à MAUI sans changer sa résolution.

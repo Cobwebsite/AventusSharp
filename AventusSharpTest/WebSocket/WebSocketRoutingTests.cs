@@ -73,7 +73,7 @@ public sealed class WebSocketRoutingTests
             Assert.That(message["uid"]?.Value<string>(),
                 Is.EqualTo("request-42"));
             Assert.That(data["Id"]?.Value<int>(), Is.EqualTo(42));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -139,7 +139,7 @@ public sealed class WebSocketRoutingTests
                 Is.EqualTo("blocked-request"));
             Assert.That(data["Blocked"]?.Value<bool>(), Is.True);
             Assert.That(TestWsRouter.BlockedInvocations, Is.Zero);
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -157,7 +157,7 @@ public sealed class WebSocketRoutingTests
         Assert.Multiple(() =>
         {
             Assert.That(socket.Messages, Is.Empty);
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -180,7 +180,7 @@ public sealed class WebSocketRoutingTests
                 Is.EqualTo("missing-body-request"));
             Assert.That(data["Errors"]?[0]?["Code"]?.Value<int>(),
                 Is.EqualTo((int)WsErrorCode.CantGetValueFromBody));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -353,7 +353,7 @@ public sealed class WebSocketRoutingTests
                 Is.EqualTo("second"));
             Assert.That(secondData["Scope"]?.Value<string>(),
                 Is.EqualTo("/socket-context/second"));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -522,7 +522,7 @@ public sealed class WebSocketRoutingTests
                 Is.EqualTo((int)WsErrorCode.UnknownError));
             Assert.That(data["Errors"]?[0]?["Message"]?.Value<string>(),
                 Does.Contain(expectedMessage));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -829,7 +829,7 @@ public sealed class WebSocketRoutingTests
             return new
             {
                 Id = id,
-                Scope = RouterMiddleware.ContextScope?.Request.Path.ToString()
+                Scope = RouterMiddleware.AventusContextScope?.Request.Path.ToString()
             };
         }
 

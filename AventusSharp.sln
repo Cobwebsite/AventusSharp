@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AventusSharp", "AventusSharp\AventusSharp.csproj", "{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AventusSharpTest", "AventusSharpTest\AventusSharpTest.csproj", "{627A9028-E1B0-4B43-ACED-9477A307D5E0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpToTypescript", "CSharpToTypescript\CSharpToTypescript.csproj", "{D3560400-7867-4F05-87C7-5F153F9AD3CC}"
@@ -29,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Postgresq
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Mssql", "AventusSharp.Data.Mssql\AventusSharp.Data.Mssql.csproj", "{21F77E0C-AD31-493D-90E6-F95B8554B792}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Runtime", "AventusSharp.Runtime\AventusSharp.Runtime.csproj", "{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,18 +39,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Debug|x64.Build.0 = Debug|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Debug|x86.Build.0 = Debug|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Release|x64.ActiveCfg = Release|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Release|x64.Build.0 = Release|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Release|x86.ActiveCfg = Release|Any CPU
-		{FDD5D2F9-CE3E-42FC-8C01-E2A9FC8F0230}.Release|x86.Build.0 = Release|Any CPU
 		{627A9028-E1B0-4B43-ACED-9477A307D5E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{627A9028-E1B0-4B43-ACED-9477A307D5E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{627A9028-E1B0-4B43-ACED-9477A307D5E0}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -195,6 +183,18 @@ Global
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x64.Build.0 = Release|Any CPU
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x86.ActiveCfg = Release|Any CPU
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x86.Build.0 = Release|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x64.Build.0 = Debug|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x86.Build.0 = Debug|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x64.ActiveCfg = Release|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x64.Build.0 = Release|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x86.ActiveCfg = Release|Any CPU
+		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

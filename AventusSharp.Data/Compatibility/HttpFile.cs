@@ -7,6 +7,8 @@ namespace AventusSharp.Routes.Request;
 /// </summary>
 public class HttpFile
 {
+    private readonly string? tempDirectory;
+    internal FileStream? stream;
     public string FormName { get; set; }
     public string FileName { get; set; }
     public string FilePath { get; set; }
@@ -20,7 +22,20 @@ public class HttpFile
         Type = type;
     }
 
-    public bool IsInsideTemp => false;
+    internal HttpFile(
+        string formName,
+        string filename,
+        string filepath,
+        string type,
+        FileStream stream,
+        string tempDirectory) : this(formName, filename, filepath, type)
+    {
+        this.stream = stream;
+        this.tempDirectory = tempDirectory;
+    }
+
+    public bool IsInsideTemp =>
+        tempDirectory is not null && FilePath.StartsWith(tempDirectory);
 
     public bool Move(string path)
     {
@@ -66,6 +81,7 @@ public class HttpFile
                 Directory.CreateDirectory(directory);
             }
             File.Copy(FilePath, path, true);
+            FilePath = path;
             result.Result = true;
         }
         catch (Exception exception)

@@ -115,7 +115,13 @@ namespace AventusSharp.Routes.Request
                             {
                                 File.Delete(filePath);
                             }
-                            HttpFile file = new HttpFile(name, fileName, filePath, type, new FileStream(filePath, FileMode.Create));
+                            HttpFile file = new HttpFile(
+                                name,
+                                fileName,
+                                filePath,
+                                type,
+                                new FileStream(filePath, FileMode.Create),
+                                RouterMiddleware.config.FileUploadTempDir);
                             files.Add(realName, file);
                         }
                     }
@@ -334,89 +340,4 @@ namespace AventusSharp.Routes.Request
 
     }
 
-    public class HttpFile
-    {
-        public string FormName { get; set; }
-        public string FileName { get; set; }
-        public string FilePath { get; set; }
-        public string Type { get; set; }
-
-        /// <summary>
-        /// Only use during the upload process
-        /// </summary>
-        internal FileStream? stream;
-        public HttpFile(string formName, string filename, string filepath, string type)
-        {
-            FormName = formName;
-            FileName = filename;
-            FilePath = filepath;
-            Type = type;
-        }
-        internal HttpFile(string formName, string filename, string filepath, string type, FileStream stream)
-        {
-            FormName = formName;
-            FileName = filename;
-            FilePath = filepath;
-            Type = type;
-            this.stream = stream;
-        }
-
-        public bool IsInsideTemp
-        {
-            get
-            {
-                return FilePath.StartsWith(RouterMiddleware.config.FileUploadTempDir);
-            }
-        }
-
-        public bool Move(string path)
-        {
-            ResultWithRouteError<bool> result = MoveWithError(path);
-            return result.Success && result.Result;
-        }
-        public ResultWithRouteError<bool> MoveWithError(string path)
-        {
-            ResultWithRouteError<bool> result = new ResultWithRouteError<bool>();
-            try
-            {
-                string? dirPath = Path.GetDirectoryName(path);
-                if (dirPath != null)
-                    Directory.CreateDirectory(dirPath);
-
-                File.Move(FilePath, path, true);
-                result.Result = true;
-                FilePath = path;
-            }
-            catch (Exception e)
-            {
-                result.Errors.Add(new RouteError(RouteErrorCode.CantMoveFile, e));
-            }
-            return result;
-        }
-
-        public bool Copy(string path)
-        {
-            ResultWithRouteError<bool> result = CopyWithError(path);
-            return result.Success && result.Result;
-        }
-        public ResultWithRouteError<bool> CopyWithError(string path)
-        {
-            ResultWithRouteError<bool> result = new ResultWithRouteError<bool>();
-            try
-            {
-                string? dirPath = Path.GetDirectoryName(path);
-                if (dirPath != null)
-                    Directory.CreateDirectory(dirPath);
-
-                File.Copy(FilePath, path, true);
-                result.Result = true;
-                FilePath = path;
-            }
-            catch (Exception e)
-            {
-                result.Errors.Add(new RouteError(RouteErrorCode.CantMoveFile, e));
-            }
-            return result;
-        }
-    }
 }

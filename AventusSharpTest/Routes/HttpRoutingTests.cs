@@ -75,7 +75,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/tests/hello/Aventus");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(context.Response.StatusCode, Is.EqualTo(200));
         Assert.That(ReadBody(context), Is.EqualTo("Hello Aventus"));
@@ -89,7 +89,7 @@ public sealed class HttpRoutingTests
         context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream(body);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         var json = JObject.Parse(ReadBody(context));
         Assert.That(json["Result"]?.Value<int>(), Is.EqualTo(11));
@@ -101,7 +101,7 @@ public sealed class HttpRoutingTests
         var context = CreateContext("GET", "/not-registered");
         var nextCalled = false;
 
-        await RouterMiddleware.OnRequest(context, () =>
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -115,7 +115,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/TESTS/NUMBER/42");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(ReadBody(context), Is.EqualTo("Number 42"));
     }
@@ -128,12 +128,12 @@ public sealed class HttpRoutingTests
         var invalidNext = false;
         var methodNext = false;
 
-        await RouterMiddleware.OnRequest(invalidInteger, () =>
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(invalidInteger, () =>
         {
             invalidNext = true;
             return Task.CompletedTask;
         });
-        await RouterMiddleware.OnRequest(wrongMethod, () =>
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(wrongMethod, () =>
         {
             methodNext = true;
             return Task.CompletedTask;
@@ -151,12 +151,12 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/tests/scope");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.Multiple(() =>
         {
             Assert.That(ReadBody(context), Is.EqualTo("GET:True"));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -165,7 +165,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/tests/async");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         var json = JObject.Parse(ReadBody(context));
         Assert.That(json["Value"]?.Value<int>(), Is.EqualTo(12));
@@ -177,7 +177,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("POST", path);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.Multiple(() =>
         {
@@ -194,7 +194,7 @@ public sealed class HttpRoutingTests
             .BuildServiceProvider();
         var context = CreateContext("GET", "/tests/service", services);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(ReadBody(context), Is.EqualTo("injected"));
     }
@@ -211,7 +211,7 @@ public sealed class HttpRoutingTests
         context.Request.ContentType = contentType;
         context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(context.Response.StatusCode, Is.EqualTo(422));
         var json = JObject.Parse(ReadBody(context));
@@ -224,14 +224,14 @@ public sealed class HttpRoutingTests
         TrackingMiddlewareAttribute.Reset();
         var context = CreateContext("GET", "/tests/middleware");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.Multiple(() =>
         {
             Assert.That(ReadBody(context), Is.EqualTo("after middleware"));
             Assert.That(TrackingMiddlewareAttribute.Routes,
                 Is.EqualTo(new[] { "/tests/middleware" }));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -240,13 +240,13 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/tests/blocked");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.Multiple(() =>
         {
             Assert.That(context.Response.StatusCode, Is.EqualTo(403));
             Assert.That(ReadBody(context), Is.EqualTo("blocked"));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -260,7 +260,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext(method, path);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(ReadBody(context), Is.EqualTo(method));
     }
@@ -273,7 +273,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", path);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(context.Response.StatusCode, Is.EqualTo(500));
         var json = JObject.Parse(ReadBody(context));
@@ -281,7 +281,7 @@ public sealed class HttpRoutingTests
         {
             Assert.That(json["Errors"]?[0]?["Message"]?.Value<string>(),
                 Does.Contain(expectedMessage));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -290,7 +290,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/tests/defaultroute");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(ReadBody(context), Is.EqualTo("default route"));
     }
@@ -311,7 +311,7 @@ public sealed class HttpRoutingTests
     {
         var context = CreateContext("GET", "/tests/dynamic/segment");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(ReadBody(context), Is.EqualTo("dynamic route"));
     }
@@ -355,7 +355,7 @@ public sealed class HttpRoutingTests
         context.Request.ContentType = multipart.Headers.ContentType!.ToString();
         context.Request.Body = requestBody;
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         var json = JObject.Parse(ReadBody(context));
         var filePath = json["FilePath"]?.Value<string>();
@@ -388,8 +388,8 @@ public sealed class HttpRoutingTests
         var second = CreateContext("GET", "/tests/concurrent-scope/second");
 
         await Task.WhenAll(
-            RouterMiddleware.OnRequest(first, () => Task.CompletedTask),
-            RouterMiddleware.OnRequest(second, () => Task.CompletedTask));
+            AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(first, () => Task.CompletedTask),
+            AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(second, () => Task.CompletedTask));
 
         var firstJson = JObject.Parse(ReadBody(first));
         var secondJson = JObject.Parse(ReadBody(second));
@@ -401,7 +401,7 @@ public sealed class HttpRoutingTests
             Assert.That(secondJson["Id"]?.Value<string>(), Is.EqualTo("second"));
             Assert.That(secondJson["Scope"]?.Value<string>(),
                 Is.EqualTo("/tests/concurrent-scope/second"));
-            Assert.That(RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -413,7 +413,7 @@ public sealed class HttpRoutingTests
         context.Request.Body = new MemoryStream(
             Encoding.UTF8.GetBytes("{}"));
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.Multiple(() =>
         {
@@ -433,7 +433,7 @@ public sealed class HttpRoutingTests
         var context = CreateContext("GET", path);
         var nextCalled = false;
 
-        await RouterMiddleware.OnRequest(context, () =>
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -463,7 +463,7 @@ public sealed class HttpRoutingTests
             secondName);
         var context = await CreateMultipartContext("/tests/upload-many", multipart);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         var json = JArray.Parse(ReadBody(context));
         var paths = json.Select(item => item["FilePath"]?.Value<string>())
@@ -501,7 +501,7 @@ public sealed class HttpRoutingTests
             fileName);
         var context = await CreateMultipartContext("/tests/upload-nested", multipart);
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         var json = JObject.Parse(ReadBody(context));
         var filePath = json["FilePath"]?.Value<string>();
@@ -534,7 +534,7 @@ public sealed class HttpRoutingTests
             new GlobalRouteDependency("global"));
         var context = CreateContext("GET", "/tests/global-service");
 
-        await RouterMiddleware.OnRequest(context, () => Task.CompletedTask);
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(context, () => Task.CompletedTask);
 
         Assert.That(ReadBody(context), Is.EqualTo("global"));
     }
@@ -595,7 +595,7 @@ public sealed class HttpRoutingTests
 
         [Get]
         [HttpPath("/context")]
-        public string Context(HttpContext context) => context.Request.Method;
+        public string Context(IAventusContext context) => context.Request.Method;
 
         [Get]
         [HttpPath("/number/{id}")]
@@ -603,9 +603,9 @@ public sealed class HttpRoutingTests
 
         [Get]
         [HttpPath("/scope")]
-        public string Scope(HttpContext context) =>
+        public string Scope(IAventusContext context) =>
             $"{context.Request.Method}:{ReferenceEquals(
-                context, RouterMiddleware.ContextScope)}";
+                context, RouterMiddleware.AventusContextScope)}";
 
         [Get]
         [HttpPath("/async")]
@@ -643,7 +643,7 @@ public sealed class HttpRoutingTests
         [Post]
         [HttpPath("/multi-a")]
         [HttpPath("/multi-b")]
-        public string MultipleRoutes(HttpContext context) =>
+        public string MultipleRoutes(IAventusContext context) =>
             context.Request.Method;
 
         [Get]
@@ -685,7 +685,7 @@ public sealed class HttpRoutingTests
         [HttpPath("/concurrent-scope/{id}")]
         public async Task<object> ConcurrentScope(
             string id,
-            HttpContext context)
+            IAventusContext context)
         {
             if (Interlocked.Increment(ref concurrentScopeCount) == 2)
                 concurrentScopeReady.SetResult();
@@ -694,7 +694,7 @@ public sealed class HttpRoutingTests
             return new
             {
                 Id = id,
-                Scope = RouterMiddleware.ContextScope?.Request.Path.ToString()
+                Scope = RouterMiddleware.AventusContextScope?.Request.Path.ToString()
             };
         }
 

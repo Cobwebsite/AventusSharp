@@ -229,7 +229,7 @@ public sealed class StorableHttpRoutingTests
         string path)
     {
         var context = CreateContext(method, path);
-        await RouterMiddleware.OnRequest(
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(
             context,
             () => Task.CompletedTask);
         return context;
@@ -244,7 +244,7 @@ public sealed class StorableHttpRoutingTests
         context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream(
             Encoding.UTF8.GetBytes(json));
-        await RouterMiddleware.OnRequest(
+        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(
             context,
             () => Task.CompletedTask);
         return context;

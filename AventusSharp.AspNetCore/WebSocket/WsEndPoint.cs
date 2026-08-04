@@ -161,7 +161,7 @@ namespace AventusSharp.WebSocket
         /// <returns></returns>
         public async Task Route(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid = "")
         {
-            RouterMiddleware.ContextScope = connection.GetContext();
+            AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = connection.GetContext();
             RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(connection.GetContext());
             try
             {
@@ -188,7 +188,7 @@ namespace AventusSharp.WebSocket
             }
             finally
             {
-                RouterMiddleware.ContextScope = null;
+                AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
                 RouterMiddleware.AventusContextScope = null;
             }
         }
@@ -199,7 +199,7 @@ namespace AventusSharp.WebSocket
             {
                 if (!await middleware(connection, path, body, uid))
                 {
-                    RouterMiddleware.ContextScope = null;
+                    AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
                     RouterMiddleware.AventusContextScope = null;
                     return;
                 }
@@ -254,7 +254,7 @@ namespace AventusSharp.WebSocket
                                             if (!bodyPart.Success)
                                             {
                                                 await connection.Send(path, bodyPart, uid);
-                                                RouterMiddleware.ContextScope = null;
+                                                AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
                                                 RouterMiddleware.AventusContextScope = null;
                                                 return;
                                             }
@@ -322,7 +322,7 @@ namespace AventusSharp.WebSocket
                     }
                 }
             }
-            RouterMiddleware.ContextScope = null;
+            AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
             RouterMiddleware.AventusContextScope = null;
         }
 

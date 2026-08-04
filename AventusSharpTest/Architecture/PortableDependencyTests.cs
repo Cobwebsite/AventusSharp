@@ -8,6 +8,7 @@ public sealed class PortableDependencyTests
     [TestCase("AventusSharp.Maui")]
     [TestCase("AventusSharp.Data")]
     [TestCase("AventusSharp.Data.Sqlite")]
+    [TestCase("AventusSharp.Runtime")]
     public void Portable_projects_do_not_reference_AspNetCore(string projectName)
     {
         string projectDirectory = FindProjectDirectory(projectName);

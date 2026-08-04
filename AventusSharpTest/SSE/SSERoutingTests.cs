@@ -90,7 +90,7 @@ public sealed class SSERoutingTests
             Assert.That(TestSseEndPoint.LastConnection, Is.Not.Null);
             Assert.That(TestSseEndPoint.LastConnection!.WaitForShutdown.IsCompleted,
                 Is.True);
-            Assert.That(AventusSharp.Routes.RouterMiddleware.ContextScope,
+            Assert.That(AventusSharp.Routes.RouterMiddleware.AventusContextScope,
                 Is.Null);
         });
     }
@@ -109,7 +109,7 @@ public sealed class SSERoutingTests
             Assert.That(TestSseEndPoint.OpenCount, Is.EqualTo(1));
             Assert.That(TestSseEndPoint.CloseCount, Is.EqualTo(1));
             Assert.That(Connections(), Is.Empty);
-            Assert.That(AventusSharp.Routes.RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(AventusSharp.Routes.RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -131,7 +131,7 @@ public sealed class SSERoutingTests
         {
             Assert.That(TestSseEndPoint.CloseCount, Is.EqualTo(1));
             Assert.That(Connections(), Is.Empty);
-            Assert.That(AventusSharp.Routes.RouterMiddleware.ContextScope, Is.Null);
+            Assert.That(AventusSharp.Routes.RouterMiddleware.AventusContextScope, Is.Null);
         });
     }
 
@@ -321,7 +321,7 @@ public sealed class SSERoutingTests
                 Is.EqualTo("sse-first"));
             Assert.That(TestSseEndPoint.ObservedScopes["sse-second"],
                 Is.EqualTo("sse-second"));
-            Assert.That(AventusSharp.Routes.RouterMiddleware.ContextScope,
+            Assert.That(AventusSharp.Routes.RouterMiddleware.AventusContextScope,
                 Is.Null);
         });
     }
@@ -451,8 +451,8 @@ public sealed class SSERoutingTests
                 await Task.Yield();
                 var key = connection.GetContext().TraceIdentifier;
                 ObservedScopes[key] =
-                    AventusSharp.Routes.RouterMiddleware.ContextScope?
-                        .TraceIdentifier;
+                    AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor
+                        .Current?.TraceIdentifier;
             }
         }
 

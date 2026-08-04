@@ -3,6 +3,7 @@ using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
+using Path = AventusSharp.WebSocket.Attributes.Path;
 using AventusSharp.WebSocket.Event;
 using AventusSharp.Hosting;
 using Microsoft.Extensions.Logging;

@@ -1,3 +1,4 @@
+using AventusSharp.AspNetCore.Hosting;
 using AventusSharp.Routes;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
@@ -89,7 +90,7 @@ namespace AventusSharp.SSE
                 TrackConnection(connection);
                 try
                 {
-                    RouterMiddleware.ContextScope = context;
+                    AspNetCoreContextAccessor.Current = context;
                     RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(context);
                     await OnConnectionOpen(connection);
                     await connection.WaitForShutdown;
@@ -100,7 +101,7 @@ namespace AventusSharp.SSE
                 }
                 finally
                 {
-                    RouterMiddleware.ContextScope = null;
+                    AspNetCoreContextAccessor.Current = null;
                     RouterMiddleware.AventusContextScope = null;
                     if (connections.TryRemove(connection, out _))
                     {

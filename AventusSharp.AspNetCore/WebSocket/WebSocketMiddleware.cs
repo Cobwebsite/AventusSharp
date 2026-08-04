@@ -1,6 +1,7 @@
 ﻿using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
+using Path = AventusSharp.WebSocket.Attributes.Path;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;

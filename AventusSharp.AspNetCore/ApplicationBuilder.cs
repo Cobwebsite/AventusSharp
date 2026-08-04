@@ -14,6 +14,7 @@ using AventusSharp.WebSocket;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Environment = System.Environment;
 
@@ -52,7 +53,7 @@ public static class AventusExtension
     {
         if (IsExportCommand) return app;
 
-        AventusLogger.Initialize(app);
+        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             DataMainManager.Configure(config);
@@ -66,7 +67,7 @@ public static class AventusExtension
 
     public static IApplicationBuilder UseAventusHttp(this IApplicationBuilder app, Action<RouterConfig>? config = null)
     {
-        AventusLogger.Initialize(app);
+        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             Routes.RouterMiddleware.Configure(config);
@@ -75,14 +76,14 @@ public static class AventusExtension
         {
             throw result.Errors[0].GetException();
         }
-        app.Use(Routes.RouterMiddleware.OnRequest);
+        app.Use(Routes.AspNetCoreRouterAdapter.OnRequest);
 
         return app;
     }
 
     public static IApplicationBuilder UseAventusWebsocket(this IApplicationBuilder app, Action<WebSocketConfig>? config = null)
     {
-        AventusLogger.Initialize(app);
+        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             WebSocketMiddleware.Configure(config);
@@ -102,7 +103,7 @@ public static class AventusExtension
     }
     public static IApplicationBuilder UseAventusSSE(this IApplicationBuilder app, Action<SSEConfig>? config = null)
     {
-        AventusLogger.Initialize(app);
+        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
 
         if (config != null)
             SSEMiddleware.Configure(config);

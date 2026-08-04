@@ -71,6 +71,23 @@ public sealed class HttpRoutingTests
     }
 
     [Test]
+    public async Task AspNetCore_adapter_exposes_and_caches_route_resolution()
+    {
+        var context = CreateContext("GET", "/tests/hello/Adapter");
+
+        RouterResolve? first = await AspNetCoreRouterAdapter.Resolve(context);
+        RouterResolve? second = await AspNetCoreRouterAdapter.Resolve(context);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first, Is.Not.Null);
+            Assert.That(second, Is.SameAs(first));
+            Assert.That(first!.RouteInfo.baseUrl,
+                Is.EqualTo("/tests/hello/{name}"));
+        });
+    }
+
+    [Test]
     public async Task Get_route_binds_path_parameter_and_writes_response()
     {
         var context = CreateContext("GET", "/tests/hello/Aventus");

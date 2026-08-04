@@ -12,7 +12,7 @@
     <Description>SQL Server provider for the portable AventusSharp data engine.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.1" />
   </ItemGroup>
 </Project>

@@ -21,7 +21,6 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\AventusSharp.AspNetCore\AventusSharp.AspNetCore.csproj" />
     <ProjectReference Include="..\AventusSharp.Maui\AventusSharp.Maui.csproj" />
-    <ProjectReference Include="..\AventusSharp.Runtime\AventusSharp.Runtime.csproj" />
     <ProjectReference Include="..\AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj" />
     <ProjectReference Include="..\AventusSharp.Data.Mysql\AventusSharp.Data.Mysql.csproj" />
     <ProjectReference Include="..\AventusSharp.Data.Postgresql\AventusSharp.Data.Postgresql.csproj" />

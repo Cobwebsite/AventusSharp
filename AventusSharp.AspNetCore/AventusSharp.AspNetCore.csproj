@@ -20,8 +20,6 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
-    <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
-    <ProjectReference Include="..\AventusSharp.Runtime\AventusSharp.Runtime.csproj" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Scriban" Version="7.2.5" />
   </ItemGroup>

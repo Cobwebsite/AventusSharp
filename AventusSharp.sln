@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Maui", "Aventu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Maui.AndroidSmoke", "AventusSharp.Maui.AndroidSmoke\AventusSharp.Maui.AndroidSmoke.csproj", "{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data", "AventusSharp.Data\AventusSharp.Data.csproj", "{0FF67674-552C-46D4-993D-D5A25ED31D94}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Sqlite", "AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj", "{40C11653-D2A0-4FBE-8472-B5B93D5CF179}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.PortableTest", "AventusSharp.Data.PortableTest\AventusSharp.Data.PortableTest.csproj", "{3871541A-78A0-40EF-913B-952B2B17346A}"
@@ -26,8 +24,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Postgresql", "AventusSharp.Data.Postgresql\AventusSharp.Data.Postgresql.csproj", "{71DC471C-F39F-4F87-9196-08D67EB075BF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Mssql", "AventusSharp.Data.Mssql\AventusSharp.Data.Mssql.csproj", "{21F77E0C-AD31-493D-90E6-F95B8554B792}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Runtime", "AventusSharp.Runtime\AventusSharp.Runtime.csproj", "{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,18 +107,6 @@ Global
 		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x64.Build.0 = Release|Any CPU
 		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x86.ActiveCfg = Release|Any CPU
 		{96B3A776-E3FC-4A69-BF88-81E3798CA0AB}.Release|x86.Build.0 = Release|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Debug|x64.Build.0 = Debug|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Debug|x86.Build.0 = Debug|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Release|x64.ActiveCfg = Release|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Release|x64.Build.0 = Release|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Release|x86.ActiveCfg = Release|Any CPU
-		{0FF67674-552C-46D4-993D-D5A25ED31D94}.Release|x86.Build.0 = Release|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -183,18 +167,6 @@ Global
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x64.Build.0 = Release|Any CPU
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x86.ActiveCfg = Release|Any CPU
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x86.Build.0 = Release|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x64.Build.0 = Debug|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Debug|x86.Build.0 = Debug|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x64.ActiveCfg = Release|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x64.Build.0 = Release|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x86.ActiveCfg = Release|Any CPU
-		{F4C445FD-EFDF-4403-AFE1-35F9ADE49EB1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -12,7 +12,7 @@
     <Description>PostgreSQL provider for the portable AventusSharp data engine.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AventusSharp.Data\AventusSharp.Data.csproj" />
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
     <PackageReference Include="Npgsql" Version="10.0.2" />
   </ItemGroup>
 </Project>

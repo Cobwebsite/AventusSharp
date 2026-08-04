@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data;
 using AventusSharp.Routes.Attributes;
+using Path = AventusSharp.Routes.Attributes.Path;
 using AventusSharp.Routes.Response;
 using AventusSharp.Routes.Request;
 using AventusSharp.Tools;

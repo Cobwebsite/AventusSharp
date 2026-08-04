@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+    <PackageReference Include="Microsoft.Maui.Core" Version="10.0.20" />
   </ItemGroup>
 
 </Project>

@@ -25,6 +25,25 @@ dotnet add package AventusSharp.Data.Mssql
 
 Each project contains an `aventus.sharp.avt` configuration. The generated Aventus files are centralized under `AventusJs/src/generated`.
 
+### .NET MAUI startup
+
+Register the bridge before building the application, then initialize the data managers and portable router:
+
+```csharp
+var builder = MauiApp.CreateBuilder();
+builder
+    .UseMauiApp<App>()
+    .AddAventus();
+
+var app = builder.Build();
+app.UseAventusData();
+app.UseAventusHttp();
+
+return app;
+```
+
+`AventusMauiBridge` can then be resolved from `app.Services` and used by a WebView bridge to execute Aventus routes in-process.
+
 ## Documentation
 
 The documentation is available here [https://sharp.aventusjs.com](https://sharp.aventusjs.com).

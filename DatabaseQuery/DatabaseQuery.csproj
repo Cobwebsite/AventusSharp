@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>AventusSharp.DatabaseQuery</PackageId>
-    <Version>0.0.15</Version>
+    <Version>0.0.16</Version>
     <Authors>Cobwebsite</Authors>
     <Company>ch.cobwebsite</Company>
     <Copyright>Copyright © 2024 Cobwebsite</Copyright>

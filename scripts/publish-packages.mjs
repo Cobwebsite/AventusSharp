@@ -105,6 +105,8 @@ try {
         ? `Packages ${version} built without publication.`
         : `All AventusSharp packages ${version} published.`
   );
+
+  rl.close();
 } catch (error) {
   if (!dryRun) {
     for (const [project, content] of originals) {

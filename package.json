@@ -4,6 +4,7 @@
   "scripts": {
     "build": "dotnet build AventusSharp.sln --configuration Release",
     "publish": "node scripts/publish-packages.mjs",
+    "publish:test": "node scripts/publish-packages.mjs --skip-publish",
     "publish:dry-run": "node scripts/publish-packages.mjs 0.0.0 --dry-run"
   }
 }

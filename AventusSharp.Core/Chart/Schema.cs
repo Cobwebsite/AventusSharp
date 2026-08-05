@@ -96,10 +96,10 @@ public class DiagramObject
             double areaHeight = totalRowsHeight + ((rows - 1) * TableGapY) + (AreaPadding * 2);
 
             // Assigner les coordonnées de l'Area
-            area.X = currentAreaX;
-            area.Y = currentAreaY;
-            area.Width = areaWidth;
-            area.Height = areaHeight;
+            area.X = (int)currentAreaX;
+            area.Y = (int)currentAreaY;
+            area.Width = (int)areaWidth;
+            area.Height = (int)areaHeight;
 
             // Positionner les tables à l'intérieur
             for (int i = 0; i < tablesInArea.Count; i++)
@@ -116,8 +116,8 @@ public class DiagramObject
                 }
                 double tableY = area.Y + AreaPadding + previousRowsHeightSum;
 
-                tablesInArea[i].X = tableX;
-                tablesInArea[i].Y = tableY;
+                tablesInArea[i].X = (int)tableX;
+                tablesInArea[i].Y = (int)tableY;
             }
 
             // Décaler l'Area suivante vers la droite
@@ -276,8 +276,8 @@ public class DiagramObject
 
             // Résolution des chevauchements (Recherche en spirale C#)
             var finalPos = FindNonOverlappingPosition(Tables, targetX, targetY, newTable);
-            newTable.X = finalPos.X;
-            newTable.Y = finalPos.Y;
+            newTable.X = (int)finalPos.X;
+            newTable.Y = (int)finalPos.Y;
 
             // Ajouter la table et mettre à jour les maps d'ID
             this.Tables.Add(newTable);
@@ -400,10 +400,10 @@ public class DiagramTable
     public string? Schema { get; set; } = "public";
 
     [JsonProperty(PropertyName = "x")]
-    public double X { get; set; }
+    public int X { get; set; }
 
     [JsonProperty(PropertyName = "y")]
-    public double Y { get; set; }
+    public int Y { get; set; }
 
     [JsonProperty(PropertyName = "fields")]
     public List<DiagramField> Fields { get; set; } = new();
@@ -411,7 +411,10 @@ public class DiagramTable
     [JsonProperty(PropertyName = "color")]
     public required string Color { get; set; }
 
-    internal double Width { get; set; } = 224;
+    [JsonProperty(PropertyName = "locked")]
+    public bool Locked { get; set; } = false;
+
+    internal int Width { get; set; } = 224;
 
     internal string? ParentAreaId { get; set; }
 }
@@ -479,17 +482,20 @@ public class Area
     public required string Name { get; set; }
 
     [JsonProperty(PropertyName = "x")]
-    public double X { get; set; }
+    public int X { get; set; }
 
     [JsonProperty(PropertyName = "y")]
-    public double Y { get; set; }
+    public int Y { get; set; }
 
     [JsonProperty(PropertyName = "width")]
-    public double Width { get; set; }
+    public int Width { get; set; }
 
     [JsonProperty(PropertyName = "height")]
-    public double Height { get; set; }
+    public int Height { get; set; }
 
     [JsonProperty(PropertyName = "color")]
     public string Color { get; set; } = "#ef4444";
+
+    [JsonProperty(PropertyName = "locked")]
+    public bool Locked { get; set; } = false;
 }

@@ -201,10 +201,12 @@ public static class AventusExtension
 
                 string txt = JsonConvert.SerializeObject(diagram, new JsonSerializerSettings()
                 {
-                    NullValueHandling = NullValueHandling.Ignore
+                    NullValueHandling = NullValueHandling.Ignore,
+                    Formatting = Formatting.Indented
                 });
-                if (Environment.NewLine != "\n")
-                    txt = txt.Replace(Environment.NewLine, "\n");
+
+                txt = txt.Replace("\r\n", "\n").Replace("\r", "\n");
+                
                 File.WriteAllText(writePath, txt);
             }
 

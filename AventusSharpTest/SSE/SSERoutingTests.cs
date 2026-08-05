@@ -451,7 +451,7 @@ public sealed class SSERoutingTests
                 await Task.Yield();
                 var key = connection.GetContext().TraceIdentifier;
                 ObservedScopes[key] =
-                    AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor
+                    AventusSharp.AspNetCore.Hosting.ContextAccessor
                         .Current?.TraceIdentifier;
             }
         }

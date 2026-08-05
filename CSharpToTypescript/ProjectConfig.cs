@@ -23,6 +23,8 @@ namespace CSharpToTypescript
         public bool exportWsRouteByDefault = true;
         public bool exportErrorsByDefault = true;
 
+        public List<string> packagesExport = new();
+
         private string? _basedir;
         public Assembly? compiledAssembly;
         public string outputDir = "";

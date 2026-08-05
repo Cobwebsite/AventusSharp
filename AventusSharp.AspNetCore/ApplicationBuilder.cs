@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using AventusSharp.AspNetCore.Routes;
 using Environment = System.Environment;
 
 namespace AventusSharp;
@@ -89,7 +90,9 @@ public static class AventusExtension
         {
             throw result.Errors[0].GetException();
         }
-        app.Use(Routes.AspNetCoreRouterAdapter.OnRequest);
+        app.Use((c, n) =>
+            RouterAdapter.OnRequest(c, n)
+        );
 
         return app;
     }

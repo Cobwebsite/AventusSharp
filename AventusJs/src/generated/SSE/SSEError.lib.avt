@@ -1,4 +1,4 @@
-import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.avt';
+import { ResultWithError, VoidWithError } from "../../Tools/ResultWithError.lib.avt";
 
 namespace SSE {
 
@@ -14,19 +14,19 @@ namespace SSE {
 	@Convertible()
 	export class SSEError extends Aventus.GenericError<typeof SSEErrorCode>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.SSE.SSEError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.SSE.SSEError, AventusSharp.AspNetCore"; }
 	}
 
 	@Convertible()
 	export class VoidWithSSEError extends VoidWithError<SSEError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.SSE.VoidWithSSEError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.SSE.VoidWithSSEError, AventusSharp.AspNetCore"; }
 	}
 
 	@Convertible()
 	export class ResultWithSSEError<T> extends ResultWithError<T, SSEError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.SSE.ResultWithSSEError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.SSE.ResultWithSSEError, AventusSharp.AspNetCore"; }
 	}
 
 }

@@ -4,11 +4,11 @@ using Microsoft.Extensions.Primitives;
 
 namespace AventusSharp.AspNetCore.Hosting;
 
-internal sealed class AspNetCoreHeaderDictionary : IDictionary<string, string[]>
+internal sealed class HeaderDictionary : IDictionary<string, string[]>
 {
     private readonly IHeaderDictionary headers;
 
-    public AspNetCoreHeaderDictionary(IHeaderDictionary headers) => this.headers = headers;
+    public HeaderDictionary(IHeaderDictionary headers) => this.headers = headers;
 
     public string[] this[string key]
     {

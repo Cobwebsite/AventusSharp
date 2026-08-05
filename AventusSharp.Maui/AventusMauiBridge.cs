@@ -27,7 +27,7 @@ public sealed class AventusMauiBridge
 
         using IServiceScope scope = scopeFactory.CreateScope();
         var uri = new Uri(bridgeRequest.Url, UriKind.Absolute);
-        var request = new AventusRequest
+        var request = new AventusRequestBase
         {
             Method = bridgeRequest.Method,
             Path = uri.AbsolutePath,
@@ -43,8 +43,8 @@ public sealed class AventusMauiBridge
             request.Headers[header.Key] = header.Value;
         }
 
-        using var response = new AventusResponse();
-        var context = new AventusContext(
+        using var response = new AventusResponseBase();
+        var context = new AventusContextBase(
             request,
             response,
             scope.ServiceProvider,

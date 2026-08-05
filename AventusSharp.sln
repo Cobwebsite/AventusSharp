@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Maui", "Aventu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Sqlite", "AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj", "{40C11653-D2A0-4FBE-8472-B5B93D5CF179}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.PortableTest", "AventusSharp.Data.PortableTest\AventusSharp.Data.PortableTest.csproj", "{3871541A-78A0-40EF-913B-952B2B17346A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Mysql", "AventusSharp.Data.Mysql\AventusSharp.Data.Mysql.csproj", "{BEC1652D-0875-4299-B0D4-10CAC85C25B4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Postgresql", "AventusSharp.Data.Postgresql\AventusSharp.Data.Postgresql.csproj", "{71DC471C-F39F-4F87-9196-08D67EB075BF}"

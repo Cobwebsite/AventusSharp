@@ -1,4 +1,5 @@
 using AventusSharp.AspNetCore.Hosting;
+using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -17,7 +18,7 @@ public sealed class AspNetCoreAventusContextTests
         native.Request.QueryString = new QueryString("?page=2");
         native.Request.Headers["X-Request"] = "value";
 
-        var context = new AspNetCoreAventusContext(native);
+        var context = native.GetAventusContext();
 
         Assert.That(context.Request.Method, Is.EqualTo("POST"));
         Assert.That(context.Request.Path, Is.EqualTo("/api/test"));

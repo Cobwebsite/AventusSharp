@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace AventusSharp.AspNetCore.Hosting;
 
-public sealed class AspNetCoreAventusResponse : IAventusResponse
+public sealed class AventusResponse : IAventusResponse
 {
     private readonly HttpResponse response;
 
@@ -29,9 +29,9 @@ public sealed class AspNetCoreAventusResponse : IAventusResponse
     }
     public IDictionary<string, string[]> Headers { get; }
 
-    public AspNetCoreAventusResponse(HttpResponse response)
+    public AventusResponse(HttpResponse response)
     {
         this.response = response;
-        Headers = new AspNetCoreHeaderDictionary(response.Headers);
+        Headers = new HeaderDictionary(response.Headers);
     }
 }

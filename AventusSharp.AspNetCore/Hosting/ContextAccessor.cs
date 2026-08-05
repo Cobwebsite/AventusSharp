@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace AventusSharp.AspNetCore.Hosting;
 
-public static class AspNetCoreContextAccessor
+public static class ContextAccessor
 {
     private static readonly AsyncLocal<HttpContext?> CurrentContext = new();
 

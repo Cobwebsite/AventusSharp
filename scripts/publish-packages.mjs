@@ -15,7 +15,8 @@ const packages = [
   ["AventusSharp.Data.Sqlite", "AventusSharp.Data.Sqlite/AventusSharp.Data.Sqlite.csproj"],
   ["AventusSharp.Data.Mysql", "AventusSharp.Data.Mysql/AventusSharp.Data.Mysql.csproj"],
   ["AventusSharp.Data.Postgresql", "AventusSharp.Data.Postgresql/AventusSharp.Data.Postgresql.csproj"],
-  ["AventusSharp.Data.Mssql", "AventusSharp.Data.Mssql/AventusSharp.Data.Mssql.csproj"]
+  ["AventusSharp.Data.Mssql", "AventusSharp.Data.Mssql/AventusSharp.Data.Mssql.csproj"],
+  ["AventusSharp.Converter", "CSharpToTypescript/CSharpToTypescript.csproj"],
 ];
 
 if (!version || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {

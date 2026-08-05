@@ -28,8 +28,8 @@ namespace AventusSharp.Routes
 
         public static IAventusContext? AventusContextScope
         {
-            get => AventusContextAccessor.Current;
-            internal set => AventusContextAccessor.Current = value;
+            get => AventusContextAccessorBase.Current;
+            internal set => AventusContextAccessorBase.Current = value;
         }
 
         [Obsolete("Use AventusContextScope.")]
@@ -289,7 +289,7 @@ namespace AventusSharp.Routes
         {
             if (urlPattern.StartsWith("°") && urlPattern.EndsWith("°"))
             {
-                return new Regex(urlPattern.Substring(1, urlPattern.Length - 2));
+                return new Regex(urlPattern.Substring(1, urlPattern.Length - 2), RegexOptions.IgnoreCase);
             }
             urlPattern = ReplaceParams(urlPattern, @params);
             urlPattern = ReplaceFunction(urlPattern, t);

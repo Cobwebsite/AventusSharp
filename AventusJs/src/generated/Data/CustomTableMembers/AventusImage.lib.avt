@@ -17,19 +17,19 @@ namespace Data.CustomTableMembers {
 	@Convertible()
 	export class ImageFileError extends Aventus.GenericError<typeof ImageFileErrorCode>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.ImageFileError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.ImageFileError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class VoidWithImageFileError extends VoidWithError<ImageFileError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.VoidWithImageFileError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.VoidWithImageFileError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class ResultWithImageFileError<T> extends ResultWithError<T, ImageFileError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.ResultWithImageFileError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Data.CustomTableMembers.ResultWithImageFileError, AventusSharp.Core"; }
 	}
 
 }

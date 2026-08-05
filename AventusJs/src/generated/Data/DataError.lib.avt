@@ -55,25 +55,25 @@ namespace Data {
 	@Convertible()
 	export class DataError extends Aventus.GenericError<typeof DataErrorCode>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Data.DataError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Data.DataError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class VoidWithDataError extends VoidWithError<DataError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Data.VoidWithDataError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Data.VoidWithDataError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class ResultWithDataError<T> extends ResultWithError<T, DataError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Data.ResultWithDataError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Data.ResultWithDataError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class FieldErrorInfo extends SharpClass  {
 		/** Fullname of the class */
-		public static get Fullname(): string { return "AventusSharp.Data.FieldErrorInfo, AventusSharp"; }
+		public static get Fullname(): string { return "AventusSharp.Data.FieldErrorInfo, AventusSharp.Core"; }
 		public Name!: string;
 	}
 

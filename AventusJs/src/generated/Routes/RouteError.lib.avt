@@ -8,25 +8,26 @@ namespace Routes {
 		CantGetValueFromBody,
 		CantMoveFile,
 		CantCreateFolders,
-		RouteAlreadyExist
+		RouteAlreadyExist,
+		ConfigError
 	}
 
 	@Convertible()
 	export class RouteError extends Aventus.GenericError<typeof RouteErrorCode>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Routes.RouteError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Routes.RouteError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class VoidWithRouteError extends VoidWithError<RouteError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Routes.VoidWithRouteError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Routes.VoidWithRouteError, AventusSharp.Core"; }
 	}
 
 	@Convertible()
 	export class ResultWithRouteError<T> extends ResultWithError<T, RouteError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.Routes.ResultWithRouteError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.Routes.ResultWithRouteError, AventusSharp.Core"; }
 	}
 
 }

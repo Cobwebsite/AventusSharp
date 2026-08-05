@@ -1,4 +1,4 @@
-import { VoidWithError, ResultWithError } from '../../Tools/ResultWithError.lib.avt';
+import { ResultWithError, VoidWithError } from "../../Tools/ResultWithError.lib.avt";
 
 namespace WebSocket {
 
@@ -16,19 +16,19 @@ namespace WebSocket {
 	@Convertible()
 	export class WsError extends Aventus.GenericError<typeof WsErrorCode>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.WebSocket.WsError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.WebSocket.WsError, AventusSharp.AspNetCore"; }
 	}
 
 	@Convertible()
 	export class VoidWithWsError extends VoidWithError<WsError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.WebSocket.VoidWithWsError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.WebSocket.VoidWithWsError, AventusSharp.AspNetCore"; }
 	}
 
 	@Convertible()
 	export class ResultWithWsError<T> extends ResultWithError<T, WsError>  {
 		/** Fullname of the class */
-		public static override get Fullname(): string { return "AventusSharp.WebSocket.ResultWithWsError, AventusSharp"; }
+		public static override get Fullname(): string { return "AventusSharp.WebSocket.ResultWithWsError, AventusSharp.AspNetCore"; }
 	}
 
 }

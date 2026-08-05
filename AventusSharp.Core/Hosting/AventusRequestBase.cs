@@ -3,7 +3,7 @@ namespace AventusSharp.Hosting;
 /// <summary>
 /// Default in-memory request used by non-ASP.NET hosts.
 /// </summary>
-public sealed class AventusRequest : IAventusRequest
+public sealed class AventusRequestBase : IAventusRequest
 {
     public string Method { get; set; } = "GET";
     public string Path { get; set; } = "/";

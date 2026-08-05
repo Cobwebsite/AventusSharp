@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace AventusSharp.AspNetCore.Hosting;
 
-public sealed class AspNetCoreAventusRequest : IAventusRequest
+public sealed class AventusRequest : IAventusRequest
 {
     private readonly HttpRequest request;
 
@@ -39,9 +39,9 @@ public sealed class AspNetCoreAventusRequest : IAventusRequest
     }
     public IDictionary<string, string[]> Headers { get; }
 
-    public AspNetCoreAventusRequest(HttpRequest request)
+    public AventusRequest(HttpRequest request)
     {
         this.request = request;
-        Headers = new AspNetCoreHeaderDictionary(request.Headers);
+        Headers = new HeaderDictionary(request.Headers);
     }
 }

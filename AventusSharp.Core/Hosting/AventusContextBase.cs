@@ -5,7 +5,7 @@ namespace AventusSharp.Hosting;
 /// <summary>
 /// Default host-independent Aventus context.
 /// </summary>
-public sealed class AventusContext : IAventusContext
+public sealed class AventusContextBase : IAventusContext
 {
     public IAventusRequest Request { get; }
     public IAventusResponse Response { get; }
@@ -14,7 +14,7 @@ public sealed class AventusContext : IAventusContext
     public IDictionary<object, object?> Items { get; } = new Dictionary<object, object?>();
     public CancellationToken CancellationToken { get; }
 
-    public AventusContext(
+    public AventusContextBase(
         IAventusRequest request,
         IAventusResponse response,
         IServiceProvider services,

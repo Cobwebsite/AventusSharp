@@ -54,7 +54,7 @@ namespace CSharpToTypescript
                 Compilation = await proj.GetCompilationAsync() ?? throw new Exception("Can't compile");
 
                 List<INamedTypeSymbol> result = new();
-                string rootNamespaceName = proj.DefaultNamespace ?? proj.Name;
+                string rootNamespaceName = proj.DefaultNamespace ?? proj.Name; // <RootNamespace>AventusSharp</RootNamespace>
                 INamespaceSymbol? rootNamespace = Compilation.GlobalNamespace.GetNamespaceMembers().First(p => p.Name == rootNamespaceName);
                 if (rootNamespace != null)
                 {

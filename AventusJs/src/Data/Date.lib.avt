@@ -5,13 +5,13 @@ namespace Data {
 
     @Convertible()
     export class Date extends SharpClass {
-        public static get Fullname(): string { return "AventusSharp.Data.Date, AventusSharp"; }
+        public static get Fullname(): string { return "AventusSharp.Data.Date, AventusSharp.Core"; }
         public DateTime!: RealDate;
     }
 
     @Convertible()
     export class Datetime extends SharpClass {
-        public static get Fullname(): string { return "AventusSharp.Data.Datetime, AventusSharp"; }
+        public static get Fullname(): string { return "AventusSharp.Data.Datetime, AventusSharp.Core"; }
         public DateTime!: RealDate;
     }
 

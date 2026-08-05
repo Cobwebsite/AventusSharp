@@ -19,7 +19,7 @@ namespace AventusSharp.Routes
         public List<Middleware> middlewares = [];
         public string UniqueKey
         {
-            get => pattern.ToString() + "||" + method.ToString();
+            get => pattern.ToString().ToLower() + "||" + method.ToString();
         }
 
         public RouteInfo(Regex pattern, MethodType method, MethodInfo action, IRouter router, int nbParamsFunction, List<Middleware> middlewares, string baseUrl)
@@ -35,7 +35,7 @@ namespace AventusSharp.Routes
 
         public override string ToString()
         {
-            return pattern.ToString() + " " + method.ToString();
+            return pattern.ToString().ToLower() + " " + method.ToString();
         }
     }
 

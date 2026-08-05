@@ -636,7 +636,7 @@ namespace CSharpToTypescript.Container
                         canBeAdded = false;
                         //return;
                     }
-                    typeContainer = Type.GetType(listReturns[0] + ", AventusSharp");
+                    typeContainer = Type.GetType(listReturns[0] + ", AventusSharp.Core");
                     if (typeContainer == null)
                     {
                         typeContainer = typeof(Json);

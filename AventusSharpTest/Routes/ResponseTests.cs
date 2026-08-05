@@ -319,7 +319,7 @@ public class ResponseTests
         return context;
     }
 
-    private static AspNetCoreAventusContext Adapt(HttpContext context) => new(context);
+    private static AventusSharp.AspNetCore.Hosting.AventusContext Adapt(HttpContext context) => new(context);
 
     private static string ReadBody(HttpContext context)
     {

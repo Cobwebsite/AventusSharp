@@ -230,6 +230,7 @@ namespace CSharpToTypescript.Container
                     type = named.TypeArguments[0];
                 }
             }
+           
             if (type.ContainingAssembly.Name == ProjectManager.CurrentAssemblyName)
             {
                 SyntaxTree? general = this.type.Locations[0].SourceTree;

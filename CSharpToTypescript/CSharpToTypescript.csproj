@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>AventusSharp.Converter</PackageId>
-    <Version>0.0.14</Version>
+    <Version>0.0.15</Version>
     <Authors>Cobwebsite</Authors>
     <Company>ch.cobwebsite</Company>
     <Copyright>Copyright © 2024 Cobwebsite</Copyright>
@@ -25,7 +25,6 @@
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>csharp-converter</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -3,7 +3,7 @@ namespace AventusSharp.Hosting;
 /// <summary>
 /// Default in-memory response used by non-ASP.NET hosts.
 /// </summary>
-public sealed class AventusResponse : IAventusResponse, IDisposable
+public sealed class AventusResponseBase : IAventusResponse, IDisposable
 {
     public int StatusCode { get; set; } = 200;
     public string? ContentType { get; set; }

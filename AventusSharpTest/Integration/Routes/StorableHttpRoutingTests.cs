@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using AventusSharpTest.Integration.Models;
+using AventusSharp.AspNetCore.Routes;
 
 namespace AventusSharpTest.Integration.Routes;
 
@@ -229,7 +230,7 @@ public sealed class StorableHttpRoutingTests
         string path)
     {
         var context = CreateContext(method, path);
-        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(
+        await RouterAdapter.OnRequest(
             context,
             () => Task.CompletedTask);
         return context;
@@ -244,7 +245,7 @@ public sealed class StorableHttpRoutingTests
         context.Request.ContentType = "application/json";
         context.Request.Body = new MemoryStream(
             Encoding.UTF8.GetBytes(json));
-        await AventusSharp.Routes.AspNetCoreRouterAdapter.OnRequest(
+        await RouterAdapter.OnRequest(
             context,
             () => Task.CompletedTask);
         return context;

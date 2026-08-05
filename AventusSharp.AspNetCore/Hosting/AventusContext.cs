@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace AventusSharp.AspNetCore.Hosting;
 
-public sealed class AspNetCoreAventusContext : IAventusContext
+public sealed class AventusContext : IAventusContext
 {
     private readonly HttpContext context;
 
@@ -20,10 +20,10 @@ public sealed class AspNetCoreAventusContext : IAventusContext
     public IDictionary<object, object?> Items => context.Items;
     public CancellationToken CancellationToken => context.RequestAborted;
 
-    public AspNetCoreAventusContext(HttpContext context)
+    public AventusContext(HttpContext context)
     {
         this.context = context;
-        Request = new AspNetCoreAventusRequest(context.Request);
-        Response = new AspNetCoreAventusResponse(context.Response);
+        Request = new AventusRequest(context.Request);
+        Response = new AventusResponse(context.Response);
     }
 }

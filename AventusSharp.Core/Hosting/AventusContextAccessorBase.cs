@@ -3,7 +3,7 @@ namespace AventusSharp.Hosting;
 /// <summary>
 /// Provides the Aventus context associated with the current asynchronous flow.
 /// </summary>
-public static class AventusContextAccessor
+public static class AventusContextAccessorBase
 {
     private static readonly AsyncLocal<IAventusContext?> CurrentScope = new();
 

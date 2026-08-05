@@ -161,8 +161,8 @@ namespace AventusSharp.WebSocket
         /// <returns></returns>
         public async Task Route(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid = "")
         {
-            AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = connection.GetContext();
-            RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(connection.GetContext());
+            AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = connection.GetContext();
+            RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AventusContext(connection.GetContext());
             try
             {
                 await RouteInternal(connection, path, body, uid);
@@ -188,7 +188,7 @@ namespace AventusSharp.WebSocket
             }
             finally
             {
-                AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
+                AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
                 RouterMiddleware.AventusContextScope = null;
             }
         }
@@ -199,7 +199,7 @@ namespace AventusSharp.WebSocket
             {
                 if (!await middleware(connection, path, body, uid))
                 {
-                    AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
+                    AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
                     RouterMiddleware.AventusContextScope = null;
                     return;
                 }
@@ -223,7 +223,7 @@ namespace AventusSharp.WebSocket
                         {  typeof(WebSocketConnection), connection },
                         {  typeof(WsEndPoint), this },
                         {  typeof(HttpContext), connection.GetContext() },
-                        {  typeof(AventusSharp.Hosting.IAventusContext), new AventusSharp.AspNetCore.Hosting.AspNetCoreAventusContext(connection.GetContext()) },
+                        {  typeof(AventusSharp.Hosting.IAventusContext), new AventusSharp.AspNetCore.Hosting.AventusContext(connection.GetContext()) },
                         {  typeof(System.Net.WebSockets.WebSocket), connection.GetWebSocket() },
                     };
                     foreach (WebSocketRouterParameterInfo parameter in routeInfo.parameters.Values)
@@ -254,7 +254,7 @@ namespace AventusSharp.WebSocket
                                             if (!bodyPart.Success)
                                             {
                                                 await connection.Send(path, bodyPart, uid);
-                                                AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
+                                                AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
                                                 RouterMiddleware.AventusContextScope = null;
                                                 return;
                                             }
@@ -322,7 +322,7 @@ namespace AventusSharp.WebSocket
                     }
                 }
             }
-            AventusSharp.AspNetCore.Hosting.AspNetCoreContextAccessor.Current = null;
+            AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
             RouterMiddleware.AventusContextScope = null;
         }
 

@@ -17,6 +17,7 @@ namespace AventusSharp.WebSocket
     {
 
     }
+    [NoExport]
     public abstract class StorableWsRouter<T, U, R, S> : WsRouter, IStorableWsRouter
         where T : IStorable
         where U : Routes.Request.Request

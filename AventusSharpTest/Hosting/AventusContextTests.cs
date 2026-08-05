@@ -9,10 +9,10 @@ public sealed class AventusContextTests
     [Test]
     public void Defaults_are_suitable_for_an_in_process_request()
     {
-        var request = new AventusRequest();
-        using var response = new AventusResponse();
+        var request = new AventusRequestBase();
+        using var response = new AventusResponseBase();
         var services = new EmptyServiceProvider();
-        var context = new AventusContext(request, response, services);
+        var context = new AventusContextBase(request, response, services);
 
         Assert.That(request.Method, Is.EqualTo("GET"));
         Assert.That(request.Path, Is.EqualTo("/"));
@@ -26,7 +26,7 @@ public sealed class AventusContextTests
     [Test]
     public void Host_state_can_be_provided_without_AspNetCore_types()
     {
-        var request = new AventusRequest
+        var request = new AventusRequestBase
         {
             Method = "POST",
             Path = "/api/items",
@@ -36,8 +36,8 @@ public sealed class AventusContextTests
         };
         request.Headers["X-Test"] = ["one", "two"];
 
-        using var response = new AventusResponse();
-        var context = new AventusContext(request, response, new EmptyServiceProvider())
+        using var response = new AventusResponseBase();
+        var context = new AventusContextBase(request, response, new EmptyServiceProvider())
         {
             User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "test")]))
         };

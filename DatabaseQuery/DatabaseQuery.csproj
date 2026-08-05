@@ -1,15 +1,44 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>AventusSharp.DatabaseQuery</PackageId>
+    <Version>0.0.15</Version>
+    <Authors>Cobwebsite</Authors>
+    <Company>ch.cobwebsite</Company>
+    <Copyright>Copyright © 2024 Cobwebsite</Copyright>
+    <Description>Allow query into database.</Description>
+    <PackageTags>csharp db query dotnet-tool</PackageTags>
+    <RepositoryUrl>https://github.com/Cobwebsite/AventusSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Cobwebsite/AventusSharp</PackageProjectUrl>
+    <PackageIcon>logo_sharp.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages> 
+    <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <IsPackable>true</IsPackable>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>db-query</ToolCommandName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AventusSharp\AventusSharp.csproj" />
+    <None Include="../logo_sharp.png" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="../LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
+    <ProjectReference Include="..\AventusSharp.Data.Mssql\AventusSharp.Data.Mssql.csproj" />
+    <ProjectReference Include="..\AventusSharp.Data.Mysql\AventusSharp.Data.Mysql.csproj" />
+    <ProjectReference Include="..\AventusSharp.Data.Postgresql\AventusSharp.Data.Postgresql.csproj" />
+    <ProjectReference Include="..\AventusSharp.Data.Sqlite\AventusSharp.Data.Sqlite.csproj" />
   </ItemGroup>
 
 </Project>

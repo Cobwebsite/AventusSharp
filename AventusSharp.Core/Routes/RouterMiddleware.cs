@@ -392,7 +392,7 @@ namespace AventusSharp.Routes
             return result;
         }
 
-        public static async Task<RouterResolve?> Resolve(IAventusContext context)
+        public static async Task<RouterResolve?> Resolve(IAventusContext context, Dictionary<Type, object>? wellKnown = null)
         {
             if (context.Items.ContainsKey("routerResolve") && context.Items["routerResolve"] is RouterResolve router)
             {
@@ -434,6 +434,10 @@ namespace AventusSharp.Routes
                                         if (injected.ContainsKey(parameter.type))
                                         {
                                             value = injected[parameter.type];
+                                        }
+                                        else if (wellKnown != null && wellKnown.ContainsKey(parameter.type))
+                                        {
+                                            value = wellKnown[parameter.type];
                                         }
                                         // check if body
                                         else
@@ -528,7 +532,7 @@ namespace AventusSharp.Routes
                 }
                 if (!canContinue)
                 {
-                AventusContextScope = null;
+                    AventusContextScope = null;
                     return;
                 }
 

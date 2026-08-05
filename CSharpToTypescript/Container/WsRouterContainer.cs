@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using AventusSharp.Data;
 using EndPoint = AventusSharp.WebSocket.Attributes.EndPoint;
 using AventusSharp.Routes.Attributes;
+using AventusSharp.Hosting;
 
 namespace CSharpToTypescript.Container
 {
@@ -693,6 +694,7 @@ namespace CSharpToTypescript.Container
                  typeof(WebSocketConnection).FullName ?? "",
                  typeof(WsEndPoint).FullName ?? "",
                  typeof(HttpContext).FullName ?? "",
+                 typeof(IAventusContext).FullName ?? "",
                  typeof(System.Net.WebSockets.WebSocket).FullName ?? "",
             };
             Dictionary<string, ParameterInfo> @params = method.GetParameters().ToDictionary(p => p.Name ?? "", p => p);

@@ -1,4 +1,5 @@
 ﻿using AventusSharp.Data;
+using AventusSharp.Hosting;
 using AventusSharp.Routes;
 using AventusSharp.Routes.Attributes;
 using AventusSharp.Routes.Response;
@@ -541,6 +542,10 @@ namespace CSharpToTypescript.Container
                 this.name = ((FctName)attr).name;
             }
 
+            List<string> knownParameters = new List<string>() {
+                 typeof(HttpContext).FullName ?? "",
+                 typeof(IAventusContext).FullName ?? "",
+            };
             Dictionary<string, ParameterInfo> @params = method.GetParameters().ToDictionary(p => p.Name ?? "", p => p);
             foreach (KeyValuePair<string, ParameterInfo> pair in @params)
             {
@@ -554,6 +559,10 @@ namespace CSharpToTypescript.Container
                     if (parameter.Name == pair.Key)
                     {
                         if (parameter.ParameterType.ToString()?.StartsWith("Microsoft") == true)
+                        {
+                            continue;
+                        }
+                        if (knownParameters.Contains(parameter.ParameterType.ToString() ?? ""))
                         {
                             continue;
                         }

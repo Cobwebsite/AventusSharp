@@ -9,7 +9,10 @@ public static class RouterAdapter
     public static Task<RouterResolve?> Resolve(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return RouterMiddleware.Resolve(context.GetAventusContext());
+        return RouterMiddleware.Resolve(context.GetAventusContext(), new()
+        {
+            {typeof(HttpContext), context}
+        });
     }
 
     public static async Task OnRequest(HttpContext context, Func<Task> next)

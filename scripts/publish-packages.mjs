@@ -2,11 +2,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createInterface } from "readline/promises";
+import { stdin as input, stdout as output } from "process";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const version = process.argv[2];
 const dryRun = process.argv.includes("--dry-run");
 const skipPublish = process.argv.includes("--skip-publish");
+const rl = createInterface({ input, output });
 
 const packages = [
   ["AventusSharp.Core", "AventusSharp.Core/AventusSharp.Core.csproj"],
@@ -17,12 +19,21 @@ const packages = [
   ["AventusSharp.Data.Postgresql", "AventusSharp.Data.Postgresql/AventusSharp.Data.Postgresql.csproj"],
   ["AventusSharp.Data.Mssql", "AventusSharp.Data.Mssql/AventusSharp.Data.Mssql.csproj"],
   ["AventusSharp.Converter", "CSharpToTypescript/CSharpToTypescript.csproj"],
+  ["AventusSharp.DatabaseQuery", "DatabaseQuery/DatabaseQuery.csproj"],
 ];
 
-if (!version || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
-  console.error("Usage: npm run release -- <version> [--dry-run|--skip-publish]");
+const packageJson = JSON.parse(readFileSync(join(repositoryRoot, "package.json")));
+const currentVersion = packageJson.version;
+
+if (!currentVersion || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(currentVersion)) {
+  console.error("Can't find the version inside package.json");
   process.exit(1);
 }
+
+const [major, minor, patch] = currentVersion.split("-")[0].split(".").map(Number);
+const newVersion = `${major}.${minor}.${patch + 1}`;
+const answer = await rl.question(`La version actuelle est ${currentVersion}. Augmenter vers ${newVersion} ? (y/n) `);
+const version = answer.toLowerCase().trim() === "y" ? newVersion : currentVersion;
 
 function run(command, args) {
   console.log(`> ${command} ${args.join(" ")}`);

@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Postgresq
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AventusSharp.Data.Mssql", "AventusSharp.Data.Mssql\AventusSharp.Data.Mssql.csproj", "{21F77E0C-AD31-493D-90E6-F95B8554B792}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseQuery", "DatabaseQuery\DatabaseQuery.csproj", "{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,18 +105,6 @@ Global
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Release|x64.Build.0 = Release|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Release|x86.ActiveCfg = Release|Any CPU
 		{40C11653-D2A0-4FBE-8472-B5B93D5CF179}.Release|x86.Build.0 = Release|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Debug|x64.Build.0 = Debug|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Debug|x86.Build.0 = Debug|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Release|x64.ActiveCfg = Release|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Release|x64.Build.0 = Release|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Release|x86.ActiveCfg = Release|Any CPU
-		{3871541A-78A0-40EF-913B-952B2B17346A}.Release|x86.Build.0 = Release|Any CPU
 		{BEC1652D-0875-4299-B0D4-10CAC85C25B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BEC1652D-0875-4299-B0D4-10CAC85C25B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BEC1652D-0875-4299-B0D4-10CAC85C25B4}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -151,6 +141,18 @@ Global
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x64.Build.0 = Release|Any CPU
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x86.ActiveCfg = Release|Any CPU
 		{21F77E0C-AD31-493D-90E6-F95B8554B792}.Release|x86.Build.0 = Release|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Debug|x64.Build.0 = Debug|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Debug|x86.Build.0 = Debug|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Release|x64.ActiveCfg = Release|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Release|x64.Build.0 = Release|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Release|x86.ActiveCfg = Release|Any CPU
+		{B27AD6D2-6CED-4C4F-8EF2-AB1D688F0CB3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

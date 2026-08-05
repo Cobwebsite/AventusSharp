@@ -1,11 +1,9 @@
 {
+  "version": "0.0.15",
   "private": true,
   "scripts": {
     "build": "dotnet build AventusSharp.sln --configuration Release",
-    "release": "node scripts/publish-packages.mjs",
-    "release:dry-run": "node scripts/publish-packages.mjs 0.0.0 --dry-run",
-    "dev:converter": "./CSharpToTypescript/scripts/dev.cmd",
-    "pack:converter": "./CSharpToTypescript/scripts/pack.cmd",
-    "publish:converter": "./CSharpToTypescript/scripts/publish.cmd"
+    "publish": "node scripts/publish-packages.mjs",
+    "publish:dry-run": "node scripts/publish-packages.mjs 0.0.0 --dry-run"
   }
 }

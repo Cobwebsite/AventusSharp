@@ -1,0 +1,107 @@
+type MauiConfig = {
+    filter: (url: string, method: string) => boolean;
+    showLog: boolean;
+};
+
+export class Maui {
+    private static config: MauiConfig = {
+        filter: (url, method) => url.includes("/api"),
+        showLog: false
+    };
+    public static configure(config: Partial<MauiConfig>) {
+        this.config = {
+            ...config,
+            ...this.config
+        };
+        this.overrideFetch();
+    }
+
+
+    private static overridedFetch: boolean = false;
+    private static overrideFetch() {
+        if(this.overridedFetch) return;
+        this.overridedFetch = true;
+
+        const originalFetch = window.fetch;
+
+        window.fetch = async (input, init = {}) => {
+            const url = typeof input === 'string' ? input : (input as Request).url;
+            const method = init.method || 'GET';
+
+            if(this.config.filter(url, method)) {
+                let bodyArray = null;
+                const headers = init.headers as any;
+                let contentType = headers?.['Content-Type'] || '';
+
+                if(init.body) {
+                    if(init.body instanceof FormData) {
+                        const response = new Response(init.body);
+                        bodyArray = new Uint8Array(await response.arrayBuffer());
+                        contentType = response.headers.get('content-type');
+                    } else if(typeof init.body === 'string') {
+                        bodyArray = new TextEncoder().encode(init.body);
+                        if(!contentType) contentType = 'application/json';
+                    } else {
+                        bodyArray = new Uint8Array(await new Response(init.body).arrayBuffer());
+                    }
+                    if(this.config.showLog) {
+                        console.log(`${url} (${method})`, init.body);
+                    }
+                }
+                else if(this.config.showLog) {
+                    console.log(`${url} (${method})`);
+                }
+
+                const w = window as any;
+
+                const result = await w.DotNet.invokeMethodAsync(
+                    'AventusSharp.Maui',
+                    'EmulateRequest',
+                    method,
+                    url,
+                    bodyArray,
+                    contentType
+                );
+
+                const responseHeaders = new Headers(result.headers);
+                const mimeType = responseHeaders.get('content-type') || 'application/octet-stream';
+
+                if(this.config.showLog) {
+                    console.groupCollapsed(`%c[${method}] ${url.substring(url.indexOf('/api'))} -> Status: ${result.status}`,
+                        `color: ${result.status === 200 ? '#4CAF50' : '#F44336'}; font-weight: bold;`
+                    );
+                }
+
+                let decodedContent = new TextDecoder().decode(result.content);
+                let parsedResponse = decodedContent;
+                if(mimeType == "application/json") {
+                    try { parsedResponse = JSON.parse(decodedContent); } catch(e) { }
+                }
+                let parsedPayload = init.body;
+                if(typeof parsedPayload === 'string') {
+                    try { parsedPayload = JSON.parse(parsedPayload); } catch(e) { }
+                }
+
+                if(this.config.showLog) {
+                    console.table({
+                        "Request": { Méthode: method, URL: url, "Payload Type": contentType },
+                        "Response": { Statut: result.status, Type: typeof parsedResponse }
+                    });
+                    console.log("%cPayload Content :", "color: #2196F3; font-weight: bold;", init.body || "None");
+                    console.log("%cResponse Content :", "color: #9C27B0; font-weight: bold;", parsedResponse);
+                    console.groupEnd();
+                }
+
+
+
+
+                return new Response(result.content.length == 0 ? null : result.content, {
+                    status: result.status,
+                    headers: responseHeaders
+                });
+            }
+            return originalFetch(input, init);
+        };
+
+    }
+}

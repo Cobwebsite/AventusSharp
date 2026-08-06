@@ -27,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.JSInterop" Version="10.0.10" />
     <ProjectReference Include="..\AventusSharp.Core\AventusSharp.Core.csproj" />
     <PackageReference Include="Microsoft.Maui.Core" Version="10.0.20" />
   </ItemGroup>

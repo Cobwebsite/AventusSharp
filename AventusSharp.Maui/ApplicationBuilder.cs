@@ -1,10 +1,7 @@
 using AventusSharp.Data;
-using AventusSharp.Hosting;
-using AventusSharp.Maui;
 using AventusSharp.Routes;
 using AventusSharp.Tools;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Hosting;
 using System.Reflection;
@@ -16,24 +13,6 @@ namespace AventusSharp;
 /// </summary>
 public static class AventusMauiExtension
 {
-    /// <summary>
-    /// Registers the portable router dispatcher and the MAUI WebView bridge.
-    /// Call this before <see cref="MauiAppBuilder.Build"/>.
-    /// </summary>
-    public static MauiAppBuilder AddAventus(this MauiAppBuilder builder)
-    {
-        ArgumentNullException.ThrowIfNull(builder);
-
-        builder.Services.TryAddSingleton<IAventusRequestDispatcher,
-            AventusRequestDispatcher>();
-        builder.Services.TryAddSingleton<AventusMauiBridge>(services =>
-            new AventusMauiBridge(
-                services.GetRequiredService<IAventusRequestDispatcher>(),
-                services.GetRequiredService<IServiceScopeFactory>()));
-
-        return builder;
-    }
-
     /// <summary>
     /// Initializes the AventusSharp data managers and configured providers.
     /// Call this after <see cref="MauiAppBuilder.Build"/>.
@@ -74,7 +53,6 @@ public static class AventusMauiExtension
 
     /// <summary>
     /// Registers the existing AventusSharp routes for execution through
-    /// <see cref="AventusMauiBridge"/>.
     /// </summary>
     public static MauiApp UseAventusHttp(
         this MauiApp app,
@@ -105,8 +83,6 @@ public static class AventusMauiExtension
         VoidWithError result = RouterMiddleware.Register(assemblies);
         ThrowOnError(result);
 
-        // Fail at startup with a clear DI error if AddAventus was omitted.
-        _ = app.Services.GetRequiredService<AventusMauiBridge>();
         return app;
     }
 

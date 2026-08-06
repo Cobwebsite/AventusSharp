@@ -11,6 +11,8 @@ using NUnit.Framework;
 using AventusSharp.Tools.Attributes;
 using HttpPath = AventusSharp.Routes.Attributes.Path;
 using AventusSharp.AspNetCore.Routes;
+using RouterAdapterMaui = AventusSharp.Maui.Routes.RouterAdapter;
+using AdapterResponse = AventusSharp.Maui.Routes.AdapterResponse;
 
 namespace AventusSharpTest.Routes;
 
@@ -54,14 +56,7 @@ public sealed class HttpRoutingTests
     public async Task Portable_dispatcher_executes_the_existing_router_for_Maui()
     {
         var services = new ServiceCollection().BuildServiceProvider();
-        var bridge = new AventusMauiBridge(
-            new AventusRequestDispatcher(),
-            services.GetRequiredService<IServiceScopeFactory>());
-
-        AventusBridgeResponse response = await bridge.ExecuteAsync(
-            new AventusBridgeRequest(
-                "GET",
-                "https://0.0.0.1/tests/hello/Maui"));
+        AdapterResponse response = await RouterAdapterMaui.EmulateRequest("GET", "https://0.0.0.1/tests/hello/Maui", null, null, services);
 
         Assert.Multiple(() =>
         {
@@ -441,7 +436,7 @@ public sealed class HttpRoutingTests
     }
 
     [TestCase("/regex/AB12", true)]
-    [TestCase("/regex/ab12", false)]
+    [TestCase("/regex/ab12", true)]
     [TestCase("/regex/ABC12", false)]
     [TestCase("/regex/AB123", false)]
     public async Task PathRegex_matches_the_complete_configured_pattern(

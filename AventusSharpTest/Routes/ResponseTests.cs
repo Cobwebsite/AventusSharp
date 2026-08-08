@@ -5,6 +5,7 @@ using AventusSharp.Routes.Response;
 using Microsoft.AspNetCore.Http;
 using AventusSharp.AspNetCore.Hosting;
 using AventusSharp.Hosting;
+using AventusSharp.Tools;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using IOPath = System.IO.Path;
@@ -17,11 +18,14 @@ namespace AventusSharpTest.Routes;
 public class ResponseTests
 {
     private Func<IAventusContext, IRouter?, string>? originalViewDir;
+    private bool originalMapErrorCodeToHttpStatusCode;
 
     [SetUp]
     public void SaveViewConfiguration()
     {
         originalViewDir = RouterMiddleware.config.ViewDir;
+        originalMapErrorCodeToHttpStatusCode =
+            RouterMiddleware.config.MapErrorCodeToHttpStatusCode;
     }
 
     [TearDown]
@@ -31,6 +35,8 @@ public class ResponseTests
         {
             RouterMiddleware.config.ViewDir = originalViewDir;
         }
+        RouterMiddleware.config.MapErrorCodeToHttpStatusCode =
+            originalMapErrorCodeToHttpStatusCode;
     }
 
     [Test]
@@ -88,6 +94,64 @@ public class ResponseTests
             Assert.That(body["$type"], Is.Not.Null,
                 "The default Aventus JSON settings preserve runtime type metadata.");
         });
+    }
+
+    [Test]
+    public void Error_code_to_http_status_mapping_is_enabled_by_default()
+    {
+        Assert.That(new RouterConfig().MapErrorCodeToHttpStatusCode, Is.True);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Json_response_maps_the_first_error_code_to_http_status(
+        bool hasResult)
+    {
+        RouterMiddleware.config.MapErrorCodeToHttpStatusCode = true;
+        IWithError error;
+        if (hasResult)
+        {
+            var result = new ResultWithError<string>();
+            result.Errors.Add(new GenericError(404, "Missing resource"));
+            error = result;
+        }
+        else
+        {
+            var result = new VoidWithError();
+            result.Errors.Add(new GenericError(404, "Missing resource"));
+            error = result;
+        }
+        var context = CreateContext();
+
+        await new Json(error).send(Adapt(context));
+
+        Assert.That(context.Response.StatusCode, Is.EqualTo(404));
+    }
+
+    [Test]
+    public async Task Json_response_keeps_success_status_when_error_mapping_is_disabled()
+    {
+        RouterMiddleware.config.MapErrorCodeToHttpStatusCode = false;
+        var error = new VoidWithError();
+        error.Errors.Add(new GenericError(404, "Missing resource"));
+        var context = CreateContext();
+
+        await new Json(error).send(Adapt(context));
+
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200));
+    }
+
+    [Test]
+    public async Task Json_response_keeps_an_explicit_status_code()
+    {
+        RouterMiddleware.config.MapErrorCodeToHttpStatusCode = true;
+        var error = new VoidWithError();
+        error.Errors.Add(new GenericError(404, "Missing resource"));
+        var context = CreateContext();
+
+        await new Json(error, 409).send(Adapt(context));
+
+        Assert.That(context.Response.StatusCode, Is.EqualTo(409));
     }
 
     [Test]

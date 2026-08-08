@@ -210,6 +210,28 @@ public sealed class DockerDatabaseIntegrationTests
             .SetName("SQL_Server_invalid_raw_query_is_monadic_and_connection_recovers");
     }
 
+    private static IEnumerable<TestCaseData> ConnectedProviderNames()
+    {
+        yield return new TestCaseData("mysql")
+            .SetName("MySQL_IsConnected_succeeds");
+        yield return new TestCaseData("postgresql")
+            .SetName("PostgreSQL_IsConnected_succeeds");
+        yield return new TestCaseData("mssql")
+            .SetName("SQL_Server_IsConnected_succeeds");
+    }
+
+    [TestCaseSource(nameof(ConnectedProviderNames))]
+    public async Task Providers_report_that_the_database_is_connected(string provider)
+    {
+        IDBStorage storage = StorageFor(provider);
+
+        var result = await storage.IsConnected();
+
+        Assert.That(result.Success, Is.True,
+            string.Join(Environment.NewLine,
+                result.Errors.Select(error => error.Message)));
+    }
+
     private static IDBStorage StorageFor(string provider) => provider switch
     {
         "mysql" => DatabaseContainers.MySql,

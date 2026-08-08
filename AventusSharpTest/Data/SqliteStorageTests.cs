@@ -39,6 +39,14 @@ public class SqliteStorageTests
     }
 
     [Test]
+    public async Task IsConnected_succeeds_when_sqlite_is_reachable()
+    {
+        var result = await _storage.IsConnected();
+
+        Assert.That(result.Success, Is.True, ErrorMessages(result.Errors));
+    }
+
+    [Test]
     public async Task Reset_storage_removes_user_tables()
     {
         var create = await _storage.Execute("CREATE TABLE disposable (id INTEGER PRIMARY KEY);");

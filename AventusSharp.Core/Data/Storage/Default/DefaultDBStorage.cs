@@ -183,6 +183,13 @@ namespace AventusSharp.Data.Storage.Default
             }
         }
 
+        public async Task<VoidWithError> IsConnected()
+        {
+            VoidWithError result = new VoidWithError();
+            await result.RunAsync(() => Query("SELECT 1"));
+            return result;
+        }
+
         public async Task<VoidWithError> Execute(string sql, [CallerFilePath] string callerPath = "", [CallerLineNumber] int callerNo = 0)
         {
             ResultWithDataError<DbCommand> commandResult = CreateCmd(sql);
@@ -377,7 +384,7 @@ namespace AventusSharp.Data.Storage.Default
                     {
                         result.Result.Add(obj);
                     }
-                    else if(!result.Success)
+                    else if (!result.Success)
                     {
                         return result;
                     }

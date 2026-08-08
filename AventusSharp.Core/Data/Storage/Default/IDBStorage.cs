@@ -36,6 +36,7 @@ namespace AventusSharp.Data.Storage.Default
 
         public Task<VoidWithError> ConnectWithError();
         public Task<ResultWithError<bool>> ResetStorage();
+        public Task<VoidWithError> IsConnected();
         public Task Close();
 
         public string GetDatabaseName();

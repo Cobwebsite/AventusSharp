@@ -51,6 +51,10 @@ namespace AventusSharp.Routes
         /// Set to true to print route triggered
         /// </summary>
         public bool PrintTrigger { get; set; } = false;
+        /// <summary>
+        /// Set to true to map VoidWithError/ResultWithError first error code to http status code
+        /// </summary>
+        public bool MapErrorCodeToHttpStatusCode { get; set; } = true;
 
 
         public RouterConfig()

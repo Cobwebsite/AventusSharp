@@ -32,9 +32,6 @@ namespace AventusSharp.Routes
             internal set => AventusContextAccessorBase.Current = value;
         }
 
-        [Obsolete("Use AventusContextScope.")]
-        public static IAventusContext? ContextScope => AventusContextScope;
-
         public static void Configure(Action<RouterConfig> configAction)
         {
             RouterMiddleware.configAction = configAction;
@@ -577,20 +574,13 @@ namespace AventusSharp.Routes
             }
             catch (Exception exception)
             {
-                Exception routeException =
-                    exception is TargetInvocationException invocationException &&
-                    invocationException.InnerException is Exception innerException
-                        ? innerException
-                        : exception;
-                GenericError routeError =
-                    routeException is AventusException aventusException
-                        ? aventusException.Error
-                        : new RouteError(
-                            RouteErrorCode.UnknownError,
-                            routeException);
-                int code = aventusContext.Response.StatusCode >= 400
-                    ? aventusContext.Response.StatusCode
-                    : 500;
+                Exception routeException = exception;
+                if (exception is TargetInvocationException invocationException && invocationException.InnerException is Exception innerException)
+                {
+                    routeException = innerException;
+                }
+                GenericError routeError = routeException is AventusException aventusException ? aventusException.Error : new RouteError(RouteErrorCode.UnknownError, routeException);
+                int code = aventusContext.Response.StatusCode >= 400 ? aventusContext.Response.StatusCode : 500;
                 VoidWithError error = new() { Errors = [routeError] };
                 await new Json(error, code).send(aventusContext);
             }

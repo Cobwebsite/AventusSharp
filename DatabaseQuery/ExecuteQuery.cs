@@ -12,11 +12,15 @@ public static class ExecuteQuery
 {
     public static async Task<ResultWithError<List<Dictionary<string, string?>>>> Run(QueryPayload payload)
     {
-        ResultWithError<List<Dictionary<string, string?>>> result = new ();
-        StorageCredentials credentials = new StorageCredentials(payload.Host, payload.Username, payload.Password, payload.Database)
+        ResultWithError<List<Dictionary<string, string?>>> result = new();
+        StorageCredentials credentials = new StorageCredentials()
         {
-            port = payload.Port,
-            trustServerCertificate = payload.TrustServerCertificate,
+            Host = payload.Host,
+            Username = payload.Username,
+            Password = payload.Password,
+            Database = payload.Database,
+            Port = payload.Port,
+            TrustServerCertificate = payload.TrustServerCertificate,
         };
         IDBStorage? storage = null;
 

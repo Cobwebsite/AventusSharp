@@ -30,17 +30,17 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     {
         SqlConnectionStringBuilder builder = new()
         {
-            UserID = username,
-            Password = password,
-            DataSource = host,
-            TrustServerCertificate = credentials.trustServerCertificate
+            UserID = Username,
+            Password = Password,
+            DataSource = Host,
+            TrustServerCertificate = credentials.TrustServerCertificate
         };
-        if (port != null)
+        if (Port != null)
         {
-            builder.DataSource = $"{host},{port}";
+            builder.DataSource = $"{Host},{Port}";
         }
         if (useDatabase)
-            builder.InitialCatalog = database;
+            builder.InitialCatalog = Database;
 
         return builder;
     }
@@ -78,7 +78,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                         {
                             useDatabase = false;
                             connection.Open();
-                            (await Execute("CREATE DATABASE " + database + ";")).Print();
+                            (await Execute("CREATE DATABASE " + Database + ";")).Print();
                             useDatabase = true;
                         }
                         ;
@@ -144,7 +144,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
 
         string sql = "SELECT 'DROP TABLE [' + TABLE_NAME + '];' as query " +
                      "FROM INFORMATION_SCHEMA.TABLES " +
-                     "WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_CATALOG = '" + this.database + "';";
+                     "WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_CATALOG = '" + this.Database + "';";
 
         ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
         if (!queryResult.Success || queryResult.Result == null)

@@ -32,16 +32,16 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
     {
         NpgsqlConnectionStringBuilder builder = new()
         {
-            Host = host,
-            Username = username,
-            Password = password,
+            Host = Host,
+            Username = Username,
+            Password = Password,
         };
         if (useDatabase)
-            builder.Database = database;
+            builder.Database = Database;
 
-        if (port != null)
+        if (Port != null)
         {
-            builder.Port = (int)port;
+            builder.Port = (int)Port;
         }
         return new NpgsqlConnection(builder.ConnectionString);
     }
@@ -73,15 +73,15 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
                     {
                         NpgsqlConnectionStringBuilder builder = new()
                         {
-                            Username = username,
-                            Password = password,
-                            Host = host
+                            Username = Username,
+                            Password = Password,
+                            Host = Host
                         };
                         using (DbConnection connection = new NpgsqlConnection(builder.ConnectionString))
                         {
                             useDatabase = false;
                             connection.Open();
-                            (await Execute("CREATE DATABASE " + database + ";")).Print();
+                            (await Execute("CREATE DATABASE " + Database + ";")).Print();
                             useDatabase = true;
                         }
                         ;
@@ -90,10 +90,10 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
 
                         NpgsqlConnectionStringBuilder builderFull = new()
                         {
-                            Username = username,
-                            Password = password,
-                            Host = host,
-                            Database = database
+                            Username = Username,
+                            Password = Password,
+                            Host = Host,
+                            Database = Database
                         };
                         using (DbConnection connection = new NpgsqlConnection(builderFull.ConnectionString))
                         {

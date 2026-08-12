@@ -149,7 +149,7 @@ namespace AventusSharp.Data.Manager
             }
             else
             {
-                printErrorInConsole = config.log.printErrorInConsole;
+                printErrorInConsole = config.Log.PrintErrorInConsole;
             }
             GetMigrationProvider();
             result = SetDMForType(pyramid, true).ToGeneric();

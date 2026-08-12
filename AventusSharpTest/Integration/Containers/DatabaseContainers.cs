@@ -52,14 +52,30 @@ internal static class DatabaseContainers
             var postgresPort = await GetPort("postgresql", 5432);
             var msSqlPort = await GetPort("mssql", 1433);
 
-            MySql = new MySQLStorage(new StorageCredentials(
-                "127.0.0.1", mysqlPort, User, Password, Database));
-            PostgreSql = new PostgreSqlStorage(new StorageCredentials(
-                "127.0.0.1", postgresPort, User, Password, Database));
-            MsSql = new MsSqlStorage(new StorageCredentials(
-                "127.0.0.1", msSqlPort, "sa", "Aventus_Test_123!", "master")
+            MySql = new MySQLStorage(new StorageCredentials()
             {
-                trustServerCertificate = true
+                Host = "127.0.0.1",
+                Port = mysqlPort,
+                Username = User,
+                Password = Password,
+                Database = Database
+            });
+            PostgreSql = new PostgreSqlStorage(new StorageCredentials()
+            {
+                Host = "127.0.0.1",
+                Port = postgresPort,
+                Username = User,
+                Password = Password,
+                Database = Database
+            });
+            MsSql = new MsSqlStorage(new StorageCredentials()
+            {
+                Host = "127.0.0.1",
+                Port = msSqlPort,
+                Username = "sa",
+                Password = "Aventus_Test_123!",
+                Database = "master",
+                TrustServerCertificate = true
             });
 
             await WaitUntilConnectionsAreStable();

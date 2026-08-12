@@ -345,7 +345,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         {
             if (!IsNullable)
             {
-                IsNullable = DataMainManager.Config?.nullByDefault ?? false;
+                IsNullable = DataMainManager.Config?.NullByDefault ?? false;
             }
             base.ParseAttributes();
         }

@@ -62,9 +62,16 @@ public static class AventusExtension
         ArgumentNullException.ThrowIfNull(assemblies);
 
         AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
+        IDBStorage? db = app.ApplicationServices.GetService<IDBStorage>();
 
         if (config != null)
-            DataMainManager.Configure(config);
+        {
+            DataMainManager.Configure(config, db);
+        }
+        else if (db != null)
+        {
+            DataMainManager.Configure((config) => { }, db);
+        }
         VoidWithError result = DataMainManager.Init(assemblies.ToList()).GetAwaiter().GetResult();
         if (!result.Success)
         {
@@ -206,7 +213,7 @@ public static class AventusExtension
                 });
 
                 txt = txt.Replace("\r\n", "\n").Replace("\r", "\n");
-                
+
                 File.WriteAllText(writePath, txt);
             }
 

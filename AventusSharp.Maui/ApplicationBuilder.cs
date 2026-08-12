@@ -1,4 +1,5 @@
 using AventusSharp.Data;
+using AventusSharp.Data.Storage.Default;
 using AventusSharp.Routes;
 using AventusSharp.Tools;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,9 +40,14 @@ public static class AventusMauiExtension
         ArgumentNullException.ThrowIfNull(assemblies);
         InitializeLogger(app);
 
-        if (config is not null)
+        IDBStorage? db = app.Services.GetService<IDBStorage>();
+        if (config != null)
         {
-            DataMainManager.Configure(config);
+            DataMainManager.Configure(config, db);
+        }
+        else if (db != null)
+        {
+            DataMainManager.Configure((config) => { }, db);
         }
 
         VoidWithError result = DataMainManager.Init(assemblies.ToList())

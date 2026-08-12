@@ -16,7 +16,13 @@ public sealed class DatabaseAdapterTests
 {
     public static IEnumerable<TestCaseData> Adapters()
     {
-        var credentials = new StorageCredentials("localhost", "user", "password", "database");
+        var credentials = new StorageCredentials()
+        {
+            Host = "localhost",
+            Username = "user",
+            Password = "password",
+            Database = "database"
+        };
         yield return new TestCaseData(new SqliteStorage("adapter-contract.db", false), "sqlite");
         yield return new TestCaseData(new MySQLStorage(credentials, false), "mysql");
         yield return new TestCaseData(new PostgreSqlStorage(credentials, false), "postgresql");
@@ -32,7 +38,13 @@ public sealed class DatabaseAdapterTests
     [Test]
     public void Every_adapter_maps_core_database_types()
     {
-        var credentials = new StorageCredentials("localhost", "user", "password", "database");
+        var credentials = new StorageCredentials()
+        {
+            Host = "localhost",
+            Username = "user",
+            Password = "password",
+            Database = "database"
+        };
         var adapters = new (object Storage, string Name)[]
         {
             (new SqliteStorage("adapter-types.db", false), "sqlite"),
@@ -66,7 +78,13 @@ public sealed class DatabaseAdapterTests
         var table = new TableInfo(typeof(Device));
         var nameMember = TableMemberInfoSql.CreateSql(
             typeof(Device).GetProperty(nameof(Device.Name))!, table)!;
-        var credentials = new StorageCredentials("localhost", "user", "password", "database");
+        var credentials = new StorageCredentials()
+        {
+            Host = "localhost",
+            Username = "user",
+            Password = "password",
+            Database = "database"
+        };
         var adapters = new dynamic[]
         {
             new SqliteStorage("adapter-sizes.db", false),

@@ -30,16 +30,16 @@ namespace AventusSharp.Data.Storage.Mysql
         {
             MySqlConnectionStringBuilder builder = new()
             {
-                Server = host,
-                UserID = username,
-                Password = password,
+                Server = Host,
+                UserID = Username,
+                Password = Password,
             };
             if (useDatabase)
-                builder.Database = database;
+                builder.Database = Database;
 
-            if (port != null)
+            if (Port != null)
             {
-                builder.Port = (uint)port;
+                builder.Port = (uint)Port;
             }
             return new MySqlConnection(builder.ConnectionString);
         }
@@ -70,16 +70,16 @@ namespace AventusSharp.Data.Storage.Mysql
                         {
                             MySqlConnectionStringBuilder builder = new()
                             {
-                                Server = host,
-                                UserID = username,
-                                Password = password,
+                                Server = Host,
+                                UserID = Username,
+                                Password = Password,
 
                             };
                             using (DbConnection connection = new MySqlConnection(builder.ConnectionString))
                             {
                                 useDatabase = false;
                                 connection.Open();
-                                (await Execute("CREATE DATABASE " + database + ";")).Print();
+                                (await Execute("CREATE DATABASE " + Database + ";")).Print();
                                 useDatabase = true;
                             }
                             ;
@@ -88,10 +88,10 @@ namespace AventusSharp.Data.Storage.Mysql
 
                             MySqlConnectionStringBuilder builderFull = new()
                             {
-                                Server = host,
-                                UserID = username,
-                                Password = password,
-                                Database = database
+                                Server = Host,
+                                UserID = Username,
+                                Password = Password,
+                                Database = Database
                             };
                             using (DbConnection connection = new MySqlConnection(builderFull.ConnectionString))
                             {
@@ -148,7 +148,7 @@ namespace AventusSharp.Data.Storage.Mysql
                 result.Result = true;
                 return result;
             }
-            string sql = "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') as query FROM information_schema.tables WHERE table_schema = '" + this.database + "'; ";
+            string sql = "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') as query FROM information_schema.tables WHERE table_schema = '" + this.Database + "'; ";
             ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
             if (!queryResult.Success || queryResult.Result == null)
             {

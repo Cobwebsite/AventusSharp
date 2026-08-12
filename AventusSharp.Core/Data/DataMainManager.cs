@@ -19,31 +19,31 @@ namespace AventusSharp.Data
         /// <summary>
         /// Define the default Storage connexion to use for your DatabaseDM
         /// </summary>
-        public IDBStorage? defaultStorage;
+        public IDBStorage? DefaultStorage;
         /// <summary>
         /// Define the default DataManager to use for you Storable
         /// </summary>
-        public Type defaultDM = typeof(SimpleDatabaseDM<>);
+        public Type DefaultDM = typeof(SimpleDatabaseDM<>);
         /// <summary>
         /// Define logs you need to see
         /// </summary>
-        public DataManagerConfigLog log = new();
+        public DataManagerConfigLog Log = new();
         /// <summary>
         /// Define if the database fields are nullable by default
         /// </summary>
-        public bool nullByDefault = false;
+        public bool NullByDefault = false;
         /// <summary>
         /// Define if local cache must be used. Local cache keep all objects inside the RAM
         /// </summary>
-        public bool preferLocalCache = false;
+        public bool PreferLocalCache = false;
         /// <summary>
         /// Define if element link must only load Type and Id
         /// </summary>
-        public bool preferShortLink = false;
+        public bool PreferShortLink = false;
         /// <summary>
         /// By default only abstract inheritance is allowed. You can bypass this by setting allowNonAbstractExtension to true
         /// </summary>
-        public bool allowNonAbstractExtension = false;
+        public bool AllowNonAbstractExtension = false;
         /// <summary>
         /// Define the name of sql table based on the current type
         /// </summary>
@@ -92,35 +92,35 @@ namespace AventusSharp.Data
         /// <summary>
         /// Display dependencies for all your models
         /// </summary>
-        public bool monitorDataDependencies = false;
+        public bool MonitorDataDependencies = false;
         /// <summary>
         /// Show Analyze managers step
         /// </summary>
-        public bool monitorManagerAnalyze = false;
+        public bool MonitorManagerAnalyze = false;
         /// <summary>
         /// Display time to init each data manager
         /// </summary>
-        public bool monitorManagerInit = false;
+        public bool MonitorManagerInit = false;
         /// <summary>
         ///  Display time to order each data manager
         /// </summary>
-        public bool monitorManagerOrdering = false;
+        public bool MonitorManagerOrdering = false;
         /// <summary>
         ///  Display ordered managers
         /// </summary>
-        public bool monitorManagerOrdered = false;
+        public bool MonitorManagerOrdered = false;
         /// <summary>
         ///  Display time to order each model
         /// </summary>
-        public bool monitorDataOrdering = false;
+        public bool MonitorDataOrdering = false;
         /// <summary>
         /// Display ordered models
         /// </summary>
-        public bool monitorDataOrdered = false;
+        public bool MonitorDataOrdered = false;
         /// <summary>
         /// Print all errors from storable action in the console
         /// </summary>
-        public bool printErrorInConsole = false;
+        public bool PrintErrorInConsole = false;
     }
 
     public class DataManagerConfigMigration
@@ -178,7 +178,12 @@ namespace AventusSharp.Data
         }
         public static void Configure(Action<DataManagerConfig> config)
         {
+            Configure(config, null);
+        }
+        public static void Configure(Action<DataManagerConfig> config, IDBStorage? db)
+        {
             configureAction = config;
+            Config.DefaultStorage = db;
         }
 
         public static Task<VoidWithError> Init()
@@ -205,7 +210,7 @@ namespace AventusSharp.Data
             if (!registerDone)
             {
                 configureAction(Config);
-                VoidWithError resultTemp = DefineTypeDM(Config.defaultDM).ToGeneric();
+                VoidWithError resultTemp = DefineTypeDM(Config.DefaultDM).ToGeneric();
                 if (!resultTemp.Success)
                 {
                     return resultTemp;
@@ -304,7 +309,7 @@ namespace AventusSharp.Data
 
                 VoidWithDataError result = new VoidWithDataError();
                 Dictionary<Type, ManagerInformation> managerInformations = new();
-                bool monitor = this.config.log.monitorManagerAnalyze;
+                bool monitor = this.config.Log.MonitorManagerAnalyze;
                 if (monitor)
                 {
                     AventusLogger.Instance.LogInformation("*********** Analyze managers **********");
@@ -429,7 +434,7 @@ namespace AventusSharp.Data
             private VoidWithDataError CalculateDataDependencies()
             {
                 VoidWithDataError result = new();
-                bool monitor = this.config.log.monitorDataDependencies;
+                bool monitor = this.config.Log.MonitorDataDependencies;
                 if (monitor)
                 {
                     AventusLogger.Instance.LogInformation("*********** Calculate data dependencies **********");
@@ -524,7 +529,7 @@ namespace AventusSharp.Data
                 {
                     AddDataDependency(dataType, parentType, "*parent");
                 }
-                else if (config.allowNonAbstractExtension && !parentType.IsAbstract && !parentType.IsGenericType)
+                else if (config.AllowNonAbstractExtension && !parentType.IsAbstract && !parentType.IsGenericType)
                 {
                     AddDataDependency(dataType, parentType, "*parent");
                 }
@@ -585,7 +590,7 @@ namespace AventusSharp.Data
                     info.membersInfo.Add(memberInfo.Name, memberInfo);
                 }
 
-                if (config.log.monitorDataDependencies)
+                if (config.Log.MonitorDataDependencies)
                 {
                     AventusLogger.Instance.LogInformation(info.ToString());
                 }
@@ -594,7 +599,7 @@ namespace AventusSharp.Data
             private VoidWithDataError OrderData()
             {
                 VoidWithDataError result = new VoidWithDataError();
-                bool monitor = config.log.monitorDataOrdering;
+                bool monitor = config.Log.MonitorDataOrdering;
                 List<DataInformation> infos = dataInformations.Values.ToList();
                 Stopwatch? time = null;
                 orderedData = new List<DataInformation>();
@@ -622,7 +627,7 @@ namespace AventusSharp.Data
                         time = null;
                     }
                 }
-                if (config.log.monitorDataOrdered)
+                if (config.Log.MonitorDataOrdered)
                 {
                     AventusLogger.Instance.LogInformation("*********** Data ordered **********");
                     int i = 1;
@@ -784,7 +789,7 @@ namespace AventusSharp.Data
             private VoidWithDataError OrderedManager()
             {
                 VoidWithDataError result = new();
-                bool monitor = this.config.log.monitorManagerOrdering;
+                bool monitor = this.config.Log.MonitorManagerOrdering;
                 Stopwatch? time = null;
                 orderedManager = new List<ManagerInformation>();
                 if (monitor)
@@ -811,7 +816,7 @@ namespace AventusSharp.Data
                         time = null;
                     }
                 }
-                if (config.log.monitorManagerOrdered)
+                if (config.Log.MonitorManagerOrdered)
                 {
                     AventusLogger.Instance.LogInformation("*********** Manager ordered **********");
                     int i = 1;
@@ -895,7 +900,7 @@ namespace AventusSharp.Data
             private async Task<VoidWithError> InitManager()
             {
                 VoidWithError result = new VoidWithError();
-                bool monitor = this.config.log.monitorManagerInit;
+                bool monitor = this.config.Log.MonitorManagerInit;
                 if (monitor)
                 {
                     AventusLogger.Instance.LogInformation("*********** Init managers **********");
@@ -1018,7 +1023,7 @@ namespace AventusSharp.Data
                                 return result;
                             }
                         }
-                        else if (config.allowNonAbstractExtension && dataInformations.ContainsKey(parent))
+                        else if (config.AllowNonAbstractExtension && dataInformations.ContainsKey(parent))
                         {
                             result = CreatePyramidStep(dataInformations[parent], pyramidFloors, aliasUsed);
                             if (result.Success && result.Result != null)

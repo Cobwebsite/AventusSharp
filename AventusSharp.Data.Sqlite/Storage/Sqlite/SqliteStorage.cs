@@ -19,8 +19,9 @@ namespace AventusSharp.Data.Storage.Sqlite;
 
 public class SqliteCredentials : StorageCredentials
 {
-    public SqliteCredentials(string database) : base("", "", "", database)
+    public SqliteCredentials(string database)
     {
+        Database = database;
     }
 }
 public class SqliteStorage : DefaultDBStorage<SqliteStorage>
@@ -37,7 +38,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
     {
         SqliteConnectionStringBuilder builder = new()
         {
-            DataSource = database,
+            DataSource = Database,
         };
 
         SqliteConnection connection = new(builder.ConnectionString);

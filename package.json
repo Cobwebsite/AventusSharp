@@ -1,12 +1,12 @@
 {
-  "version": "0.0.15",
-  "private": true,
-  "scripts": {
-    "build": "dotnet build AventusSharp.sln --configuration Release",
-    "test": "dotnet test AventusSharpTest/AventusSharpTest.csproj --filter \"TestCategory!=Docker\"",
-    "test:docker": "dotnet test AventusSharpTest/AventusSharpTest.csproj",
-    "publish": "node scripts/publish-packages.mjs",
-    "publish:test": "node scripts/publish-packages.mjs --skip-publish",
-    "publish:dry-run": "node scripts/publish-packages.mjs 0.0.0 --dry-run"
-  }
+    "version": "0.0.18",
+    "private": true,
+    "scripts": {
+        "build": "dotnet build AventusSharp.sln --configuration Release",
+        "test": "dotnet test AventusSharpTest/AventusSharpTest.csproj --filter \"TestCategory!=Docker\"",
+        "test:docker": "dotnet test AventusSharpTest/AventusSharpTest.csproj",
+        "publish": "node scripts/publish-packages.mjs",
+        "publish:test": "node scripts/publish-packages.mjs --skip-publish",
+        "publish:dry-run": "node scripts/publish-packages.mjs 0.0.0 --dry-run"
+    }
 }

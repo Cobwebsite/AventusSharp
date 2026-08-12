@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -921,7 +922,7 @@ namespace AventusSharp.Data.Manager.DB
                         throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", c.Value));
 
                     default:
-                        string value = c.Value?.ToString() ?? "";
+                        string value = System.Convert.ToString(c.Value, CultureInfo.InvariantCulture) ?? "";;
                         AddToParentGroup(new WhereGroupConstantOther(value));
                         break;
                 }

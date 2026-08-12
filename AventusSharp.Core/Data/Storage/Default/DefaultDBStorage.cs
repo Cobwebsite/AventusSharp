@@ -26,26 +26,14 @@ namespace AventusSharp.Data.Storage.Default
 {
     public class StorageCredentials
     {
-        public string host;
-        public uint? port;
-        public string username;
-        public string password;
-        public string database;
-        public bool trustServerCertificate = false;
-        public bool addCreatedAndUpdatedDate = true;
+        public string Host { get; set; } = "";
+        public uint? Port { get; set; }
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Database { get; set; } = "";
+        public bool TrustServerCertificate = false;
+        public bool AddCreatedAndUpdatedDate = true;
 
-        public StorageCredentials(string host, string username, string password, string database)
-        {
-            this.host = host;
-            this.username = username;
-            this.password = password;
-            this.database = database;
-        }
-
-        public StorageCredentials(string host, uint port, string username, string password, string database) : this(host, username, password, database)
-        {
-            this.port = port;
-        }
     }
 
     public static class DBStorage
@@ -81,15 +69,15 @@ namespace AventusSharp.Data.Storage.Default
     {
         public virtual bool SupportsNativeBoolean => false;
 
-        protected string host { get => credentials.host; }
-        protected uint? port { get => credentials.port; }
-        protected string username { get => credentials.username; }
-        protected string password { get => credentials.password; }
-        protected string database { get => credentials.database; }
+        protected string Host { get => credentials.Host; }
+        protected uint? Port { get => credentials.Port; }
+        protected string Username { get => credentials.Username; }
+        protected string Password { get => credentials.Password; }
+        protected string Database { get => credentials.Database; }
 
         protected StorageCredentials credentials;
 
-        protected bool addCreatedAndUpdatedDate;
+        protected bool AddCreatedAndUpdatedDate;
 
         private static bool IsAutomaticTimestamp(ParamsInfo parameter)
         {
@@ -130,12 +118,12 @@ namespace AventusSharp.Data.Storage.Default
             }
             return null;
         }
-        public string GetDatabaseName() => database;
+        public string GetDatabaseName() => Database;
 
         public DefaultDBStorage(StorageCredentials info)
         {
             credentials = info;
-            addCreatedAndUpdatedDate = info.addCreatedAndUpdatedDate;
+            AddCreatedAndUpdatedDate = info.AddCreatedAndUpdatedDate;
             if (!DBStorage.listStorage.ContainsKey(GetType()))
             {
                 DBStorage.listStorage.Add(GetType(), this);
@@ -763,7 +751,7 @@ namespace AventusSharp.Data.Storage.Default
                         }
                     }
                     classInfo.AddMembersFirst(membersToAdd);
-                    if (addCreatedAndUpdatedDate)
+                    if (AddCreatedAndUpdatedDate)
                     {
                         if (createdDate != null)
                         {
@@ -2836,12 +2824,12 @@ namespace AventusSharp.Data.Storage.Default
 
         public override string ToString()
         {
-            string result = username + "@" + host;
-            if (port != null)
+            string result = Username + "@" + Host;
+            if (Port != null)
             {
-                result += ":" + port;
+                result += ":" + Port;
             }
-            result += "/" + database;
+            result += "/" + Database;
             return result;
         }
 

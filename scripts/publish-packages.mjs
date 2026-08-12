@@ -35,6 +35,11 @@ const newVersion = `${major}.${minor}.${patch + 1}`;
 const answer = await rl.question(`La version actuelle est ${currentVersion}. Augmenter vers ${newVersion} ? (y/n) `);
 const version = answer.toLowerCase().trim() === "y" ? newVersion : currentVersion;
 
+if(newVersion != currentVersion) {
+  packageJson.version = newVersion;
+  writeFileSync(join(repositoryRoot, "package.json"), JSON.stringify(packageJson, undefined, 4))
+}
+
 function run(command, args) {
   console.log(`> ${command} ${args.join(" ")}`);
   if (dryRun) return;

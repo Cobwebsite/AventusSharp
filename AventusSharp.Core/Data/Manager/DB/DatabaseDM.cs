@@ -174,7 +174,7 @@ namespace AventusSharp.Data.Manager.DB
             VoidWithError result = new VoidWithError();
             storage = DefineStorage();
             storage ??= SearchAttributeStorage();
-            storage ??= config.defaultStorage;
+            storage ??= config.DefaultStorage;
             if (storage == null)
             {
                 result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "Can't found a storage for " + Name));
@@ -183,7 +183,7 @@ namespace AventusSharp.Data.Manager.DB
             bool? localCacheTemp = UseLocalCache();
             if (localCacheTemp == null)
             {
-                NeedLocalCache = config.preferLocalCache;
+                NeedLocalCache = config.PreferLocalCache;
             }
             else
             {
@@ -193,7 +193,7 @@ namespace AventusSharp.Data.Manager.DB
             bool? shortLinkTemp = UseShortLink();
             if (shortLinkTemp == null)
             {
-                NeedShortLink = config.preferShortLink;
+                NeedShortLink = config.PreferShortLink;
             }
             else
             {

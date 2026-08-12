@@ -27,7 +27,10 @@ public sealed class DockerDatabaseIntegrationTests
             "mysql_devices",
             () => MySqlDevice.CreateWithError(new MySqlDevice
             {
-                Name = "MySQL lamp", Room = "Office", Value = 40, Enabled = true,
+                Name = "MySQL lamp",
+                Room = "Office",
+                Value = 40,
+                Enabled = true,
                 InstalledAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 Duration = new TimeSpan(12, 34, 56)
             }),
@@ -49,7 +52,10 @@ public sealed class DockerDatabaseIntegrationTests
             "postgresql_devices",
             () => PostgreSqlDevice.CreateWithError(new PostgreSqlDevice
             {
-                Name = "PostgreSQL lamp", Room = "Office", Value = 40, Enabled = true,
+                Name = "PostgreSQL lamp",
+                Room = "Office",
+                Value = 40,
+                Enabled = true,
                 InstalledAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 Duration = new TimeSpan(12, 34, 56)
             }),
@@ -71,7 +77,10 @@ public sealed class DockerDatabaseIntegrationTests
             "mssql_devices",
             () => MsSqlDevice.CreateWithError(new MsSqlDevice
             {
-                Name = "SQL Server lamp", Room = "Office", Value = 40, Enabled = true,
+                Name = "SQL Server lamp",
+                Room = "Office",
+                Value = 40,
+                Enabled = true,
                 InstalledAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 Duration = new TimeSpan(12, 34, 56)
             }),
@@ -244,8 +253,14 @@ public sealed class DockerDatabaseIntegrationTests
     public Task MySql_connection_failure_is_monadic_and_does_not_affect_valid_storage() =>
         VerifyConnectionFailure(
             new AventusSharp.Data.Storage.Mysql.MySQLStorage(
-                new StorageCredentials(
-                    "127.0.0.1", 1, "invalid", "invalid", "invalid"),
+                new StorageCredentials()
+                {
+                    Host = "127.0.0.1",
+                    Port = 1,
+                    Username = "invalid",
+                    Password = "invalid",
+                    Database = "invalid"
+                },
                 createDatabase: false),
             DatabaseContainers.MySql);
 
@@ -253,8 +268,14 @@ public sealed class DockerDatabaseIntegrationTests
     public Task PostgreSql_connection_failure_is_monadic_and_does_not_affect_valid_storage() =>
         VerifyConnectionFailure(
             new AventusSharp.Data.Storage.Postgresql.PostgreSqlStorage(
-                new StorageCredentials(
-                    "127.0.0.1", 1, "invalid", "invalid", "invalid"),
+                new StorageCredentials()
+                {
+                    Host = "127.0.0.1",
+                    Port = 1,
+                    Username = "invalid",
+                    Password = "invalid",
+                    Database = "invalid"
+                },
                 createDatabase: false),
             DatabaseContainers.PostgreSql);
 
@@ -262,10 +283,15 @@ public sealed class DockerDatabaseIntegrationTests
     public Task SqlServer_connection_failure_is_monadic_and_does_not_affect_valid_storage() =>
         VerifyConnectionFailure(
             new AventusSharp.Data.Storage.Mssql.MsSqlStorage(
-                new StorageCredentials(
-                    "127.0.0.1", 1, "invalid", "invalid", "master")
+                new StorageCredentials()
                 {
-                    trustServerCertificate = true
+                    Host = "127.0.0.1",
+                    Port = 1,
+                    Username = "invalid",
+                    Password = "invalid",
+                    Database = "master",
+                    TrustServerCertificate = true
+
                 }),
             DatabaseContainers.MsSql);
 
@@ -497,7 +523,8 @@ public sealed class DockerDatabaseIntegrationTests
         return VerifyRollback(
             () => MySqlDevice.CreateWithError(new MySqlDevice
             {
-                Name = "mysql rollback", Room = "Lab",
+                Name = "mysql rollback",
+                Room = "Lab",
                 InstalledAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }),
             () => ((MySqlDeviceManager)GenericDM.Get<MySqlDevice>())
@@ -510,7 +537,8 @@ public sealed class DockerDatabaseIntegrationTests
         return VerifyRollback(
             () => PostgreSqlDevice.CreateWithError(new PostgreSqlDevice
             {
-                Name = "postgres rollback", Room = "Lab",
+                Name = "postgres rollback",
+                Room = "Lab",
                 InstalledAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }),
             () => ((PostgreSqlDeviceManager)GenericDM.Get<PostgreSqlDevice>())
@@ -523,7 +551,8 @@ public sealed class DockerDatabaseIntegrationTests
         return VerifyRollback(
             () => MsSqlDevice.CreateWithError(new MsSqlDevice
             {
-                Name = "mssql rollback", Room = "Lab",
+                Name = "mssql rollback",
+                Room = "Lab",
                 InstalledAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }),
             () => ((MsSqlDeviceManager)GenericDM.Get<MsSqlDevice>())

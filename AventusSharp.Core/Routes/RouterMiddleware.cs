@@ -186,7 +186,12 @@ namespace AventusSharp.Routes
                                 }
                                 if (!hasInParam)
                                 {
-                                    if (parameter.type != typeof(IAventusContext) && !injected.ContainsKey(parameter.type))
+                                    if (
+                                        parameter.type != typeof(IAventusContext) && 
+                                        !injected.ContainsKey(parameter.type) && 
+                                        //context.Services.GetService(parameter.type) == null &&
+                                        parameterInfo.GetCustomAttribute<NoExport>() == null
+                                    )
                                     {
                                         hasBody = true;
                                     }

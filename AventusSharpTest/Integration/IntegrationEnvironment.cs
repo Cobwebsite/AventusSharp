@@ -26,12 +26,12 @@ public sealed class IntegrationEnvironment
 
         DataMainManager.Configure(config =>
         {
-            config.defaultStorage = Storage;
-            config.defaultDM = typeof(SimpleDatabaseDM<>);
+            config.DefaultStorage = Storage;
+            config.DefaultDM = typeof(SimpleDatabaseDM<>);
             config.AutoCreateModel = true;
-            config.preferLocalCache = true;
-            config.preferShortLink = false;
-            config.nullByDefault = false;
+            config.PreferLocalCache = true;
+            config.PreferShortLink = false;
+            config.NullByDefault = false;
         });
 
         var initialized = await DataMainManager.Init(typeof(IntegrationEnvironment).Assembly);

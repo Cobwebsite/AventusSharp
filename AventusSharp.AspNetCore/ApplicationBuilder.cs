@@ -173,6 +173,7 @@ public static class AventusExtension
             DiagramConfig baseConfig = new DiagramConfig()
             {
                 GenerateMain = true,
+                UseNamespaceForMain = true,
                 MainName = Assembly.GetEntryAssembly()?.GetName().Name ?? "Database",
                 OutputDirectory = ""
             };

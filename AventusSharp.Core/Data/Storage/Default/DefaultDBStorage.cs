@@ -2717,8 +2717,10 @@ namespace AventusSharp.Data.Storage.Default
                 if (!mainFound && config.GenerateMain)
                 {
                     (DiagramTable table, List<DiagramRelationship> rels) temp = CreateTableDiagram(info);
-                    if (area != null)
+                    area = pair.Key.Namespace;
+                    if (config.UseNamespaceForMain && area != null)
                     {
+
                         if (!diagrams[mainName].Areas.Exists(p => p.Name == area))
                         {
                             string[] colors = { "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899" };

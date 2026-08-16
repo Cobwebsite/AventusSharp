@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using AventusSharp.AspNetCore.Routes;
 using Environment = System.Environment;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AventusSharp;
 
@@ -61,7 +62,7 @@ public static class AventusExtension
 
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
+        AddLogger(app);
         IDBStorage? db = app.ApplicationServices.GetService<IDBStorage>();
 
         if (config != null)
@@ -88,7 +89,7 @@ public static class AventusExtension
     public static IApplicationBuilder UseAventusHttp(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<RouterConfig>? config = null)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
-        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
+        AddLogger(app);
 
         if (config != null)
             Routes.RouterMiddleware.Configure(config);
@@ -112,7 +113,7 @@ public static class AventusExtension
     public static IApplicationBuilder UseAventusWebsocket(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<WebSocketConfig>? config = null)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
-        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
+        AddLogger(app);
 
         if (config != null)
             WebSocketMiddleware.Configure(config);
@@ -138,7 +139,7 @@ public static class AventusExtension
     public static IApplicationBuilder UseAventusSSE(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<SSEConfig>? config = null)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
-        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>());
+        AddLogger(app);
 
         if (config != null)
             SSEMiddleware.Configure(config);
@@ -223,4 +224,9 @@ public static class AventusExtension
         return app;
     }
 
+
+    private static void AddLogger(IApplicationBuilder app)
+    {
+        AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>(), LoggerFactory.Create(builder => builder.AddConsole()));
+    }
 }

@@ -105,7 +105,7 @@ public class ImageFile
             // New Width and Height
             int destWidth = (int)(sourceWidth * nPercent);
             int destHeight = (int)(sourceHeight * nPercent);
-            using SKBitmap scaledBitmap = skImage.Resize(new SKImageInfo(destWidth, destHeight), SKFilterQuality.None);
+            using SKBitmap scaledBitmap = skImage.Resize(new SKImageInfo(destWidth, destHeight), new SKSamplingOptions(SKFilterMode.Nearest));
             using SKImage image = SKImage.FromBitmap(scaledBitmap);
             using SKData encodedImage = image.Encode(format, 75);
 
@@ -208,7 +208,7 @@ public class ImageFile
 
 
 
-            using SKBitmap scaledBitmap = skImage.Resize(new SKImageInfo(destWidth, destHeight), SKFilterQuality.None);
+            using SKBitmap scaledBitmap = skImage.Resize(new SKImageInfo(destWidth, destHeight), new SKSamplingOptions(SKFilterMode.Nearest));
             using SKImage image = SKImage.FromBitmap(scaledBitmap);
             using SKData encodedImage = image.Encode(format, 100);
 
@@ -275,7 +275,7 @@ public class ImageFile
 
                     // draw the svg
                     canvas.Clear(SKColors.Transparent);
-                    canvas.DrawPicture(svg.Picture, ref matrix);
+                    canvas.DrawPicture(svg.Picture, in matrix);
                     canvas.Flush();
 
                     using (SKImage data = surface.Snapshot())

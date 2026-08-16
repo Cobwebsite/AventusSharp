@@ -92,8 +92,10 @@ public static class AventusMauiExtension
         return app;
     }
 
-    private static void InitializeLogger(MauiApp app) =>
-        AventusLogger.Initialize(app.Services.GetService<ILoggerFactory>());
+    private static void InitializeLogger(MauiApp app)
+    {
+        AventusLogger.Initialize(app.Services.GetService<ILoggerFactory>(), null);
+    }
 
     private static void ThrowOnError(VoidWithError result)
     {

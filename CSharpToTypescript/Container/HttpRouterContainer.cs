@@ -1032,12 +1032,13 @@ namespace CSharpToTypescript.Container
             }
             else if (typeContainer == typeof(Json))
             {
-                if (listReturns.Count == 0)
+                var returns = listReturns.Distinct().ToList();
+                if (returns.Count == 0)
                 {
                     returnTxt = "return await request.queryVoid(this.router);";
                     fctDesc = fctDesc.Replace("$resultType", "Promise<" + voidWithErrorType + ">");
                 }
-                else if (listReturns.Count == 1 && new Regex("Aventus\\.VoidWithError(<|$)").IsMatch(listReturns[0] ?? ""))
+                else if (returns.Count == 1 && new Regex("Aventus\\.VoidWithError(<|$)").IsMatch(returns[0] ?? ""))
                 {
                     returnTxt = "return await request.queryVoid(this.router);";
                     fctDesc = fctDesc.Replace("$resultType", "Promise<" + voidWithErrorType + ">");
@@ -1045,7 +1046,7 @@ namespace CSharpToTypescript.Container
                 else
                 {
                     List<string> realTypes = new List<string>();
-                    foreach (string? itemReturn in listReturns)
+                    foreach (string? itemReturn in returns)
                     {
                         if (itemReturn == null) continue;
                         string item = itemReturn;

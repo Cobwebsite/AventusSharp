@@ -18,23 +18,16 @@ public static class AventusMauiExtension
     /// Initializes the AventusSharp data managers and configured providers.
     /// Call this after <see cref="MauiAppBuilder.Build"/>.
     /// </summary>
-    public static MauiApp UseAventusData(
-        this MauiApp app,
-        Action<DataManagerConfig>? config = null)
+    public static MauiApp UseAventusData(this MauiApp app, Action<DataManagerConfig>? config = null)
     {
-        return app.UseAventusData(
-            [Assembly.GetEntryAssembly()],
-            config);
+        return app.UseAventusData([Assembly.GetEntryAssembly()], config);
     }
 
     /// <summary>
     /// Initializes the AventusSharp data managers by scanning the supplied
     /// assemblies for models and managers.
     /// </summary>
-    public static MauiApp UseAventusData(
-        this MauiApp app,
-        IEnumerable<Assembly?> assemblies,
-        Action<DataManagerConfig>? config = null)
+    public static MauiApp UseAventusData(this MauiApp app, IEnumerable<Assembly?> assemblies, Action<DataManagerConfig>? config = null)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(assemblies);
@@ -60,22 +53,15 @@ public static class AventusMauiExtension
     /// <summary>
     /// Registers the existing AventusSharp routes for execution through
     /// </summary>
-    public static MauiApp UseAventusHttp(
-        this MauiApp app,
-        Action<RouterConfig>? config = null)
+    public static MauiApp UseAventusHttp(this MauiApp app, Action<RouterConfig>? config = null)
     {
-        return app.UseAventusHttp(
-            [Assembly.GetEntryAssembly()],
-            config);
+        return app.UseAventusHttp([Assembly.GetEntryAssembly()], config);
     }
 
     /// <summary>
     /// Registers AventusSharp routes found in the supplied assemblies.
     /// </summary>
-    public static MauiApp UseAventusHttp(
-        this MauiApp app,
-        IEnumerable<Assembly?> assemblies,
-        Action<RouterConfig>? config = null)
+    public static MauiApp UseAventusHttp(this MauiApp app, IEnumerable<Assembly?> assemblies, Action<RouterConfig>? config = null)
     {
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(assemblies);

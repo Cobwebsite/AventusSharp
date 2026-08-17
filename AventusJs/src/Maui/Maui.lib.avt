@@ -1,19 +1,40 @@
+
 type MauiConfig = {
     filter: (url: string, method: string) => boolean;
     showLog: boolean;
+    autoLoad: boolean;
 };
 
 export class Maui {
     private static config: MauiConfig = {
         filter: (url, method) => url.includes("/api"),
-        showLog: false
+        showLog: false,
+        autoLoad: true,
     };
-    public static configure(config: Partial<MauiConfig>) {
+    public static async configure(config: Partial<MauiConfig>): Promise<void> {
         this.config = {
             ...config,
             ...this.config
         };
         this.overrideFetch();
+        if(this.config.autoLoad)
+            await this.loadBlazor();
+    }
+
+    private static loadBlazor() {
+        return new Promise<void>(async (resolve) => {
+            const script = document.createElement("script");
+            script.setAttribute("autostart", "false");
+            script.src = "/_framework/blazor.webview.js";
+            script.onload = function () {
+                const w = window as any;
+                w.Blazor.start().then(() => {
+                    resolve();
+                });
+            };
+
+            document.head.appendChild(script);
+        });
     }
 
 

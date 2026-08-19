@@ -40,7 +40,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Scriban" Version="7.2.5" />
     <PackageReference Include="SkiaSharp" Version="4.151.1" />
-    <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
+    <PackageReference Include="Svg.Skia" Version="5.2.1" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
   </ItemGroup>
 

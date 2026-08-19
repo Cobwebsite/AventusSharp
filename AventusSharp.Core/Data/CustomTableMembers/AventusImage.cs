@@ -12,7 +12,7 @@ using FileTypeChecker.Abstracts;
 using FileTypeChecker.Extensions;
 using FileTypeChecker.Types;
 using SkiaSharp;
-using SKSvg = SkiaSharp.Extended.Svg.SKSvg;
+using SKSvg = Svg.Skia.SKSvg;
 
 namespace AventusSharp.Data.CustomTableMembers;
 
@@ -264,6 +264,12 @@ public class ImageFile
                 SKSvg svg = new SKSvg();
                 svg.Load(stream);
 
+                if (svg.Picture == null)
+                {
+                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "Can't parse the svg file"));
+                    return result;
+                }
+
                 SKImageInfo imageInfo = new SKImageInfo(width, height);
                 using (var surface = SKSurface.Create(imageInfo))
                 using (var canvas = surface.Canvas)
@@ -339,12 +345,84 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
 {
     public override ResultWithError<bool> MoveFile(T instance, HttpFile file)
     {
-        ResultWithError<bool> result = IsImg(file);
+        ResultWithError<bool> result = new();
+        result.Run(() => ValidateUpload(file).ToGeneric());
         result.Run(() => Transform(DefineMaxSize(), file).ToGeneric());
         result.Run(() => base.MoveFile(instance, file));
         return result;
     }
     protected abstract ImageSize? DefineMaxSize();
+    protected virtual ImageUploadConstraints? DefineUploadConstraints() => null;
+
+    public virtual VoidWithImageFileError ValidateUpload(HttpFile file)
+    {
+        VoidWithImageFileError result = new();
+
+
+        try
+        {
+            ImageUploadConstraints? constraints = DefineUploadConstraints();
+            FileInfo source = new(file.FilePath);
+            if (constraints?.MaximumFileSizeBytes is long maximumFileSize && source.Length > maximumFileSize)
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FileTooLarge, $"The image cannot exceed {maximumFileSize} bytes."));
+                return result;
+            }
+
+            bool isImg = result.Extract(() => IsImg(file));
+            if (!isImg) return result;
+
+            if (constraints == null) return result;
+
+            using SKData data = SKData.Create(file.FilePath);
+            using SKCodec? codec = SKCodec.Create(data);
+            if (codec == null)
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "The uploaded file is not a valid image."));
+                return result;
+            }
+
+            SKEncodedImageFormat format = codec.EncodedFormat;
+            if (constraints.AllowedFormats is { Count: > 0 } && !constraints.AllowedFormats.Contains(format))
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FormatNotAllowed, $"The image format {format} is not allowed."));
+            }
+
+            string? expectedContentType = ImageUploadConstraints.GetContentType(format);
+            if (
+                constraints.RequireMatchingContentType &&
+                (
+                    expectedContentType == null ||
+                    !file.Type.Equals(expectedContentType, StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.ContentTypeMismatch, "The image content does not match its content type."));
+            }
+
+            int width = codec.Info.Width;
+            int height = codec.Info.Height;
+            if (
+                (constraints.MinimumWidth is int minimumWidth && width < minimumWidth) ||
+                (constraints.MinimumHeight is int minimumHeight && height < minimumHeight)
+            )
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.DimensionsTooSmall, "The image dimensions are too small."));
+            }
+            if (
+                (constraints.MaximumWidth is int maximumWidth && width > maximumWidth) ||
+                (constraints.MaximumHeight is int maximumHeight && height > maximumHeight)
+            )
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.DimensionsTooLarge, "The image dimensions are too large."));
+            }
+        }
+        catch (Exception exception)
+        {
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, exception));
+        }
+        return result;
+    }
     protected VoidWithImageFileError Transform(ImageSize? size, HttpFile Upload)
     {
         VoidWithImageFileError result = new VoidWithImageFileError();
@@ -374,11 +452,11 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
         }
         return result;
     }
-    protected ResultWithError<bool> IsImg(HttpFile Upload)
+    protected ResultWithImageFileError<bool> IsImg(HttpFile Upload)
     {
         if (Upload.FilePath.EndsWith(".svg"))
         {
-            return ImageFile.IsSvg(Upload.FilePath).ToGeneric();
+            return ImageFile.IsSvg(Upload.FilePath);
         }
 
         bool isValidImg = false;
@@ -390,7 +468,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
         fileStream.Close();
         fileStream.Dispose();
 
-        return new ResultWithError<bool>()
+        return new ResultWithImageFileError<bool>()
         {
             Result = isValidImg,
             Errors = isValidImg ? new() : new() {
@@ -409,6 +487,11 @@ public enum ImageFileErrorCode
     NotValidImage,
     FileNotSvg,
     NoSize,
+    FileTooLarge,
+    FormatNotAllowed,
+    ContentTypeMismatch,
+    DimensionsTooSmall,
+    DimensionsTooLarge,
 }
 public class ImageFileError : GenericError<ImageFileErrorCode>
 {
@@ -422,6 +505,28 @@ public class ImageFileError : GenericError<ImageFileErrorCode>
 }
 public class VoidWithImageFileError : VoidWithError<ImageFileError> { }
 public class ResultWithImageFileError<T> : ResultWithError<T, ImageFileError> { }
+
+public sealed class ImageUploadConstraints
+{
+    public long? MaximumFileSizeBytes { get; init; }
+    public int? MinimumWidth { get; init; }
+    public int? MinimumHeight { get; init; }
+    public int? MaximumWidth { get; init; }
+    public int? MaximumHeight { get; init; }
+    public IReadOnlySet<SKEncodedImageFormat>? AllowedFormats { get; init; }
+    public bool RequireMatchingContentType { get; init; } = true;
+
+    public static string? GetContentType(SKEncodedImageFormat format) => format switch
+    {
+        SKEncodedImageFormat.Png => "image/png",
+        SKEncodedImageFormat.Jpeg => "image/jpeg",
+        SKEncodedImageFormat.Webp => "image/webp",
+        SKEncodedImageFormat.Gif => "image/gif",
+        SKEncodedImageFormat.Bmp => "image/bmp",
+        SKEncodedImageFormat.Ico => "image/x-icon",
+        _ => null
+    };
+}
 
 public class ImageSize
 {

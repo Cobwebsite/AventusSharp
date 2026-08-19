@@ -202,6 +202,25 @@ public sealed class ImageFileTests
         Assert.That(File.Exists(target), Is.False);
     }
 
+    [Test]
+    public void AventusImage_validate_upload_applies_declared_constraints()
+    {
+        var smallPath = CreatePng("small.png", 4, 4);
+        var validPath = CreatePng("valid.png", 16, 12);
+        var image = new UnitTestImage(Path.Combine(_directory, "stored.png"));
+
+        var tooSmall = image.ValidateUpload(new HttpFile("image", "small.png", smallPath, "image/png"));
+        var mismatchedType = image.ValidateUpload(new HttpFile("image", "valid.png", validPath, "image/jpeg"));
+        var valid = image.ValidateUpload(new HttpFile("image", "valid.png", validPath, "image/png"));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(tooSmall.Errors.Select(error => error.Code), Does.Contain(ImageFileErrorCode.DimensionsTooSmall));
+            Assert.That(mismatchedType.Errors.Select(error => error.Code), Does.Contain(ImageFileErrorCode.ContentTypeMismatch));
+            Assert.That(valid.Success, Is.True, ErrorMessages(valid.Errors));
+        });
+    }
+
     private string CreatePng(string name, int width, int height)
     {
         var path = Path.Combine(_directory, name);
@@ -251,6 +270,16 @@ public sealed class UnitTestImage : AventusImage<UnitFileOwner>
     }
 
     protected override ImageSize? DefineMaxSize() => ImageSize.MaxSize(16);
+
+    protected override ImageUploadConstraints? DefineUploadConstraints() => new()
+    {
+        MaximumFileSizeBytes = 1024 * 1024,
+        MinimumWidth = 8,
+        MinimumHeight = 8,
+        MaximumWidth = 64,
+        MaximumHeight = 64,
+        AllowedFormats = new HashSet<SKEncodedImageFormat> { SKEncodedImageFormat.Png }
+    };
 
     protected override AventusSharp.Tools.ResultWithError<string> DefineSavePath(
         UnitFileOwner instance,

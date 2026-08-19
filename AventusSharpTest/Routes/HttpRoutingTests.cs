@@ -38,7 +38,7 @@ public sealed class HttpRoutingTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(routes, Has.Count.EqualTo(25));
+            Assert.That(routes, Has.Count.EqualTo(26));
             Assert.That(routes.Any(route =>
                 route.baseUrl == "/tests/hello/{name}" &&
                 route.method == AventusSharp.Routes.Request.MethodType.Get), Is.True);
@@ -540,6 +540,40 @@ public sealed class HttpRoutingTests
     }
 
     [Test]
+    public async Task Multipart_upload_binds_a_file_inside_a_nested_object()
+    {
+        var fileName = $"aventus-deep-{Guid.NewGuid():N}.txt";
+        using var multipart = new MultipartFormDataContent();
+        multipart.Add(new StringContent("nested name"), "payload[name]");
+        multipart.Add(new StringContent("/existing.txt"), "payload[document][uri]");
+        multipart.Add(
+            new ByteArrayContent(Encoding.UTF8.GetBytes("deep nested file")),
+            "payload[document][upload]",
+            fileName);
+        var context = await CreateMultipartContext("/tests/upload-deep", multipart);
+
+        await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+
+        var json = JObject.Parse(ReadBody(context));
+        var filePath = json["FilePath"]?.Value<string>();
+        try
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.Response.StatusCode, Is.EqualTo(200));
+                Assert.That(json["Uri"]?.Value<string>(), Is.EqualTo("/existing.txt"));
+                Assert.That(json["FileName"]?.Value<string>(), Is.EqualTo(fileName));
+                Assert.That(json["Content"]?.Value<string>(), Is.EqualTo("deep nested file"));
+            });
+        }
+        finally
+        {
+            if (filePath != null && File.Exists(filePath)) File.Delete(filePath);
+            context.Request.Body.Dispose();
+        }
+    }
+
+    [Test]
     public async Task Globally_injected_interface_is_resolved_without_body_or_request_service()
     {
         RouterMiddleware.Inject(
@@ -735,6 +769,16 @@ public sealed class HttpRoutingTests
             Content = File.ReadAllText(payload.File.FilePath)
         };
 
+        [Post]
+        [HttpPath("/upload-deep")]
+        public object UploadDeep(DeepUploadPayload payload) => new
+        {
+            payload.Document.Uri,
+            payload.Document.Upload!.FileName,
+            payload.Document.Upload.FilePath,
+            Content = File.ReadAllText(payload.Document.Upload.FilePath)
+        };
+
         [Get]
         [HttpPath("/global-service")]
         public string GlobalService(IGlobalRouteDependency dependency) =>
@@ -761,6 +805,18 @@ public sealed class HttpRoutingTests
     {
         public string Name { get; set; } = "";
         public HttpFile File { get; set; } = null!;
+    }
+
+    public sealed class DeepUploadPayload
+    {
+        public string Name { get; set; } = "";
+        public UploadDocument Document { get; set; } = new();
+    }
+
+    public sealed class UploadDocument
+    {
+        public string Uri { get; set; } = "";
+        public HttpFile? Upload { get; set; }
     }
 
     public sealed class TrackingMiddlewareAttribute : Middleware

@@ -18,6 +18,51 @@ namespace AventusSharp.Data.CustomTableMembers;
 
 public class ImageFile
 {
+    /// <summary>Encodes an image as PNG, JPEG or WebP. Animated inputs use their first frame.</summary>
+    public static ResultWithImageFileError<string> ConvertTo(string path, SKEncodedImageFormat format = SKEncodedImageFormat.Webp, int quality = 80, string? savePath = null)
+    {
+        ResultWithImageFileError<string> result = new();
+        try
+        {
+            if (format != SKEncodedImageFormat.Webp && format != SKEncodedImageFormat.Png && format != SKEncodedImageFormat.Jpeg)
+                throw new ArgumentException("The output format must be WebP, PNG or JPEG.", nameof(format));
+            if (quality < 0 || quality > 100)
+                throw new ArgumentOutOfRangeException(nameof(quality), "Quality must be between 0 and 100.");
+
+            var svgResult = IsSvg(path);
+            if (!svgResult.Success)
+            {
+                result.Errors.AddRange(svgResult.Errors);
+                return result;
+            }
+
+            // Read fully before writing, so conversion to the same path is supported.
+            using SKBitmap? bitmap = svgResult.Result ? null : SKBitmap.Decode(path);
+            using SKSvg svg = new();
+            if (svgResult.Result) svg.Load(path);
+            using SKImage? image = svgResult.Result && svg.Picture != null
+                ? SKImage.FromPicture(svg.Picture, new SKSizeI(
+                    Math.Max(1, (int)Math.Ceiling(svg.Picture.CullRect.Width)),
+                    Math.Max(1, (int)Math.Ceiling(svg.Picture.CullRect.Height))))
+                : bitmap != null ? SKImage.FromBitmap(bitmap) : null;
+            if (image == null)
+            {
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "The source cannot be decoded as an image."));
+                return result;
+            }
+            using SKData? encoded = image.Encode(format, quality);
+            if (encoded == null) throw new InvalidOperationException($"Cannot encode the image as {format}.");
+            string target = Path.ChangeExtension(savePath ?? path, format.ToString().ToLowerInvariant());
+            using (FileStream output = File.Create(target)) encoded.SaveTo(output);
+            result.Result = target;
+        }
+        catch (Exception exception)
+        {
+            result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, exception));
+        }
+        return result;
+    }
+
     public static ResultWithImageFileError<SKEncodedImageFormat> GetFormat(string path)
     {
         ResultWithImageFileError<SKEncodedImageFormat> result = new ResultWithImageFileError<SKEncodedImageFormat>();
@@ -79,8 +124,7 @@ public class ImageFile
             }
 
             long previousSize = new FileInfo(path).Length;
-            using FileStream sourceStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            using SKData data = SKData.Create(sourceStream);
+            using SKData data = SKData.CreateCopy(File.ReadAllBytes(path));
             using SKCodec codec = SKCodec.Create(data);
             SKEncodedImageFormat format = codec.EncodedFormat;
 
@@ -169,8 +213,7 @@ public class ImageFile
                 return result;
             }
 
-            using FileStream sourceStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            using SKData data = SKData.Create(sourceStream);
+            using SKData data = SKData.CreateCopy(File.ReadAllBytes(path));
             using SKCodec codec = SKCodec.Create(data);
             SKEncodedImageFormat format = codec.EncodedFormat;
 
@@ -348,11 +391,32 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
         ResultWithError<bool> result = new();
         result.Run(() => ValidateUpload(file).ToGeneric());
         result.Run(() => Transform(DefineMaxSize(), file).ToGeneric());
+        result.Run(() => ConvertUpload(file).ToGeneric());
         result.Run(() => base.MoveFile(instance, file));
         return result;
     }
     protected abstract ImageSize? DefineMaxSize();
     protected virtual ImageUploadConstraints? DefineUploadConstraints() => null;
+
+    protected virtual VoidWithImageFileError ConvertUpload(HttpFile file)
+    {
+        VoidWithImageFileError result = new();
+        ImageUploadConstraints constraints = DefineUploadConstraints() ?? new();
+        if (constraints.ConvertTo is not SKEncodedImageFormat format) return result;
+        var converted = ImageFile.ConvertTo(file.FilePath, format, constraints.ConversionQuality);
+        result.Errors.AddRange(converted.Errors);
+        if (!converted.Success || converted.Result == null) return result;
+        string previousPath = file.FilePath;
+        file.FilePath = converted.Result;
+        file.FileName = Path.ChangeExtension(file.FileName, format.ToString().ToLowerInvariant());
+        file.Type = ImageUploadConstraints.GetContentType(format)!;
+        if (!string.Equals(previousPath, file.FilePath, StringComparison.OrdinalIgnoreCase))
+        {
+            try { File.Delete(previousPath); }
+            catch (Exception exception) { result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, exception)); }
+        }
+        return result;
+    }
 
     public virtual VoidWithImageFileError ValidateUpload(HttpFile file)
     {
@@ -428,7 +492,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
         VoidWithImageFileError result = new VoidWithImageFileError();
         try
         {
-            if (size == null || (size.Height == null && size.Width == null))
+            if (size == null || (size.Height == null && size.Width == null && size.MaxHeight == null && size.MaxWidth == null))
             {
                 return result;
             }
@@ -508,6 +572,10 @@ public class ResultWithImageFileError<T> : ResultWithError<T, ImageFileError> { 
 
 public sealed class ImageUploadConstraints
 {
+    /// <summary>Output format (WebP by default). Set null to preserve the input format. Supported: WebP, PNG, JPEG.</summary>
+    public SKEncodedImageFormat? ConvertTo { get; init; } = SKEncodedImageFormat.Webp;
+    /// <summary>Encoding quality from 0 to 100. Animated images are converted to a single frame.</summary>
+    public int ConversionQuality { get; init; } = 80;
     public long? MaximumFileSizeBytes { get; init; }
     public int? MinimumWidth { get; init; }
     public int? MinimumHeight { get; init; }

@@ -221,6 +221,90 @@ public sealed class ImageFileTests
         });
     }
 
+    [TestCase(SKEncodedImageFormat.Webp)]
+    [TestCase(SKEncodedImageFormat.Png)]
+    [TestCase(SKEncodedImageFormat.Jpeg)]
+    public void ConvertTo_encodes_the_requested_format_even_without_resizing(SKEncodedImageFormat format)
+    {
+        var source = CreatePng("source.png", 16, 12);
+        var result = ImageFile.ConvertTo(source, format);
+
+        Assert.That(result.Success, Is.True, ErrorMessages(result.Errors));
+        using var codec = SKCodec.Create(result.Result);
+        Assert.That(codec.EncodedFormat, Is.EqualTo(format));
+        Assert.That(codec.Info.Width, Is.EqualTo(16));
+        Assert.That(codec.Info.Height, Is.EqualTo(12));
+        Assert.That(Path.GetExtension(result.Result), Is.EqualTo("." + format.ToString().ToLowerInvariant()));
+    }
+
+    [Test]
+    public void ConvertTo_rasterizes_svg_as_webp_by_default()
+    {
+        var source = Path.Combine(_directory, "source.svg");
+        File.WriteAllText(source, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"10\"><rect width=\"20\" height=\"10\" fill=\"red\"/></svg>");
+        var result = ImageFile.ConvertTo(source);
+        Assert.That(result.Success, Is.True, ErrorMessages(result.Errors));
+        using var codec = SKCodec.Create(result.Result);
+        Assert.That(codec.EncodedFormat, Is.EqualTo(SKEncodedImageFormat.Webp));
+        Assert.That(codec.Info.Width, Is.EqualTo(20));
+        Assert.That(codec.Info.Height, Is.EqualTo(10));
+    }
+
+    [TestCase(SKEncodedImageFormat.Gif, 80)]
+    [TestCase(SKEncodedImageFormat.Webp, -1)]
+    [TestCase(SKEncodedImageFormat.Webp, 101)]
+    public void ConvertTo_rejects_invalid_options_without_changing_source(SKEncodedImageFormat format, int quality)
+    {
+        var source = CreatePng("source.png", 16, 12);
+        var original = File.ReadAllBytes(source);
+        var result = ImageFile.ConvertTo(source, format, quality);
+        Assert.That(result.Success, Is.False);
+        Assert.That(File.ReadAllBytes(source), Is.EqualTo(original));
+        Assert.That(Directory.GetFiles(_directory).Length, Is.EqualTo(1));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void AventusImage_converts_by_default_and_can_preserve_the_original(bool preserve)
+    {
+        var source = CreatePng("upload.png", 16, 12);
+        var image = new ConversionTestImage(Path.Combine(_directory, "stored"), preserve);
+        var upload = new HttpFile("image", "photo.png", source, "image/png");
+        var result = image.MoveFile(new UnitFileOwner(), upload);
+
+        Assert.That(result.Success, Is.True, ErrorMessages(result.Errors));
+        using var codec = SKCodec.Create(upload.FilePath);
+        Assert.That(codec.EncodedFormat, Is.EqualTo(preserve ? SKEncodedImageFormat.Png : SKEncodedImageFormat.Webp));
+        Assert.That(upload.FileName, Is.EqualTo(preserve ? "photo.png" : "photo.webp"));
+        Assert.That(upload.Type, Is.EqualTo(preserve ? "image/png" : "image/webp"));
+        Assert.That(File.Exists(source), Is.False);
+        Assert.That(Directory.GetFiles(_directory), Is.Empty);
+    }
+
+    [Test]
+    public void AventusImage_applies_maximum_size_before_conversion()
+    {
+        var source = CreatePng("large.png", 64, 48);
+        var target = Path.Combine(_directory, "stored.webp");
+        var upload = new HttpFile("image", "large.png", source, "image/png");
+        var result = new UnitTestImage(target).MoveFile(new UnitFileOwner(), upload);
+        Assert.That(result.Success, Is.True, ErrorMessages(result.Errors));
+        using var codec = SKCodec.Create(target);
+        Assert.That(codec.EncodedFormat, Is.EqualTo(SKEncodedImageFormat.Webp));
+        Assert.That(codec.Info.Width, Is.EqualTo(16));
+        Assert.That(codec.Info.Height, Is.EqualTo(12));
+    }
+
+    private sealed class ConversionTestImage(string directory, bool preserve) : AventusImage<UnitFileOwner>
+    {
+        protected override ImageSize? DefineMaxSize() => null;
+        protected override ImageUploadConstraints? DefineUploadConstraints() => preserve
+            ? new ImageUploadConstraints { ConvertTo = null }
+            : null;
+        protected override AventusSharp.Tools.ResultWithError<string> DefineSavePath(UnitFileOwner instance, HttpFile file)
+            => new() { Result = Path.Combine(directory, file.FileName) };
+    }
+
     private string CreatePng(string name, int width, int height)
     {
         var path = Path.Combine(_directory, name);

@@ -452,6 +452,7 @@ namespace CSharpToTypescript.Container
                             else
                             {
                                 var subClassContent = new NormalClassContainer(namedTypeSymbol);
+                                AddTxt("@NoType()", result);
                                 AddTxtOpen(GetAccessibility(member) + "readonly " + memberName + " = class {", result);
                                 string[] lines = subClassContent.GetContent().Split("\n");
                                 foreach (string line in lines)

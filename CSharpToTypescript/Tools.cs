@@ -365,7 +365,7 @@ namespace CSharpToTypescript
         }
         public static FieldInfo GetFieldInfo(IFieldSymbol memberSymbol, Type @class)
         {
-            List<FieldInfo> members = @class.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ToList();
+            List<FieldInfo> members = @class.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).ToList();
             foreach (FieldInfo member in members)
             {
                 if (member.Name == memberSymbol.Name)
@@ -373,6 +373,7 @@ namespace CSharpToTypescript
                     return member;
                 }
             }
+            
             throw new Exception("impossible to load the field " + memberSymbol.Name + " from " + @class.Name);
         }
 

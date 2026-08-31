@@ -421,6 +421,46 @@ namespace CSharpToTypescript.Container
                             }
                             AddTxt(txt, result);
                         }
+                        else if (member is INamedTypeSymbol namedTypeSymbol)
+                        {
+                            if (loadedFields.Contains(member.Name))
+                            {
+                                continue;
+                            }
+                            if (HasAttribute<NoExport>(member))
+                            {
+                                continue;
+                            }
+                            if (!IsValidNestedClass(namedTypeSymbol))
+                            {
+                                continue;
+                            }
+                            loadedFields.Add(member.Name);
+
+                            string documentation = GetDocumentation(member);
+                            if (documentation.Length > 0)
+                            {
+                                result.Add(documentation);
+                            }
+
+                            string memberName = member.Name;
+                            string typeTxt = GetTypeName(namedTypeSymbol);
+                            if (isInterface)
+                            {
+                                // TODO check if it's possible in c#
+                            }
+                            else
+                            {
+                                var subClassContent = new NormalClassContainer(namedTypeSymbol);
+                                AddTxtOpen(GetAccessibility(member) + "readonly " + memberName + " = class {", result);
+                                string[] lines = subClassContent.GetContent().Split("\n");
+                                foreach (string line in lines)
+                                {
+                                    AddTxt(line, result);
+                                }
+                                AddTxtClose("};", result);
+                            }
+                        }
                     }
                 }
             }
@@ -575,6 +615,10 @@ namespace CSharpToTypescript.Container
             return true;
         }
         protected virtual bool IsValidProperty(IPropertySymbol type)
+        {
+            return true;
+        }
+        protected virtual bool IsValidNestedClass(INamedTypeSymbol type)
         {
             return true;
         }

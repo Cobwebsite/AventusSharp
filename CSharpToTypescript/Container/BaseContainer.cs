@@ -152,7 +152,16 @@ namespace CSharpToTypescript.Container
             {
                 result += "static ";
             }
-            if(type.IsOverride)
+
+            if (type is IFieldSymbol field)
+            {
+                if (field.IsReadOnly || field.IsConst)
+                {
+                    result += "readonly ";
+                }
+            }
+
+            if (type.IsOverride)
             {
                 result += "override ";
             }
@@ -230,7 +239,7 @@ namespace CSharpToTypescript.Container
                     type = named.TypeArguments[0];
                 }
             }
-           
+
             if (type.ContainingAssembly.Name == ProjectManager.CurrentAssemblyName)
             {
                 SyntaxTree? general = this.type.Locations[0].SourceTree;

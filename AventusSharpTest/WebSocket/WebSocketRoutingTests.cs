@@ -554,7 +554,7 @@ public sealed class WebSocketRoutingTests
     {
         var (_, connection, socket) = CreateConnection();
         socket.EnqueueText(
-            """{"channel":"ping","data":{},"uid":"ignored"}""",
+            """{"channel":"/ping","data":{},"uid":"ignored"}""",
             endOfMessage: true);
 
         await connection.Start();
@@ -563,7 +563,7 @@ public sealed class WebSocketRoutingTests
         Assert.Multiple(() =>
         {
             Assert.That(response["channel"]?.Value<string>(),
-                Is.EqualTo("pong"));
+                Is.EqualTo("/pong"));
             Assert.That(response["uid"], Is.Null);
             Assert.That(JObject.Parse(
                 response["data"]!.Value<string>()!), Is.Empty);

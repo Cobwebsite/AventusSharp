@@ -90,9 +90,9 @@ namespace AventusSharp.WebSocket
                         {
 
                             JObject o = JObject.Parse(msg);
-                            if (o["channel"]?.ToString() == "ping")
+                            if (o["channel"]?.ToString() == "/ping")
                             {
-                                _ = Send("pong");
+                                _ = Send("/pong");
                             }
                             else
                             {

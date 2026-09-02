@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using AventusSharp.AspNetCore.Routes;
 using Environment = System.Environment;
 using Microsoft.Extensions.Logging.Abstractions;
+using AventusSharp.Scheduler;
 
 namespace AventusSharp;
 
@@ -153,6 +154,32 @@ public static class AventusExtension
             SSEMiddleware.Stop().Wait();
         });
         app.Use(SSEMiddleware.OnRequest);
+        return app;
+    }
+
+    public static IApplicationBuilder UseAventusScheduler(this IApplicationBuilder app, Action<SchedulerManagerConfig>? config = null)
+    {
+        return app.UseAventusScheduler([Assembly.GetEntryAssembly()], config);
+    }
+
+    public static IApplicationBuilder UseAventusScheduler(this IApplicationBuilder app, IEnumerable<Assembly?> assemblies, Action<SchedulerManagerConfig>? config = null)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
+        AddLogger(app);
+
+        SchedulerManager.Configure(schedulerConfig =>
+        {
+            config?.Invoke(schedulerConfig);
+            schedulerConfig.CreateSchedulable ??= type =>
+                app.ApplicationServices.GetService(type) as ISchedulable
+                ?? ActivatorUtilities.CreateInstance(app.ApplicationServices, type) as ISchedulable;
+        });
+        VoidWithError result = SchedulerManager.Init(assemblies).GetAwaiter().GetResult();
+        if (!result.Success)
+        {
+            throw result.Errors[0].GetException();
+        }
+        app.OnStop(SchedulerManager.Stop);
         return app;
     }
 

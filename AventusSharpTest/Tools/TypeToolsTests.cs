@@ -11,6 +11,8 @@ public sealed class TypeToolsTests
     [TestCase(typeof(string), true)]
     [TestCase(typeof(DateTime), true)]
     [TestCase(typeof(TimeSpan?), true)]
+    [TestCase(typeof(TimeOnly), true)]
+    [TestCase(typeof(TimeOnly?), true)]
     [TestCase(typeof(Guid), false)]
     [TestCase(typeof(TypeToolsTests), false)]
     public void Primitive_type_detection_handles_nullable_and_reference_types(

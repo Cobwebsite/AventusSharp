@@ -67,6 +67,8 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 return DbType.DateTime;
             if (type == typeof(TimeSpan))
                 return DbType.Time;
+            if (type == typeof(TimeOnly))
+                return DbType.Time;
             if (type.IsEnum)
                 return DbType.String;
             if (IsTypeUsable(type))

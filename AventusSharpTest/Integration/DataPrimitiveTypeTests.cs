@@ -31,7 +31,8 @@ public sealed class DataPrimitiveTypeTests
             DecimalNumber = 12345.625m,
             Letter = 'Z',
             State = PrimitiveRecordState.Ready,
-            Duration = new TimeSpan(12, 34, 56)
+            Duration = new TimeSpan(12, 34, 56),
+            StartTime = new TimeOnly(12, 34, 56, 789)
         };
 
         var creation = await PrimitiveRecord.CreateWithError(item);
@@ -51,6 +52,7 @@ public sealed class DataPrimitiveTypeTests
             Assert.That(loaded.Result.Letter, Is.EqualTo(item.Letter));
             Assert.That(loaded.Result.State, Is.EqualTo(item.State));
             Assert.That(loaded.Result.Duration, Is.EqualTo(item.Duration));
+            Assert.That(loaded.Result.StartTime, Is.EqualTo(item.StartTime));
         });
     }
 
@@ -66,7 +68,8 @@ public sealed class DataPrimitiveTypeTests
             DecimalNumber = 200.25m,
             Letter = 'A',
             State = PrimitiveRecordState.Ready,
-            Duration = new TimeSpan(1, 2, 3)
+            Duration = new TimeSpan(1, 2, 3),
+            StartTime = new TimeOnly(8, 15, 30)
         });
         await PrimitiveRecord.Create(new PrimitiveRecord
         {
@@ -77,7 +80,8 @@ public sealed class DataPrimitiveTypeTests
             DecimalNumber = 300.25m,
             Letter = 'B',
             State = PrimitiveRecordState.Disabled,
-            Duration = new TimeSpan(4, 5, 6)
+            Duration = new TimeSpan(4, 5, 6),
+            StartTime = new TimeOnly(16, 45, 15, 125)
         });
 
         var small = await Manager.WhereWithErrorNoCache<PrimitiveRecord>(
@@ -98,6 +102,9 @@ public sealed class DataPrimitiveTypeTests
         var expectedDuration = new TimeSpan(4, 5, 6);
         var duration = await Manager.WhereWithErrorNoCache<PrimitiveRecord>(
             item => item.Duration == expectedDuration);
+        var expectedStartTime = new TimeOnly(16, 45, 15, 125);
+        var startTime = await Manager.WhereWithErrorNoCache<PrimitiveRecord>(
+            item => item.StartTime == expectedStartTime);
 
         Assert.Multiple(() =>
         {
@@ -109,6 +116,7 @@ public sealed class DataPrimitiveTypeTests
             Assert.That(character.Result, Has.Count.EqualTo(1), "char");
             Assert.That(state.Result, Has.Count.EqualTo(1), "enum");
             Assert.That(duration.Result, Has.Count.EqualTo(1), "TimeSpan");
+            Assert.That(startTime.Result, Has.Count.EqualTo(1), "TimeOnly variable");
         });
     }
 

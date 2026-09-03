@@ -919,6 +919,15 @@ namespace AventusSharp.Data.Manager.DB
                             AddToParentGroup(new WhereGroupConstantString(time.ToString("c")));
                             break;
                         }
+                        else if (c.Value is TimeOnly time2)
+                        {
+                            string format = time2.Ticks % TimeSpan.TicksPerSecond == 0
+                                ? "HH:mm:ss"
+                                : "HH:mm:ss.fffffff";
+                            AddToParentGroup(new WhereGroupConstantString(
+                                time2.ToString(format, CultureInfo.InvariantCulture)));
+                            break;
+                        }
                         throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", c.Value));
 
                     default:

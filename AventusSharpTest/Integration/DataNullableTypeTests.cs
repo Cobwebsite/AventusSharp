@@ -28,7 +28,8 @@ public sealed class DataNullableTypeTests
             Amount = 123.75m,
             Enabled = true,
             State = PrimitiveRecordState.Ready,
-            Duration = new TimeSpan(5, 4, 3)
+            Duration = new TimeSpan(5, 4, 3),
+            StartTime = new TimeOnly(5, 4, 3)
         };
         var withNulls = new NullablePrimitiveRecord();
 
@@ -48,11 +49,13 @@ public sealed class DataNullableTypeTests
             Assert.That(first.Result.Enabled, Is.True);
             Assert.That(first.Result.State, Is.EqualTo(PrimitiveRecordState.Ready));
             Assert.That(first.Result.Duration, Is.EqualTo(new TimeSpan(5, 4, 3)));
+            Assert.That(first.Result.StartTime, Is.EqualTo(new TimeOnly(5, 4, 3)));
             Assert.That(second.Result!.Number, Is.Null);
             Assert.That(second.Result.Amount, Is.Null);
             Assert.That(second.Result.Enabled, Is.Null);
             Assert.That(second.Result.State, Is.Null);
             Assert.That(second.Result.Duration, Is.Null);
+            Assert.That(second.Result.StartTime, Is.Null);
         });
     }
 

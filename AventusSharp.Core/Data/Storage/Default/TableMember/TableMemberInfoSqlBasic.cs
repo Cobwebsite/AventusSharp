@@ -17,7 +17,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public TableMemberInfoSqlBasic(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
         }
-        public TableMemberInfoSqlBasic(IMigrationProperty property, TableInfo tableInfo) : base(property, tableInfo) {}
+        public TableMemberInfoSqlBasic(IMigrationProperty property, TableInfo tableInfo) : base(property, tableInfo) { }
 
         public override VoidWithDataError PrepareForSQL()
         {
@@ -57,7 +57,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         public override object? GetSqlValue(object obj)
         {
             var result = GetValue(obj);
-            if(SqlTransform != null)
+            if (SqlTransform != null)
             {
                 result = SqlTransform.ToSql(result, this);
             }
@@ -75,7 +75,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         protected override void SetSqlValue(object obj, string? value)
         {
             Type effectiveMemberType = System.Nullable.GetUnderlyingType(MemberType) ?? MemberType;
-            if(SqlTransform != null)
+            if (SqlTransform != null)
             {
                 SetValue(obj, SqlTransform.FromSql(value, this));
             }
@@ -165,6 +165,17 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     SetValue(obj, null);
                 }
                 else if (TimeSpan.TryParse(value, out TimeSpan dateTime))
+                {
+                    SetValue(obj, dateTime);
+                }
+            }
+            else if (effectiveMemberType == typeof(TimeOnly))
+            {
+                if (value == null)
+                {
+                    SetValue(obj, null);
+                }
+                else if (TimeOnly.TryParse(value, out TimeOnly dateTime))
                 {
                     SetValue(obj, dateTime);
                 }

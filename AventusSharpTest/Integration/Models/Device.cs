@@ -308,6 +308,7 @@ public sealed class PrimitiveRecord : Storable<PrimitiveRecord>
     public char Letter { get; set; }
     public PrimitiveRecordState State { get; set; }
     public TimeSpan Duration { get; set; }
+    public TimeOnly StartTime { get; set; }
 }
 
 public sealed class PrimitiveRecordManager
@@ -323,6 +324,7 @@ public sealed class NullablePrimitiveRecord : Storable<NullablePrimitiveRecord>
     public bool? Enabled { get; set; }
     public PrimitiveRecordState? State { get; set; }
     public TimeSpan? Duration { get; set; }
+    public TimeOnly? StartTime { get; set; }
 }
 
 public sealed class NullablePrimitiveRecordManager

@@ -545,7 +545,8 @@ namespace CSharpToTypescript.Container
             if (memberInfo == null) throw new Exception("Impossible");
             if (type.EndsWith("[]"))
             {
-                return "[]";
+                if (type != "number[]" && type != "string[]")
+                    return "[]";
             }
             if (type.StartsWith("Map<"))
             {

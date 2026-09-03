@@ -32,6 +32,7 @@ namespace AventusSharp.Tools
                 typeof(Single),
                 typeof(DateTime),
                 typeof(TimeSpan),
+                typeof(TimeOnly),
             };
         }
 

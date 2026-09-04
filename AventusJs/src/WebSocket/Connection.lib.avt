@@ -168,7 +168,7 @@ namespace WebSocket {
 
         protected jsonReplacer(key: string, value: any) {
             const t = this as any;
-            if(t[key] instanceof Date) {
+            if(t[key] instanceof Aventus.Date || t[key] instanceof Aventus.DateTime || t[key] instanceof Aventus.Time) {
                 return Aventus.DateConverter.converter.toString(t[key]);
             }
             return value;
@@ -424,10 +424,10 @@ namespace WebSocket {
          */
         protected log(message: {} | string) {
             if(this.options.log) {
-                const now = new Date();
-                const hours = (now.getHours()).toLocaleString(undefined, { minimumIntegerDigits: 2 });
-                const minutes = (now.getMinutes()).toLocaleString(undefined, { minimumIntegerDigits: 2 });
-                const seconds = (now.getSeconds()).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+                const now = Aventus.DateTime.now;
+                const hours = (now.hour).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+                const minutes = (now.minute).toLocaleString(undefined, { minimumIntegerDigits: 2 });
+                const seconds = (now.second).toLocaleString(undefined, { minimumIntegerDigits: 2 });
                 const prefix = this.options.logPrefix ? `[${this.options.logPrefix}] ` : '';
                 if(message instanceof Object) {
                     let cloneMessage = JSON.parse(JSON.stringify(message, this.jsonReplacer));

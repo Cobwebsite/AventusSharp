@@ -1,4 +1,4 @@
-﻿using AventusSharp.Data.Manager;
+using AventusSharp.Data.Manager;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Data.Storage.Default;
 using System.Data;
@@ -55,6 +55,8 @@ namespace AventusSharp.Data
     /// <summary>
     /// Class to handle date during process
     /// </summary>
+    [Newtonsoft.Json.JsonConverter(typeof(DateJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(DateSystemJsonConverter))]
     [CustomTableMemberType<DateTableMember>]
     public class Date
     {

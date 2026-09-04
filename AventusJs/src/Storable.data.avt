@@ -31,8 +31,8 @@ namespace Data {
     }
 
     export abstract class StorableTimestamp extends Storable implements Aventus.IData {
-        public CreatedDate: Date = new Date();
-        public UpdatedDate: Date = new Date();
+        public CreatedDate: Aventus.DateTime = Aventus.DateTime.utcNow;
+        public UpdatedDate: Aventus.DateTime = Aventus.DateTime.utcNow;
     }
 
 }

@@ -559,6 +559,12 @@ namespace CSharpToTypescript.Container
             {
                 result = exportAttr.DefaultValue;
             }
+            else if (type == "Aventus.Date" || type == "Aventus.DateTime" || type == "Aventus.Time")
+            {
+                // Server initializers (DateTime.Now, new Datetime(...), etc.) are not
+                // JavaScript expressions and must not replace data received over JSON.
+                return "undefined";
+            }
             else
             {
                 var equalsSyntax = symbol.DeclaringSyntaxReferences[0].GetSyntax() switch

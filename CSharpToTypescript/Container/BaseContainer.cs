@@ -229,17 +229,29 @@ namespace CSharpToTypescript.Container
         }
         public virtual string GetTypeName(ISymbol type, int depth = 0, bool genericExtendsConstraint = false)
         {
-            string name = "";
+            if (type is IArrayTypeSymbol array)
+            {
+                string element = GetTypeName(array.ElementType, depth + 1, genericExtendsConstraint);
+                if (element.EndsWith("?"))
+                {
+                    element = "(" + element.TrimEnd('?') + " | null)";
+                }
+                element += string.Concat(Enumerable.Repeat("[]", array.Rank));
+                element += array.NullableAnnotation == NullableAnnotation.Annotated ? "?" : "";
+                return element;
+            }
+
             bool isNullable = false;
             if (type is ITypeSymbol typeSymbol && typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
             {
                 isNullable = true;
-                if (typeSymbol is INamedTypeSymbol named && named.TypeArguments.Length == 1)
+                if (typeSymbol is INamedTypeSymbol named && named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
                     type = named.TypeArguments[0];
                 }
             }
 
+            string name;
             if (type.ContainingAssembly.Name == ProjectManager.CurrentAssemblyName)
             {
                 SyntaxTree? general = this.type.Locations[0].SourceTree;
@@ -377,7 +389,9 @@ namespace CSharpToTypescript.Container
             else if (fullName == typeof(bool).FullName) result = "boolean";
             else if (fullName == typeof(string).FullName) result = "string";
             else if (fullName == typeof(Enum).FullName) result = "Aventus.Enum";
-            else if (fullName == typeof(DateTime).FullName) result = "Date";
+            else if (fullName == typeof(TimeOnly).FullName) result = "Aventus.Time";
+            else if (fullName == typeof(Date).FullName) result = "Aventus.Date";
+            else if (fullName == typeof(Datetime).FullName || fullName == typeof(DateTime).FullName) result = "Aventus.DateTime";
             else if (fullName == typeof(IStorable).FullName) result = "Aventus.IData";
             else if (fullName == typeof(GenericError).FullName) result = "Aventus.GenericError";
             else if (fullName == typeof(Router).FullName) result = "Aventus.HttpRoute";

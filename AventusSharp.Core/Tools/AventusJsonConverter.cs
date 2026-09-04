@@ -71,6 +71,11 @@ namespace AventusSharp.Tools
             // lock (value)
             // {
                 Type type = value.GetType();
+                if (value is TimeOnly time)
+                {
+                    writer.WriteValue(time.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+                    return;
+                }
                 if (type.IsPrimitive || TypeTools.IsPrimitiveType(type))
                 {
                     JToken t = JToken.FromObject(value);

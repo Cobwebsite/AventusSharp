@@ -217,9 +217,60 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
         protected ISqlTransform? SqlTransform { get; set; }
         public bool HasSqlTransform => SqlTransform != null;
+        public bool HasQueryTransform => SqlTransform != null || IsDateTimeMember;
+        private DateTimeStorageMode? DateTimeStorageModeOverride { get; set; }
+        private bool IsDateTimeMember => MemberType == typeof(DateTime)
+            || MemberType == typeof(Datetime);
+        public DateTimeStorageMode EffectiveDateTimeStorageMode =>
+            DateTimeStorageModeOverride ?? DataMainManager.Config.DateTimeStorageMode;
+
+        public DateTime NormalizeDateTimeForStorage(DateTime value)
+        {
+            if (EffectiveDateTimeStorageMode == DateTimeStorageMode.Utc)
+            {
+                if (value.Kind == DateTimeKind.Unspecified)
+                {
+                    value = DateTime.SpecifyKind(value, DateTimeKind.Local);
+                }
+                return value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+            }
+
+            if (value.Kind == DateTimeKind.Unspecified)
+            {
+                return value;
+            }
+            DateTime localValue = value.Kind == DateTimeKind.Local
+                ? value
+                : value.ToLocalTime();
+            // SQL date/time columns don't persist DateTime.Kind. In particular,
+            // Npgsql rejects Local values as parameters, so send the local wall
+            // clock value without a Kind and restore Local when materializing.
+            return DateTime.SpecifyKind(localValue, DateTimeKind.Unspecified);
+        }
+
+        public DateTime NormalizeDateTimeFromStorage(DateTime value)
+        {
+            return DateTime.SpecifyKind(value,
+                EffectiveDateTimeStorageMode == DateTimeStorageMode.Utc
+                    ? DateTimeKind.Utc
+                    : DateTimeKind.Local);
+        }
+
         public object? TransformQueryValue(object? value)
         {
-            return SqlTransform?.ToSql(value, this) ?? value;
+            if (SqlTransform != null)
+            {
+                return SqlTransform.ToSql(value, this);
+            }
+            if (value is DateTime dateTime && IsDateTimeMember)
+            {
+                return NormalizeDateTimeForStorage(dateTime);
+            }
+            if (value is Datetime datetime && IsDateTimeMember)
+            {
+                return NormalizeDateTimeForStorage(datetime.DateTime);
+            }
+            return value;
         }
 
         public DbType? QueryDbType =>
@@ -375,6 +426,16 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 SqlTransform = sqlTransform;
                 OverrideDBType = sqlTransform.GetDbType(this);
+            }
+            if (attribute is UTCAttribute)
+            {
+                DateTimeStorageModeOverride = DateTimeStorageMode.Utc;
+                return true;
+            }
+            if (attribute is LocalAttribute)
+            {
+                DateTimeStorageModeOverride = DateTimeStorageMode.Local;
+                return true;
             }
             // if (attribute.GetType().FullName == "System.Runtime.CompilerServices.NullableAttribute")
             // {

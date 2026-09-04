@@ -14,6 +14,12 @@ using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Data
 {
+    public enum DateTimeStorageMode
+    {
+        Local,
+        Utc
+    }
+
     public class DataManagerConfig
     {
         /// <summary>
@@ -44,6 +50,11 @@ namespace AventusSharp.Data
         /// By default only abstract inheritance is allowed. You can bypass this by setting allowNonAbstractExtension to true
         /// </summary>
         public bool AllowNonAbstractExtension = false;
+        /// <summary>
+        /// Defines how DateTime values are normalized when stored. Fields and
+        /// properties can override this setting with UTC or Local attributes.
+        /// </summary>
+        public DateTimeStorageMode DateTimeStorageMode { get; set; } = DateTimeStorageMode.Local;
         /// <summary>
         /// Define the name of sql table based on the current type
         /// </summary>

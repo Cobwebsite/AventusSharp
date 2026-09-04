@@ -61,9 +61,13 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             {
                 result = SqlTransform.ToSql(result, this);
             }
-            else if (result is DateTime dt && DM is IDatabaseDM database && database.Storage.DateTimeFormat != null)
+            else if (result is DateTime dateTime)
             {
-                return dt.ToString(database.Storage.DateTimeFormat);
+                result = NormalizeDateTimeForStorage(dateTime);
+                if (DM is IDatabaseDM dateTimeDatabase && dateTimeDatabase.Storage.DateTimeFormat != null)
+                {
+                    return ((DateTime)result).ToString(dateTimeDatabase.Storage.DateTimeFormat);
+                }
             }
             else if (result?.GetType().IsEnum == true)
             {
@@ -155,7 +159,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 else if (DateTime.TryParse(value, out DateTime dateTime))
                 {
-                    SetValue(obj, dateTime);
+                    SetValue(obj, NormalizeDateTimeFromStorage(dateTime));
                 }
             }
             else if (effectiveMemberType == typeof(TimeSpan))

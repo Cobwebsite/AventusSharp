@@ -11,6 +11,7 @@ using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace AventusSharp.Data.Storage.Postgresql;
 
@@ -140,6 +141,18 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
     public override DbParameter GetDbParameter()
     {
         return new NpgsqlParameter();
+    }
+
+    protected override void PrepareParameter(DbParameter parameter, object? value)
+    {
+        if (parameter is NpgsqlParameter npgsqlParameter && value is DateTime dateTime)
+        {
+            // Aventus stores wall-clock values in PostgreSQL `timestamp`
+            // columns and restores their configured Kind when materializing.
+            npgsqlParameter.NpgsqlDbType = NpgsqlDbType.Timestamp;
+            npgsqlParameter.Value = DateTime.SpecifyKind(
+                dateTime, DateTimeKind.Unspecified);
+        }
     }
 
     public override async Task<ResultWithError<bool>> ResetStorage()

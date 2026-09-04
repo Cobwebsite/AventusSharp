@@ -93,7 +93,10 @@ namespace AventusSharp.Data.Storage.Default
                 "(^|[._])(?:CreatedDate|UpdatedDate)$");
         }
 
-        protected virtual DateTime GetCurrentDateTime() => DateTime.Now;
+        protected virtual DateTime GetCurrentDateTime() =>
+            DataMainManager.Config.DateTimeStorageMode == DateTimeStorageMode.Utc
+                ? DateTime.UtcNow
+                : DateTime.Now;
         private bool linksCreated;
         private AsyncLocal<DbTransactionContext?> _transactionScope = new();
         private DbTransactionContext? transactionScope
@@ -531,7 +534,7 @@ namespace AventusSharp.Data.Storage.Default
             return result;
         }
 
-        private static VoidWithError ApplyCommandParameters(DbCommand command, Dictionary<string, object?> values)
+        private VoidWithError ApplyCommandParameters(DbCommand command, Dictionary<string, object?> values)
         {
             VoidWithError result = new();
             foreach (DbParameter parameter in command.Parameters)
@@ -553,9 +556,15 @@ namespace AventusSharp.Data.Storage.Default
 
             foreach (KeyValuePair<string, object?> value in values)
             {
-                command.Parameters[value.Key].Value = value.Value ?? DBNull.Value;
+                DbParameter parameter = command.Parameters[value.Key];
+                parameter.Value = value.Value ?? DBNull.Value;
+                PrepareParameter(parameter, value.Value);
             }
             return result;
+        }
+
+        protected virtual void PrepareParameter(DbParameter parameter, object? value)
+        {
         }
 
 
@@ -882,6 +891,11 @@ namespace AventusSharp.Data.Storage.Default
                     if (IsAutomaticTimestamp(parameterInfo.Key))
                     {
                         parameterInfo.Key.Value = GetCurrentDateTime();
+                        TableMemberInfoSql? timestampMember = parameterInfo.Key.MembersList.LastOrDefault();
+                        if (timestampMember?.HasQueryTransform == true)
+                        {
+                            parameterInfo.Key.Value = timestampMember.TransformQueryValue(parameterInfo.Key.Value);
+                        }
                         if (item != null)
                         {
                             parameterInfo.Key.SetCurrentValueOnObject(item);
@@ -1144,6 +1158,11 @@ namespace AventusSharp.Data.Storage.Default
                         if (IsAutomaticTimestamp(parameterInfo.Key))
                         {
                             parameterInfo.Key.Value = GetCurrentDateTime();
+                            TableMemberInfoSql? timestampMember = parameterInfo.Key.MembersList.LastOrDefault();
+                            if (timestampMember?.HasQueryTransform == true)
+                            {
+                                parameterInfo.Key.Value = timestampMember.TransformQueryValue(parameterInfo.Key.Value);
+                            }
                             if (item != null)
                             {
                                 parameterInfo.Key.SetCurrentValueOnObject(item);

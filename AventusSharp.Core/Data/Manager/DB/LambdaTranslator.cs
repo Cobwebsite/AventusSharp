@@ -508,7 +508,7 @@ namespace AventusSharp.Data.Manager.DB
 
             TableMemberInfoSql? rightMember =
                 GetDirectQueryMember(b.Right);
-            if (rightMember?.HasSqlTransform == true
+            if (rightMember?.HasQueryTransform == true
                 && IsReversibleComparison(b.NodeType))
             {
                 Visit(b.Right);
@@ -600,7 +600,7 @@ namespace AventusSharp.Data.Manager.DB
 
             Expression rightResult;
             if (!databaseBuilder.ReplaceWhereByParameters
-                && leftMember?.HasSqlTransform == true
+                && leftMember?.HasQueryTransform == true
                 && TryEvaluateValue(b.Right, out object? queryValue))
             {
                 object? sqlValue = leftMember.TransformQueryValue(queryValue);
@@ -623,7 +623,7 @@ namespace AventusSharp.Data.Manager.DB
                 rightResult = Visit(b.Right);
             }
 
-            if (leftMember?.HasSqlTransform == true
+            if (leftMember?.HasQueryTransform == true
                 && currentGroup is WhereGroup parameterGroup
                 && parameterGroup.Groups.LastOrDefault()
                     is WhereGroupConstantParameter parameter)
@@ -1310,7 +1310,7 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     TableMemberInfoSql? listMember = node.Arguments
                         .Select(GetDirectQueryMember)
-                        .FirstOrDefault(member => member?.HasSqlTransform == true);
+                        .FirstOrDefault(member => member?.HasQueryTransform == true);
                     foreach (Expression argument in node.Arguments)
                     {
                         Visit(argument);

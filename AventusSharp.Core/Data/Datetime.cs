@@ -29,7 +29,8 @@ namespace AventusSharp.Data
             object? result = GetValue(obj);
             if (result is Datetime date)
             {
-                return date.ToString();
+                DateTime normalized = NormalizeDateTimeForStorage(date.DateTime);
+                return normalized.ToString(Datetime.Pattern, System.Globalization.CultureInfo.InvariantCulture);
             }
             return null;
         }
@@ -43,7 +44,7 @@ namespace AventusSharp.Data
                 {
                     if (DateTime.TryParse(value, out DateTime dateTime))
                     {
-                        date.DateTime = dateTime;
+                        date.DateTime = NormalizeDateTimeFromStorage(dateTime);
                         SetValue(obj, date);
                     }
                 }
@@ -58,7 +59,7 @@ namespace AventusSharp.Data
     [CustomTableMemberType<DatetimeTableMember>]
     public class Datetime
     {
-        private static readonly string Pattern = "yyyy-MM-dd HH-mm-ss";
+        internal static readonly string Pattern = "yyyy-MM-dd HH-mm-ss";
 
         public int Year { get => DateTime.Year; }
         public int Month { get => DateTime.Month; }

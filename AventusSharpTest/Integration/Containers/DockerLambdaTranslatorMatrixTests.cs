@@ -175,22 +175,35 @@ public sealed class DockerLambdaTranslatorMatrixTests
             .RunWithError();
         AssertSuccess(cleanup, "cleanup");
 
+        var installedAt = new DateTime(
+            2026, 7, 25, 14, 35, 42, DateTimeKind.Utc);
         var creation = await manager.CreateWithError(create(
             "Temporal",
             "Lab",
             1,
             true,
             null,
-            new DateTime(2026, 7, 25, 14, 35, 42, DateTimeKind.Utc)));
+            installedAt));
         AssertSuccess(creation, "seed");
 
+        DateTime expected = DataMainManager.Config.DateTimeStorageMode ==
+            DateTimeStorageMode.Utc
+                ? installedAt
+                : installedAt.ToLocalTime();
+        int expectedYear = expected.Year;
+        int expectedMonth = expected.Month;
+        int expectedDay = expected.Day;
+        int expectedHour = expected.Hour;
+        int expectedMinute = expected.Minute;
+        int expectedSecond = expected.Second;
+
         var result = await Query<T>(manager,
-            item => item.InstalledAt.Year == 2026
-                && item.InstalledAt.Month == 7
-                && item.InstalledAt.Day == 25
-                && item.InstalledAt.Hour == 14
-                && item.InstalledAt.Minute == 35
-                && item.InstalledAt.Second == 42);
+            item => item.InstalledAt.Year == expectedYear
+                && item.InstalledAt.Month == expectedMonth
+                && item.InstalledAt.Day == expectedDay
+                && item.InstalledAt.Hour == expectedHour
+                && item.InstalledAt.Minute == expectedMinute
+                && item.InstalledAt.Second == expectedSecond);
 
         AssertNames(result, "date components", "Temporal");
     }

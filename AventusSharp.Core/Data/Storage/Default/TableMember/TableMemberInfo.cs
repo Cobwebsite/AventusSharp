@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Tools;
 using System;
 using System.Collections;
@@ -343,7 +344,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             catch (Exception e)
             {
-                new DataError(DataErrorCode.UnknownError, "erreur for field " + Name + " on " + ReflectedType?.Name).Print();
+                new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.FieldError, Name, ReflectedType?.Name)).Print();
                 new DataError(DataErrorCode.UnknownError, e).Print();
             }
         }

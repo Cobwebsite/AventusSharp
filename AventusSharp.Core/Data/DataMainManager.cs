@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager;
+using AventusSharp.Localization;
+using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using System;
 using System.Collections.Generic;
@@ -164,7 +165,7 @@ namespace AventusSharp.Data
                         Type[] constraints = type.GetGenericArguments()[0].GetGenericParameterConstraints();
                         if (constraints.Length > 1 || constraints.Length == 0 || constraints[0] != typeof(IStorable))
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, "Default DM (" + type.Name + ") must have only one generic type constraint of type IStorable"));
+                            result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerConstraint, type.Name)));
                         }
                         else
                         {
@@ -173,17 +174,17 @@ namespace AventusSharp.Data
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, "Default DM (" + type.Name + ") must have only one generic type"));
+                        result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerGenericCount, type.Name)));
                     }
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, "Default DM (" + type.Name + ") must be generic with one generic type"));
+                    result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerMustBeGeneric, type.Name)));
                 }
             }
             else
             {
-                result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, "The type defined is null"));
+                result.Errors.Add(new DataError(DataErrorCode.DefaultDMGenericType, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerTypeNull)));
             }
             return result;
         }
@@ -364,7 +365,7 @@ namespace AventusSharp.Data
                     MethodInfo? GetInstance = managerType.GetMethod("GetInstance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                     if (GetInstance == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Manager " + managerType.Name + " doesn't have a GetInstance function"));
+                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.ManagerGetInstanceMissing, managerType.Name)));
                         return result;
                     }
                     IGenericDM? manager = (IGenericDM?)GetInstance.Invoke(null, null);
@@ -400,7 +401,7 @@ namespace AventusSharp.Data
                         }
                         else
                         {
-                            new DataError(DataErrorCode.TypeNotStorable, "type " + manualDependency.Name + " is not storable, so you can't add it inside manual dependencies of manager " + manager.Name).Print();
+                            new DataError(DataErrorCode.TypeNotStorable, AventusTranslations.Get(AventusMessageKeys.Data.DependencyNotStorable, manualDependency.Name, manager.Name)).Print();
                         }
                     }
 
@@ -499,7 +500,7 @@ namespace AventusSharp.Data
                 {
                     if (!dataType.IsAbstract && !dataType.IsInterface)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.GenericNotAbstract, "You class generic " + info.Name + " must be set as abstract"));
+                        result.Errors.Add(new DataError(DataErrorCode.GenericNotAbstract, AventusTranslations.Get(AventusMessageKeys.Data.GenericMustBeAbstract, info.Name)));
                         return result;
                     }
                     ResultWithDataError<Type> interfaceTypeTemp = GetTypeForGenericClass(dataType);
@@ -525,7 +526,7 @@ namespace AventusSharp.Data
                 }
                 else if (dataType.IsAbstract && dataType.IsClass)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, "How did you do that for " + dataType.Name));
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.UnexpectedType, dataType.Name)));
                     return result;
                 }
 
@@ -546,7 +547,7 @@ namespace AventusSharp.Data
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ParentNotAbstract, "A parent must be abstract and generic " + parentType.Name));
+                    result.Errors.Add(new DataError(DataErrorCode.ParentNotAbstract, AventusTranslations.Get(AventusMessageKeys.Data.ParentMustBeAbstract, parentType.Name)));
                     return result;
                 }
 
@@ -672,8 +673,8 @@ namespace AventusSharp.Data
                         result.Result = -1;
                         return result;
                     }
-                    string msgError = "Infinite loop found for Data " + dataInformation.Name + "\n";
-                    msgError += "Elements in loop : \n\t - " + string.Join("\n\t - ", waitingData.Select(d => d.Name)) + "\n\t - " + dataInformation.Name;
+                    string msgError = AventusTranslations.Get(AventusMessageKeys.Data.DependencyLoop, dataInformation.Name,
+                        string.Join("\n\t - ", waitingData.Select(d => d.Name)) + "\n\t - " + dataInformation.Name);
                     result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, msgError));
                     return result;
                 }
@@ -711,7 +712,7 @@ namespace AventusSharp.Data
 
                     if (orderedData.Contains(dataInformation))
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependency, "Self referencing dependencies found for Data " + dataInformation.Name));
+                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependency, AventusTranslations.Get(AventusMessageKeys.Data.SelfReferencingData, dataInformation.Name)));
                         return result;
                     }
                     orderedData.Insert(insertIndex, dataInformation);
@@ -852,8 +853,8 @@ namespace AventusSharp.Data
                         result.Result = -1;
                         return result;
                     }
-                    string msgError = "Infinite loop found for Manager " + managerInformation.Manager.Name + "\n";
-                    msgError += "Elements in loop : \n\t- " + string.Join("\n\t- ", waitingData.Select(d => d.Manager.Name)) + "\n\t- " + managerInformation.Manager.Name;
+                    string msgError = AventusTranslations.Get(AventusMessageKeys.Data.ManagerDependencyLoop, managerInformation.Manager.Name,
+                        string.Join("\n\t- ", waitingData.Select(d => d.Manager.Name)) + "\n\t- " + managerInformation.Manager.Name);
                     result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, msgError));
                     return result;
                 }
@@ -895,7 +896,7 @@ namespace AventusSharp.Data
 
                     if (orderedManager.Contains(managerInformation))
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependency, "Self referencing dependency found for Manager " + managerInformation.Manager.Name));
+                        result.Errors.Add(new DataError(DataErrorCode.SelfReferecingDependency, AventusTranslations.Get(AventusMessageKeys.Data.SelfReferencingManager, managerInformation.Manager.Name)));
                         return result;
                     }
                     orderedManager.Insert(insertIndex, managerInformation);
@@ -986,7 +987,7 @@ namespace AventusSharp.Data
                             }
                             else
                             {
-                                string msgError = "You can't use the constraint " + constraint.Name + " inside class " + dataInformation.Name + " because interface is still referencing by " + aliasUsed[constraint] + ". You must create an interface for this abstract type.";
+                                string msgError = AventusTranslations.Get(AventusMessageKeys.Data.InterfaceConstraintNotUnique, constraint.Name, dataInformation.Name, aliasUsed[constraint]);
                                 result.Errors.Add(new DataError(DataErrorCode.InterfaceNotUnique, msgError));
                                 return result;
                             }
@@ -1025,7 +1026,7 @@ namespace AventusSharp.Data
                                 }
                                 else
                                 {
-                                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Somthing went wrong when creating pyramid but I don't know why"));
+                                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.PyramidCreationFailed)));
                                     return result;
                                 }
                             }
@@ -1047,7 +1048,7 @@ namespace AventusSharp.Data
                                 }
                                 else
                                 {
-                                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Somthing went wrong when creating pyramid but I don't know why"));
+                                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.PyramidCreationFailed)));
                                     return result;
                                 }
                             }
@@ -1058,7 +1059,7 @@ namespace AventusSharp.Data
                         }
                         else
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Somthing went wrong when creating pyramid but I don't know why"));
+                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.PyramidCreationFailed)));
                             return result;
                         }
                     }
@@ -1127,20 +1128,20 @@ namespace AventusSharp.Data
 
                     if (DefaultDMType == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.DMNotExist, "You must define a default DM"));
+                        result.Errors.Add(new DataError(DataErrorCode.DMNotExist, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerRequired)));
                         return result;
                     }
                     Type simpleType = DefaultDMType.MakeGenericType(new Type[] { dataType });
                     MethodInfo? GetInstance = simpleType.GetMethod("GetInstance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                     if (GetInstance == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Your default DM doesn't have a method GetInstance"));
+                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerGetInstanceMissing)));
                         return result;
                     }
                     IGenericDM? simpleManager = (IGenericDM?)GetInstance.Invoke(null, null);
                     if (simpleManager == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.DMNotExist, "The methode GetInstance inside your default DM doesn't return a Generic DM"));
+                        result.Errors.Add(new DataError(DataErrorCode.DMNotExist, AventusTranslations.Get(AventusMessageKeys.Data.DefaultManagerInvalidInstance)));
                         return result;
                     }
                     ManagerInformation info = new(simpleManager)
@@ -1196,13 +1197,13 @@ namespace AventusSharp.Data
 
                     if (resultType.Count == 0)
                     {
-                        string msgError = "You need to define a constraint IStorable for the type " + tp.Name + " of the class " + dataType.Name;
+                        string msgError = AventusTranslations.Get(AventusMessageKeys.Data.StorableConstraintRequired, tp.Name, dataType.Name);
                         result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, msgError));
                         return result;
                     }
                     else if (resultType.Count > 1)
                     {
-                        string msgError = "Too many constraints IStorable (" + string.Join(", ", resultType.Select(p => p.Name)) + ") for the type " + tp.Name + " of the class " + dataType.Name;
+                        string msgError = AventusTranslations.Get(AventusMessageKeys.Data.TooManyStorableConstraints, string.Join(", ", resultType.Select(p => p.Name)), tp.Name, dataType.Name);
                         result.Errors.Add(new DataError(DataErrorCode.TypeTooMuchStorable, msgError));
                         return result;
                     }
@@ -1246,7 +1247,7 @@ namespace AventusSharp.Data
                         catch (Exception e)
                         {
                             new DataError(DataErrorCode.UnknownError, e).Print();
-                            new DataError(DataErrorCode.UnknownError, args[i].ToString() + " on constraint " + type.Name + " on type " + type.Name).Print();
+                            new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.ConstraintError, args[i].ToString(), type.Name, type.Name)).Print();
                         }
                     }
                     result = type.GetGenericTypeDefinition().MakeGenericType(typesToUse);
@@ -1366,7 +1367,7 @@ namespace AventusSharp.Data
                 {
                     if (!dataInformations.ContainsKey(typeof(IStorable)) || !dataInformations.ContainsKey(typeof(IStorableTimestamp)) || dataInformations.Count != 2)
                     {
-                        string msgError = "Can't init " + Manager.Name + " because only contains ForceInehrit elements";
+                        string msgError = AventusTranslations.Get(AventusMessageKeys.Data.OnlyForceInherit, Manager.Name);
                         new DataError(DataErrorCode.DMOnlyForceInherit, msgError).Print();
                     }
                 }

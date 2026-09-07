@@ -52,4 +52,9 @@
     <NoWarn>1701;1702;CS0728;1587;1591</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <AventusMessageCatalog Include="Localization/Messages.resx" Namespace="AventusSharp.Localization" ClassName="AventusMessageKeys" />
+    <None Update="buildTransitive/AventusSharp.Core.targets" Pack="true" PackagePath="buildTransitive/AventusSharp.Core.targets" />
+  </ItemGroup>
+  <Import Project="buildTransitive/AventusSharp.Core.targets" />
 </Project>

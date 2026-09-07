@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Hosting;
 using System.Reflection;
+using AventusSharp.Localization;
 
 namespace AventusSharp;
 
@@ -14,6 +15,13 @@ namespace AventusSharp;
 /// </summary>
 public static class AventusMauiExtension
 {
+    /// <summary>Configures translations for the desktop application, including the in-process bridge.</summary>
+    public static MauiApp UseAventusTranslations(this MauiApp app, Action<AventusTranslationOptions>? configure = null)
+    {
+        AventusTranslations.Configure(options => configure?.Invoke(options));
+        return app;
+    }
+
     /// <summary>
     /// Initializes the AventusSharp data managers and configured providers.
     /// Call this after <see cref="MauiAppBuilder.Build"/>.

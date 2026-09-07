@@ -1,4 +1,5 @@
-﻿using System;
+using AventusSharp.Localization;
+using System;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Attributes
@@ -45,7 +46,7 @@ namespace AventusSharp.Data.Attributes
                 {
                     if (casted.Length > Max || casted.Length < Min)
                     {
-                        string msg = Msg == "" ? $"The size of the field {context.FieldName} must be between {Min} and {Max} chars." : Msg;
+                        string msg = Msg == "" ? AventusTranslations.Get(AventusMessageKeys.Validation.SizeRange, context.FieldName, Min, Max) : Msg;
                         return Task.FromResult(new ValidationResult(msg, context.FieldName));
                     }
                 }
@@ -53,7 +54,7 @@ namespace AventusSharp.Data.Attributes
                 {
                     if (casted.Length < Min)
                     {
-                        string msg = Msg == "" ? $"The size of the field {context.FieldName} must be greater than {Min} chars." : Msg;
+                        string msg = Msg == "" ? AventusTranslations.Get(AventusMessageKeys.Validation.SizeMinimum, context.FieldName, Min) : Msg;
                         return Task.FromResult(new ValidationResult(msg, context.FieldName));
                     }
                 }

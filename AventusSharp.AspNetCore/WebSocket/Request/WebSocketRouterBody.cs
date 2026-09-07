@@ -1,4 +1,5 @@
-﻿using AventusSharp.Routes;
+using AventusSharp.Localization;
+using AventusSharp.Routes;
 using HttpMultipartParser;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
@@ -45,7 +46,7 @@ namespace AventusSharp.WebSocket.Request
                     {
                         if (!isOptional)
                         {
-                            result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your websocket body"));
+                            result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, AventusTranslations.Get(AventusMessageKeys.WebSocket.BodyPathNotFound, propPath)));
                             return result;
                         }
                         break;
@@ -55,7 +56,7 @@ namespace AventusSharp.WebSocket.Request
                         dataToUse = dataToUse[prop];
                         if (dataToUse == null && !isOptional)
                         {
-                            result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your websocket body"));
+                            result.Errors.Add(new WsError(WsErrorCode.CantGetValueFromBody, AventusTranslations.Get(AventusMessageKeys.WebSocket.BodyPathNotFound, propPath)));
                             return result;
                         }
                     }

@@ -1,4 +1,5 @@
-﻿using AventusSharp.Chart;
+using AventusSharp.Localization;
+using AventusSharp.Chart;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
@@ -204,7 +205,7 @@ namespace AventusSharp.Data.Storage.Default
             VoidWithError result = new();
             if (ReadOnly && !command.CommandText.ToLower().StartsWith("select"))
             {
-                result.Errors.Add(new DataError(DataErrorCode.IsReadOnly, "Can't execute the command " + command.CommandText + " because the connection is readonly"));
+                result.Errors.Add(new DataError(DataErrorCode.IsReadOnly, AventusTranslations.Get(AventusMessageKeys.Data.ReadOnlyConnection, command.CommandText)));
                 return result;
             }
             try
@@ -221,7 +222,7 @@ namespace AventusSharp.Data.Storage.Default
                 DbConnection? connection = transactionScope.Connection;
                 if (connection == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, "The storage " + GetType().Name, " doesn't have a connection"));
+                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionMissing, GetType().Name), " doesn't have a connection"));
                     return result;
                 }
 
@@ -294,7 +295,7 @@ namespace AventusSharp.Data.Storage.Default
             VoidWithError result = new();
             if (ReadOnly && !command.CommandText.ToLower().StartsWith("select"))
             {
-                result.Errors.Add(new DataError(DataErrorCode.IsReadOnly, "Can't execute the command " + command.CommandText + " because the connection is readonly"));
+                result.Errors.Add(new DataError(DataErrorCode.IsReadOnly, AventusTranslations.Get(AventusMessageKeys.Data.ReadOnlyConnection, command.CommandText)));
                 return result;
             }
             try
@@ -441,7 +442,7 @@ namespace AventusSharp.Data.Storage.Default
                 DbConnection? connection = transactionScope.Connection;
                 if (connection == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, "The storage " + GetType().Name, " doesn't have a connection"));
+                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionMissing, GetType().Name), " doesn't have a connection"));
                     return result;
                 }
 
@@ -521,14 +522,14 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 catch (Exception e)
                 {
-                    DataError error = new DataError(DataErrorCode.UnknownError, e.Message + "\nSQL: " + command.CommandText);
+                    DataError error = new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.SqlError, e.Message, command.CommandText));
                     error.Details.Add(command.CommandText);
                     result.Errors.Add(error);
                 }
             }
             catch (Exception e)
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknownError, e.Message + "\nSQL: " + command.CommandText, callerPath, callerNo));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.SqlError, e.Message, command.CommandText), callerPath, callerNo));
             }
 
             return result;
@@ -541,14 +542,14 @@ namespace AventusSharp.Data.Storage.Default
             {
                 if (!values.ContainsKey(parameter.ParameterName))
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, $"The parameter {parameter.ParameterName} is missing"));
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.ParameterMissing, parameter.ParameterName)));
                 }
             }
             foreach (string name in values.Keys)
             {
                 if (!command.Parameters.Contains(name))
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, $"The parameter {name} is not defined in the command"));
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.ParameterNotDefined, name)));
                 }
             }
             if (!result.Success)
@@ -584,7 +585,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     catch
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, "The storage " + GetType().Name + "(" + ToString() + ") can't connect to the database"));
+                        result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionFailed, GetType().Name, ToString())));
                         return result;
                     }
                     DbTransaction transaction = await connection.BeginTransactionAsync();
@@ -677,7 +678,7 @@ namespace AventusSharp.Data.Storage.Default
                                 }
                                 else
                                 {
-                                    result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, "Can't find the type " + memberInfoSqlLink.TableLinkedType + " to create link with " + memberInfo.Name + " on " + memberInfo.TableInfo.Name));
+                                    result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, AventusTranslations.Get(AventusMessageKeys.Data.LinkTypeNotFound, memberInfoSqlLink.TableLinkedType, memberInfo.Name, memberInfo.TableInfo.Name)));
                                 }
                             }
                         }
@@ -694,7 +695,7 @@ namespace AventusSharp.Data.Storage.Default
                         }
                         else
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, "Can't find the type " + reversMember.ReverseLinkType + " to create revserse link with " + reversMember.Name + " on " + reversMember.TableInfo.Name));
+                            result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, AventusTranslations.Get(AventusMessageKeys.Data.ReverseLinkTypeNotFound, reversMember.ReverseLinkType, reversMember.Name, reversMember.TableInfo.Name)));
                         }
                     }
                     if (!result.Success)
@@ -1253,7 +1254,7 @@ namespace AventusSharp.Data.Storage.Default
                         }
                         else
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible to cast " + resultTemp.Result.GetType().Name + " into " + typeof(X).Name));
+                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.CastFailed, resultTemp.Result.GetType().Name, typeof(X).Name)));
                         }
                     }
                     else
@@ -1293,7 +1294,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible to cast " + objectTemp.GetType().Name + " into " + typeof(X).Name));
+                        result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.CastFailed, objectTemp.GetType().Name, typeof(X).Name)));
                     }
                 }
                 return result;
@@ -1322,7 +1323,7 @@ namespace AventusSharp.Data.Storage.Default
                 string fieldTypeName = rootAlias + "*" + TableInfo.TypeIdentifierName;
                 if (!itemFields.ContainsKey(fieldTypeName))
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.NoTypeIdentifierFoundInsideQuery, "Can't find the field " + TableInfo.TypeIdentifierName));
+                    result.Errors.Add(new DataError(DataErrorCode.NoTypeIdentifierFoundInsideQuery, AventusTranslations.Get(AventusMessageKeys.Data.TypeIdentifierMissing, TableInfo.TypeIdentifierName)));
                     return result;
                 }
 
@@ -1385,7 +1386,7 @@ namespace AventusSharp.Data.Storage.Default
                                     else if (memberInfo.IsNullable)
                                         memberInfo.SetValue(o, null);
                                     else
-                                        result.Errors.Add(new DataError(DataErrorCode.WrongType, "The property " + memberInfo.Name + " is not null but receiving a null from the db"));
+                                        result.Errors.Add(new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.UnexpectedNull, memberInfo.Name)));
                                 }
                                 else
                                 {
@@ -1394,7 +1395,7 @@ namespace AventusSharp.Data.Storage.Default
                             }
                             else
                             {
-                                result.Errors.Add(new DataError(DataErrorCode.UnknownError, "impossible?"));
+                                result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.UnexpectedStorageState)));
                             }
                         }
                     }
@@ -1550,7 +1551,7 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "Can't find the type " + pyramid.type));
+                        result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageTypeMissing, pyramid.type)));
                     }
                 }
             }
@@ -1632,7 +1633,7 @@ namespace AventusSharp.Data.Storage.Default
                 return await TableExist(allTableInfos[pyramid.type]);
             }
             ResultWithError<bool> result = new();
-            result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "Can't find the type " + pyramid.type));
+            result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageTypeMissing, pyramid.type)));
             result.Result = false;
             return result;
         }
@@ -1722,7 +1723,7 @@ namespace AventusSharp.Data.Storage.Default
             VoidWithError result = new();
             if (item == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "Please provide an item to use for creation"));
+                result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, AventusTranslations.Get(AventusMessageKeys.Data.CreateItemRequired)));
                 return result;
             }
             List<DatabaseCreateBuilderInfoQuery> queries;
@@ -1941,7 +1942,7 @@ namespace AventusSharp.Data.Storage.Default
             };
             if (item == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "Please provide an item to use for update"));
+                result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, AventusTranslations.Get(AventusMessageKeys.Data.UpdateItemRequired)));
                 return result;
             }
             DatabaseUpdateBuilderInfo updateInfo;
@@ -2540,7 +2541,7 @@ namespace AventusSharp.Data.Storage.Default
                             TableInfo? tableInfo = GetTableInfo(type);
                             if (tableInfo == null)
                             {
-                                result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "this must be impossible"));
+                                result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.UnexpectedStorageType)));
                                 return result;
                             }
                             else
@@ -2563,7 +2564,7 @@ namespace AventusSharp.Data.Storage.Default
             else
             {
                 ResultWithError<Dictionary<TableInfo, IList>> result = new();
-                result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, "Can't find the type " + typeX + " inside the storage " + GetType().Name));
+                result.Errors.Add(new DataError(DataErrorCode.TypeNotExistInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.TypeNotInStorage, typeX, GetType().Name)));
                 return result;
             }
 

@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 using System.Collections.Concurrent;
 using System.Reflection;
 using AventusSharp.Tools;
@@ -103,7 +104,7 @@ public static class SchedulerManager
                     {
                         result.Errors.Add(new SchedulerError(
                             SchedulerErrorCode.SchedulableCreationError,
-                            $"Unable to create schedulable '{type.FullName}'."));
+                            AventusTranslations.Get(AventusMessageKeys.Scheduler.CreationFailed, type.FullName)));
                         continue;
                     }
                 }
@@ -165,7 +166,7 @@ public static class SchedulerManager
             {
                 Errors = [new SchedulerError(
                     SchedulerErrorCode.SchedulableNotRegistered,
-                    $"Schedulable '{typeof(T).FullName}' is not registered.")]
+                    AventusTranslations.Get(AventusMessageKeys.Scheduler.NotRegistered, typeof(T).FullName))]
             });
         }
 
@@ -204,7 +205,7 @@ public static class SchedulerManager
             {
                 Errors = [new SchedulerError(
                     SchedulerErrorCode.SchedulableAlreadyRunning,
-                    $"Schedulable '{name}' is already running.")]
+                    AventusTranslations.Get(AventusMessageKeys.Scheduler.AlreadyRunning, name))]
             };
         }
 

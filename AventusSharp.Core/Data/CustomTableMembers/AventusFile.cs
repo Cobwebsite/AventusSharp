@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 using System;
 using System.Data;
 using System.Reflection;
@@ -118,7 +119,7 @@ namespace AventusSharp.Data.CustomTableMembers
                 return DefineSavePath(t, file);
             }
             ResultWithError<string> result = new ResultWithError<string>();
-            result.Errors.Add(new DataError(DataErrorCode.WrongType, "The object of type " + TypeTools.GetReadableName(instance.GetType()) + " can't be used for image saving " + TypeTools.GetReadableName(typeof(T))));
+            result.Errors.Add(new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.ImageSavingWrongType, TypeTools.GetReadableName(instance.GetType()), TypeTools.GetReadableName(typeof(T)))));
             return result;
         }
 
@@ -131,7 +132,7 @@ namespace AventusSharp.Data.CustomTableMembers
             {
                 return BeforeSave(tInstance);
             }
-            string errorTxt = "The type " + GetType().Name + " is used on " + instance.GetType().Name + " that isn't a child of " + typeof(T).Name;
+            string errorTxt = AventusTranslations.Get(AventusMessageKeys.Data.FileOwnerWrongType, GetType().Name, instance.GetType().Name, typeof(T).Name);
             result.Errors.Add(new DataError(DataErrorCode.WrongType, errorTxt));
             return result;
         }

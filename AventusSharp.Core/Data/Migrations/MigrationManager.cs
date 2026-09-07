@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,7 +55,7 @@ public static class MigrationManager
             List<IMigrationProvider> providers = MigrationFactory.GetAll();
             if (providers.Count > 1 && !DataMainManager.Config.Migration.MultipleProviders)
             {
-                result.Errors.Add(new DataError(DataErrorCode.MultipleProvidersNotSet, "You must set MultipleProviders to true inside the Migration configuration"));
+                result.Errors.Add(new DataError(DataErrorCode.MultipleProvidersNotSet, AventusTranslations.Get(AventusMessageKeys.Data.MultipleProvidersRequired)));
                 return result;
             }
             foreach (IMigrationProvider provider in providers)

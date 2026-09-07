@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Migrations;
+using AventusSharp.Localization;
+using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
 using System;
 using System.Data;
@@ -36,7 +37,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             VoidWithDataError result = new VoidWithDataError();
             if (memberInfo == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Member not found"));
+                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberMissing)));
                 return result;
             }
             TableLinkedType = MemberType;

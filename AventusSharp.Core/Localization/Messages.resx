@@ -1,0 +1,347 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="SSE.EntryAssemblyMissing" xml:space="preserve">
+    <value>Can't determine the entry assembly</value>
+  </data>
+  <data name="SSE.MultipleMainEndpoints" xml:space="preserve">
+    <value>You can't define multiple main endpoint : {0} and {1}</value>
+  </data>
+  <data name="WebSocket.EntryAssemblyMissing" xml:space="preserve">
+    <value>Can't determine the entry assembly</value>
+  </data>
+  <data name="WebSocket.MultipleMainEndpoints" xml:space="preserve">
+    <value>You can't define multiple main endpoint : {0} and {1}</value>
+  </data>
+  <data name="SSE.EndpointNotFound" xml:space="preserve">
+    <value>No endpoint of type {0} found. Did you register the SSEMiddleware?</value>
+  </data>
+  <data name="WebSocket.EndpointNotFound" xml:space="preserve">
+    <value>No endpoint of type {0} found. Did you register the WebSocketMiddleware?</value>
+  </data>
+  <data name="WebSocket.PathNotTransformed" xml:space="preserve">
+    <value>The path isn't transformed from basePath {0}</value>
+  </data>
+  <data name="WebSocket.ConnectionRequired" xml:space="preserve">
+    <value>You must provide a connection</value>
+  </data>
+  <data name="WebSocket.EndpointRequired" xml:space="preserve">
+    <value>You must provide a endpoint. Maybe you can use the function EmitTo()</value>
+  </data>
+  <data name="WebSocket.BodyPathNotFound" xml:space="preserve">
+    <value>Can't find path {0} in your websocket body</value>
+  </data>
+  <data name="Data.DefaultManagerConstraint" xml:space="preserve">
+    <value>Default DM ({0}) must have only one generic type constraint of type IStorable</value>
+  </data>
+  <data name="Data.DefaultManagerGenericCount" xml:space="preserve">
+    <value>Default DM ({0}) must have only one generic type</value>
+  </data>
+  <data name="Data.DefaultManagerMustBeGeneric" xml:space="preserve">
+    <value>Default DM ({0}) must be generic with one generic type</value>
+  </data>
+  <data name="Data.DefaultManagerTypeNull" xml:space="preserve">
+    <value>The type defined is null</value>
+  </data>
+  <data name="Data.ManagerGetInstanceMissing" xml:space="preserve">
+    <value>Manager {0} doesn't have a GetInstance function</value>
+  </data>
+  <data name="Data.DependencyNotStorable" xml:space="preserve">
+    <value>type {0} is not storable, so you can't add it inside manual dependencies of manager {1}</value>
+  </data>
+  <data name="Data.GenericMustBeAbstract" xml:space="preserve">
+    <value>You class generic {0} must be set as abstract</value>
+  </data>
+  <data name="Data.UnexpectedType" xml:space="preserve">
+    <value>How did you do that for {0}</value>
+  </data>
+  <data name="Data.ParentMustBeAbstract" xml:space="preserve">
+    <value>A parent must be abstract and generic {0}</value>
+  </data>
+  <data name="Data.SelfReferencingData" xml:space="preserve">
+    <value>Self referencing dependencies found for Data {0}</value>
+  </data>
+  <data name="Data.SelfReferencingManager" xml:space="preserve">
+    <value>Self referencing dependency found for Manager {0}</value>
+  </data>
+  <data name="Data.PyramidCreationFailed" xml:space="preserve">
+    <value>Somthing went wrong when creating pyramid but I don't know why</value>
+  </data>
+  <data name="Data.DefaultManagerRequired" xml:space="preserve">
+    <value>You must define a default DM</value>
+  </data>
+  <data name="Data.DefaultManagerGetInstanceMissing" xml:space="preserve">
+    <value>Your default DM doesn't have a method GetInstance</value>
+  </data>
+  <data name="Data.DefaultManagerInvalidInstance" xml:space="preserve">
+    <value>The methode GetInstance inside your default DM doesn't return a Generic DM</value>
+  </data>
+  <data name="Data.ConstraintError" xml:space="preserve">
+    <value>{0} on constraint {1} on type {2}</value>
+  </data>
+  <data name="Data.ElementOverridden" xml:space="preserve">
+    <value>Element is overrided =&gt; impossible</value>
+  </data>
+  <data name="Data.ElementWrongType" xml:space="preserve">
+    <value>Element {0} isn't a {1}. This should be impossible</value>
+  </data>
+  <data name="Routes.AlreadyRegistered" xml:space="preserve">
+    <value>{0} is already added from {1} ({2})</value>
+  </data>
+  <data name="Scheduler.CreationFailed" xml:space="preserve">
+    <value>Unable to create schedulable '{0}'.</value>
+  </data>
+  <data name="Scheduler.NotRegistered" xml:space="preserve">
+    <value>Schedulable '{0}' is not registered.</value>
+  </data>
+  <data name="Scheduler.AlreadyRunning" xml:space="preserve">
+    <value>Schedulable '{0}' is already running.</value>
+  </data>
+  <data name="Data.MemberUnavailable" xml:space="preserve">
+    <value>The member {0} can't be found on {1}</value>
+  </data>
+  <data name="Data.TypeNotFound" xml:space="preserve">
+    <value>Can't find the type {0}</value>
+  </data>
+  <data name="Data.QueryCreationFailed" xml:space="preserve">
+    <value>Can't create the query</value>
+  </data>
+  <data name="Data.WhereWithParamMissing" xml:space="preserve">
+    <value>Can't get the function whereWithParam</value>
+  </data>
+  <data name="Data.ImageSavingWrongType" xml:space="preserve">
+    <value>The object of type {0} can't be used for image saving {1}</value>
+  </data>
+  <data name="Data.FileNotFound" xml:space="preserve">
+    <value>The file {0} can't be found</value>
+  </data>
+  <data name="Data.ManagerNotFound" xml:space="preserve">
+    <value>Can't found a data manger for type {0}</value>
+  </data>
+  <data name="Data.ManagerAlreadyExists" xml:space="preserve">
+    <value>A manager already exists for type {0}</value>
+  </data>
+  <data name="Data.PyramidNotFound" xml:space="preserve">
+    <value>Can't found the pyramid for {0}</value>
+  </data>
+  <data name="Data.MemberNotFound" xml:space="preserve">
+    <value>Can't find the member {0} on {1}</value>
+  </data>
+  <data name="Data.GetAllMethodMissing" xml:space="preserve">
+    <value>Can't found the method GetAllWithError</value>
+  </data>
+  <data name="Data.GetByIdMethodMissing" xml:space="preserve">
+    <value>Can't found the method GetByIdWithError</value>
+  </data>
+  <data name="Data.GetByIdsMethodMissing" xml:space="preserve">
+    <value>Can't found the method GetByIdsWithError</value>
+  </data>
+  <data name="Data.WhereMethodMissing" xml:space="preserve">
+    <value>Can't found the method WhereWithError</value>
+  </data>
+  <data name="Data.SingleMethodMissing" xml:space="preserve">
+    <value>Can't found the method SingleWithError</value>
+  </data>
+  <data name="Data.ExistMethodMissing" xml:space="preserve">
+    <value>Can't found the method ExistWithError</value>
+  </data>
+  <data name="Data.CreateMethodMissing" xml:space="preserve">
+    <value>Can't found the method CreateWithError</value>
+  </data>
+  <data name="Data.CreateValueRequired" xml:space="preserve">
+    <value>You must provide a value to create</value>
+  </data>
+  <data name="Data.UpdateMethodMissing" xml:space="preserve">
+    <value>Can't found the method UpdateWithError</value>
+  </data>
+  <data name="Data.DeleteMethodMissing" xml:space="preserve">
+    <value>Can't found the method DeleteWithError</value>
+  </data>
+  <data name="Data.MethodMissingOrFailed" xml:space="preserve">
+    <value>The method {0}({1}) can't be found or failed</value>
+  </data>
+  <data name="Data.MethodNotFound" xml:space="preserve">
+    <value>The method {0}({1}) can't be found</value>
+  </data>
+  <data name="Data.MultipleProvidersRequired" xml:space="preserve">
+    <value>You must set MultipleProviders to true inside the Migration configuration</value>
+  </data>
+  <data name="Routes.UnsupportedContentType" xml:space="preserve">
+    <value>The content type {0} can't be parsed</value>
+  </data>
+  <data name="Routes.BodyPathNotFound" xml:space="preserve">
+    <value>Can't find path {0} in your http body</value>
+  </data>
+  <data name="Data.ManagerStorageRequired" xml:space="preserve">
+    <value>You must define a storage inside your DM {0}</value>
+  </data>
+  <data name="Data.StorageNotFound" xml:space="preserve">
+    <value>Can't found a storage for {0}</value>
+  </data>
+  <data name="Data.ItemNotFound" xml:space="preserve">
+    <value>The item {0} can't be found inside the storage</value>
+  </data>
+  <data name="Data.StorageConnectionFailed" xml:space="preserve">
+    <value>The storage {0}({1}) can't connect to the database</value>
+  </data>
+  <data name="Data.QueryParametersMissing" xml:space="preserve">
+    <value>Missing values for prepared query parameters: {0}</value>
+  </data>
+  <data name="Data.InvalidLimit" xml:space="preserve">
+    <value>Limit must be greater than or equal to zero</value>
+  </data>
+  <data name="Data.InvalidOffset" xml:space="preserve">
+    <value>Offset must be greater than or equal to zero</value>
+  </data>
+  <data name="Data.ReverseLinkNotPrepared" xml:space="preserve">
+    <value>The ReverseLink isn't prepared, please open an issue</value>
+  </data>
+  <data name="Data.FieldNotReverseLink" xml:space="preserve">
+    <value>The field {0} isn't a ReverseLink</value>
+  </data>
+  <data name="Data.NameNotFound" xml:space="preserve">
+    <value>The name {0} can't be found on {1}</value>
+  </data>
+  <data name="Data.AmbiguousMember" xml:space="preserve">
+    <value>Too much matching type {0} on type {1}. Please define a name ({2})</value>
+  </data>
+  <data name="Data.MemberTypeNotFound" xml:space="preserve">
+    <value>The type {0} can't be found on {1}</value>
+  </data>
+  <data name="Data.ExternalStorageNotPrepared" xml:space="preserve">
+    <value>The ExternalStorage isn't prepared, please open an issue</value>
+  </data>
+  <data name="Data.FieldIsReverseLink" xml:space="preserve">
+    <value>The field {0} is a ReverseLink</value>
+  </data>
+  <data name="Data.ReadOnlyConnection" xml:space="preserve">
+    <value>Can't execute the command {0} because the connection is readonly</value>
+  </data>
+  <data name="Data.StorageConnectionMissing" xml:space="preserve">
+    <value>The storage {0}</value>
+  </data>
+  <data name="Data.SqlError" xml:space="preserve">
+    <value>{0}
+SQL: {1}</value>
+  </data>
+  <data name="Data.ParameterMissing" xml:space="preserve">
+    <value>The parameter {0} is missing</value>
+  </data>
+  <data name="Data.ParameterNotDefined" xml:space="preserve">
+    <value>The parameter {0} is not defined in the command</value>
+  </data>
+  <data name="Data.LinkTypeNotFound" xml:space="preserve">
+    <value>Can't find the type {0} to create link with {1} on {2}</value>
+  </data>
+  <data name="Data.ReverseLinkTypeNotFound" xml:space="preserve">
+    <value>Can't find the type {0} to create revserse link with {1} on {2}</value>
+  </data>
+  <data name="Data.CastFailed" xml:space="preserve">
+    <value>Impossible to cast {0} into {1}</value>
+  </data>
+  <data name="Data.TypeIdentifierMissing" xml:space="preserve">
+    <value>Can't find the field {0}</value>
+  </data>
+  <data name="Data.UnexpectedNull" xml:space="preserve">
+    <value>The property {0} is not null but receiving a null from the db</value>
+  </data>
+  <data name="Data.UnexpectedStorageState" xml:space="preserve">
+    <value>impossible?</value>
+  </data>
+  <data name="Data.StorageTypeMissing" xml:space="preserve">
+    <value>Can't find the type {0}</value>
+  </data>
+  <data name="Data.CreateItemRequired" xml:space="preserve">
+    <value>Please provide an item to use for creation</value>
+  </data>
+  <data name="Data.UpdateItemRequired" xml:space="preserve">
+    <value>Please provide an item to use for update</value>
+  </data>
+  <data name="Data.UnexpectedStorageType" xml:space="preserve">
+    <value>this must be impossible</value>
+  </data>
+  <data name="Data.TypeNotInStorage" xml:space="preserve">
+    <value>Can't find the type {0} inside the storage {1}</value>
+  </data>
+  <data name="Data.FieldNotFound" xml:space="preserve">
+    <value>Can't find the field {0} on the object {1}</value>
+  </data>
+  <data name="Data.UnexpectedState" xml:space="preserve">
+    <value>Impossible</value>
+  </data>
+  <data name="Data.SearchValueConversionFailed" xml:space="preserve">
+    <value>The search value '{0}' cannot be converted for any selected field on {1}</value>
+  </data>
+  <data name="Data.UpdateSingleCountMismatch" xml:space="preserve">
+    <value>Can't update single because the action return {0} item</value>
+  </data>
+  <data name="Data.MemberMissing" xml:space="preserve">
+    <value>Member not found</value>
+  </data>
+  <data name="Data.DatabaseTypeUnsupported" xml:space="preserve">
+    <value>Type {0} can't be parsed into Database type</value>
+  </data>
+  <data name="Data.FieldError" xml:space="preserve">
+    <value>erreur for field {0} on {1}</value>
+  </data>
+  <data name="Data.NotStorable" xml:space="preserve">
+    <value>Type is not a storable type</value>
+  </data>
+  <data name="Data.UnexpectedCase" xml:space="preserve">
+    <value>Impossible case</value>
+  </data>
+  <data name="Data.ReverseLinkNotInitialized" xml:space="preserve">
+    <value>Reverse link seems to not be init : {0}</value>
+  </data>
+  <data name="Data.RunWithErrorMissing" xml:space="preserve">
+    <value>Can't get the function runWithError</value>
+  </data>
+  <data name="Validation.Unique" xml:space="preserve">
+    <value>The field must be unique</value>
+  </data>
+  <data name="Data.DependencyLoop" xml:space="preserve">
+    <value>Infinite loop found for Data {0}
+Elements in loop : 
+	 - {1}</value>
+  </data>
+  <data name="Data.ManagerDependencyLoop" xml:space="preserve">
+    <value>Infinite loop found for Manager {0}
+Elements in loop : 
+	- {1}</value>
+  </data>
+  <data name="Data.InterfaceConstraintNotUnique" xml:space="preserve">
+    <value>You can't use the constraint {0} inside class {1} because interface is still referencing by {2}. You must create an interface for this abstract type.</value>
+  </data>
+  <data name="Data.StorableConstraintRequired" xml:space="preserve">
+    <value>You need to define a constraint IStorable for the type {0} of the class {1}</value>
+  </data>
+  <data name="Data.TooManyStorableConstraints" xml:space="preserve">
+    <value>Too many constraints IStorable ({0}) for the type {1} of the class {2}</value>
+  </data>
+  <data name="Data.OnlyForceInherit" xml:space="preserve">
+    <value>Can't init {0} because only contains ForceInehrit elements</value>
+  </data>
+  <data name="Data.FileOwnerWrongType" xml:space="preserve">
+    <value>The type {0} is used on {1} that isn't a child of {2}</value>
+  </data>
+  <data name="Validation.SizeRange">
+    <value>The size of the field {0} must be between {1} and {2} chars.</value>
+  </data>
+  <data name="Validation.SizeMinimum">
+    <value>The size of the field {0} must be greater than {1} chars.</value>
+  </data>
+  <data name="Validation.Required">
+    <value>The field {0} is required.</value>
+  </data>
+</root>

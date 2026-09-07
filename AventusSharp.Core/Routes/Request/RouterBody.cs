@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+using AventusSharp.Localization;
+using AventusSharp.Tools;
 using HttpMultipartParser;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -39,11 +40,11 @@ namespace AventusSharp.Routes.Request
                 {
                     return await ParseJson();
                 }
-                result.Errors.Add(new RouteError(RouteErrorCode.FormContentTypeUnknown, "The content type " + contentType + " can't be parsed"));
+                result.Errors.Add(new RouteError(RouteErrorCode.FormContentTypeUnknown, AventusTranslations.Get(AventusMessageKeys.Routes.UnsupportedContentType, contentType)));
             }
             else
             {
-                result.Errors.Add(new RouteError(RouteErrorCode.FormContentTypeUnknown, "The content type " + contentType + " can't be parsed"));
+                result.Errors.Add(new RouteError(RouteErrorCode.FormContentTypeUnknown, AventusTranslations.Get(AventusMessageKeys.Routes.UnsupportedContentType, contentType)));
             }
             return result;
         }
@@ -299,7 +300,7 @@ namespace AventusSharp.Routes.Request
                     {
                         if (!isOptional)
                         {
-                            result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
+                            result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, AventusTranslations.Get(AventusMessageKeys.Routes.BodyPathNotFound, propPath)));
                             return result;
                         }
                         break;
@@ -309,7 +310,7 @@ namespace AventusSharp.Routes.Request
                         dataToUse = dataToUse[prop];
                         if (dataToUse == null && !isOptional)
                         {
-                            result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, "Can't find path " + propPath + " in your http body"));
+                            result.Errors.Add(new RouteError(RouteErrorCode.CantGetValueFromBody, AventusTranslations.Get(AventusMessageKeys.Routes.BodyPathNotFound, propPath)));
                             return result;
                         }
                     }

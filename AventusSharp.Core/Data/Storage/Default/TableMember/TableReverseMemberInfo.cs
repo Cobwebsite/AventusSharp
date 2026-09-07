@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Tools;
 using System;
 using System.Collections;
@@ -56,7 +57,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             else
             {
-                result.Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible case"));
+                result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.UnexpectedCase)));
             }
             return result;
         }
@@ -81,7 +82,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 if (reversInfo == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The name " + ReverseLinkAttr.field + " can't be found on " + tableInfo.Name));
+                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.NameNotFound, ReverseLinkAttr.field, tableInfo.Name)));
                 }
                 else
                 {
@@ -102,13 +103,13 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     result.Errors.Add(
                         new DataError(
                             DataErrorCode.TooMuchMemberFound,
-                            "Too much matching type " + TableInfo.Type + " on type " + tableInfo.Name + ". Please define a name (" + string.Join(", ", reversInfo.Select(s => s.Name)) + ")"
+                            AventusTranslations.Get(AventusMessageKeys.Data.AmbiguousMember, TableInfo.Type, tableInfo.Name, string.Join(", ", reversInfo.Select(s => s.Name)))
                         )
                     );
                 }
                 else if (reversInfo.Count == 0)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The type " + TableInfo.Type + " can't be found on " + tableInfo.Name));
+                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberTypeNotFound, TableInfo.Type, tableInfo.Name)));
                 }
                 else
                 {
@@ -127,7 +128,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 {
                     if (ReverseLinkType == null || reverseMember == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, "Reverse link seems to not be init : " + Name));
+                        result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, AventusTranslations.Get(AventusMessageKeys.Data.ReverseLinkNotInitialized, Name)));
                         return result;
                     }
 
@@ -161,7 +162,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     object? query = dm.GetType().GetMethod("CreateQuery")?.MakeGenericMethod(t).Invoke(dm, null);
                     if (query == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't create the query"));
+                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, AventusTranslations.Get(AventusMessageKeys.Data.QueryCreationFailed)));
                         return result;
                     }
                     // MethodInfo? setVariable = query.GetType().GetMethod("SetVariable");
@@ -179,7 +180,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
                     if (whereWithParam == null)
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function whereWithParam"));
+                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, AventusTranslations.Get(AventusMessageKeys.Data.WhereWithParamMissing)));
                         return result;
                     }
 
@@ -191,7 +192,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
+                        result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, AventusTranslations.Get(AventusMessageKeys.Data.RunWithErrorMissing)));
                         return result;
                     }
 

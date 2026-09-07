@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data;
+using AventusSharp.Localization;
+using AventusSharp.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -97,7 +98,7 @@ namespace AventusSharp.Tools
             Type? typeToCreate = Type.GetType(fullname, func, null);
             if (typeToCreate == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.WrongType, "Can't find the type " + fullname));
+                result.Errors.Add(new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.TypeNotFound, fullname)));
             }
             else
             {

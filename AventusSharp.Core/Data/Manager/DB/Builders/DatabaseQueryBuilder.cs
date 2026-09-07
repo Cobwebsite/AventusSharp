@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
@@ -149,7 +150,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
                 if (memberInfo == null || member == null)
                 {
-                    Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Can't find the field " + field + " on the object " + typeof(T).Name));
+                    Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.FieldNotFound, field, typeof(T).Name)));
                     return this;
                 }
 
@@ -165,7 +166,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 }
                 else
                 {
-                    Errors.Add(new DataError(DataErrorCode.UnknownError, "Impossible"));
+                    Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.UnexpectedState)));
                     return this;
                 }
 
@@ -219,7 +220,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
             {
                 Errors.Add(new DataError(
                     DataErrorCode.WrongType,
-                    $"The search value '{search}' cannot be converted for any selected field on {typeof(T).Name}"));
+                    AventusTranslations.Get(AventusMessageKeys.Data.SearchValueConversionFailed, search, typeof(T).Name)));
                 return this;
             }
 

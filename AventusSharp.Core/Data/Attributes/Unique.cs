@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager;
+using AventusSharp.Localization;
+using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using System;
 using System.Collections;
@@ -14,11 +15,12 @@ namespace AventusSharp.Data.Attributes
     {
         protected Func<object, int, Task<IResultWithError>>? prepare;
         protected object? query;
-        protected string message;
+        protected string? message;
 
         public Unique()
         {
-            message = "The field must be unique";
+            // Resolve the default when validation runs, not when attributes are cached.
+            message = null;
         }
         public Unique(string message)
         {
@@ -55,7 +57,9 @@ namespace AventusSharp.Data.Attributes
                     {
                         if (list.Count > 0)
                         {
-                            return new ValidationResult(message, context.FieldName);
+                            return new ValidationResult(
+                                message ?? AventusTranslations.Get(AventusMessageKeys.Validation.Unique),
+                                context.FieldName);
                         }
                     }
                 }
@@ -70,14 +74,14 @@ namespace AventusSharp.Data.Attributes
             query = dm.GetType().GetMethod("CreateQuery")?.MakeGenericMethod(type).Invoke(dm, null);
             if (query == null)
             {
-                DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't create the query");
+                DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, AventusTranslations.Get(AventusMessageKeys.Data.QueryCreationFailed));
                 throw error.GetException();
             }
             
             MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
             if (whereWithParam == null)
             {
-                DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function whereWithParam");
+                DataError error = new DataError(DataErrorCode.ErrorCreatingReverseQuery, AventusTranslations.Get(AventusMessageKeys.Data.WhereWithParamMissing));
                 throw error.GetException();
             }
 

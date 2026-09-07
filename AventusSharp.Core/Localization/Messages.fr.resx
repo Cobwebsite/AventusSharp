@@ -1,0 +1,347 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="SSE.EntryAssemblyMissing" xml:space="preserve">
+    <value>Impossible de déterminer l'assembly d'entrée.</value>
+  </data>
+  <data name="SSE.MultipleMainEndpoints" xml:space="preserve">
+    <value>Vous ne pouvez pas définir plusieurs points de terminaison principaux : {0} et {1}.</value>
+  </data>
+  <data name="WebSocket.EntryAssemblyMissing" xml:space="preserve">
+    <value>Impossible de déterminer l'assembly d'entrée.</value>
+  </data>
+  <data name="WebSocket.MultipleMainEndpoints" xml:space="preserve">
+    <value>Vous ne pouvez pas définir plusieurs points de terminaison principaux : {0} et {1}.</value>
+  </data>
+  <data name="SSE.EndpointNotFound" xml:space="preserve">
+    <value>Aucun point de terminaison de type {0} trouvé. Avez-vous enregistré le SSEMiddleware ?</value>
+  </data>
+  <data name="WebSocket.EndpointNotFound" xml:space="preserve">
+    <value>Aucun point de terminaison de type {0} trouvé. Avez-vous enregistré le WebSocketMiddleware ?</value>
+  </data>
+  <data name="WebSocket.PathNotTransformed" xml:space="preserve">
+    <value>Le chemin n'a pas été transformé à partir de basePath {0}.</value>
+  </data>
+  <data name="WebSocket.ConnectionRequired" xml:space="preserve">
+    <value>Vous devez fournir une connexion.</value>
+  </data>
+  <data name="WebSocket.EndpointRequired" xml:space="preserve">
+    <value>Vous devez fournir un point de terminaison. Vous pouvez utiliser la fonction EmitTo().</value>
+  </data>
+  <data name="WebSocket.BodyPathNotFound" xml:space="preserve">
+    <value>Le chemin {0} est introuvable dans le corps du message WebSocket.</value>
+  </data>
+  <data name="Data.DefaultManagerConstraint" xml:space="preserve">
+    <value>Le gestionnaire par défaut ({0}) doit avoir une seule contrainte de type générique, de type IStorable.</value>
+  </data>
+  <data name="Data.DefaultManagerGenericCount" xml:space="preserve">
+    <value>Le gestionnaire par défaut ({0}) doit avoir un seul paramètre de type générique.</value>
+  </data>
+  <data name="Data.DefaultManagerMustBeGeneric" xml:space="preserve">
+    <value>Le gestionnaire par défaut ({0}) doit être générique avec un seul paramètre de type.</value>
+  </data>
+  <data name="Data.DefaultManagerTypeNull" xml:space="preserve">
+    <value>Le type défini est null.</value>
+  </data>
+  <data name="Data.ManagerGetInstanceMissing" xml:space="preserve">
+    <value>Le gestionnaire {0} ne possède pas de fonction GetInstance.</value>
+  </data>
+  <data name="Data.DependencyNotStorable" xml:space="preserve">
+    <value>Le type {0} n'est pas stockable et ne peut pas être ajouté aux dépendances manuelles du gestionnaire {1}.</value>
+  </data>
+  <data name="Data.GenericMustBeAbstract" xml:space="preserve">
+    <value>La classe générique {0} doit être abstraite.</value>
+  </data>
+  <data name="Data.UnexpectedType" xml:space="preserve">
+    <value>État inattendu pour {0}.</value>
+  </data>
+  <data name="Data.ParentMustBeAbstract" xml:space="preserve">
+    <value>Un parent doit être abstrait et générique : {0}.</value>
+  </data>
+  <data name="Data.SelfReferencingData" xml:space="preserve">
+    <value>Des dépendances autoréférentes ont été trouvées pour les données {0}.</value>
+  </data>
+  <data name="Data.SelfReferencingManager" xml:space="preserve">
+    <value>Une dépendance autoréférente a été trouvée pour le gestionnaire {0}.</value>
+  </data>
+  <data name="Data.PyramidCreationFailed" xml:space="preserve">
+    <value>Une erreur inconnue est survenue lors de la création de la pyramide.</value>
+  </data>
+  <data name="Data.DefaultManagerRequired" xml:space="preserve">
+    <value>Vous devez définir un gestionnaire par défaut.</value>
+  </data>
+  <data name="Data.DefaultManagerGetInstanceMissing" xml:space="preserve">
+    <value>Le gestionnaire par défaut ne possède pas de méthode GetInstance.</value>
+  </data>
+  <data name="Data.DefaultManagerInvalidInstance" xml:space="preserve">
+    <value>La méthode GetInstance du gestionnaire par défaut ne renvoie pas un gestionnaire générique.</value>
+  </data>
+  <data name="Data.ConstraintError" xml:space="preserve">
+    <value>{0} sur la contrainte {1} du type {2}.</value>
+  </data>
+  <data name="Data.ElementOverridden" xml:space="preserve">
+    <value>L'élément a été remplacé : état impossible.</value>
+  </data>
+  <data name="Data.ElementWrongType" xml:space="preserve">
+    <value>L'élément {0} n'est pas un {1}. Cet état ne devrait pas être possible.</value>
+  </data>
+  <data name="Routes.AlreadyRegistered" xml:space="preserve">
+    <value>{0} est déjà ajouté depuis {1} ({2}).</value>
+  </data>
+  <data name="Scheduler.CreationFailed" xml:space="preserve">
+    <value>Impossible de créer la tâche planifiable « {0} ».</value>
+  </data>
+  <data name="Scheduler.NotRegistered" xml:space="preserve">
+    <value>La tâche planifiable « {0} » n'est pas enregistrée.</value>
+  </data>
+  <data name="Scheduler.AlreadyRunning" xml:space="preserve">
+    <value>La tâche planifiable « {0} » est déjà en cours d'exécution.</value>
+  </data>
+  <data name="Data.MemberUnavailable" xml:space="preserve">
+    <value>Le membre {0} est introuvable sur {1}.</value>
+  </data>
+  <data name="Data.TypeNotFound" xml:space="preserve">
+    <value>Le type {0} est introuvable.</value>
+  </data>
+  <data name="Data.QueryCreationFailed" xml:space="preserve">
+    <value>Impossible de créer la requête.</value>
+  </data>
+  <data name="Data.WhereWithParamMissing" xml:space="preserve">
+    <value>Impossible de trouver la fonction whereWithParam.</value>
+  </data>
+  <data name="Data.ImageSavingWrongType" xml:space="preserve">
+    <value>L'objet de type {0} ne peut pas être utilisé pour enregistrer une image de type {1}.</value>
+  </data>
+  <data name="Data.FileNotFound" xml:space="preserve">
+    <value>Le fichier {0} est introuvable.</value>
+  </data>
+  <data name="Data.ManagerNotFound" xml:space="preserve">
+    <value>Aucun gestionnaire de données trouvé pour le type {0}.</value>
+  </data>
+  <data name="Data.ManagerAlreadyExists" xml:space="preserve">
+    <value>Un gestionnaire existe déjà pour le type {0}.</value>
+  </data>
+  <data name="Data.PyramidNotFound" xml:space="preserve">
+    <value>La pyramide de {0} est introuvable.</value>
+  </data>
+  <data name="Data.MemberNotFound" xml:space="preserve">
+    <value>Le membre {0} est introuvable sur {1}.</value>
+  </data>
+  <data name="Data.GetAllMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode GetAllWithError.</value>
+  </data>
+  <data name="Data.GetByIdMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode GetByIdWithError.</value>
+  </data>
+  <data name="Data.GetByIdsMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode GetByIdsWithError.</value>
+  </data>
+  <data name="Data.WhereMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode WhereWithError.</value>
+  </data>
+  <data name="Data.SingleMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode SingleWithError.</value>
+  </data>
+  <data name="Data.ExistMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode ExistWithError.</value>
+  </data>
+  <data name="Data.CreateMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode CreateWithError.</value>
+  </data>
+  <data name="Data.CreateValueRequired" xml:space="preserve">
+    <value>Vous devez fournir une valeur à créer.</value>
+  </data>
+  <data name="Data.UpdateMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode UpdateWithError.</value>
+  </data>
+  <data name="Data.DeleteMethodMissing" xml:space="preserve">
+    <value>Impossible de trouver la méthode DeleteWithError.</value>
+  </data>
+  <data name="Data.MethodMissingOrFailed" xml:space="preserve">
+    <value>La méthode {0}({1}) est introuvable ou a échoué.</value>
+  </data>
+  <data name="Data.MethodNotFound" xml:space="preserve">
+    <value>La méthode {0}({1}) est introuvable.</value>
+  </data>
+  <data name="Data.MultipleProvidersRequired" xml:space="preserve">
+    <value>Vous devez activer MultipleProviders dans la configuration des migrations.</value>
+  </data>
+  <data name="Routes.UnsupportedContentType" xml:space="preserve">
+    <value>Le type de contenu {0} ne peut pas être analysé.</value>
+  </data>
+  <data name="Routes.BodyPathNotFound" xml:space="preserve">
+    <value>Le chemin {0} est introuvable dans le corps de la requête HTTP.</value>
+  </data>
+  <data name="Data.ManagerStorageRequired" xml:space="preserve">
+    <value>Vous devez définir un stockage dans le gestionnaire {0}.</value>
+  </data>
+  <data name="Data.StorageNotFound" xml:space="preserve">
+    <value>Aucun stockage trouvé pour {0}.</value>
+  </data>
+  <data name="Data.ItemNotFound" xml:space="preserve">
+    <value>L'élément {0} est introuvable dans le stockage.</value>
+  </data>
+  <data name="Data.StorageConnectionFailed" xml:space="preserve">
+    <value>Le stockage {0}({1}) ne peut pas se connecter à la base de données.</value>
+  </data>
+  <data name="Data.QueryParametersMissing" xml:space="preserve">
+    <value>Valeurs manquantes pour les paramètres de la requête préparée : {0}.</value>
+  </data>
+  <data name="Data.InvalidLimit" xml:space="preserve">
+    <value>La limite doit être supérieure ou égale à zéro.</value>
+  </data>
+  <data name="Data.InvalidOffset" xml:space="preserve">
+    <value>Le décalage doit être supérieur ou égal à zéro.</value>
+  </data>
+  <data name="Data.ReverseLinkNotPrepared" xml:space="preserve">
+    <value>Le lien inverse n'est pas préparé. Veuillez signaler ce problème.</value>
+  </data>
+  <data name="Data.FieldNotReverseLink" xml:space="preserve">
+    <value>Le champ {0} n'est pas un lien inverse.</value>
+  </data>
+  <data name="Data.NameNotFound" xml:space="preserve">
+    <value>Le nom {0} est introuvable sur {1}.</value>
+  </data>
+  <data name="Data.AmbiguousMember" xml:space="preserve">
+    <value>Plusieurs membres correspondent au type {0} sur le type {1}. Veuillez préciser un nom ({2}).</value>
+  </data>
+  <data name="Data.MemberTypeNotFound" xml:space="preserve">
+    <value>Le type {0} est introuvable sur {1}.</value>
+  </data>
+  <data name="Data.ExternalStorageNotPrepared" xml:space="preserve">
+    <value>Le stockage externe n'est pas préparé. Veuillez signaler ce problème.</value>
+  </data>
+  <data name="Data.FieldIsReverseLink" xml:space="preserve">
+    <value>Le champ {0} est un lien inverse.</value>
+  </data>
+  <data name="Data.ReadOnlyConnection" xml:space="preserve">
+    <value>Impossible d'exécuter la commande {0}, car la connexion est en lecture seule.</value>
+  </data>
+  <data name="Data.StorageConnectionMissing" xml:space="preserve">
+    <value>Le stockage {0}</value>
+  </data>
+  <data name="Data.SqlError" xml:space="preserve">
+    <value>{0}
+SQL : {1}</value>
+  </data>
+  <data name="Data.ParameterMissing" xml:space="preserve">
+    <value>Le paramètre {0} est manquant.</value>
+  </data>
+  <data name="Data.ParameterNotDefined" xml:space="preserve">
+    <value>Le paramètre {0} n'est pas défini dans la commande.</value>
+  </data>
+  <data name="Data.LinkTypeNotFound" xml:space="preserve">
+    <value>Le type {0} est introuvable pour créer un lien avec {1} sur {2}.</value>
+  </data>
+  <data name="Data.ReverseLinkTypeNotFound" xml:space="preserve">
+    <value>Le type {0} est introuvable pour créer un lien inverse avec {1} sur {2}.</value>
+  </data>
+  <data name="Data.CastFailed" xml:space="preserve">
+    <value>Impossible de convertir {0} en {1}.</value>
+  </data>
+  <data name="Data.TypeIdentifierMissing" xml:space="preserve">
+    <value>Le champ {0} est introuvable.</value>
+  </data>
+  <data name="Data.UnexpectedNull" xml:space="preserve">
+    <value>La propriété {0} n'accepte pas null, mais la base de données a renvoyé null.</value>
+  </data>
+  <data name="Data.UnexpectedStorageState" xml:space="preserve">
+    <value>État de stockage inattendu.</value>
+  </data>
+  <data name="Data.StorageTypeMissing" xml:space="preserve">
+    <value>Le type {0} est introuvable.</value>
+  </data>
+  <data name="Data.CreateItemRequired" xml:space="preserve">
+    <value>Veuillez fournir un élément à créer.</value>
+  </data>
+  <data name="Data.UpdateItemRequired" xml:space="preserve">
+    <value>Veuillez fournir un élément à mettre à jour.</value>
+  </data>
+  <data name="Data.UnexpectedStorageType" xml:space="preserve">
+    <value>Type de stockage inattendu.</value>
+  </data>
+  <data name="Data.TypeNotInStorage" xml:space="preserve">
+    <value>Le type {0} est introuvable dans le stockage {1}.</value>
+  </data>
+  <data name="Data.FieldNotFound" xml:space="preserve">
+    <value>Le champ {0} est introuvable sur l'objet {1}.</value>
+  </data>
+  <data name="Data.UnexpectedState" xml:space="preserve">
+    <value>État inattendu.</value>
+  </data>
+  <data name="Data.SearchValueConversionFailed" xml:space="preserve">
+    <value>La valeur recherchée « {0} » ne peut être convertie pour aucun des champs sélectionnés sur {1}.</value>
+  </data>
+  <data name="Data.UpdateSingleCountMismatch" xml:space="preserve">
+    <value>Impossible de mettre à jour un seul élément, car l'action a renvoyé {0} élément(s).</value>
+  </data>
+  <data name="Data.MemberMissing" xml:space="preserve">
+    <value>Membre introuvable.</value>
+  </data>
+  <data name="Data.DatabaseTypeUnsupported" xml:space="preserve">
+    <value>Le type {0} ne peut pas être converti en type de base de données.</value>
+  </data>
+  <data name="Data.FieldError" xml:space="preserve">
+    <value>Erreur pour le champ {0} sur {1}.</value>
+  </data>
+  <data name="Data.NotStorable" xml:space="preserve">
+    <value>Le type n'est pas stockable.</value>
+  </data>
+  <data name="Data.UnexpectedCase" xml:space="preserve">
+    <value>Cas inattendu.</value>
+  </data>
+  <data name="Data.ReverseLinkNotInitialized" xml:space="preserve">
+    <value>Le lien inverse ne semble pas initialisé : {0}.</value>
+  </data>
+  <data name="Data.RunWithErrorMissing" xml:space="preserve">
+    <value>Impossible de trouver la fonction runWithError.</value>
+  </data>
+  <data name="Validation.Unique" xml:space="preserve">
+    <value>Ce champ doit être unique.</value>
+  </data>
+  <data name="Data.DependencyLoop" xml:space="preserve">
+    <value>Boucle infinie détectée pour les données {0}
+Éléments de la boucle :
+	 - {1}</value>
+  </data>
+  <data name="Data.ManagerDependencyLoop" xml:space="preserve">
+    <value>Boucle infinie détectée pour le gestionnaire {0}
+Éléments de la boucle :
+	- {1}</value>
+  </data>
+  <data name="Data.InterfaceConstraintNotUnique" xml:space="preserve">
+    <value>Vous ne pouvez pas utiliser la contrainte {0} dans la classe {1}, car l'interface est déjà référencée par {2}. Vous devez créer une interface pour ce type abstrait.</value>
+  </data>
+  <data name="Data.StorableConstraintRequired" xml:space="preserve">
+    <value>Vous devez définir une contrainte IStorable pour le type {0} de la classe {1}.</value>
+  </data>
+  <data name="Data.TooManyStorableConstraints" xml:space="preserve">
+    <value>Trop de contraintes IStorable ({0}) pour le type {1} de la classe {2}.</value>
+  </data>
+  <data name="Data.OnlyForceInherit" xml:space="preserve">
+    <value>Impossible d'initialiser {0}, car il ne contient que des éléments ForceInherit.</value>
+  </data>
+  <data name="Data.FileOwnerWrongType" xml:space="preserve">
+    <value>Le type {0} est utilisé sur {1}, qui n'hérite pas de {2}.</value>
+  </data>
+  <data name="Validation.SizeRange">
+    <value>La longueur du champ {0} doit être comprise entre {1} et {2} caractères.</value>
+  </data>
+  <data name="Validation.SizeMinimum">
+    <value>La longueur du champ {0} doit être supérieure ou égale à {1} caractères.</value>
+  </data>
+  <data name="Validation.Required">
+    <value>Le champ {0} est obligatoire.</value>
+  </data>
+</root>

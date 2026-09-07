@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+using AventusSharp.Localization;
+using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
 using Path = AventusSharp.WebSocket.Attributes.Path;
@@ -81,7 +82,7 @@ namespace AventusSharp.WebSocket
                 return Register(entry);
             }
             VoidWithError result = new VoidWithError();
-            result.Errors.Add(new WsError(WsErrorCode.CantDefineAssembly, "Can't determine the entry assembly"));
+            result.Errors.Add(new WsError(WsErrorCode.CantDefineAssembly, AventusTranslations.Get(AventusMessageKeys.WebSocket.EntryAssemblyMissing)));
             return result;
         }
 
@@ -159,7 +160,7 @@ namespace AventusSharp.WebSocket
                         {
                             string previous = mainEndPoint.GetType().FullName ?? "";
                             string current = endPoint.GetType().FullName ?? "";
-                            result.Errors.Add(new WsError(WsErrorCode.MultipleMainEndpoint, "You can't define multiple main endpoint : " + previous + " and " + current));
+                            result.Errors.Add(new WsError(WsErrorCode.MultipleMainEndpoint, AventusTranslations.Get(AventusMessageKeys.WebSocket.MultipleMainEndpoints, previous, current)));
                         }
                     }
                 }

@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ public class SSEMiddleware
             return Register(entry);
         }
         VoidWithError result = new VoidWithError();
-        result.Errors.Add(new SSEError(SSEErrorCode.CantDefineAssembly, "Can't determine the entry assembly"));
+        result.Errors.Add(new SSEError(SSEErrorCode.CantDefineAssembly, AventusTranslations.Get(AventusMessageKeys.SSE.EntryAssemblyMissing)));
         return result;
     }
 
@@ -115,7 +116,7 @@ public class SSEMiddleware
                     {
                         string previous = mainEndPoint.GetType().FullName ?? "";
                         string current = endPoint.GetType().FullName ?? "";
-                        result.Errors.Add(new SSEError(SSEErrorCode.MultipleMainEndpoint, "You can't define multiple main endpoint : " + previous + " and " + current));
+                        result.Errors.Add(new SSEError(SSEErrorCode.MultipleMainEndpoint, AventusTranslations.Get(AventusMessageKeys.SSE.MultipleMainEndpoints, previous, current)));
                     }
                 }
             }

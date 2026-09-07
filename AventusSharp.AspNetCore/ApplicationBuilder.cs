@@ -20,11 +20,43 @@ using AventusSharp.AspNetCore.Routes;
 using Environment = System.Environment;
 using Microsoft.Extensions.Logging.Abstractions;
 using AventusSharp.Scheduler;
+using AventusSharp.Localization;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 namespace AventusSharp;
 
 public static class AventusExtension
 {
+    /// <summary>
+    /// Configures translations for this application's requests. Call before Aventus routing.
+    /// Set useRequestLocalization to false if the application already selects CurrentUICulture.
+    /// </summary>
+    public static IApplicationBuilder UseAventusTranslations(
+        this IApplicationBuilder app,
+        Action<AventusTranslationOptions>? configure = null,
+        bool useRequestLocalization = true,
+        Action<RequestLocalizationOptions>? configureRequests = null)
+    {
+        var localizer = new AventusLocalizer(configure);
+        if (useRequestLocalization)
+        {
+            var options = new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new RequestCulture(localizer.DefaultCulture),
+                SupportedCultures = localizer.SupportedCultures.ToList(),
+                SupportedUICultures = localizer.SupportedCultures.ToList()
+            };
+            configureRequests?.Invoke(options);
+            app.UseRequestLocalization(options);
+        }
+        return app.Use(async (context, next) =>
+        {
+            using var scope = AventusTranslations.Use(localizer, CultureInfo.CurrentUICulture);
+            await next(context);
+        });
+    }
+
     public static bool IsExportCommand
     {
         get

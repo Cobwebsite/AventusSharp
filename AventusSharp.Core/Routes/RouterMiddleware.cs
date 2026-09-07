@@ -1,4 +1,5 @@
-﻿using System;
+using AventusSharp.Localization;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -229,7 +230,7 @@ namespace AventusSharp.Routes
                                         if (config.PrintRoute)
                                             AventusLogger.Instance.LogInformation("Add http : " + info.ToString());
                                         RouteInfo otherInfo = routesInfo[info.UniqueKey];
-                                        result.Errors.Add(new RouteError(RouteErrorCode.RouteAlreadyExist, info.ToString() + " is already added from " + otherInfo.action.Name + " (" + otherInfo.action.DeclaringType?.Assembly.FullName + ")"));
+                                        result.Errors.Add(new RouteError(RouteErrorCode.RouteAlreadyExist, AventusTranslations.Get(AventusMessageKeys.Routes.AlreadyRegistered, info.ToString(), otherInfo.action.Name, otherInfo.action.DeclaringType?.Assembly.FullName)));
                                     }
                                 }
                                 catch (Exception e)

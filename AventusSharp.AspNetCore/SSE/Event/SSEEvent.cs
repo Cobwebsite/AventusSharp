@@ -1,4 +1,5 @@
-﻿using AventusSharp.SSE.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.SSE.Attributes;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using System;
@@ -76,7 +77,7 @@ namespace AventusSharp.SSE.Event
             SSEEndPoint? endPoint = SSEMiddleware.endPointInstances.Values.FirstOrDefault(p => p.GetType() == endPointType);
             if (endPoint == null)
             {
-                result.Errors.Add(new SSEError(SSEErrorCode.NoEndPoint, "No endpoint of type " + endPointType.Name + " found. Did you register the SSEMiddleware?"));
+                result.Errors.Add(new SSEError(SSEErrorCode.NoEndPoint, AventusTranslations.Get(AventusMessageKeys.SSE.EndpointNotFound, endPointType.Name)));
             }
             else
             {

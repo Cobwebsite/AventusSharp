@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using System;
 using System.Data;
 using System.Reflection;
@@ -21,7 +22,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             VoidWithDataError result = new VoidWithDataError();
             if (memberInfo == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Member not found"));
+                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberMissing)));
                 return result;
             }
             SqlName = memberInfo.Name;

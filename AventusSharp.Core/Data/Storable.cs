@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
@@ -268,12 +269,12 @@ namespace AventusSharp.Data
                     {
                         return new List<GenericError>();
                     }
-                    return new List<GenericError>() { new DataError(DataErrorCode.UnknownError, "Element is overrided => impossible") };
+                    return new List<GenericError>() { new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.ElementOverridden)) };
                 }
                 return result.Errors;
 
             }
-            string errorMsg = "Element " + this.GetType() + " isn't a " + typeof(T).Name + ". This should be impossible";
+            string errorMsg = AventusTranslations.Get(AventusMessageKeys.Data.ElementWrongType, this.GetType(), typeof(T).Name);
             DataError error = new(DataErrorCode.WrongType, errorMsg);
             return new List<GenericError>() { error };
         }
@@ -359,11 +360,11 @@ namespace AventusSharp.Data
                     {
                         return result.Errors;
                     }
-                    return new List<GenericError>() { new DataError(DataErrorCode.UnknownError, "Element is overrided => impossible") };
+                    return new List<GenericError>() { new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.ElementOverridden)) };
                 }
                 return result.Errors;
             }
-            string errorMsg = "Element " + this.GetType() + " isn't a " + typeof(T).Name + ". This should be impossible";
+            string errorMsg = AventusTranslations.Get(AventusMessageKeys.Data.ElementWrongType, this.GetType(), typeof(T).Name);
             DataError error = new(DataErrorCode.WrongType, errorMsg);
             return new List<GenericError>() { error };
         }
@@ -505,7 +506,7 @@ namespace AventusSharp.Data
                 ResultWithError<T> result = await GenericDM.Get<T>().DeleteWithError(TThis);
                 return result.Errors;
             }
-            string errorMsg = "Element " + this.GetType() + " isn't a " + typeof(T).Name + ". This should be impossible";
+            string errorMsg = AventusTranslations.Get(AventusMessageKeys.Data.ElementWrongType, this.GetType(), typeof(T).Name);
             DataError error = new(DataErrorCode.WrongType, errorMsg);
             return new List<GenericError>() { error };
         }
@@ -551,7 +552,7 @@ namespace AventusSharp.Data
             {
                 Errors = new()
                 {
-                    new DataError(DataErrorCode.WrongType, "Element " + GetType() + " isn't a " + typeof(T).Name + ". This should be impossible")
+                    new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.ElementWrongType, GetType(), typeof(T).Name))
                 }
             };
         }
@@ -644,7 +645,7 @@ namespace AventusSharp.Data
             {
                 Errors = new()
                 {
-                    new DataError(DataErrorCode.WrongType, "Element " + GetType() + " isn't a " + typeof(T).Name + ". This should be impossible")
+                    new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.ElementWrongType, GetType(), typeof(T).Name))
                 }
             };
 
@@ -721,7 +722,7 @@ namespace AventusSharp.Data
             {
                 Errors = new()
                 {
-                    new DataError(DataErrorCode.WrongType, "Element " + GetType() + " isn't a " + typeof(T).Name + ". This should be impossible")
+                    new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.ElementWrongType, GetType(), typeof(T).Name))
                 }
             };
         }

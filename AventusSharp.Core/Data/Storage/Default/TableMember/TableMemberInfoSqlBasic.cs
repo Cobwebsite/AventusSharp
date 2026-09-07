@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Tools;
@@ -24,7 +25,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             VoidWithDataError result = new VoidWithDataError();
             if (memberInfo == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Member not found"));
+                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberMissing)));
                 return result;
             }
 
@@ -32,7 +33,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             DbType? dbType = GetDbType(MemberType, this);
             if (dbType == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, "Type " + TypeTools.GetReadableName(MemberType) + " can't be parsed into Database type"));
+                result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, AventusTranslations.Get(AventusMessageKeys.Data.DatabaseTypeUnsupported, TypeTools.GetReadableName(MemberType))));
                 return result;
             }
             SqlType = (DbType)dbType;

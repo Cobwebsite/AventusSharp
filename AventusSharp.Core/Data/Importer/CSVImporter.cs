@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -50,7 +51,7 @@ public class CSVImporter
         VoidWithError result = new();
         if (!File.Exists(path))
         {
-            result.Errors.Add(new DataError(DataErrorCode.FileNotFound, "The file " + path + " can't be found"));
+            result.Errors.Add(new DataError(DataErrorCode.FileNotFound, AventusTranslations.Get(AventusMessageKeys.Data.FileNotFound, path)));
             return result;
         }
 

@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager.DB.Builders;
+using AventusSharp.Localization;
+using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
@@ -104,7 +105,7 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     return storage;
                 }
-                throw new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name).GetException();
+                throw new DataError(DataErrorCode.StorageNotFound, AventusTranslations.Get(AventusMessageKeys.Data.ManagerStorageRequired, GetType().Name)).GetException();
             }
         }
 
@@ -177,7 +178,7 @@ namespace AventusSharp.Data.Manager.DB
             storage ??= config.DefaultStorage;
             if (storage == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "Can't found a storage for " + Name));
+                result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, AventusTranslations.Get(AventusMessageKeys.Data.StorageNotFound, Name)));
                 return result;
             }
             bool? localCacheTemp = UseLocalCache();
@@ -223,7 +224,7 @@ namespace AventusSharp.Data.Manager.DB
 
                 return result;
             }
-            result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, "You must define a storage inside your DM " + GetType().Name));
+            result.Errors.Add(new DataError(DataErrorCode.StorageNotFound, AventusTranslations.Get(AventusMessageKeys.Data.ManagerStorageRequired, GetType().Name)));
             return result;
         }
         internal override IMigrationProvider GetMigrationProvider()
@@ -357,7 +358,7 @@ namespace AventusSharp.Data.Manager.DB
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ItemNoExistInsideStorage, "The item " + id + " can't be found inside the storage"));
+                    result.Errors.Add(new DataError(DataErrorCode.ItemNoExistInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.ItemNotFound, id)));
                 }
             }
             else
@@ -874,7 +875,7 @@ namespace AventusSharp.Data.Manager.DB
             }
             catch
             {
-                result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, "The storage " + GetType().Name + "(" + ToString() + ") can't connect to the database"));
+                result.Errors.Add(new DataError(DataErrorCode.StorageDisconnected, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionFailed, GetType().Name, ToString())));
                 return result;
             }
             DbTransaction transaction = await connection.BeginTransactionAsync();

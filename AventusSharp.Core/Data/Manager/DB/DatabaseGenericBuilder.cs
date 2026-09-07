@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Hosting;
@@ -302,8 +303,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         {
             result.Add(new DataError(
                 DataErrorCode.ValidationError,
-                "Missing values for prepared query parameters: " +
-                string.Join(", ", missingParameters)));
+                AventusTranslations.Get(AventusMessageKeys.Data.QueryParametersMissing, string.Join(", ", missingParameters))));
         }
         return result;
     }
@@ -672,7 +672,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         {
             Errors.Add(new DataError(
                 DataErrorCode.ValidationError,
-                "Limit must be greater than or equal to zero"));
+                AventusTranslations.Get(AventusMessageKeys.Data.InvalidLimit)));
             return;
         }
         LimitSize = limit;
@@ -684,7 +684,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         {
             Errors.Add(new DataError(
                 DataErrorCode.ValidationError,
-                "Offset must be greater than or equal to zero"));
+                AventusTranslations.Get(AventusMessageKeys.Data.InvalidOffset)));
             return;
         }
         OffsetSize = offset;

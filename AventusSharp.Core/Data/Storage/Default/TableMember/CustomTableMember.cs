@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -41,7 +42,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             VoidWithDataError result = new VoidWithDataError();
             if (memberInfo == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Member not found"));
+                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberMissing)));
                 return result;
             }
 
@@ -49,7 +50,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             DbType? dbType = GetDbType();
             if (dbType == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, "Type " + TypeTools.GetReadableName(MemberType) + " can't be parsed into Database type"));
+                result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, AventusTranslations.Get(AventusMessageKeys.Data.DatabaseTypeUnsupported, TypeTools.GetReadableName(MemberType))));
                 return result;
             }
             SqlType = (DbType)dbType;

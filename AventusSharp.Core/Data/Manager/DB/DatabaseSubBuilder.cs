@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -86,7 +87,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         VoidWithError result = new VoidWithError();
         if (ReverseLinkQuery == null || ReverseLinkMemberX == null || ReverseLinkReverseMember == null)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotPrepared, "The ReverseLink isn't prepared, please open an issue"));
+            result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotPrepared, AventusTranslations.Get(AventusMessageKeys.Data.ReverseLinkNotPrepared)));
             return result;
         }
         Dictionary<int, List<X>> elements = new();
@@ -175,7 +176,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
             ReverseLink? reverseLinkAttr = memberXQuery.Result.GetCustomAttribute<ReverseLink>();
             if (reverseLinkAttr == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, "The field " + memberXQuery.Result.Name + " isn't a ReverseLink"));
+                result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotExist, AventusTranslations.Get(AventusMessageKeys.Data.FieldNotReverseLink, memberXQuery.Result.Name)));
                 return result;
             }
 
@@ -192,7 +193,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                 else
                 {
                     result.Errors.AddRange(memberYQuery.Errors);
-                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The name " + reverseName + " can't be found on " + TypeTools.GetReadableName(typeof(Y))));
+                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.NameNotFound, reverseName, TypeTools.GetReadableName(typeof(Y)))));
                 }
             }
             else
@@ -209,7 +210,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                         result.Errors.Add(
                             new DataError(
                                 DataErrorCode.TooMuchMemberFound,
-                                "Too much matching type " + TypeTools.GetReadableName(typeof(X)) + " on type " + TypeTools.GetReadableName(typeof(Y)) + ". Please define a name (" + string.Join(", ", membersYQuery.Result.Select(s => s.Name)) + ")"
+                                AventusTranslations.Get(AventusMessageKeys.Data.AmbiguousMember, TypeTools.GetReadableName(typeof(X)), TypeTools.GetReadableName(typeof(Y)), string.Join(", ", membersYQuery.Result.Select(s => s.Name)))
                             )
                         );
                     }
@@ -224,13 +225,13 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                                 result.Errors.Add(
                                     new DataError(
                                         DataErrorCode.TooMuchMemberFound,
-                                        "Too much matching type " + TypeTools.GetReadableName(typeof(X)) + " on type " + TypeTools.GetReadableName(typeof(Y)) + ". Please define a name (" + string.Join(", ", membersYQuery.Result.Select(s => s.Name)) + ")"
+                                        AventusTranslations.Get(AventusMessageKeys.Data.AmbiguousMember, TypeTools.GetReadableName(typeof(X)), TypeTools.GetReadableName(typeof(Y)), string.Join(", ", membersYQuery.Result.Select(s => s.Name)))
                                     )
                                 );
                             }
                             else if (membersYQuery.Result.Count == 0)
                             {
-                                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "The type " + TypeTools.GetReadableName(typeof(X)) + " can't be found on " + TypeTools.GetReadableName(typeof(Y))));
+                                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberTypeNotFound, TypeTools.GetReadableName(typeof(X)), TypeTools.GetReadableName(typeof(Y)))));
                             }
                             else
                             {
@@ -376,7 +377,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         VoidWithError result = new VoidWithError();
         if (ReverseLinkQuery == null || ReverseLinkMemberX == null || ReverseLinkReverseMember == null)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotPrepared, "The ReverseLink isn't prepared, please open an issue"));
+            result.Errors.Add(new DataError(DataErrorCode.ReverseLinkNotPrepared, AventusTranslations.Get(AventusMessageKeys.Data.ReverseLinkNotPrepared)));
             return result;
         }
 
@@ -416,7 +417,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         VoidWithError result = new VoidWithError();
         if (ExternalStorageMemberX == null || ExternalStorageQuery == null)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ExternalStorageNotPrepared, "The ExternalStorage isn't prepared, please open an issue"));
+            result.Errors.Add(new DataError(DataErrorCode.ExternalStorageNotPrepared, AventusTranslations.Get(AventusMessageKeys.Data.ExternalStorageNotPrepared)));
             return result;
         }
 
@@ -523,7 +524,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         ReverseLink? reverseLinkAttr = memberX.GetCustomAttribute<ReverseLink>();
         if (reverseLinkAttr != null)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ReverseLinkExist, "The field " + memberX.Name + " is a ReverseLink"));
+            result.Errors.Add(new DataError(DataErrorCode.ReverseLinkExist, AventusTranslations.Get(AventusMessageKeys.Data.FieldIsReverseLink, memberX.Name)));
             return result;
         }
 
@@ -579,7 +580,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         VoidWithError result = new VoidWithError();
         if (ExternalStorageMemberX == null || ExternalStorageQuery == null)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ExternalStorageNotPrepared, "The ExternalStorage isn't prepared, please open an issue"));
+            result.Errors.Add(new DataError(DataErrorCode.ExternalStorageNotPrepared, AventusTranslations.Get(AventusMessageKeys.Data.ExternalStorageNotPrepared)));
             return result;
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+using AventusSharp.Localization;
+using System;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Attributes
@@ -30,7 +31,7 @@ namespace AventusSharp.Data.Attributes
         {
             if(value == null)
             {
-                string msg = this.Msg == "" ? $"The field {context.FieldName} is required." : this.Msg;
+                string msg = this.Msg == "" ? AventusTranslations.Get(AventusMessageKeys.Validation.Required, context.FieldName) : this.Msg;
                 return Task.FromResult(new ValidationResult(msg, context.FieldName));
             }
             return Task.FromResult(ValidationResult.Success);

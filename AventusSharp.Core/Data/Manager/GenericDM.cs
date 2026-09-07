@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
@@ -37,7 +38,7 @@ namespace AventusSharp.Data.Manager
             {
                 return dico[U];
             }
-            throw new DataError(DataErrorCode.DMNotExist, "Can't found a data manger for type " + U.Name).GetException();
+            throw new DataError(DataErrorCode.DMNotExist, AventusTranslations.Get(AventusMessageKeys.Data.ManagerNotFound, U.Name)).GetException();
         }
         public static ResultWithError<IGenericDM> GetWithError<U>() where U : IStorable
         {
@@ -51,7 +52,7 @@ namespace AventusSharp.Data.Manager
                 result.Result = dico[U];
                 return result;
             }
-            result.Errors.Add(new DataError(DataErrorCode.DMNotExist, "Can't found a data manger for type " + U.Name));
+            result.Errors.Add(new DataError(DataErrorCode.DMNotExist, AventusTranslations.Get(AventusMessageKeys.Data.ManagerNotFound, U.Name)));
             return result;
         }
         public static VoidWithDataError Set(Type type, IGenericDM manager)
@@ -61,7 +62,7 @@ namespace AventusSharp.Data.Manager
             {
                 if (dico[type] != manager)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.DMAlreadyExist, "A manager already exists for type " + type.Name));
+                    result.Errors.Add(new DataError(DataErrorCode.DMAlreadyExist, AventusTranslations.Get(AventusMessageKeys.Data.ManagerAlreadyExists, type.Name)));
                 }
             }
             else
@@ -234,7 +235,7 @@ namespace AventusSharp.Data.Manager
             }
             else
             {
-                result.Errors.Add(new DataError(DataErrorCode.PyramidNotFound, "Can't found the pyramid for " + TypeTools.GetReadableName(typeof(X))));
+                result.Errors.Add(new DataError(DataErrorCode.PyramidNotFound, AventusTranslations.Get(AventusMessageKeys.Data.PyramidNotFound, TypeTools.GetReadableName(typeof(X)))));
             }
             return result;
         }
@@ -279,7 +280,7 @@ namespace AventusSharp.Data.Manager
 
                 if (memberInfo == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Can't find the member " + name + " on " + TypeTools.GetReadableName(typeof(X))));
+                    result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberNotFound, name, TypeTools.GetReadableName(typeof(X)))));
                 }
                 else
                 {
@@ -531,7 +532,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<List<X>>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method GetAllWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.GetAllMethodMissing)));
                 }
                 return result;
             }
@@ -693,7 +694,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<X>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method GetByIdWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.GetByIdMethodMissing)));
                 }
                 return result;
             }
@@ -861,7 +862,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<List<X>>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method GetByIdsWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.GetByIdsMethodMissing)));
                 }
                 return result;
             }
@@ -1016,7 +1017,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<List<X>>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method WhereWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.WhereMethodMissing)));
                 }
                 return result;
             }
@@ -1111,7 +1112,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<X>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method SingleWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.SingleMethodMissing)));
                 }
                 return result;
             }
@@ -1231,7 +1232,7 @@ namespace AventusSharp.Data.Manager
                 if (result == null)
                 {
                     result = new ResultWithError<bool>();
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method ExistWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.ExistMethodMissing)));
                 }
                 return result;
             }
@@ -1364,7 +1365,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method CreateWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.CreateMethodMissing)));
                 }
 
                 return result;
@@ -1520,11 +1521,11 @@ namespace AventusSharp.Data.Manager
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method CreateWithError"));
+                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.CreateMethodMissing)));
                     }
                     return result;
                 }
-                result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, "You must provide a value to create"));
+                result.Errors.Add(new DataError(DataErrorCode.NoItemProvided, AventusTranslations.Get(AventusMessageKeys.Data.CreateValueRequired)));
                 return result;
             }
             catch (Exception e)
@@ -1683,7 +1684,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method UpdateWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.UpdateMethodMissing)));
                 }
                 return result;
             }
@@ -1781,7 +1782,7 @@ namespace AventusSharp.Data.Manager
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method UpdateWithError"));
+                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.UpdateMethodMissing)));
                     }
                 }
                 return result;
@@ -1998,7 +1999,7 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method DeleteWithError"));
+                    result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.DeleteMethodMissing)));
                 }
                 return result;
             }
@@ -2093,7 +2094,7 @@ namespace AventusSharp.Data.Manager
                     }
                     else
                     {
-                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, "Can't found the method DeleteWithError"));
+                        result.Errors.Add(new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.DeleteMethodMissing)));
                     }
                 }
                 return result;
@@ -2387,7 +2388,7 @@ namespace AventusSharp.Data.Manager
                 }
             }
 
-            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
+            throw new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MethodMissingOrFailed, name, string.Join(", ", parameters.Select(p => p.GetType().Name)))).GetException();
         }
 
         protected Task<X?> InvokeMethodAsync<X, Y>(ref MethodInfo? methodSaved, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
@@ -2472,7 +2473,7 @@ namespace AventusSharp.Data.Manager
                 }
             }
 
-            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
+            throw new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MethodMissingOrFailed, name, string.Join(", ", parameters.Select(p => p.GetType().Name)))).GetException();
         }
 
         protected X? InvokeMethod<X>(Type YType, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
@@ -2535,7 +2536,7 @@ namespace AventusSharp.Data.Manager
                 }
             }
 
-            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found").GetException();
+            throw new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MethodNotFound, name, string.Join(", ", parameters.Select(p => p.GetType().Name)))).GetException();
         }
         protected Task<X?> InvokeMethodAsync<X>(Type YType, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
         {
@@ -2605,7 +2606,7 @@ namespace AventusSharp.Data.Manager
                 }
             }
 
-            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found").GetException();
+            throw new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MethodNotFound, name, string.Join(", ", parameters.Select(p => p.GetType().Name)))).GetException();
         }
 
 
@@ -2679,7 +2680,7 @@ namespace AventusSharp.Data.Manager
                 }
             }
 
-            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
+            throw new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MethodMissingOrFailed, name, string.Join(", ", parameters.Select(p => p.GetType().Name)))).GetException();
         }
         protected Task InvokeMethodTask<Y>(ref MethodInfo? methodSaved, object[]? parameters = null, bool checkSameParam = true, [CallerMemberName] string name = "")
         {
@@ -2759,7 +2760,7 @@ namespace AventusSharp.Data.Manager
                 }
             }
 
-            throw new DataError(DataErrorCode.MethodNotFound, "The method " + name + "(" + string.Join(", ", parameters.Select(p => p.GetType().Name)) + ") can't be found or failed").GetException();
+            throw new DataError(DataErrorCode.MethodNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MethodMissingOrFailed, name, string.Join(", ", parameters.Select(p => p.GetType().Name)))).GetException();
         }
 
         private static bool IsSameParameters(ParameterInfo[] parameterInfos, List<Type> types)

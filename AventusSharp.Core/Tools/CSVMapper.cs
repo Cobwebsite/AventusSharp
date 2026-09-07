@@ -1,3 +1,4 @@
+using AventusSharp.Localization;
 
 
 using System;
@@ -32,7 +33,7 @@ public class CSVMapper<T>
         }
         else
         {
-            errors.Add(new DataError(DataErrorCode.MemberNotFound, "The member " + objectName + " can't be found on " + TypeTools.GetReadableName(typeof(T))));
+            errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberUnavailable, objectName, TypeTools.GetReadableName(typeof(T)))));
         }
     }
     public void Map(Expression<Func<T, object?>> expression, string csvName)
@@ -49,7 +50,7 @@ public class CSVMapper<T>
         }
         else
         {
-            errors.Add(new DataError(DataErrorCode.MemberNotFound, "The member " + name + " can't be found on " + TypeTools.GetReadableName(typeof(T))));
+            errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberUnavailable, name, TypeTools.GetReadableName(typeof(T)))));
         }
     }
     public void Ignore(Expression<Func<T, object?>> expression)

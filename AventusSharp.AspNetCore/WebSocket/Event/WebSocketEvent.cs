@@ -1,4 +1,5 @@
-﻿using AventusSharp.Tools;
+using AventusSharp.Localization;
+using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
 using System;
@@ -98,7 +99,7 @@ namespace AventusSharp.WebSocket.Event
             WsEndPoint? endPoint = WebSocketMiddleware.endPointInstances.Values.FirstOrDefault(p => p.GetType() == endPointType);
             if (endPoint == null)
             {
-                result.Errors.Add(new WsError(WsErrorCode.NoEndPoint, "No endpoint of type " + endPointType.Name + " found. Did you register the WebSocketMiddleware?"));
+                result.Errors.Add(new WsError(WsErrorCode.NoEndPoint, AventusTranslations.Get(AventusMessageKeys.WebSocket.EndpointNotFound, endPointType.Name)));
             }
             else
             {
@@ -114,13 +115,13 @@ namespace AventusSharp.WebSocket.Event
         {
             if (path == null)
             {
-                throw new WsError(WsErrorCode.NoPath, "The path isn't transformed from basePath " + basePath).GetException();
+                throw new WsError(WsErrorCode.NoPath, AventusTranslations.Get(AventusMessageKeys.WebSocket.PathNotTransformed, basePath)).GetException();
             }
             if (eventType == ResponseTypeEnum.Single)
             {
                 if (connection == null)
                 {
-                    throw new WsError(WsErrorCode.NoConnection, "You must provide a connection").GetException();
+                    throw new WsError(WsErrorCode.NoConnection, AventusTranslations.Get(AventusMessageKeys.WebSocket.ConnectionRequired)).GetException();
                 }
                 await connection.Send(path, o, uid);
             }
@@ -141,7 +142,7 @@ namespace AventusSharp.WebSocket.Event
             }
             else
             {
-                throw new WsError(WsErrorCode.NoEndPoint, "You must provide a endpoint. Maybe you can use the function EmitTo()").GetException();
+                throw new WsError(WsErrorCode.NoEndPoint, AventusTranslations.Get(AventusMessageKeys.WebSocket.EndpointRequired)).GetException();
             }
         }
     }

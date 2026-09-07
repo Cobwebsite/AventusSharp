@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Manager;
+using AventusSharp.Localization;
+using AventusSharp.Data.Manager;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -125,7 +126,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             VoidWithDataError result = new VoidWithDataError();
             if (memberInfo == null)
             {
-                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, "Member not found"));
+                result.Errors.Add(new DataError(DataErrorCode.MemberNotFound, AventusTranslations.Get(AventusMessageKeys.Data.MemberMissing)));
                 return result;
             }
             SqlName = memberInfo.Name;
@@ -139,7 +140,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, "Type is not a storable type"));
+                    result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, AventusTranslations.Get(AventusMessageKeys.Data.NotStorable)));
                     return result;
                 }
             }
@@ -152,13 +153,13 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, "Type is not a storable type"));
+                    result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, AventusTranslations.Get(AventusMessageKeys.Data.NotStorable)));
                     return result;
                 }
             }
             else
             {
-                result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, "Type is not a storable type"));
+                result.Errors.Add(new DataError(DataErrorCode.TypeNotStorable, AventusTranslations.Get(AventusMessageKeys.Data.NotStorable)));
                 return result;
             }
 

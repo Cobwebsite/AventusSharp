@@ -1,4 +1,5 @@
-﻿using AventusSharp.Data.Attributes;
+using AventusSharp.Localization;
+using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
@@ -141,7 +142,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 }
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.NumberOfItemsNotMatching, "Can't update single because the action return " + resultTemp.Result.Count + " item"));
+                    result.Errors.Add(new DataError(DataErrorCode.NumberOfItemsNotMatching, AventusTranslations.Get(AventusMessageKeys.Data.UpdateSingleCountMismatch, resultTemp.Result.Count)));
                 }
             }
             else

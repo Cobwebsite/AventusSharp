@@ -20,7 +20,7 @@ namespace AventusSharp.Scheduler
 
         private const uint _maxTimerInterval = 0xfffffffe;
 
-        private static bool _useUtc = false;
+        private static TimeZoneInfo _timeZone = TimeZoneInfo.Local;
 
         private static readonly Timer _timer = new Timer(state => ScheduleJobs(), null, Timeout.Infinite, Timeout.Infinite);
 
@@ -28,19 +28,56 @@ namespace AventusSharp.Scheduler
 
         private static readonly ISet<Tuple<Schedule, Task>> _running = new HashSet<Tuple<Schedule, Task>>();
 
-        internal static DateTime Now => _useUtc ? DateTime.UtcNow : DateTime.Now;
+        internal static DateTime Now =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _timeZone);
+
+        internal static DateTime GetNow(Schedule schedule) =>
+            TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GetTimeZone(schedule));
+
+        private static TimeZoneInfo GetTimeZone(Schedule schedule) =>
+            schedule.ScheduledTimeZone ?? schedule.Parent?.ScheduledTimeZone ?? _timeZone;
+
+        private static void SetNextRun(Schedule schedule, DateTime nextRun)
+        {
+            TimeZoneInfo timeZone = GetTimeZone(schedule);
+            DateTime localTime = NormalizeLocalTime(nextRun, timeZone);
+
+            schedule.NextRun = localTime;
+            schedule.NextRunUtc = TimeZoneInfo.ConvertTimeToUtc(localTime, timeZone);
+        }
+
+        private static DateTime ToUtc(Schedule schedule, DateTime dateTime)
+        {
+            TimeZoneInfo timeZone = GetTimeZone(schedule);
+            return TimeZoneInfo.ConvertTimeToUtc(NormalizeLocalTime(dateTime, timeZone), timeZone);
+        }
+
+        private static DateTime NormalizeLocalTime(DateTime dateTime, TimeZoneInfo timeZone)
+        {
+            DateTime localTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+
+            // A wall-clock time can be absent during the daylight-saving gap.
+            // Move it to the first valid minute so the occurrence is not lost.
+            while (timeZone.IsInvalidTime(localTime))
+            {
+                localTime = localTime.AddMinutes(1);
+            }
+            return localTime;
+        }
 
         #endregion
 
-        #region UTC
+        #region Time zone
 
         /// <summary>
-        /// Use UTC time rather than local time.
-        /// It's recommended to call this method before any other library interaction to avoid mixed dates.
+        /// Uses the specified time zone to calculate scheduler occurrences.
+        /// Call this method before registering jobs to avoid mixed dates.
         /// </summary>
-        public static void UseUtcTime()
+        /// <param name="timeZone">Time zone used by the scheduler.</param>
+        public static void UseTimeZone(TimeZoneInfo timeZone)
         {
-            _useUtc = true;
+            ArgumentNullException.ThrowIfNull(timeZone);
+            _timeZone = timeZone;
         }
 
         #endregion
@@ -268,6 +305,14 @@ namespace AventusSharp.Scheduler
         /// <param name="name">Job name.</param>
         public static void AddJob(Action job, Action<Schedule> schedule, string name)
         {
+            AddJobAndGetSchedule(job, schedule, name);
+        }
+
+        internal static Schedule AddJobAndGetSchedule(
+            Action job,
+            Action<Schedule> schedule,
+            string name)
+        {
             if (job == null)
             {
                 throw new ArgumentNullException(nameof(job));
@@ -278,7 +323,9 @@ namespace AventusSharp.Scheduler
                 throw new ArgumentNullException(nameof(schedule));
             }
 
-            AddJob(schedule, new Schedule(job, name));
+            var registeredSchedule = new Schedule(job, name);
+            AddJob(schedule, registeredSchedule);
+            return registeredSchedule;
         }
 
         /// <summary>
@@ -355,12 +402,13 @@ namespace AventusSharp.Scheduler
         #region Calculating, scheduling & running
         public static void CalculateNextRun(Schedule schedule)
         {
+            DateTime now = GetNow(schedule);
             if (schedule.CalculateNextRun == null)
             {
                 if (schedule.DelayRunFor > TimeSpan.Zero)
                 {
                     // delayed job
-                    schedule.NextRun = Now.Add(schedule.DelayRunFor);
+                    SetNextRun(schedule, now.Add(schedule.DelayRunFor));
                     _schedules.Add(schedule);
                 }
                 else
@@ -372,10 +420,12 @@ namespace AventusSharp.Scheduler
                 {
                     if (child.CalculateNextRun != null)
                     {
-                        DateTime nextRun = child.CalculateNextRun(Now.Add(child.DelayRunFor).AddMilliseconds(1));
-                        if (!hasAdded || schedule.NextRun > nextRun)
+                        DateTime childNow = GetNow(child);
+                        DateTime nextRun = child.CalculateNextRun(childNow.Add(child.DelayRunFor).AddMilliseconds(1));
+                        DateTime nextRunUtc = ToUtc(child, nextRun);
+                        if (!hasAdded || schedule.NextRunUtc > nextRunUtc)
                         {
-                            schedule.NextRun = nextRun;
+                            SetNextRun(schedule, TimeZoneInfo.ConvertTimeFromUtc(nextRunUtc, GetTimeZone(schedule)));
                             hasAdded = true;
                         }
                     }
@@ -383,7 +433,7 @@ namespace AventusSharp.Scheduler
             }
             else
             {
-                schedule.NextRun = schedule.CalculateNextRun(Now.Add(schedule.DelayRunFor));
+                SetNextRun(schedule, schedule.CalculateNextRun(now.Add(schedule.DelayRunFor)));
                 _schedules.Add(schedule);
             }
         }
@@ -393,12 +443,13 @@ namespace AventusSharp.Scheduler
         {
             foreach (Schedule schedule in schedules)
             {
+                DateTime now = GetNow(schedule);
                 if (schedule.CalculateNextRun == null)
                 {
                     if (schedule.DelayRunFor > TimeSpan.Zero)
                     {
                         // delayed job
-                        schedule.NextRun = Now.Add(schedule.DelayRunFor);
+                        SetNextRun(schedule, now.Add(schedule.DelayRunFor));
                         _schedules.Add(schedule);
                     }
                     else
@@ -411,10 +462,12 @@ namespace AventusSharp.Scheduler
                     {
                         if (child.CalculateNextRun != null)
                         {
-                            DateTime nextRun = child.CalculateNextRun(Now.Add(child.DelayRunFor).AddMilliseconds(1));
-                            if (!hasAdded || schedule.NextRun > nextRun)
+                            DateTime childNow = GetNow(child);
+                            DateTime nextRun = child.CalculateNextRun(childNow.Add(child.DelayRunFor).AddMilliseconds(1));
+                            DateTime nextRunUtc = ToUtc(child, nextRun);
+                            if (!hasAdded || schedule.NextRunUtc > nextRunUtc)
                             {
-                                schedule.NextRun = nextRun;
+                                SetNextRun(schedule, TimeZoneInfo.ConvertTimeFromUtc(nextRunUtc, GetTimeZone(schedule)));
                                 hasAdded = true;
                             }
                         }
@@ -422,18 +475,19 @@ namespace AventusSharp.Scheduler
                 }
                 else
                 {
-                    schedule.NextRun = schedule.CalculateNextRun(Now.Add(schedule.DelayRunFor));
+                    SetNextRun(schedule, schedule.CalculateNextRun(now.Add(schedule.DelayRunFor)));
                     _schedules.Add(schedule);
                 }
 
                 foreach (Schedule childSchedule in schedule.AdditionalSchedules)
                 {
+                    DateTime childNow = GetNow(childSchedule);
                     if (childSchedule.CalculateNextRun == null)
                     {
                         if (childSchedule.DelayRunFor > TimeSpan.Zero)
                         {
                             // delayed job
-                            childSchedule.NextRun = Now.Add(childSchedule.DelayRunFor);
+                            SetNextRun(childSchedule, childNow.Add(childSchedule.DelayRunFor));
                             _schedules.Add(childSchedule);
                         }
                         else
@@ -445,7 +499,7 @@ namespace AventusSharp.Scheduler
                     }
                     else
                     {
-                        childSchedule.NextRun = childSchedule.CalculateNextRun(Now.Add(childSchedule.DelayRunFor));
+                        SetNextRun(childSchedule, childSchedule.CalculateNextRun(childNow.Add(childSchedule.DelayRunFor)));
                         _schedules.Add(childSchedule);
                     }
                 }
@@ -465,7 +519,8 @@ namespace AventusSharp.Scheduler
             Schedule? firstJob = _schedules.First();
             if (firstJob == null) return;
 
-            if (firstJob.NextRun <= Now)
+            DateTime utcNow = DateTime.UtcNow;
+            if (firstJob.NextRunUtc <= utcNow)
             {
                 RunJob(firstJob);
                 if (firstJob.CalculateNextRun == null)
@@ -474,10 +529,11 @@ namespace AventusSharp.Scheduler
                 }
                 else
                 {
-                    firstJob.NextRun = firstJob.CalculateNextRun(Now.AddMilliseconds(1));
+                    DateTime jobNow = GetNow(firstJob);
+                    SetNextRun(firstJob, firstJob.CalculateNextRun(jobNow.AddMilliseconds(1)));
                 }
 
-                if (firstJob.NextRun <= Now || firstJob.PendingRunOnce)
+                if (firstJob.NextRunUtc <= DateTime.UtcNow || firstJob.PendingRunOnce)
                 {
                     _schedules.Remove(firstJob);
                 }
@@ -487,7 +543,7 @@ namespace AventusSharp.Scheduler
                 return;
             }
 
-            TimeSpan interval = firstJob.NextRun - Now;
+            TimeSpan interval = firstJob.NextRunUtc - DateTime.UtcNow;
 
             if (interval <= TimeSpan.Zero)
             {

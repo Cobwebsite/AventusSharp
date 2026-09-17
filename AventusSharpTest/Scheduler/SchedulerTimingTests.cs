@@ -14,6 +14,7 @@ public sealed class SchedulerTimingTests
     {
         JobManager.StopAndBlock();
         JobManager.RemoveAllJobs();
+        JobManager.UseTimeZone(TimeZoneInfo.Local);
     }
 
     [TearDown]
@@ -21,6 +22,79 @@ public sealed class SchedulerTimingTests
     {
         JobManager.StopAndBlock();
         JobManager.RemoveAllJobs();
+        JobManager.UseTimeZone(TimeZoneInfo.Local);
+    }
+
+    [Test]
+    public void Scheduler_now_uses_the_configured_time_zone()
+    {
+        TimeZoneInfo timeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "AventusSharp.Test.UTC+09:30",
+            TimeSpan.FromHours(9.5),
+            "AventusSharp test time zone",
+            "AventusSharp test time zone");
+
+        JobManager.UseTimeZone(timeZone);
+
+        DateTime expected = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
+        Assert.That(JobManager.Now, Is.EqualTo(expected).Within(TimeSpan.FromSeconds(1)));
+    }
+
+    [Test]
+    public void Run_once_at_uses_the_configured_calendar_day()
+    {
+        TimeZoneInfo timeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "AventusSharp.Test.UTC+14",
+            TimeSpan.FromHours(14),
+            "AventusSharp test time zone",
+            "AventusSharp test time zone");
+        JobManager.UseTimeZone(timeZone);
+        DateTime now = JobManager.Now;
+        DateTime expected = now.Date.AddHours(23).AddMinutes(59);
+        if (expected < now)
+        {
+            expected = expected.AddDays(1);
+        }
+        var schedule = new Schedule(() => { });
+
+        schedule.ToRunOnceAt(23, 59);
+        JobManager.CalculateNextRun(schedule);
+
+        Assert.That(schedule.NextRun, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Each_schedule_can_use_its_own_time_zone()
+    {
+        TimeZoneInfo east = TimeZoneInfo.CreateCustomTimeZone(
+            "AventusSharp.Test.UTC+10",
+            TimeSpan.FromHours(10),
+            "UTC+10",
+            "UTC+10");
+        TimeZoneInfo west = TimeZoneInfo.CreateCustomTimeZone(
+            "AventusSharp.Test.UTC-10",
+            TimeSpan.FromHours(-10),
+            "UTC-10",
+            "UTC-10");
+        DateTime localExecution = new(2030, 6, 15, 8, 0, 0);
+        var eastSchedule = new Schedule(() => { }).TimeZone(east);
+        var westSchedule = new Schedule(() => { }).TimeZone(west);
+        eastSchedule.ToRunOnceAt(localExecution);
+        westSchedule.ToRunOnceAt(localExecution);
+
+        JobManager.CalculateNextRun(eastSchedule);
+        JobManager.CalculateNextRun(westSchedule);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(eastSchedule.NextRun, Is.EqualTo(localExecution));
+            Assert.That(westSchedule.NextRun, Is.EqualTo(localExecution));
+            Assert.That(eastSchedule.NextRunUtc,
+                Is.EqualTo(new DateTime(2030, 6, 14, 22, 0, 0, DateTimeKind.Utc)));
+            Assert.That(westSchedule.NextRunUtc,
+                Is.EqualTo(new DateTime(2030, 6, 15, 18, 0, 0, DateTimeKind.Utc)));
+            Assert.That(eastSchedule.NextRunUtc, Is.LessThan(westSchedule.NextRunUtc));
+        });
     }
 
     [TestCase(1, "milliseconds", 1)]

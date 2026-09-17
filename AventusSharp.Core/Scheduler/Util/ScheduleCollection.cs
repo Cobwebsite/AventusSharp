@@ -22,7 +22,7 @@ namespace AventusSharp.Scheduler.Util
         {
             lock (_lock)
             {
-                _schedules.Sort((x, y) => DateTime.Compare(x.NextRun, y.NextRun));
+                _schedules.Sort((x, y) => DateTime.Compare(x.NextRunUtc, y.NextRunUtc));
             }
         }
 

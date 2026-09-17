@@ -78,6 +78,28 @@ public sealed class SchedulerManagerTests
         });
     }
 
+    [Test]
+    public async Task Find_and_next_run_read_the_registered_schedule_without_adding_jobs()
+    {
+        await SchedulerManager.Init(typeof(ManagedTask).Assembly);
+        string name = typeof(ManagedTask).FullName!;
+        Schedule registeredSchedule = JobManager.GetSchedule(name)!;
+        int scheduleCount = JobManager.AllSchedules.Count();
+
+        ManagedTask? found = SchedulerManager.Find<ManagedTask>();
+        DateTime? nextRun = SchedulerManager.NextRun<ManagedTask>();
+        DateTime? nextRunUtc = SchedulerManager.NextRunUtc<ManagedTask>();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(found, Is.SameAs(SchedulerManager.All.OfType<ManagedTask>().Single()));
+            Assert.That(nextRun, Is.EqualTo(registeredSchedule.NextRun));
+            Assert.That(nextRunUtc, Is.EqualTo(registeredSchedule.NextRunUtc));
+            Assert.That(nextRunUtc?.Kind, Is.EqualTo(DateTimeKind.Utc));
+            Assert.That(JobManager.AllSchedules.Count(), Is.EqualTo(scheduleCount));
+        });
+    }
+
     public sealed class ManagedTask : Schedulable
     {
         public static int Executions;

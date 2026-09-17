@@ -13,6 +13,7 @@ public static class SchedulerManager
 {
     private static readonly object Sync = new();
     private static readonly Dictionary<Type, ISchedulable> Schedulables = [];
+    private static readonly Dictionary<Type, Schedule> Schedules = [];
     private static readonly HashSet<string> ScheduleNames = [];
     private static readonly ConcurrentDictionary<Type, byte> Running = new();
     private static Action<SchedulerManagerConfig> configureAction = _ => { };
@@ -30,6 +31,45 @@ public static class SchedulerManager
             {
                 return Schedulables.Values.ToArray();
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the next execution time in UTC for a registered schedulable.
+    /// </summary>
+    public static DateTime? NextRunUtc<T>() where T : ISchedulable
+    {
+        lock (Sync)
+        {
+            return Schedules.TryGetValue(typeof(T), out Schedule? schedule)
+                ? schedule.NextRunUtc
+                : null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the next execution time in the schedulable's effective time zone.
+    /// </summary>
+    public static DateTime? NextRun<T>() where T : ISchedulable
+    {
+        lock (Sync)
+        {
+            return Schedules.TryGetValue(typeof(T), out Schedule? schedule)
+                ? schedule.NextRun
+                : null;
+        }
+    }
+
+    /// <summary>
+    /// Finds the registered instance of a schedulable type.
+    /// </summary>
+    public static T? Find<T>() where T : ISchedulable
+    {
+        lock (Sync)
+        {
+            return Schedulables.TryGetValue(typeof(T), out ISchedulable? schedulable)
+                ? (T)schedulable
+                : default;
         }
     }
 
@@ -62,10 +102,7 @@ public static class SchedulerManager
             }
         }
 
-        if (config.UseUtcTime)
-        {
-            JobManager.UseUtcTime();
-        }
+        JobManager.UseTimeZone(config.TimeZone ?? TimeZoneInfo.Local);
 
         foreach (Assembly assembly in assemblies.OfType<Assembly>().Distinct())
         {
@@ -120,13 +157,14 @@ public static class SchedulerManager
                 try
                 {
                     JobManager.RemoveJob(name);
-                    JobManager.AddJob(
+                    Schedule schedule = JobManager.AddJobAndGetSchedule(
                         () => Execute(schedulable).GetAwaiter().GetResult(),
                         schedulable.Schedule,
                         name);
                     lock (Sync)
                     {
                         Schedulables[type] = schedulable;
+                        Schedules[type] = schedule;
                         ScheduleNames.Add(name);
                     }
 
@@ -186,6 +224,7 @@ public static class SchedulerManager
             }
             ScheduleNames.Clear();
             Schedulables.Clear();
+            Schedules.Clear();
         }
     }
 

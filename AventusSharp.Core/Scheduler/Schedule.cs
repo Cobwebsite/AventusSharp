@@ -11,10 +11,26 @@ namespace AventusSharp.Scheduler
     /// </summary>
     public class Schedule
     {
+        private readonly object _stateSync = new();
+        private DateTime _nextRun;
+        private DateTime _nextRunUtc;
+
         /// <summary>
         /// Date and time of the next run of this job schedule.
         /// </summary>
-        public DateTime NextRun { get; internal set; }
+        public DateTime NextRun
+        {
+            get { lock (_stateSync) return _nextRun; }
+            internal set { lock (_stateSync) _nextRun = value; }
+        }
+
+        internal DateTime NextRunUtc
+        {
+            get { lock (_stateSync) return _nextRunUtc; }
+            set { lock (_stateSync) _nextRunUtc = value; }
+        }
+
+        internal TimeZoneInfo? ScheduledTimeZone { get; set; }
 
         /// <summary>
         /// Name of this job schedule.
@@ -179,10 +195,11 @@ namespace AventusSharp.Scheduler
         /// <param name="minutes">The minutes (0 through 59).</param>
         public SpecificTimeUnit ToRunOnceAt(int hours, int minutes)
         {
+            DateTime today = JobManager.GetNow(this).Date;
             DateTime dateTime =
-                new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, hours, minutes, 0);
+                new DateTime(today.Year, today.Month, today.Day, hours, minutes, 0);
 
-            return ToRunOnceAt(dateTime < JobManager.Now ? dateTime.AddDays(1) : dateTime);
+            return ToRunOnceAt(dateTime < JobManager.GetNow(this) ? dateTime.AddDays(1) : dateTime);
         }
 
         /// <summary>
@@ -208,6 +225,17 @@ namespace AventusSharp.Scheduler
         {
             var cron = new CronTimeCalculator(cronExpression);
             CalculateNextRun = (x) => cron.Calculate(x);
+        }
+
+        /// <summary>
+        /// Uses the specified time zone for this schedule instead of the
+        /// scheduler's default time zone.
+        /// </summary>
+        public Schedule TimeZone(TimeZoneInfo timeZone)
+        {
+            ArgumentNullException.ThrowIfNull(timeZone);
+            ScheduledTimeZone = timeZone;
+            return this;
         }
 
         /// <summary>

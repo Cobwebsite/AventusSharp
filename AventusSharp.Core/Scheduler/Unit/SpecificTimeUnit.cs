@@ -35,11 +35,12 @@ namespace AventusSharp.Scheduler.Unit
                     Parent = parent,
                     Reentrant = parent.Reentrant,
                     Name = parent.Name,
+                    ScheduledTimeZone = parent.ScheduledTimeZone,
                 };
 
             if (parent.CalculateNextRun != null)
             {
-                DateTime now = JobManager.Now;
+                DateTime now = JobManager.GetNow(parent);
                 TimeSpan delay = parent.CalculateNextRun(now) - now;
 
                 if (delay > TimeSpan.Zero)

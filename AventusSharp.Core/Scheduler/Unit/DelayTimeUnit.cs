@@ -71,7 +71,7 @@ namespace AventusSharp.Scheduler.Unit
         /// </summary>
         public void Months()
         {
-            var today = DateTime.Today;
+            var today = JobManager.GetNow(Schedule).Date;
             Schedule.DelayRunFor = today.AddMonths(_interval).Subtract(today);
         }
 
@@ -80,7 +80,7 @@ namespace AventusSharp.Scheduler.Unit
         /// </summary>
         public void Years()
         {
-            var today = DateTime.Today;
+            var today = JobManager.GetNow(Schedule).Date;
             Schedule.DelayRunFor = today.AddYears(_interval).Subtract(today);
         }
     }

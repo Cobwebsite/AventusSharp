@@ -9,10 +9,10 @@ namespace AventusSharp.Scheduler;
 public sealed class SchedulerManagerConfig
 {
     /// <summary>
-    /// Uses UTC rather than local time to calculate scheduler occurrences.
-    /// This setting is applied before any schedulable is registered.
+    /// Time zone used to calculate scheduler occurrences. When left null, the
+    /// scheduler uses the local time zone.
     /// </summary>
-    public bool UseUtcTime { get; set; }
+    public TimeZoneInfo? TimeZone { get; set; }
 
     /// <summary>
     /// Creates a schedulable instance. When left null, the current host adapter

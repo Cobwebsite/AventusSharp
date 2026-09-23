@@ -11,10 +11,13 @@ export class Maui {
         showLog: false,
         autoLoad: true,
     };
-    public static async configure(config: Partial<MauiConfig>): Promise<void> {
+    public static async configure(config?: Partial<MauiConfig>): Promise<void> {
+        if(!config) {
+            config = {};
+        }
         this.config = {
-            ...config,
-            ...this.config
+            ...this.config,
+            ...config
         };
         this.overrideFetch();
         if(this.config.autoLoad)

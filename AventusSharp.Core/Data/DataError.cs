@@ -58,6 +58,7 @@ namespace AventusSharp.Data
         IsReadOnly,
         ReverseLinkNotPrepared,
         ExternalStorageNotPrepared,
+        TransactionAlreadyRolledBack,
     }
 
 

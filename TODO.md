@@ -117,17 +117,6 @@ son implémentation et ses tests de régression sont terminés.
   `Rolled_back_transaction_does_not_publish_success_event` reste explicite
   jusqu'à l'ajout d'une file d'événements dans le contexte transactionnel.
 
-### Échec d'une transaction imbriquée
-
-- [ ] Marquer le contexte partagé comme définitivement annulé lorsqu'une
-  transaction interne effectue un rollback.
-- Le callback externe ne doit pas pouvoir ignorer cet échec, ouvrir implicitement
-  une nouvelle transaction, puis retourner un succès ou conserver des écritures
-  effectuées après le rollback interne.
-- Le test de spécification
-  `Failed_inner_transaction_cannot_be_ignored_by_the_outer_callback` reste
-  explicite jusqu'à la propagation de cet état d'échec au niveau externe.
-
 ### BulkCreate et héritage multi-table
 
 - [ ] Faire écrire `BulkCreate` dans la table racine puis dans chaque table

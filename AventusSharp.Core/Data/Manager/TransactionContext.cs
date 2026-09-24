@@ -13,6 +13,8 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
 
 
     private bool isEnded = false;
+    private bool isRolledBack = false;
+    public bool IsRolledBack => isRolledBack;
     private int isDisposed = 0;
 
 
@@ -32,6 +34,9 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
 
         if (isEnded)
         {
+            if (isRolledBack)
+                result.Errors.Add(new DataError(DataErrorCode.TransactionAlreadyRolledBack,
+                    "The transaction was rolled back by a nested operation."));
             result.Result = false;
             return result;
         }
@@ -83,6 +88,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
             return result;
         }
         isEnded = true;
+        isRolledBack = true;
         result = await _Rollback();
         return result;
     }

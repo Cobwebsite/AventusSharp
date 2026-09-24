@@ -2206,7 +2206,7 @@ namespace AventusSharp.Data.Manager
             {
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
-                setTransactionScope(null);
+                setTransactionScope(transactionResult.Result.count > 1 ? transactionResult.Result : null);
             }
             return resultTemp;
         }
@@ -2260,7 +2260,7 @@ namespace AventusSharp.Data.Manager
             {
                 ResultWithError<bool> rollbackResult = await transactionResult.Result.Rollback();
                 resultTemp.Errors.AddRange(rollbackResult.Errors);
-                setTransactionScope(null);
+                setTransactionScope(transactionResult.Result.count > 1 ? transactionResult.Result : null);
             }
             return resultTemp;
         }
@@ -2280,6 +2280,12 @@ namespace AventusSharp.Data.Manager
                 }
                 else
                 {
+                    if (transactionContext.IsRolledBack)
+                    {
+                        result.Errors.Add(new DataError(DataErrorCode.TransactionAlreadyRolledBack,
+                            "The transaction was rolled back by a nested operation."));
+                        return result;
+                    }
                     transactionContext.count++;
                     result.Result = transactionContext;
                 }

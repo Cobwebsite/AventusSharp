@@ -1,3 +1,4 @@
+using AventusSharp.Data;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using AventusSharpTest.Integration.Models;
@@ -73,7 +74,6 @@ public sealed class DataNestedTransactionTests
     }
 
     [Test]
-    [Explicit("Specification: an inner rollback must poison the outer transaction even when its failed result is ignored.")]
     public async Task Failed_inner_transaction_cannot_be_ignored_by_the_outer_callback()
     {
         var innerFailureObserved = false;
@@ -99,10 +99,37 @@ public sealed class DataNestedTransactionTests
         Assert.That(innerFailureObserved, Is.True);
         Assert.That(result.Success, Is.False,
             "The outer result must report that its shared transaction was rolled back.");
+        Assert.That(result.Errors.OfType<DataError>().Select(error => error.Code),
+            Does.Contain(DataErrorCode.TransactionAlreadyRolledBack));
         Assert.That(loaded.Success, Is.True,
             IntegrationEnvironment.ErrorMessages(loaded.Errors));
         Assert.That(loaded.Result, Is.Empty,
             "No operation may commit after a rollback of the shared nested transaction.");
+    }
+
+    [Test]
+    public async Task Ignored_inner_failure_without_further_writes_still_fails_outer_transaction()
+    {
+        var result = await Manager.RunInsideTransaction(async () =>
+        {
+            var inner = await Manager.RunInsideTransaction(async () =>
+            {
+                var created = await Device.CreateWithError(NewDevice("Ignored inner failure"));
+                created.Errors.Add(new GenericError(9923, "force inner rollback"));
+                return created;
+            });
+            Assert.That(inner.Success, Is.False);
+            return new VoidWithError();
+        });
+        var loaded = await ((DeviceManager)Manager)
+            .WhereWithErrorNoCache<Device>(device => device.Room == "Nested");
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Errors.OfType<DataError>().Select(error => error.Code),
+            Does.Contain(DataErrorCode.TransactionAlreadyRolledBack));
+        Assert.That(loaded.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(loaded.Errors));
+        Assert.That(loaded.Result, Is.Empty);
     }
 
     [Test]

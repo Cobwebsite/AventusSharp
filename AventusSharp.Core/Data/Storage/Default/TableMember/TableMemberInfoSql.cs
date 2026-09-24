@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Linq;
 using System.Collections;
 using AventusSharp.Data.Manager;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Migrations;
 
 namespace AventusSharp.Data.Storage.Default.TableMember
@@ -254,6 +255,18 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 EffectiveDateTimeStorageMode == DateTimeStorageMode.Utc
                     ? DateTimeKind.Utc
                     : DateTimeKind.Local);
+        }
+
+        protected object PrepareDateTimeForStorage(DateTime value)
+        {
+            DateTime normalized = NormalizeDateTimeForStorage(value);
+            if (DM is IDatabaseDM database && database.Storage.DateTimeFormat != null)
+            {
+                return normalized.ToString(
+                    database.Storage.DateTimeFormat,
+                    System.Globalization.CultureInfo.InvariantCulture);
+            }
+            return normalized;
         }
 
         public object? TransformQueryValue(object? value)

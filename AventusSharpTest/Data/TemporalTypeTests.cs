@@ -27,7 +27,7 @@ public class TemporalTypeTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(value.ToString(), Is.EqualTo("2026-07-24 18-30-12"));
+            Assert.That(value.ToString(), Is.EqualTo("2026-07-24 18:30:12"));
             Assert.That(value, Is.EqualTo(new Datetime(new DateTime(2026, 7, 24, 18, 30, 12, 1))));
             Assert.That(value.DateOnly(), Is.EqualTo(new Date(new DateTime(2026, 7, 24))));
         });

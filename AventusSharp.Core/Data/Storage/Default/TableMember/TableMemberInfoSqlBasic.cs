@@ -64,11 +64,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             }
             else if (result is DateTime dateTime)
             {
-                result = NormalizeDateTimeForStorage(dateTime);
-                if (DM is IDatabaseDM dateTimeDatabase && dateTimeDatabase.Storage.DateTimeFormat != null)
-                {
-                    return ((DateTime)result).ToString(dateTimeDatabase.Storage.DateTimeFormat);
-                }
+                return PrepareDateTimeForStorage(dateTime);
             }
             else if (result?.GetType().IsEnum == true)
             {

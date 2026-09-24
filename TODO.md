@@ -106,17 +106,6 @@ son implémentation et ses tests de régression sont terminés.
 - Ne pas réintroduire `DummyDM`, qui ne respectait pas suffisamment ces
   contrats et pouvait produire de faux positifs.
 
-### Événements CRUD et transactions externes
-
-- [ ] Différer les événements `OnCreated`, `OnUpdated` et `OnDeleted` jusqu'au
-  commit de la transaction externe qui contient l'opération.
-- En cas de rollback, aucun événement de succès ne doit être publié.
-- Les exceptions levées par un abonné restent isolées : elles ne doivent ni
-  annuler une écriture validée, ni empêcher les abonnés suivants d'être appelés.
-- Le test de spécification
-  `Rolled_back_transaction_does_not_publish_success_event` reste explicite
-  jusqu'à l'ajout d'une file d'événements dans le contexte transactionnel.
-
 ### BulkCreate et héritage multi-table
 
 - [ ] Faire écrire `BulkCreate` dans la table racine puis dans chaque table

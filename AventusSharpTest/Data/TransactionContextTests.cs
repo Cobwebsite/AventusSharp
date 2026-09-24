@@ -81,6 +81,31 @@ public sealed class TransactionContextTests
     }
 
     [Test]
+    public async Task Commit_actions_run_only_after_outer_commit_and_are_discarded_on_rollback()
+    {
+        var calls = new List<string>();
+        var committed = new FakeTransactionContext(() =>
+        {
+            calls.Add("end");
+            return Task.CompletedTask;
+        }) { count = 2 };
+        committed.OnCommit(() => calls.Add("event"));
+
+        await committed.Commit();
+        Assert.That(calls, Is.Empty);
+        await committed.Commit();
+        Assert.That(calls, Is.EqualTo(new[] { "end", "event" }));
+
+        var rolledBack = new FakeTransactionContext(() => Task.CompletedTask);
+        rolledBack.OnCommit(() => calls.Add("discarded"));
+        await rolledBack.Rollback();
+        Assert.That(calls, Is.EqualTo(new[] { "end", "event" }));
+
+        await committed.DisposeAsync();
+        await rolledBack.DisposeAsync();
+    }
+
+    [Test]
     public async Task Dispose_without_commit_rolls_back_and_disposes_the_transaction()
     {
         var calls = new List<string>();

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AventusSharp.Tools;
+using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Data.Manager;
 
@@ -21,6 +22,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
     public int count;
     private Func<Task> _endTransaction;
     private readonly List<Func<Task<VoidWithError>>> _rollbackActions = [];
+    private readonly List<Action> _commitActions = [];
 
     public TransactionContext(Func<Task> endTransaction)
     {
@@ -53,9 +55,11 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
     private async Task<ResultWithError<bool>> _Commit()
     {
         ResultWithError<bool> result = new();
+        bool committed = false;
         try
         {
             await TransactionCommit();
+            committed = true;
             result.Result = true;
         }
         catch (Exception e)
@@ -73,6 +77,21 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
+            if (committed)
+            {
+                foreach (Action action in _commitActions)
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch (Exception e)
+                    {
+                        AventusLogger.Instance.LogError(e, "A transaction commit callback crashed.");
+                    }
+                }
+            }
+            _commitActions.Clear();
         }
         return result;
     }
@@ -125,6 +144,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         finally
         {
             _rollbackActions.Clear();
+            _commitActions.Clear();
             try
             {
                 await _endTransaction();
@@ -162,6 +182,11 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
     public void OnRollback(Func<Task<VoidWithError>> action)
     {
         _rollbackActions.Add(action);
+    }
+
+    public void OnCommit(Action action)
+    {
+        _commitActions.Add(action);
     }
 
     

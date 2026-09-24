@@ -552,7 +552,6 @@ public sealed class DataBulkAndEventTests
     }
 
     [Test]
-    [Explicit("Specification: successful CRUD events are currently published before an outer transaction commits.")]
     public async Task Rolled_back_transaction_does_not_publish_success_event()
     {
         var manager = (DeviceManager)GenericDM.Get<Device>();
@@ -576,6 +575,50 @@ public sealed class DataBulkAndEventTests
         finally
         {
             manager.OnCreated -= OnCreated;
+        }
+    }
+
+    [Test]
+    public async Task Crud_success_events_are_published_after_outer_commit_in_operation_order()
+    {
+        var manager = (DeviceManager)GenericDM.Get<Device>();
+        var events = new List<string>();
+
+        void OnCreated(ResultWithError<List<Device>> _) => events.Add("created");
+        void OnUpdated(ResultWithError<List<Device>> _) => events.Add("updated");
+        void OnDeleted(ResultWithError<List<Device>> _) => events.Add("deleted");
+
+        manager.OnCreated += OnCreated;
+        manager.OnUpdated += OnUpdated;
+        manager.OnDeleted += OnDeleted;
+        try
+        {
+            var transaction = await manager.RunInsideTransaction(async () =>
+            {
+                var creation = await Device.CreateWithError(NewDevice(0, "Deferred events"));
+                if (!creation.Success) return creation;
+                Assert.That(events, Is.Empty);
+
+                var device = creation.Result!;
+                device.Brightness = 20;
+                var update = await Device.UpdateWithError(device);
+                if (!update.Success) return update;
+                Assert.That(events, Is.Empty);
+
+                var deletion = await Device.DeleteWithError(device);
+                Assert.That(events, Is.Empty);
+                return deletion;
+            });
+
+            Assert.That(transaction.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(transaction.Errors));
+            Assert.That(events, Is.EqualTo(new[] { "created", "updated", "deleted" }));
+        }
+        finally
+        {
+            manager.OnCreated -= OnCreated;
+            manager.OnUpdated -= OnUpdated;
+            manager.OnDeleted -= OnDeleted;
         }
     }
 

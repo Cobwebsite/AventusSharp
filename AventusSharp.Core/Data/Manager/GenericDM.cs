@@ -1927,56 +1927,83 @@ namespace AventusSharp.Data.Manager
 
         private void PublishCreated(ResultWithError<List<U>> result)
         {
-            if (OnCreated == null) return;
-            foreach (OnCreatedHandler<U> handler in OnCreated.GetInvocationList())
+            OnCreatedHandler<U>? handlers = OnCreated;
+            if (handlers == null) return;
+
+            void Publish()
             {
-                try
+                foreach (OnCreatedHandler<U> handler in handlers.GetInvocationList())
                 {
-                    handler(result);
-                }
-                catch (Exception exception)
-                {
-                    AventusLogger.Instance.LogError(
-                        exception,
-                        "An OnCreated handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                    try
+                    {
+                        handler(result);
+                    }
+                    catch (Exception exception)
+                    {
+                        AventusLogger.Instance.LogError(exception, "An OnCreated handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                    }
                 }
             }
+
+            TransactionContext? transaction = getTransactionScope();
+            if (result.Success && transaction != null)
+                transaction.OnCommit(Publish);
+            else
+                Publish();
         }
 
         private void PublishUpdated(ResultWithError<List<U>> result)
         {
-            if (OnUpdated == null) return;
-            foreach (OnUpdatedHandler<U> handler in OnUpdated.GetInvocationList())
+            OnUpdatedHandler<U>? handlers = OnUpdated;
+            if (handlers == null) return;
+
+            void Publish()
             {
-                try
+                foreach (OnUpdatedHandler<U> handler in handlers.GetInvocationList())
                 {
-                    handler(result);
-                }
-                catch (Exception exception)
-                {
-                    AventusLogger.Instance.LogError(
-                        exception,
-                        "An OnUpdated handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                    try
+                    {
+                        handler(result);
+                    }
+                    catch (Exception exception)
+                    {
+                        AventusLogger.Instance.LogError(exception, "An OnUpdated handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                    }
                 }
             }
+
+            TransactionContext? transaction = getTransactionScope();
+            if (result.Success && transaction != null)
+                transaction.OnCommit(Publish);
+            else
+                Publish();
         }
 
         private void PublishDeleted(ResultWithError<List<U>> result)
         {
-            if (OnDeleted == null) return;
-            foreach (OnDeletedHandler<U> handler in OnDeleted.GetInvocationList())
+            OnDeletedHandler<U>? handlers = OnDeleted;
+            if (handlers == null) return;
+
+            void Publish()
             {
-                try
+                foreach (OnDeletedHandler<U> handler in handlers.GetInvocationList())
                 {
-                    handler(result);
-                }
-                catch (Exception exception)
-                {
-                    AventusLogger.Instance.LogError(
-                        exception,
-                        "An OnDeleted handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                    try
+                    {
+                        handler(result);
+                    }
+                    catch (Exception exception)
+                    {
+                        AventusLogger.Instance.LogError(exception, "An OnDeleted handler crashed for " + TypeTools.GetReadableName(typeof(U)));
+                    }
                 }
             }
+
+            TransactionContext? transaction = getTransactionScope();
+            if (result.Success && transaction != null)
+                transaction.OnCommit(Publish);
+            else
+                Publish();
         }
         private MethodInfo? IDeleteListWithError = null;
         /// <summary>

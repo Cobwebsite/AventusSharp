@@ -138,9 +138,3 @@ son implémentation et ses tests de régression sont terminés.
 - État actuel : la compilation réussit, mais NuGet produit l'avertissement
   `NU5104` car un package AventusSharp stable dépend d'une préversion de
   `Microsoft.Data.Sqlite`.
-# Data cache
-
-- `StartQuery()` matérialise actuellement de nouvelles instances même lorsque `preferLocalCache` est actif. Une correction sûre doit fusionner uniquement les champs réellement sélectionnés dans l'instance canonique (y compris les relations explicitement chargées), sans écraser les propriétés `[NotInDB]` ni conserver des valeurs persistantes obsolètes après un rollback.
-- Le test de spécification
-  `StartQuery_returns_the_canonical_cached_instance_without_losing_runtime_state`
-  reste explicite jusqu'à cette correction.

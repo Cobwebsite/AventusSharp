@@ -53,7 +53,9 @@ public sealed class DataQueryProjectionTests
             Assert.That(result.Result!.Id, Is.EqualTo(device.Id));
             Assert.That(result.Result.Name, Is.EqualTo("Projection"));
             Assert.That(result.Result.Room, Is.EqualTo("Office"));
-            Assert.That(result.Result.Brightness, Is.Zero);
+            Assert.That(result.Result, Is.SameAs(device));
+            Assert.That(result.Result.Brightness, Is.EqualTo(device.Brightness),
+                "An ignored field must retain its value on the canonical cached instance.");
             Assert.That(result.Result.IsOnline, Is.True);
         });
     }

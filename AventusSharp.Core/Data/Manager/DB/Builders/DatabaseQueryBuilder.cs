@@ -30,6 +30,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public DatabaseQueryBuilderInfo? info = null;
         public bool UseShortObject { get; set; } = true;
+        public bool UseCanonicalCache { get; set; } = false;
 
         private QueryBuilderPrepared<T>? prepared = null;
 

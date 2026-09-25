@@ -850,6 +850,7 @@ public sealed class DataRelationshipTests
         Assert.That(withoutInclude.Result!.Room, Is.Null);
         Assert.That(withInclude.Success, Is.True,
             IntegrationEnvironment.ErrorMessages(withInclude.Errors));
+        Assert.That(withInclude.Result, Is.SameAs(link));
         Assert.That(withInclude.Result!.Room, Is.SameAs(room));
     }
 

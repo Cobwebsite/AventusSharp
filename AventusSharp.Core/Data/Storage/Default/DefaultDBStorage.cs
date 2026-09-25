@@ -1274,6 +1274,34 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     await result.RunAsync(() => subquery.Value.Run(result.Result));
                 }
+
+                if (result.Success && queryBuilder.UseCanonicalCache && queryBuilder.DM is IDatabaseDM cacheManager && cacheManager.NeedLocalCache)
+                {
+                    List<TableMemberInfo> selectedMembers = baseInfo.Members.Keys
+                        .Cast<TableMemberInfo>()
+                        .Concat(baseInfo.joins.Keys)
+                        .ToList();
+
+                    foreach (string path in queryBuilder.SubQueries.Keys)
+                    {
+                        string rootName = path.Split('.')[0];
+                        TableMemberInfo? relation = baseInfo.TableInfo.ReverseMembers.FirstOrDefault(member => member.Name == rootName);
+                        if (relation != null) 
+                            selectedMembers.Add(relation);
+                    }
+                    
+                    for (int i = 0; i < result.Result.Count; i++)
+                    {
+                        Dictionary<string, string?> fields = queryResult.Result[i];
+                        List<TableMemberInfo> loadedMembers = baseInfo.Members
+                            .Where(pair => fields.ContainsKey(pair.Value.Alias + "*" + pair.Key.SqlName))
+                            .Select(pair => (TableMemberInfo)pair.Key)
+                            .Concat(selectedMembers.Except(baseInfo.Members.Keys))
+                            .ToList();
+
+                        result.Result[i] = cacheManager.CanonicalizeQueryItem(result.Result[i], loadedMembers);
+                    }
+                }
             }
 
             return result;

@@ -21,6 +21,7 @@ namespace AventusSharp.Data.Manager.DB
     public interface IDatabaseDM
     {
         public bool NeedLocalCache { get; }
+        public X CanonicalizeQueryItem<X>(X item, IEnumerable<TableMemberInfo> selectedMembers) where X : IStorable;
         public bool IsShortLink(string path);
         public IDBStorage Storage { get; }
         public List<X> RemoveRecordsItems<X>(List<int> ids) where X : IStorable;
@@ -239,14 +240,56 @@ namespace AventusSharp.Data.Manager.DB
         {
             if (NeedLocalCache && item.Id > 0 && item is U cachedItem)
             {
-                Records.GetOrAdd(item.Id, cachedItem);
+                if (Records.TryAdd(item.Id, cachedItem))
+                {
+                    getTransactionScope()?.OnRollback(() =>
+                    {
+                        if (Records.TryGetValue(item.Id, out U? current) && ReferenceEquals(current, cachedItem))
+                            Records.TryRemove(item.Id, out _);
+                        return Task.FromResult(new VoidWithError());
+                    });
+                }
             }
             return Task.CompletedTask;
         }
 
+        public X CanonicalizeQueryItem<X>(X item, IEnumerable<TableMemberInfo> selectedMembers) where X : IStorable
+        {
+            if (!NeedLocalCache || item.Id <= 0 || item is not U cachedItem)
+                return item;
+
+            U canonical = Records.GetOrAdd(item.Id, cachedItem);
+            if (ReferenceEquals(canonical, item) || canonical is not X typedCanonical)
+                return item;
+
+            List<(TableMemberInfo Member, object? Previous)> previousValues = [];
+            foreach (TableMemberInfo member in selectedMembers.Distinct())
+            {
+                if (!member.TableInfo.Type.IsInstanceOfType(canonical)) continue;
+                
+                previousValues.Add((member, member.GetValue(canonical)));
+                member.SetValue(canonical, member.GetValue(item));
+            }
+            if (previousValues.Count > 0)
+            {
+                getTransactionScope()?.OnRollback(() =>
+                {
+                    foreach ((TableMemberInfo member, object? previous) in previousValues)
+                        member.SetValue(canonical, previous);
+
+                    return Task.FromResult(new VoidWithError());
+                });
+            }
+            return typedCanonical;
+        }
+
         public override IQueryBuilder<X> CreateQuery<X>()
         {
-            return new DatabaseQueryBuilder<X>(Storage, this) { UseShortObject = false };
+            return new DatabaseQueryBuilder<X>(Storage, this)
+            {
+                UseShortObject = false,
+                UseCanonicalCache = true
+            };
         }
 
         // private readonly Dictionary<Type, object> savedGetAllQuery = new();

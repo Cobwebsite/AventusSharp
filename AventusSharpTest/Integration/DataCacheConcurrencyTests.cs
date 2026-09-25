@@ -318,7 +318,6 @@ public sealed class DataCacheConcurrencyTests
     }
 
     [Test]
-    [Explicit("Specification: StartQuery must merge selected persistent fields into the canonical cached instance.")]
     public async Task StartQuery_returns_the_canonical_cached_instance_without_losing_runtime_state()
     {
         var device = await Device.Create(NewDevice("Canonical query", 10));
@@ -336,6 +335,66 @@ public sealed class DataCacheConcurrencyTests
             IntegrationEnvironment.ErrorMessages(queried.Errors));
         Assert.That(queried.Result, Is.SameAs(device));
         Assert.That(queried.Result!.RuntimeState, Is.EqualTo("runtime state"));
+    }
+
+    [Test]
+    public async Task StartQuery_refreshes_selected_fields_without_overwriting_ignored_fields()
+    {
+        var device = await Device.Create(NewDevice("Original query", 10));
+        Assert.That(device, Is.Not.Null);
+        device!.RuntimeState = "keep runtime";
+        var change = await IntegrationEnvironment.Storage.Execute(
+            $"UPDATE \"devices\" SET \"Name\" = 'Updated query', \"Brightness\" = 42 WHERE \"Id\" = {device.Id};");
+        Assert.That(change.Success, Is.True, IntegrationEnvironment.ErrorMessages(change.Errors));
+
+        var partial = await Device.StartQuery()
+            .Ignore(item => item.Brightness)
+            .Where(item => item.Id == device.Id)
+            .SingleWithError();
+
+        Assert.That(partial.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(partial.Errors));
+        Assert.That(partial.Result, Is.SameAs(device));
+        Assert.That(device.Name, Is.EqualTo("Updated query"));
+        Assert.That(device.Brightness, Is.EqualTo(10));
+        Assert.That(device.RuntimeState, Is.EqualTo("keep runtime"));
+
+        var full = await Device.StartQuery()
+            .Where(item => item.Id == device.Id)
+            .SingleWithError();
+        Assert.That(full.Result, Is.SameAs(device));
+        Assert.That(device.Brightness, Is.EqualTo(42));
+    }
+
+    [Test]
+    public async Task StartQuery_restores_cached_fields_after_transaction_rollback()
+    {
+        var device = await Device.Create(NewDevice("Before query rollback", 10));
+        Assert.That(device, Is.Not.Null);
+        var manager = GenericDM.Get<Device>();
+
+        var transaction = await manager.RunInsideTransaction(async () =>
+        {
+            var change = await IntegrationEnvironment.Storage.Execute(
+                $"UPDATE \"devices\" SET \"Brightness\" = 77 WHERE \"Id\" = {device!.Id};");
+            if (!change.Success) return change;
+
+            var queried = await Device.StartQuery()
+                .Where(item => item.Id == device!.Id)
+                .SingleWithError();
+            Assert.That(queried.Result, Is.SameAs(device));
+            Assert.That(device!.Brightness, Is.EqualTo(77));
+
+            return new VoidWithError
+            {
+                Errors = [new GenericError(9950, "force query rollback")]
+            };
+        });
+
+        Assert.That(transaction.Success, Is.False);
+        Assert.That(device!.Brightness, Is.EqualTo(10));
+        var stored = await ((DeviceManager)manager).GetByIdWithErrorNoCache<Device>(device.Id);
+        Assert.That(stored.Result!.Brightness, Is.EqualTo(10));
     }
 
     [Test]

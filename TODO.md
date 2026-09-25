@@ -19,14 +19,6 @@ son implémentation et ses tests de régression sont terminés.
   `Invalid_many_to_many_link_in_second_buffer_rolls_back_all_buffers`
   restent explicites jusqu'à cette implémentation.
 
-### `Contains(null)` sur une collection nullable
-
-- [ ] Traduire une collection contenant `null` en combinant `IN (...)` avec
-  `champ IS NULL`, afin de conserver la sémantique de
-  `collection.Contains(item.ChampNullable)`.
-- Le test `Nullable_collection_contains_matches_null` reste explicite jusqu'à
-  cette prise en charge.
-
 ### `Contains` sur une relation multiple du modèle
 
 - [ ] Traduire une expression telle que

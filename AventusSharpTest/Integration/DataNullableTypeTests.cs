@@ -154,7 +154,6 @@ public sealed class DataNullableTypeTests
     }
 
     [Test]
-    [Explicit("Specification: SQL IN(NULL, ...) does not implement Contains(null) semantics.")]
     public async Task Nullable_collection_contains_matches_null()
     {
         await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord());
@@ -167,6 +166,37 @@ public sealed class DataNullableTypeTests
         Assert.That(result.Success, Is.True,
             IntegrationEnvironment.ErrorMessages(result.Errors));
         Assert.That(result.Result, Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public async Task Nullable_collection_containing_only_null_matches_null()
+    {
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord());
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord { Number = 42 });
+        var accepted = new List<int?> { null };
+
+        var result = await Manager.WhereWithErrorNoCache<NullablePrimitiveRecord>(
+            item => accepted.Contains(item.Number));
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Number), Is.EqualTo(new int?[] { null }));
+    }
+
+    [Test]
+    public async Task Negated_nullable_collection_containing_null_excludes_null()
+    {
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord());
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord { Number = 42 });
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord { Number = 10 });
+        var accepted = new List<int?> { null, 42 };
+
+        var result = await Manager.WhereWithErrorNoCache<NullablePrimitiveRecord>(
+            item => !accepted.Contains(item.Number));
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Number), Is.EqualTo(new int?[] { 10 }));
     }
 
 }

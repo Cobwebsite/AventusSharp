@@ -345,6 +345,7 @@ namespace AventusSharp.Data.Manager.DB
         private List<Expression?> tree = new List<Expression?>();
 
         private bool nextGroupNegate = false;
+        private bool translatingNullableContains = false;
         private bool isExternal = false;
 
         private bool canSimplify
@@ -931,7 +932,7 @@ namespace AventusSharp.Data.Manager.DB
                         throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", c.Value));
 
                     default:
-                        string value = System.Convert.ToString(c.Value, CultureInfo.InvariantCulture) ?? "";;
+                        string value = System.Convert.ToString(c.Value, CultureInfo.InvariantCulture) ?? "";
                         AddToParentGroup(new WhereGroupConstantOther(value));
                         break;
                 }
@@ -1194,8 +1195,8 @@ namespace AventusSharp.Data.Manager.DB
 
 
             if (
-                node.Method.Name == "GetValueOrDefault" && 
-                node.Method.DeclaringType?.IsGenericType == true && 
+                node.Method.Name == "GetValueOrDefault" &&
+                node.Method.DeclaringType?.IsGenericType == true &&
                 node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>)
             )
             {
@@ -1218,6 +1219,45 @@ namespace AventusSharp.Data.Manager.DB
                 queryGroups.RemoveAt(queryGroups.Count - 1);
                 queryGroups.RemoveAt(queryGroups.Count - 1);
                 currentGroup = queryGroups.LastOrDefault();
+                return node;
+            }
+
+            if (
+                node.Method.Name == "Contains" &&
+                node.Object != null &&
+                node.Arguments.Count == 1 &&
+                !databaseBuilder.ReplaceWhereByParameters &&
+                !translatingNullableContains &&
+                Nullable.GetUnderlyingType(node.Arguments[0].Type) != null &&
+                TryEvaluateValue(node.Object, out object? collection) &&
+                collection is IList nullableValues &&
+                nullableValues.Cast<object?>().Any(value => value == null))
+            {
+                IList nonNullValues = (IList)Activator.CreateInstance(collection.GetType())!;
+                foreach (object? value in nullableValues)
+                {
+                    if (value != null)
+                        nonNullValues.Add(value);
+                }
+
+                Expression isNull = Expression.Equal(node.Arguments[0], Expression.Constant(null, node.Arguments[0].Type));
+                Expression predicate = isNull;
+
+                if (nonNullValues.Count != 0)
+                {
+                    predicate = Expression.OrElse(Expression.Call(Expression.Constant(nonNullValues, node.Object.Type), node.Method, node.Arguments), isNull);
+                }
+
+
+                translatingNullableContains = true;
+                try
+                {
+                    Visit(predicate);
+                }
+                finally
+                {
+                    translatingNullableContains = false;
+                }
                 return node;
             }
 

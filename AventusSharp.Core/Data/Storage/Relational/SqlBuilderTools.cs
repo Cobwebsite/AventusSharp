@@ -144,7 +144,7 @@ namespace AventusSharp.Data.Storage.Relational
             whereTxt += ")";
             if (rootWhereGroup.negate && applyNegate)
             {
-                whereTxt = "!" + whereTxt;
+                whereTxt = "NOT " + whereTxt;
             }
             return whereTxt;
         }

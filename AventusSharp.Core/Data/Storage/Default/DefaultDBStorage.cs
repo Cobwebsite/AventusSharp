@@ -2428,10 +2428,27 @@ namespace AventusSharp.Data.Storage.Default
                 return result;
             }
 
+            TableInfo deletedTable = deleteBuilder.InfoByPath[""].TableInfo;
+            HashSet<int> deletedIds = elementsToDelete.Select(item => item.Id).ToHashSet();
+            HashSet<TableMemberInfoSql> synchronizedMembers = [];
+            foreach (TableInfo table in allTableInfos.Values.Distinct())
+            {
+                if (table.DM is not IDatabaseDM dependentManager) continue;
+                foreach (TableMemberInfoSql member in table.Members)
+                {
+                    if (member.IsDeleteSetNull
+                        && member is ITableMemberInfoSqlLinkSingle link
+                        && ReferenceEquals(link.TableLinked, deletedTable)
+                        && synchronizedMembers.Add(member))
+                    {
+                        dependentManager.SynchronizeDeleteSetNull(member, deletedIds);
+                    }
+                }
+            }
+
             #endregion
 
             // auto delete 1-n
-            TableInfo deletedTable = deleteBuilder.InfoByPath[""].TableInfo;
             HashSet<(Type Type, int Id)> autoDeleted = [];
             foreach (TableMemberInfoSql member in deletedTable.Members.Where(member => member.IsAutoDelete))
             {

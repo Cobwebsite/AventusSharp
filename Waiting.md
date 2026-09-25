@@ -6,7 +6,7 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 - [x] Empêcher qu'un échec de transaction imbriquée soit ignoré par la transaction externe : aucun nouveau travail ne doit être validé après le rollback interne, et le résultat externe doit signaler l'échec. Test de spécification activé et tests ciblés réussis ; documentation du site à actualiser.
 - [x] Différer `OnCreated`, `OnUpdated` et `OnDeleted` jusqu'au commit externe ; ne rien publier en cas de rollback. Test de spécification activé et tests ciblés réussis ; documentation du site à actualiser.
-- [ ] Synchroniser le cache après `DeleteSetNull` et restaurer les relations en cas de rollback.
+- [x] Synchroniser le cache après `DeleteSetNull` et restaurer les relations en cas de rollback. Test de spécification activé, test de rollback ajouté et tests de relations réussis ; documentation du site à actualiser.
 - [ ] Faire retourner à `StartQuery()` l'instance canonique du cache sans écraser les champs `[NotInDB]` ni garder des valeurs obsolètes après rollback.
 - [ ] Protéger les cycles `[AutoRead]` lorsque `preferLocalCache` vaut `false`.
 

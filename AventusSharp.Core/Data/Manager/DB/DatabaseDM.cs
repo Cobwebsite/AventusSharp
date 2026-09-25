@@ -25,6 +25,7 @@ namespace AventusSharp.Data.Manager.DB
         public IDBStorage Storage { get; }
         public List<X> RemoveRecordsItems<X>(List<int> ids) where X : IStorable;
         public List<X> RemoveRecordsItems<X>(List<X> items) where X : IStorable;
+        public void SynchronizeDeleteSetNull(TableMemberInfoSql member, IReadOnlySet<int> deletedIds);
         public bool IsSameStorage(IGenericDM? dm);
     }
 
@@ -805,6 +806,25 @@ namespace AventusSharp.Data.Manager.DB
                 }
             }
             return result;
+        }
+        public void SynchronizeDeleteSetNull(TableMemberInfoSql member, IReadOnlySet<int> deletedIds)
+        {
+            if (!NeedLocalCache || deletedIds.Count == 0) return;
+
+            foreach (U cached in Records.Values)
+            {
+                if (member.TableInfo.Type.IsInstanceOfType(cached)
+                    && member.GetValue(cached) is IStorable linked
+                    && deletedIds.Contains(linked.Id))
+                {
+                    member.SetValue(cached, null);
+                    getTransactionScope()?.OnRollback(() =>
+                    {
+                        member.SetValue(cached, linked);
+                        return Task.FromResult(new VoidWithError());
+                    });
+                }
+            }
         }
         public List<X> RemoveRecordsItems<X>(List<X> items) where X : IStorable
         {

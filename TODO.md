@@ -81,18 +81,6 @@ son implémentation et ses tests de régression sont terminés.
 - Le test doit être conçu après la protection : un test non protégé peut
   provoquer un `StackOverflowException` et arrêter entièrement le runner.
 
-### Synchronisation du cache après `DeleteSetNull`
-
-- [ ] Mettre à jour les instances dépendantes déjà en cache lorsqu'une clé
-  étrangère est mise à `NULL` par la base pendant la suppression du parent.
-- Le parent ne possède pas nécessairement de `[ReverseLink]` vers le dépendant.
-  Il faut donc conserver un registre des relations entrantes ou invalider les
-  caches des DM concernés après la suppression.
-- Le rollback d'une suppression doit restaurer la relation dans le cache.
-- Le test
-  `DeleteSetNull_updates_the_dependent_instance_already_in_cache`
-  reste explicite jusqu'à cette prise en charge.
-
 ### Gestionnaire de données pour les tests unitaires
 
 - [ ] Concevoir un `MockDatabaseDM` destiné aux tests unitaires.

@@ -1,6 +1,7 @@
 using AventusSharpTest.Integration.Models;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
+using AventusSharp.Tools;
 using NUnit.Framework;
 
 namespace AventusSharpTest.Integration;
@@ -1003,7 +1004,6 @@ public sealed class DataRelationshipTests
     }
 
     [Test]
-    [Explicit("Specification: database-side DeleteSetNull does not yet synchronize an already cached dependent instance.")]
     public async Task DeleteSetNull_updates_the_dependent_instance_already_in_cache()
     {
         var room = await TestRoom.Create(new TestRoom
@@ -1031,6 +1031,40 @@ public sealed class DataRelationshipTests
             IntegrationEnvironment.ErrorMessages(afterDeletion.Errors));
         Assert.That(afterDeletion.Result, Is.SameAs(sensor));
         Assert.That(afterDeletion.Result!.Room, Is.Null);
+    }
+
+    [Test]
+    public async Task DeleteSetNull_rollback_restores_the_cached_dependent_relation()
+    {
+        var room = await TestRoom.Create(new TestRoom
+        {
+            Name = "Rollback set-null room",
+            Code = "rollback-set-null"
+        });
+        var sensor = await TestSensor.Create(new TestSensor
+        {
+            Name = "Rollback set-null sensor",
+            Room = room
+        });
+        var manager = GenericDM.Get<TestRoom>();
+
+        var transaction = await manager.RunInsideTransaction(async () =>
+        {
+            var deletion = await TestRoom.DeleteWithError(room!);
+            Assert.That(deletion.Success, Is.True,
+                IntegrationEnvironment.ErrorMessages(deletion.Errors));
+            Assert.That(sensor!.Room, Is.Null);
+            deletion.Errors.Add(new GenericError(9941, "force set-null rollback"));
+            return deletion;
+        });
+        var loaded = await TestSensor.GetByIdWithError(sensor!.Id);
+        var stored = await ((TestSensorManager)GenericDM.Get<TestSensor>())
+            .GetByIdWithErrorNoCache<TestSensor>(sensor.Id);
+
+        Assert.That(transaction.Success, Is.False);
+        Assert.That(sensor.Room, Is.SameAs(room));
+        Assert.That(loaded.Result, Is.SameAs(sensor));
+        Assert.That(stored.Result!.Room!.Id, Is.EqualTo(room!.Id));
     }
 
     [Test]

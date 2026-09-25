@@ -51,7 +51,8 @@ namespace AventusSharp.Data.Manager.DB
         Abs,
         Round,
         Ceil,
-        Floor
+        Floor,
+        Coalesce
     }
 
     public interface IWhereGroup { }

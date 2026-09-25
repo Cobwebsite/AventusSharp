@@ -103,7 +103,6 @@ public sealed class DataNullableTypeTests
     }
 
     [Test]
-    [Explicit("Specification: GetValueOrDefault requires SQL COALESCE translation.")]
     public async Task GetValueOrDefault_can_be_used_in_queries()
     {
         await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord());
@@ -120,6 +119,21 @@ public sealed class DataNullableTypeTests
             IntegrationEnvironment.ErrorMessages(values.Errors));
         Assert.That(defaults.Result, Has.Count.EqualTo(1));
         Assert.That(values.Result, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task GetValueOrDefault_supports_a_captured_fallback()
+    {
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord());
+        await NullablePrimitiveRecord.Create(new NullablePrimitiveRecord { Number = 42 });
+        int fallback = 7;
+
+        var result = await Manager.WhereWithErrorNoCache<NullablePrimitiveRecord>(
+            item => item.Number.GetValueOrDefault(fallback) == 7);
+
+        Assert.That(result.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(item => item.Number), Is.EqualTo(new int?[] { null }));
     }
 
     [Test]
@@ -154,4 +168,5 @@ public sealed class DataNullableTypeTests
             IntegrationEnvironment.ErrorMessages(result.Errors));
         Assert.That(result.Result, Has.Count.EqualTo(2));
     }
+
 }

@@ -204,6 +204,7 @@ namespace AventusSharp.Data.Storage.Relational
         {
             return fctEnum switch
             {
+                WhereGroupFctSqlEnum.Coalesce => "COALESCE",
                 WhereGroupFctSqlEnum.Date => "DATE",
                 WhereGroupFctSqlEnum.Time => "TIME",
                 WhereGroupFctSqlEnum.ToLower => "LOWER",

@@ -1193,6 +1193,34 @@ namespace AventusSharp.Data.Manager.DB
 
 
 
+            if (
+                node.Method.Name == "GetValueOrDefault" && 
+                node.Method.DeclaringType?.IsGenericType == true && 
+                node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>)
+            )
+            {
+                WhereGroup coalesce = new();
+                AddToParentGroup(coalesce);
+                if (queryGroups.Count == 0) queryGroupsBase.Add(coalesce);
+                queryGroups.Add(coalesce);
+                currentGroup = coalesce;
+                AddToParentGroup(new WhereGroupFctSql(WhereGroupFctSqlEnum.Coalesce));
+
+                WhereGroup arguments = new();
+                AddToParentGroup(arguments);
+                queryGroups.Add(arguments);
+                currentGroup = arguments;
+                Visit(node.Object);
+                AddToParentGroup(new WhereGroupConstantOther(", "));
+                Expression defaultValue = node.Arguments.Count > 0 ? node.Arguments[0] : Expression.Constant(Activator.CreateInstance(node.Type), node.Type);
+                Visit(defaultValue);
+
+                queryGroups.RemoveAt(queryGroups.Count - 1);
+                queryGroups.RemoveAt(queryGroups.Count - 1);
+                currentGroup = queryGroups.LastOrDefault();
+                return node;
+            }
+
             List<Type> listAllowed = new List<Type>()
             {
                 typeof(List<int>),
@@ -1277,11 +1305,6 @@ namespace AventusSharp.Data.Manager.DB
                     }
                     return Expression.Constant(result, node.Method.ReturnType);
                 }
-            }
-            else if (methodName == "GetValueOrDefault" && node.Method.DeclaringType != null && node.Method.DeclaringType.IsGenericType && node.Method.DeclaringType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                Visit(node.Object ?? node.Arguments.FirstOrDefault());
-                return node;
             }
 
             if (fct == null && fctSql == null)

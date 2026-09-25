@@ -19,16 +19,6 @@ son implémentation et ses tests de régression sont terminés.
   `Invalid_many_to_many_link_in_second_buffer_rolls_back_all_buffers`
   restent explicites jusqu'à cette implémentation.
 
-### `Nullable<T>.GetValueOrDefault` dans LambdaTranslator
-
-- [ ] Traduire `item.Value.GetValueOrDefault()` avec `COALESCE` et la valeur par
-  défaut du type.
-- Gérer également la surcharge
-  `GetValueOrDefault(valeurParDéfaut)`, y compris une valeur capturée.
-- Le test de spécification
-  `GetValueOrDefault_can_be_used_in_queries` est explicite jusqu'à cette
-  implémentation.
-
 ### `Contains(null)` sur une collection nullable
 
 - [ ] Traduire une collection contenant `null` en combinant `IN (...)` avec

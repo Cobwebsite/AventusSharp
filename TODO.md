@@ -67,20 +67,6 @@ son implémentation et ses tests de régression sont terminés.
   - cache activé et désactivé ;
   - chemin déjà partiellement chargé.
 
-### Cycles AutoRead sans cache local
-
-- [ ] Vérifier et protéger les graphes bidirectionnels `[AutoRead]` lorsque
-  `preferLocalCache` vaut `false`.
-- État actuel : avec le cache, l'objet est enregistré par `OnItemLoaded` avant
-  les sous-requêtes et le cycle `Room -> Lamps -> Room` réutilise la même
-  instance.
-- Risque à vérifier : sans cache, aucun registre d'instances ne coupe
-  nécessairement la récursion.
-- Résultat attendu : aucune récursion infinie, même sans cache. Une identité
-  locale à la matérialisation de la requête peut être utilisée si nécessaire.
-- Le test doit être conçu après la protection : un test non protégé peut
-  provoquer un `StackOverflowException` et arrêter entièrement le runner.
-
 ### Gestionnaire de données pour les tests unitaires
 
 - [ ] Concevoir un `MockDatabaseDM` destiné aux tests unitaires.

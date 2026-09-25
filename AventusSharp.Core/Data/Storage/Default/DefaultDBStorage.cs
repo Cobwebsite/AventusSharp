@@ -100,6 +100,13 @@ namespace AventusSharp.Data.Storage.Default
                 : DateTime.Now;
         private bool linksCreated;
         private AsyncLocal<DbTransactionContext?> _transactionScope = new();
+        private sealed class MaterializationScope
+        {
+            public Dictionary<(Type Type, int Id), object> Instances { get; } = new();
+            public HashSet<(Type Type, int Id)> Expanded { get; } = new();
+            public int Depth { get; set; }
+        }
+        private readonly AsyncLocal<MaterializationScope?> _materializationScope = new();
         private DbTransactionContext? transactionScope
         {
             get => _transactionScope.Value;
@@ -1233,78 +1240,105 @@ namespace AventusSharp.Data.Storage.Default
         public async Task<ResultWithError<List<X>>> QueryFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable
         {
             ResultWithError<List<X>> result = new();
+            bool ownsMaterializationScope = _materializationScope.Value == null && queryBuilder.DM is IDatabaseDM manager && !manager.NeedLocalCache;
+            if (ownsMaterializationScope)
+                _materializationScope.Value = new MaterializationScope();
 
-            if (queryBuilder.info == null)
+            MaterializationScope? materializationScope = _materializationScope.Value;
+            if (materializationScope != null)
+                materializationScope.Depth++;
+
+            try
             {
-                queryBuilder.info = PrepareSQLForQuery(queryBuilder);
-            }
-            string sql = queryBuilder.info.Sql;
-
-            ResultWithError<List<Dictionary<string, string?>>> queryResult = await QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
-            result.Errors.AddRange(queryResult.Errors);
-            if (queryResult.Success && queryResult.Result != null)
-            {
-                result.Result = new List<X>();
-                DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
-
-                for (int i = 0; i < queryResult.Result.Count; i++)
+                if (materializationScope?.Depth > 64)
                 {
-                    Dictionary<string, string?> itemFields = queryResult.Result[i];
-                    ResultWithError<object> resultTemp = await CreateObject(baseInfo, itemFields, false);
-                    if (resultTemp.Success && resultTemp.Result != null)
+                    result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, "AutoRead relation loading exceeded the maximum recursion depth."));
+                    return result;
+                }
+
+                if (queryBuilder.info == null)
+                {
+                    queryBuilder.info = PrepareSQLForQuery(queryBuilder);
+                }
+                string sql = queryBuilder.info.Sql;
+
+                ResultWithError<List<Dictionary<string, string?>>> queryResult = await QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
+                result.Errors.AddRange(queryResult.Errors);
+                if (queryResult.Success && queryResult.Result != null)
+                {
+                    result.Result = new List<X>();
+                    DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
+
+                    for (int i = 0; i < queryResult.Result.Count; i++)
                     {
-                        if (resultTemp.Result is X oCasted)
+                        Dictionary<string, string?> itemFields = queryResult.Result[i];
+                        ResultWithError<object> resultTemp = await CreateObject(baseInfo, itemFields, false);
+                        if (resultTemp.Success && resultTemp.Result != null)
                         {
-                            await queryBuilder.DM.OnItemLoaded(oCasted);
-                            result.Result.Add(oCasted);
+                            if (resultTemp.Result is X oCasted)
+                            {
+                                await queryBuilder.DM.OnItemLoaded(oCasted);
+                                result.Result.Add(oCasted);
+                            }
+                            else
+                            {
+                                result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.CastFailed, resultTemp.Result.GetType().Name, typeof(X).Name)));
+                            }
                         }
                         else
                         {
-                            result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.CastFailed, resultTemp.Result.GetType().Name, typeof(X).Name)));
+                            result.Errors.AddRange(resultTemp.Errors);
                         }
-                    }
-                    else
-                    {
-                        result.Errors.AddRange(resultTemp.Errors);
+
                     }
 
-                }
-
-                foreach (var subquery in queryBuilder.SubQueries)
-                {
-                    await result.RunAsync(() => subquery.Value.Run(result.Result));
-                }
-
-                if (result.Success && queryBuilder.UseCanonicalCache && queryBuilder.DM is IDatabaseDM cacheManager && cacheManager.NeedLocalCache)
-                {
-                    List<TableMemberInfo> selectedMembers = baseInfo.Members.Keys
-                        .Cast<TableMemberInfo>()
-                        .Concat(baseInfo.joins.Keys)
-                        .ToList();
-
-                    foreach (string path in queryBuilder.SubQueries.Keys)
-                    {
-                        string rootName = path.Split('.')[0];
-                        TableMemberInfo? relation = baseInfo.TableInfo.ReverseMembers.FirstOrDefault(member => member.Name == rootName);
-                        if (relation != null) 
-                            selectedMembers.Add(relation);
-                    }
+                    List<X> subqueryRoots = result.Result;
+                    if (_materializationScope.Value is MaterializationScope scope)
+                        subqueryRoots = result.Result.Where(item => item.Id <= 0 || scope.Expanded.Add((item.GetType(), item.Id))).ToList();
                     
-                    for (int i = 0; i < result.Result.Count; i++)
+                    foreach (var subquery in queryBuilder.SubQueries)
                     {
-                        Dictionary<string, string?> fields = queryResult.Result[i];
-                        List<TableMemberInfo> loadedMembers = baseInfo.Members
-                            .Where(pair => fields.ContainsKey(pair.Value.Alias + "*" + pair.Key.SqlName))
-                            .Select(pair => (TableMemberInfo)pair.Key)
-                            .Concat(selectedMembers.Except(baseInfo.Members.Keys))
+                        await result.RunAsync(() => subquery.Value.Run(subqueryRoots));
+                    }
+
+                    if (result.Success && queryBuilder.UseCanonicalCache && queryBuilder.DM is IDatabaseDM cacheManager && cacheManager.NeedLocalCache)
+                    {
+                        List<TableMemberInfo> selectedMembers = baseInfo.Members.Keys
+                            .Cast<TableMemberInfo>()
+                            .Concat(baseInfo.joins.Keys)
                             .ToList();
 
-                        result.Result[i] = cacheManager.CanonicalizeQueryItem(result.Result[i], loadedMembers);
+                        foreach (string path in queryBuilder.SubQueries.Keys)
+                        {
+                            string rootName = path.Split('.')[0];
+                            TableMemberInfo? relation = baseInfo.TableInfo.ReverseMembers.FirstOrDefault(member => member.Name == rootName);
+                            if (relation != null)
+                                selectedMembers.Add(relation);
+                        }
+
+                        for (int i = 0; i < result.Result.Count; i++)
+                        {
+                            Dictionary<string, string?> fields = queryResult.Result[i];
+                            List<TableMemberInfo> loadedMembers = baseInfo.Members
+                                .Where(pair => fields.ContainsKey(pair.Value.Alias + "*" + pair.Key.SqlName))
+                                .Select(pair => (TableMemberInfo)pair.Key)
+                                .Concat(selectedMembers.Except(baseInfo.Members.Keys))
+                                .ToList();
+
+                            result.Result[i] = cacheManager.CanonicalizeQueryItem(result.Result[i], loadedMembers);
+                        }
                     }
                 }
-            }
 
-            return result;
+                return result;
+            }
+            finally
+            {
+                if (materializationScope != null)
+                    materializationScope.Depth--;
+                if (ownsMaterializationScope)
+                    _materializationScope.Value = null;
+            }
         }
         public async Task<VoidWithError> QueryStreamFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder, Func<X, Task<VoidWithError>> action) where X : IStorable
         {
@@ -1372,6 +1406,22 @@ namespace AventusSharp.Data.Storage.Default
             else
             {
                 o = TypeTools.CreateNewObj(info.TableInfo.Type);
+            }
+
+            if (_materializationScope.Value is MaterializationScope scope
+                && rootTableInfo.Primary != null
+                && itemFields.TryGetValue(rootAlias + "*" + rootTableInfo.Primary.SqlName,
+                    out string? idText)
+                && int.TryParse(idText, out int materializedId)
+                && materializedId > 0)
+            {
+                var key = (o.GetType(), materializedId);
+                if (scope.Instances.TryGetValue(key, out object? existing))
+                {
+                    result.Result = existing;
+                    return result;
+                }
+                scope.Instances[key] = o;
             }
 
             bool hasValue = false;

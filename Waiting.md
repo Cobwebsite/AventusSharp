@@ -8,7 +8,7 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 - [x] Différer `OnCreated`, `OnUpdated` et `OnDeleted` jusqu'au commit externe ; ne rien publier en cas de rollback. Test de spécification activé et tests ciblés réussis ; documentation du site à actualiser.
 - [x] Synchroniser le cache après `DeleteSetNull` et restaurer les relations en cas de rollback. Test de spécification activé, test de rollback ajouté et tests de relations réussis ; documentation du site à actualiser.
 - [x] Faire retourner à `StartQuery()` l'instance canonique du cache lorsque l'identifiant est sélectionné, sans écraser les champs `[NotInDB]` ou les champs ignorés, et restaurer les valeurs après rollback. Les projections `Field(...)` sans identifiant restent des objets de projection distincts. Tests ciblés réussis ; documentation du site à actualiser.
-- [ ] Protéger les cycles `[AutoRead]` lorsque `preferLocalCache` vaut `false`.
+- [x] Protéger les cycles `[AutoRead]` lorsque `preferLocalCache` vaut `false`. Un registre d'identité limité à la chaîne de lecture évite la récursion et conserve les références du graphe ; tests sans cache et tests de relations réussis. Documentation du site à actualiser.
 
 ## Priorité 2 — Persistance
 

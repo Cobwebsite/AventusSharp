@@ -267,6 +267,28 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
     #endregion
 
     #region migrations
+    protected override async Task<ResultWithError<List<MigrationForeignKey>>> GetMigrationForeignKeys()
+    {
+        ResultWithError<List<MigrationForeignKey>> result = new() { Result = new() };
+        string sql = "SELECT child.relname AS table_name, parent.relname AS referenced_table, fk.conname AS name, "
+            + "ns.nspname AS schema_name, ns.nspname = current_schema() AS local_schema "
+            + "FROM pg_constraint fk JOIN pg_class child ON child.oid = fk.conrelid "
+            + "JOIN pg_namespace ns ON ns.oid = child.relnamespace JOIN pg_class parent ON parent.oid = fk.confrelid "
+            + "JOIN pg_namespace pn ON pn.oid = parent.relnamespace "
+            + "WHERE fk.contype = 'f' AND pn.nspname = current_schema()";
+        var rows = await result.ExtractAsync(() => Query(sql));
+        if (rows == null) return result;
+        foreach (var row in rows)
+        {
+            string table = row["table_name"]!;
+            if (row["local_schema"] != "True") table = row["schema_name"] + "." + table;
+            string dropSql = "ALTER TABLE " + QuoteIdentifier(row["schema_name"]!) + "."
+                + QuoteIdentifier(row["table_name"]!) + " DROP CONSTRAINT " + QuoteIdentifier(row["name"]!);
+            result.Result.Add(new(table, row["referenced_table"]!, dropSql));
+        }
+        return result;
+    }
+
     protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
     {
         return Execute($"ALTER TABLE {QuoteIdentifier(table)} RENAME COLUMN {QuoteIdentifier(property.OldName!)} TO {QuoteIdentifier(property.Name)}");

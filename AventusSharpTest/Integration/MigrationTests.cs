@@ -55,7 +55,6 @@ public sealed class MigrationTests
     }
 
     [Test]
-    [Explicit("Specification: model deletion is not implemented yet.")]
     public async Task DeleteModel_removes_the_table()
     {
         var result = new VoidWithError();

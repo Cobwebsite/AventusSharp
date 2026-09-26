@@ -35,6 +35,7 @@ namespace AventusSharp.Data.Storage.Default
         Task<VoidWithError> DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> queryBuilder, List<X> elementsToDelete) where X : IStorable;
         Task<VoidWithError> CreateTable(PyramidInfo pyramid, bool force);
         Task<ResultWithError<bool>> TableExist(PyramidInfo pyramid);
+        Task<ResultWithError<bool>> TableExist(string table);
 
         Task<bool> Connect();
         Task<VoidWithError> ConnectWithError();

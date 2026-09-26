@@ -84,9 +84,32 @@ public abstract class Migration : IMigration
             }
         }
 
+        Dictionary<IStorageMigrationProvider, List<IMigrationModel>> deletions = new();
         foreach (IMigrationModel migration in migrations)
         {
+            if (migration.ModelAction == MigrationModelAction.Delete)
+            {
+                IMigrationProvider? provider;
+                if (providers.Count == 1)
+                    provider = providers[0];
+                else
+                    provider = _currentError.Extract(migration.GetProvider);
+
+                if (provider is IStorageMigrationProvider storageProvider)
+                {
+                    if (!deletions.ContainsKey(storageProvider))
+                    {
+                        deletions[storageProvider] = new();
+                    }
+                    deletions[storageProvider].Add(migration);
+                    continue;
+                }
+            }
             await _currentError.RunAsync(migration.Run);
+        }
+        foreach (var deletion in deletions)
+        {
+            await _currentError.RunAsync(() => deletion.Key.DeleteModels(deletion.Value));
         }
 
         foreach (IMigrationProvider provider in providers)

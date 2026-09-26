@@ -44,6 +44,22 @@ return app;
 
 `AventusMauiBridge` can then be resolved from `app.Services` and used by a WebView bridge to execute Aventus routes in-process.
 
+## Deleting models in migrations
+
+Use `DeleteModel<T>()` in a migration's `Up()` method to delete a model table.
+Include any dependent models that should also be deleted in the same migration;
+the declaration order does not determine the table deletion order.
+
+The SQL providers delete the affected N-N intermediate tables and the deleted
+tables' indexes and constraints. Other linked model tables and their data are
+preserved. If a retained table still references a table being deleted, the whole
+deletion batch is rejected before any table is removed, with
+`DataErrorCode.ModelDeletionBlocked` identifying the dependency.
+
+Internal foreign key cycles are supported on SQLite, MySQL, PostgreSQL and
+SQL Server. Transaction and rollback behavior follows each provider's native
+DDL semantics; MySQL DDL performs implicit commits.
+
 ## Translations
 
 Library errors and validation messages include English (default) and French translations.

@@ -4,16 +4,16 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 ## Priorité 1 — Fiabilité des données
 
-- [x] Empêcher qu'un échec de transaction imbriquée soit ignoré par la transaction externe : aucun nouveau travail ne doit être validé après le rollback interne, et le résultat externe doit signaler l'échec. Test de spécification activé et tests ciblés réussis ; documentation du site à actualiser.
-- [x] Différer `OnCreated`, `OnUpdated` et `OnDeleted` jusqu'au commit externe ; ne rien publier en cas de rollback. Test de spécification activé et tests ciblés réussis ; documentation du site à actualiser.
-- [x] Synchroniser le cache après `DeleteSetNull` et restaurer les relations en cas de rollback. Test de spécification activé, test de rollback ajouté et tests de relations réussis ; documentation du site à actualiser.
-- [x] Faire retourner à `StartQuery()` l'instance canonique du cache lorsque l'identifiant est sélectionné, sans écraser les champs `[NotInDB]` ou les champs ignorés, et restaurer les valeurs après rollback. Les projections `Field(...)` sans identifiant restent des objets de projection distincts. Tests ciblés réussis ; documentation du site à actualiser.
-- [x] Protéger les cycles `[AutoRead]` lorsque `preferLocalCache` vaut `false`. Un registre d'identité limité à la chaîne de lecture évite la récursion et conserve les références du graphe ; tests sans cache et tests de relations réussis. Documentation du site à actualiser.
+- [x] Empêcher qu'un échec de transaction imbriquée soit ignoré par la transaction externe : aucun nouveau travail ne doit être validé après le rollback interne, et le résultat externe doit signaler l'échec. Test de spécification activé et tests ciblés réussis ; documentation du site mise à jour.
+- [x] Différer `OnCreated`, `OnUpdated` et `OnDeleted` jusqu'au commit externe ; ne rien publier en cas de rollback. Test de spécification activé et tests ciblés réussis ; documentation du site mise à jour.
+- [x] Synchroniser le cache après `DeleteSetNull` et restaurer les relations en cas de rollback. Test de spécification activé, test de rollback ajouté et tests de relations réussis ; documentation du site mise à jour.
+- [x] Faire retourner à `StartQuery()` l'instance canonique du cache lorsque l'identifiant est sélectionné, sans écraser les champs `[NotInDB]` ou les champs ignorés, et restaurer les valeurs après rollback. Les projections `Field(...)` sans identifiant restent des objets de projection distincts. Tests ciblés réussis ; documentation du site mise à jour.
+- [x] Protéger les cycles `[AutoRead]` lorsque `preferLocalCache` vaut `false`. Un registre d'identité limité à la chaîne de lecture évite la récursion et conserve les références du graphe ; tests sans cache et tests de relations réussis. Documentation du site mise à jour.
 
 ## Priorité 2 — Persistance
 
-- [x] Implémenter la mise à jour et le renommage de propriétés en migration, avec conservation des données et prise en charge des quatre fournisseurs SQL. Les 10 tests de migration réussissent ; suite complète avec Docker : 758 tests exécutés et réussis, aucun échec. Documentation du site à actualiser.
-- [ ] Implémenter la suppression de modèles, y compris tables intermédiaires, index, clés étrangères et dépendances.
+- [x] Implémenter la mise à jour et le renommage de propriétés en migration, avec conservation des données et prise en charge des quatre fournisseurs SQL. Les 10 tests de migration réussissent ; suite complète avec Docker : 758 tests exécutés et réussis, aucun échec. Documentation du site mise à jour.
+- [x] Implémenter la suppression de modèles, y compris tables intermédiaires, index, clés étrangères et dépendances. Les suppressions sont regroupées par fournisseur et ordonnées selon les références ; les cycles internes sont pris en charge. Une référence depuis un modèle conservé bloque toute suppression du lot avec `DataErrorCode.ModelDeletionBlocked`. Tables N-N entrantes et sortantes supprimées, modèles liés conservés. Tests ciblés : 16 réussis ; suite complète avec Docker : 772 tests réussis, aucun échec ; 4 spécifications explicites encore en attente. Documentation du site mise à jour.
 - [ ] Décider si une commande publique de rollback `Down()` est requise, puis l'implémenter si cette capacité fait partie du périmètre produit.
 - [ ] Compléter `BulkCreate` pour les liens N-N et garantir le rollback de tous les buffers en cas de lien invalide.
 - [ ] Compléter `BulkCreate` pour l'héritage persistant multi-table.
@@ -39,6 +39,6 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 - [ ] Définir le périmètre HTTP attendu : binding automatique de la query string, formulaires URL encodés et tableaux JSON à la racine ; implémenter les cas retenus.
 - [ ] Définir puis appliquer les règles de méthode et d'en-tête `Accept` des endpoints SSE.
 - [ ] Permettre un statut de refus WebSocket adapté au contexte si le `302` fixe ne convient pas à l'API voulue.
-- [ ] Corriger la documentation historique du site qui affirme que seul MySQL est pris en charge, et retirer les mentions de limites résolues.
+- [x] Corriger la documentation historique du site qui affirme que seul MySQL est pris en charge, et retirer les mentions de limites résolues. Neuf fichiers mis à jour ; validation Astro sans erreur et compilation des 48 pages réussie.
 
 Sources : `TODO.md` ; documentation du site dans `src/content/docs/model`, `data_manager/cache.mdx`, `storage/migrations.mdx`, `tools/logging.mdx`, `route_http/request_response.mdx`, `route_sse/lifecycle.mdx`, `route_ws/lifecycle.mdx` et `md/aventusharp.md`.

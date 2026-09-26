@@ -250,6 +250,25 @@ namespace AventusSharp.Data.Storage.Mysql
         #endregion
 
         #region migrations
+        protected override async Task<ResultWithError<List<MigrationForeignKey>>> GetMigrationForeignKeys()
+        {
+            ResultWithError<List<MigrationForeignKey>> result = new() { Result = new() };
+            string sql = "SELECT TABLE_SCHEMA, TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME "
+                + "FROM information_schema.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_SCHEMA = "
+                + FormatMigrationDefault(Database) + " GROUP BY TABLE_SCHEMA, TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME";
+            var rows = await result.ExtractAsync(() => Query(sql));
+            if (rows == null) return result;
+            foreach (var row in rows)
+            {
+                string table = row["TABLE_NAME"]!;
+                if (row["TABLE_SCHEMA"] != Database) table = row["TABLE_SCHEMA"] + "." + table;
+                string dropSql = "ALTER TABLE " + QuoteIdentifier(row["TABLE_SCHEMA"]!) + "."
+                    + QuoteIdentifier(row["TABLE_NAME"]!) + " DROP FOREIGN KEY " + QuoteIdentifier(row["CONSTRAINT_NAME"]!);
+                result.Result.Add(new(table, row["REFERENCED_TABLE_NAME"]!, dropSql));
+            }
+            return result;
+        }
+
         protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
         {
             return Execute($"ALTER TABLE {QuoteIdentifier(table)} RENAME COLUMN {QuoteIdentifier(property.OldName!)} TO {QuoteIdentifier(property.Name)}");

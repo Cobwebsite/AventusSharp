@@ -2615,7 +2615,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             else if (model.ModelAction == MigrationModelAction.Delete)
             {
-                await result.RunAsync(() => TableDelete(TableInfo.GetSQLTableName(model.Type)));
+                await result.RunAsync(() => DeleteMigrationModels([model.Type]));
             }
             return result;
         }
@@ -2627,6 +2627,82 @@ namespace AventusSharp.Data.Storage.Default
 
         protected abstract Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property);
         protected abstract Task<VoidWithError> UpdateMigrationProperty(string table, IMigrationProperty property);
+        protected abstract Task<ResultWithError<List<MigrationForeignKey>>> GetMigrationForeignKeys();
+
+        public async Task<VoidWithError> DeleteMigrationModels(IReadOnlyList<Type> models)
+        {
+            VoidWithError result = new();
+            HashSet<string> targets = new(StringComparer.Ordinal);
+            List<TableInfo> tables = allTableInfos.Values.Distinct().ToList();
+            foreach (Type type in models)
+            {
+                targets.Add(TableInfo.GetSQLTableName(type));
+                if (tables.Any(table => table.Type == type)) continue;
+                
+                TableInfo table = new(type);
+                result.Run(() => table.Init().ToGeneric());
+                tables.Add(table);
+            }
+            if (!result.Success) return result;
+
+            // Include links owned by either side of an N-N relation.
+            HashSet<string> modelTables = new(targets, StringComparer.Ordinal);
+            foreach (TableInfo table in tables)
+            {
+                foreach (TableMemberInfoSql member in table.Members)
+                {
+                    if (member is not ITableMemberInfoSqlLinkMultiple link || link.TableIntermediateName == null) 
+                        continue;
+                    if (modelTables.Contains(table.SqlTableName) || modelTables.Contains(link.LinkTableName))
+                        targets.Add(link.TableIntermediateName);
+                }
+            }
+
+            List<MigrationForeignKey>? foreignKeys = await result.ExtractAsync(GetMigrationForeignKeys);
+            if (foreignKeys == null) return result;
+            // Validate the whole deletion before issuing DDL (also important for MySQL).
+            foreach (MigrationForeignKey foreignKey in foreignKeys)
+            {
+                if (targets.Contains(foreignKey.ReferencedTable) && !targets.Contains(foreignKey.Table))
+                    result.Errors.Add(new DataError(DataErrorCode.ModelDeletionBlocked,
+                        "Cannot delete model table '" + foreignKey.ReferencedTable + "': table '"
+                        + foreignKey.Table + "' still references it. Include the dependent model in the migration."));
+            }
+            if (!result.Success) return result;
+
+            List<string> ordered = new();
+            HashSet<string> remaining = new(targets, StringComparer.Ordinal);
+            while (remaining.Count > 0)
+            {
+                string? next = null;
+                foreach (string table in remaining)
+                {
+                    bool referenced = foreignKeys.Any(key => key.ReferencedTable == table
+                        && key.Table != table && remaining.Contains(key.Table));
+                    if (!referenced)
+                    {
+                        next = table;
+                        break;
+                    }
+                }
+                // A cycle is safe once its internal foreign keys have been removed.
+                next ??= remaining.First();
+                ordered.Add(next);
+                remaining.Remove(next);
+            }
+
+            foreach (MigrationForeignKey foreignKey in foreignKeys)
+            {
+                if (targets.Contains(foreignKey.Table) && targets.Contains(foreignKey.ReferencedTable)
+                    && foreignKey.DropSql != null)
+                    await result.RunAsync(() => Execute(foreignKey.DropSql));
+            }
+            foreach (string table in ordered)
+            {
+                await result.RunAsync(() => TableDelete(table));
+            }
+            return result;
+        }
 
         public string GetMigrationColumnType(IMigrationProperty property)
         {

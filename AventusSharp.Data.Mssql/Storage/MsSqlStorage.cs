@@ -247,6 +247,29 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     #endregion
 
     #region migrations
+    protected override async Task<ResultWithError<List<MigrationForeignKey>>> GetMigrationForeignKeys()
+    {
+        ResultWithError<List<MigrationForeignKey>> result = new() { Result = new() };
+        string sql = "SELECT child.name AS table_name, parent.name AS referenced_table, fk.name, "
+            + "SCHEMA_NAME(child.schema_id) AS schema_name "
+            + "FROM sys.foreign_keys fk JOIN sys.tables child ON child.object_id = fk.parent_object_id "
+            + "JOIN sys.tables parent ON parent.object_id = fk.referenced_object_id "
+            + "WHERE parent.schema_id = SCHEMA_ID()";
+        var rows = await result.ExtractAsync(() => Query(sql));
+        if (rows == null) return result;
+        var schema = await result.ExtractAsync(() => Query("SELECT SCHEMA_NAME() AS name"));
+        if (schema == null) return result;
+        foreach (var row in rows)
+        {
+            string table = row["table_name"]!;
+            if (row["schema_name"] != schema[0]["name"]) table = row["schema_name"] + "." + table;
+            string dropSql = "ALTER TABLE " + QuoteIdentifier(row["schema_name"]!) + "."
+                + QuoteIdentifier(row["table_name"]!) + " DROP CONSTRAINT " + QuoteIdentifier(row["name"]!);
+            result.Result.Add(new(table, row["referenced_table"]!, dropSql));
+        }
+        return result;
+    }
+
     protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
     {
         string sql = "EXEC sp_rename " + FormatMigrationDefault(QuoteIdentifier(table) + "." + QuoteIdentifier(property.OldName!))

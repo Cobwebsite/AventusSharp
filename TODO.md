@@ -81,12 +81,17 @@ son implémentation et ses tests de régression sont terminés.
 
 ### Suppression d'un modèle
 
-- [ ] Implémenter la suppression d'un modèle et de sa table.
+- [x] Implémenter la suppression d'un modèle et de sa table, y compris ses
+  tables intermédiaires, index et clés étrangères sur les quatre fournisseurs.
 - Le test de spécification existe déjà :
   `DeleteModel_removes_the_table`.
-- Retirer son attribut `[Explicit]` lorsque l'implémentation est disponible.
-- Vérifier également les tables intermédiaires, index, clés étrangères et
-  l'ordre de suppression des modèles dépendants.
+- Son attribut `[Explicit]` a été retiré.
+- Les modèles à supprimer sont regroupés par fournisseur ; les dépendances
+  et cycles internes sont résolus avant la suppression des tables.
+- Une clé étrangère depuis un modèle conservé bloque le lot entier avant
+  toute suppression avec `DataErrorCode.ModelDeletionBlocked`.
+- Validation : 16 tests ciblés réussis ; suite complète avec Docker :
+  772 tests réussis, aucun échec ; 4 spécifications explicites en attente.
 
 ## Infrastructure de test
 

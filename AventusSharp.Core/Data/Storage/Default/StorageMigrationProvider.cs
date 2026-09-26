@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
@@ -12,6 +14,7 @@ public interface IStorageMigrationProvider
 {
     public Task<ResultWithError<DbTransactionContext>> BeginTransaction();
     public void setTransactionScope(DbTransactionContext? context);
+    Task<VoidWithError> DeleteModels(IReadOnlyList<IMigrationModel> models);
 }
 public abstract class StorageMigrationProvider<T> : MigrationProvider, IStorageMigrationProvider where T : DefaultDBStorage<T>
 {
@@ -55,6 +58,10 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider, IStorageM
     public Task<ResultWithError<DbTransactionContext>> BeginTransaction()
     {
         return _storage.BeginMigrationTransaction();
+    }
+    public Task<VoidWithError> DeleteModels(IReadOnlyList<IMigrationModel> models)
+    {
+        return _storage.DeleteMigrationModels(models.Select(model => model.Type).ToList());
     }
     public void setTransactionScope(DbTransactionContext? context)
     {

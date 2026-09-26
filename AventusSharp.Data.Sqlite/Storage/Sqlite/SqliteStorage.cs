@@ -249,6 +249,22 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
     #endregion
 
     #region migrations
+    protected override async Task<ResultWithError<List<MigrationForeignKey>>> GetMigrationForeignKeys()
+    {
+        ResultWithError<List<MigrationForeignKey>> result = new() { Result = new() };
+        var tables = await result.ExtractAsync(() => Query("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"));
+        if (tables == null) return result;
+        foreach (var table in tables)
+        {
+            string name = table["name"]!;
+            var keys = await result.ExtractAsync(() => Query("PRAGMA foreign_key_list(" + QuoteIdentifier(name) + ")"));
+            if (keys == null) return result;
+            foreach (var key in keys)
+                result.Result.Add(new(name, key["table"]!));
+        }
+        return result;
+    }
+
     public override async Task<ResultWithError<DbTransactionContext>> BeginMigrationTransaction()
     {
         if (getTransactionScope() != null) return await BeginTransaction();

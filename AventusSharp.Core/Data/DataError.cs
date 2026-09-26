@@ -59,6 +59,7 @@ namespace AventusSharp.Data
         ReverseLinkNotPrepared,
         ExternalStorageNotPrepared,
         TransactionAlreadyRolledBack,
+        ModelDeletionBlocked,
     }
 
 

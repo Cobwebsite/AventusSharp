@@ -16,6 +16,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -2566,16 +2567,24 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Migration
+        public virtual Task<ResultWithError<DbTransactionContext>> BeginMigrationTransaction() => BeginTransaction();
+
         public async Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable
         {
             VoidWithError result = new VoidWithError();
-            Action checkMember = () =>
+            async Task checkMember()
             {
                 foreach (KeyValuePair<string, IMigrationProperty> member in model.Properties)
                 {
                     if (member.Value.PropertyAction == MigrationPropertyAction.Update && member.Value.OldName != null)
                     {
-                        // TODO: rename colonne
+                        await result.RunAsync(() => RenameMigrationProperty(TableInfo.GetSQLTableName(model.Type), member.Value));
+                        if (member.Value.HasDefinitionChanges)
+                            await result.RunAsync(() => UpdateMigrationProperty(TableInfo.GetSQLTableName(model.Type), member.Value));
+                    }
+                    else if (member.Value.PropertyAction == MigrationPropertyAction.Update)
+                    {
+                        await result.RunAsync(() => UpdateMigrationProperty(TableInfo.GetSQLTableName(model.Type), member.Value));
                     }
                     else if (member.Value.PropertyAction == MigrationPropertyAction.Delete)
                     {
@@ -2587,10 +2596,10 @@ namespace AventusSharp.Data.Storage.Default
                         // check si la colonne existe, si c'est le cas il faut faire attention aux attributes
                     }
                 }
-            };
+            }
             if (model.ModelAction == null)
             {
-                checkMember();
+                await checkMember();
             }
             else if (model.ModelAction == MigrationModelAction.Update)
             {
@@ -2598,7 +2607,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     await result.RunAsync(() => TableRename(model.OldName, TableInfo.GetSQLTableName(model.Type)));
                 }
-                checkMember();
+                await checkMember();
             }
             else if (model.ModelAction == MigrationModelAction.Create)
             {
@@ -2608,13 +2617,40 @@ namespace AventusSharp.Data.Storage.Default
             {
                 await result.RunAsync(() => TableDelete(TableInfo.GetSQLTableName(model.Type)));
             }
-            return new();
+            return result;
         }
         #endregion
 
         #endregion
 
         #region Tools
+
+        protected abstract Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property);
+        protected abstract Task<VoidWithError> UpdateMigrationProperty(string table, IMigrationProperty property);
+
+        public string GetMigrationColumnType(IMigrationProperty property)
+        {
+            TableInfo table = new(property.Parent);
+            TableMemberInfoSqlBasic member = new(property, table);
+            var prepared = table.PrepareMembers(member);
+            if (!prepared.Success)
+                throw new NotSupportedException(string.Join("; ", prepared.Errors.Select(error => error.Message)));
+            return GetSqlColumnType(member.SqlType, member);
+        }
+
+        public string FormatMigrationDefault(object value)
+        {
+            return value switch
+            {
+                bool boolean => SupportsNativeBoolean ? (boolean ? "TRUE" : "FALSE") : (boolean ? "1" : "0"),
+                string text => "'" + text.Replace("'", "''") + "'",
+                char character => "'" + character.ToString().Replace("'", "''") + "'",
+                DateTime date => "'" + date.ToString(DateTimeFormat ?? "yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.InvariantCulture) + "'",
+                Enum enumeration => "'" + enumeration.ToString().Replace("'", "''") + "'",
+                IFormattable number => number.ToString(null, CultureInfo.InvariantCulture),
+                _ => "'" + value.ToString()!.Replace("'", "''") + "'"
+            };
+        }
 
         public virtual string QuoteIdentifier(string identifier)
         {

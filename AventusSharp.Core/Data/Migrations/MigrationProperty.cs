@@ -39,6 +39,7 @@ public interface IMigrationProperty
     public Type Parent { get; }
     public Type Type { get; }
     public MigrationPropertyOptions Options { get; }
+    public bool HasDefinitionChanges { get; }
      public MigrationPropertyAction? PropertyAction { get; }
 }
 public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
@@ -51,6 +52,7 @@ public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
     protected MigrationPropertyOptions<U> Options { get; set; }
 
     public MigrationPropertyAction? PropertyAction { get; private set; }
+    public bool HasDefinitionChanges { get; private set; }
 
     MigrationPropertyOptions IMigrationProperty.Options => Options;
 
@@ -70,6 +72,7 @@ public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
     internal void SetOptions(MigrationPropertyOptions<U> options)
     {
         Options = options;
+        HasDefinitionChanges = true;
     }
     internal void SetOldName(string oldName)
     {
@@ -126,6 +129,10 @@ public class MigrationProperty<T, U> : IMigrationProperty where T : IStorable
     public MigrationProperty<T, X> RenameProperty<X>(string currentName, string newName)
     {
        return Table.RenameProperty<X>(currentName, newName);
+    }
+    public MigrationProperty<T, X> UpdateProperty<X>(string name, MigrationPropertyOptions<X>? options = null)
+    {
+        return Table.UpdateProperty(name, options);
     }
     public MigrationProperty<T, object> RenameProperty(string currentName, string newName)
     {

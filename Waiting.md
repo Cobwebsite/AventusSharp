@@ -12,7 +12,7 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 ## Priorité 2 — Persistance
 
-- [ ] Implémenter la mise à jour et le renommage de propriétés en migration, avec conservation des données et prise en charge des quatre fournisseurs SQL.
+- [x] Implémenter la mise à jour et le renommage de propriétés en migration, avec conservation des données et prise en charge des quatre fournisseurs SQL. Les 10 tests de migration réussissent ; suite complète avec Docker : 758 tests exécutés et réussis, aucun échec. Documentation du site à actualiser.
 - [ ] Implémenter la suppression de modèles, y compris tables intermédiaires, index, clés étrangères et dépendances.
 - [ ] Décider si une commande publique de rollback `Down()` est requise, puis l'implémenter si cette capacité fait partie du périmètre produit.
 - [ ] Compléter `BulkCreate` pour les liens N-N et garantir le rollback de tous les buffers en cas de lien invalide.

@@ -4,6 +4,7 @@ using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Data.Storage.Relational;
 using AventusSharp.Tools;
 using MySql.Data.MySqlClient;
 using System;
@@ -245,6 +246,62 @@ namespace AventusSharp.Data.Storage.Mysql
         public override string DiagramType()
         {
             return "mysql";
+        }
+        #endregion
+
+        #region migrations
+        protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
+        {
+            return Execute($"ALTER TABLE {QuoteIdentifier(table)} RENAME COLUMN {QuoteIdentifier(property.OldName!)} TO {QuoteIdentifier(property.Name)}");
+        }
+
+        protected override async Task<VoidWithError> UpdateMigrationProperty(string table, IMigrationProperty property)
+        {
+            VoidWithError result = new();
+            string sql = "SELECT EXTRA FROM information_schema.columns WHERE TABLE_SCHEMA = "
+                + FormatMigrationDefault(Database) + " AND TABLE_NAME = " + FormatMigrationDefault(table)
+                + " AND COLUMN_NAME = " + FormatMigrationDefault(property.Name);
+            List<Dictionary<string, string?>>? columns = await result.ExtractAsync(() => Query(sql));
+            if (columns == null) return result;
+
+            if (columns.Count != 1)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column does not exist: " + property.Name));
+                return result;
+            }
+            string definition = GetMigrationColumnType(property) + (property.Options.Nullable ? " NULL" : " NOT NULL");
+            if (property.Options.Default != null)
+            {
+                definition += " DEFAULT " + FormatMigrationDefault(property.Options.Default);
+            }
+
+            if (columns.Single()["EXTRA"]?.Contains("auto_increment", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                definition += " AUTO_INCREMENT";
+            }
+
+            string alterTableSql = $"ALTER TABLE {QuoteIdentifier(table)} MODIFY COLUMN {QuoteIdentifier(property.Name)} {definition}";
+            await result.RunAsync(() => Execute(alterTableSql));
+
+            if (result.Success && (property.Options.Index || property.Options.Unique))
+            {
+                string name = Utils.CheckConstraint((property.Options.Unique ? "UC_" : "IND_") + property.Name + "_" + table);
+                string sqlIndex = "SELECT INDEX_NAME FROM information_schema.statistics WHERE TABLE_SCHEMA = "
+                    + FormatMigrationDefault(Database) + " AND TABLE_NAME = " + FormatMigrationDefault(table)
+                    + " AND INDEX_NAME = " + FormatMigrationDefault(name);
+
+                List<Dictionary<string, string?>>? indexes = await result.ExtractAsync(() => Query(sqlIndex));
+                if (indexes == null) return result;
+
+                if (result.Success && indexes.Count == 0)
+                {
+                    string sqlIndexCreate = $"CREATE {(property.Options.Unique ? "UNIQUE " : "")}INDEX {QuoteIdentifier(name)} "
+                        + $"ON {QuoteIdentifier(table)} ({QuoteIdentifier(property.Name)})";
+
+                    await result.RunAsync(() => Execute(sqlIndexCreate));
+                }
+            }
+            return result;
         }
         #endregion
 

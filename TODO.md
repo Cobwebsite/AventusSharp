@@ -66,10 +66,12 @@ son implémentation et ses tests de régression sont terminés.
 
 ### Modification d'un modèle
 
-- [ ] Implémenter la mise à jour et le renommage des propriétés.
+- [x] Implémenter la mise à jour et le renommage des propriétés. Les 10 tests
+  de migration passent sur les quatre fournisseurs SQL ; suite complète avec
+  Docker : 758 tests réussis, aucun échec.
 - Le test de spécification existe déjà :
   `RenameProperty_preserves_data_and_exposes_the_new_column`.
-- Retirer son attribut `[Explicit]` lorsque l'implémentation est disponible.
+- Son attribut `[Explicit]` a été retiré.
 - Vérifier au minimum :
   - conservation des données ;
   - renommage aller et retour (`Up` et `Down`) ;

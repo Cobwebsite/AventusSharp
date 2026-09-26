@@ -11,6 +11,7 @@ using System.Data;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Migrations;
 using System.Threading.Tasks;
+using AventusSharp.Data.Storage.Relational;
 
 namespace AventusSharp.Data.Storage.Mssql;
 
@@ -245,6 +246,120 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     }
     #endregion
 
+    #region migrations
+    protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
+    {
+        string sql = "EXEC sp_rename " + FormatMigrationDefault(QuoteIdentifier(table) + "." + QuoteIdentifier(property.OldName!))
+            + ", " + FormatMigrationDefault(property.Name) + ", 'COLUMN'";
+        return Execute(sql);
+    }
+    protected override async Task<VoidWithError> UpdateMigrationProperty(string table, IMigrationProperty property)
+    {
+        VoidWithError result = new();
+
+        string sql = "SELECT d.name FROM sys.default_constraints d JOIN sys.columns c "
+            + "ON c.object_id = d.parent_object_id AND c.column_id = d.parent_column_id "
+            + "WHERE d.parent_object_id = OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table))
+            + ") AND c.name = " + FormatMigrationDefault(property.Name);
+        List<Dictionary<string, string?>>? defaults = await result.ExtractAsync(() => Query(sql));
+        if (defaults == null) return result;
+
+        sql = "SELECT i.index_id, i.name, i.type_desc, i.is_unique, i.filter_definition, i.is_disabled, "
+            + "i.fill_factor, i.is_padded, i.ignore_dup_key, i.allow_row_locks, i.allow_page_locks, d.name AS filegroup, "
+            + "p.data_compression_desc FROM sys.indexes i JOIN sys.partitions p "
+            + "ON p.object_id = i.object_id AND p.index_id = i.index_id AND p.partition_number = 1 "
+            + "JOIN sys.data_spaces d ON d.data_space_id = i.data_space_id "
+            + "WHERE i.object_id = OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table)) + ") "
+            + "AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.type IN (1, 2) AND d.type = 'FG' "
+            + "AND EXISTS (SELECT 1 FROM sys.index_columns ic JOIN sys.columns c "
+            + "ON c.object_id = ic.object_id AND c.column_id = ic.column_id "
+            + "WHERE ic.object_id = i.object_id AND ic.index_id = i.index_id AND c.name = "
+            + FormatMigrationDefault(property.Name) + ") ORDER BY i.type";
+        List<Dictionary<string, string?>>? indexes = await result.ExtractAsync(() => Query(sql));
+        if (indexes == null) return result;
+
+        List<string> restoreIndexes = new();
+        foreach (var index in indexes)
+        {
+            sql = "SELECT c.name, ic.is_descending_key, ic.is_included_column FROM sys.index_columns ic "
+                + "JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id "
+                + "WHERE ic.object_id = OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table))
+                + ") AND ic.index_id = " + index["index_id"] + " ORDER BY ic.key_ordinal, ic.index_column_id";
+            List<Dictionary<string, string?>>? columns = await result.ExtractAsync(() => Query(sql));
+            if (columns == null) return result;
+
+            List<string> keys = new();
+            List<string> included = new();
+            foreach (var column in columns)
+            {
+                string columnName = QuoteIdentifier(column["name"]!);
+                if (column["is_included_column"] == "True")
+                    included.Add(columnName);
+                else
+                    keys.Add(columnName + (column["is_descending_key"] == "True" ? " DESC" : " ASC"));
+            }
+
+            string definition = "CREATE ";
+            if (index["is_unique"] == "True") definition += "UNIQUE ";
+            definition += index["type_desc"] + " INDEX " + QuoteIdentifier(index["name"]!)
+                + " ON " + QuoteIdentifier(table) + " (" + string.Join(", ", keys) + ")";
+            if (included.Count > 0) definition += " INCLUDE (" + string.Join(", ", included) + ")";
+            if (!string.IsNullOrEmpty(index["filter_definition"])) definition += " WHERE " + index["filter_definition"];
+            definition += " WITH (PAD_INDEX = " + SqlIndexOption(index["is_padded"])
+                + ", IGNORE_DUP_KEY = " + SqlIndexOption(index["ignore_dup_key"])
+                + ", ALLOW_ROW_LOCKS = " + SqlIndexOption(index["allow_row_locks"])
+                + ", ALLOW_PAGE_LOCKS = " + SqlIndexOption(index["allow_page_locks"])
+                + ", DATA_COMPRESSION = " + index["data_compression_desc"];
+            if (index["fill_factor"] != "0") definition += ", FILLFACTOR = " + index["fill_factor"];
+            definition += ") ON " + QuoteIdentifier(index["filegroup"]!);
+            restoreIndexes.Add(definition);
+            if (index["is_disabled"] == "True")
+                restoreIndexes.Add($"ALTER INDEX {QuoteIdentifier(index["name"]!)} ON {QuoteIdentifier(table)} DISABLE");
+        }
+
+        // Drop nonclustered indexes first; recreate the clustered index first.
+        for (int i = indexes.Count - 1; i >= 0; i--)
+        {
+            var index = indexes[i];
+            await result.RunAsync(() => Execute($"DROP INDEX {QuoteIdentifier(index["name"]!)} ON {QuoteIdentifier(table)}"));
+        }
+
+        foreach (var constraint in defaults)
+        {
+            await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} DROP CONSTRAINT {QuoteIdentifier(constraint["name"]!)}"));
+        }
+
+        await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} ALTER COLUMN {QuoteIdentifier(property.Name)} {GetMigrationColumnType(property)} {(property.Options.Nullable ? "NULL" : "NOT NULL")}"));
+
+        if (property.Options.Default != null)
+        {
+            await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} ADD DEFAULT {FormatMigrationDefault(property.Options.Default)} FOR {QuoteIdentifier(property.Name)}"));
+        }
+
+        foreach (string definition in restoreIndexes)
+        {
+            await result.RunAsync(() => Execute(definition));
+        }
+
+        if (property.Options.Index || property.Options.Unique)
+        {
+            string name = Utils.CheckConstraint((property.Options.Unique ? "UC_" : "IND_") + property.Name + "_" + table);
+            string sqlIndex = "IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID("
+                + FormatMigrationDefault(QuoteIdentifier(table)) + ") AND name = " + FormatMigrationDefault(name) + ") "
+                + $"CREATE {(property.Options.Unique ? "UNIQUE " : "")}INDEX {QuoteIdentifier(name)} "
+                + $"ON {QuoteIdentifier(table)} ({QuoteIdentifier(property.Name)})";
+
+            await result.RunAsync(() => Execute(sqlIndex));
+        }
+        return result;
+    }
+
+    private static string SqlIndexOption(string? value)
+    {
+        if (value == "True") return "ON";
+        return "OFF";
+    }
+    #endregion
     public override string QuoteIdentifier(string identifier)
     {
         return "[" + identifier.Replace("]", "]]") + "]";

@@ -39,7 +39,6 @@ public sealed class MigrationTests
     }
 
     [Test]
-    [Explicit("Specification: property rename/update is not implemented yet.")]
     public async Task RenameProperty_preserves_data_and_exposes_the_new_column()
     {
         var result = new VoidWithError();

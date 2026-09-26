@@ -54,7 +54,7 @@ public abstract class StorageMigrationProvider<T> : MigrationProvider, IStorageM
 
     public Task<ResultWithError<DbTransactionContext>> BeginTransaction()
     {
-        return _storage.BeginTransaction();
+        return _storage.BeginMigrationTransaction();
     }
     public void setTransactionScope(DbTransactionContext? context)
     {

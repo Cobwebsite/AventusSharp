@@ -9,6 +9,7 @@ using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Migrations;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Data.Storage.Relational;
 using AventusSharp.Tools;
 using Npgsql;
 using NpgsqlTypes;
@@ -264,6 +265,40 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         return "postgresql";
     }
     #endregion
+
+    #region migrations
+    protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
+    {
+        return Execute($"ALTER TABLE {QuoteIdentifier(table)} RENAME COLUMN {QuoteIdentifier(property.OldName!)} TO {QuoteIdentifier(property.Name)}");
+    }
+
+    protected override async Task<VoidWithError> UpdateMigrationProperty(string table, IMigrationProperty property)
+    {
+        VoidWithError result = new();
+        string target = $"ALTER TABLE {QuoteIdentifier(table)} ALTER COLUMN {QuoteIdentifier(property.Name)} ";
+        string type = GetMigrationColumnType(property);
+        // A previous default can prevent a type conversion even when all stored values are valid.
+        await result.RunAsync(() => Execute(target + "DROP DEFAULT"));
+        await result.RunAsync(() => Execute(target + "TYPE " + type + " USING " + QuoteIdentifier(property.Name) + "::" + type));
+        await result.RunAsync(() => Execute(target + (property.Options.Nullable ? "DROP NOT NULL" : "SET NOT NULL")));
+
+        if (property.Options.Default != null)
+            await result.RunAsync(() => Execute(target + "SET DEFAULT " + FormatMigrationDefault(property.Options.Default)));
+
+        if (property.Options.Index || property.Options.Unique)
+        {
+            string name = Utils.CheckConstraint((property.Options.Unique ? "UC_" : "IND_") + property.Name + "_" + table);
+            string sqlIndex = $"CREATE {(property.Options.Unique ? "UNIQUE " : "")}INDEX IF NOT EXISTS {QuoteIdentifier(name)} "
+                + $"ON {QuoteIdentifier(table)} ({QuoteIdentifier(property.Name)})";
+
+            await result.RunAsync(() => Execute(sqlIndex));
+        }
+        return result;
+    }
+
+    #endregion
+
+
 
     protected override object? TransformValueForFct(ParamsInfo paramsInfo)
     {

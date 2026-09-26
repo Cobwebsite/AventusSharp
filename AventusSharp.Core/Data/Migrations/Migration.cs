@@ -76,6 +76,7 @@ public abstract class Migration : IMigration
             if (provider is IStorageMigrationProvider stProvider)
             {
                 ResultWithError<DbTransactionContext> transactionQuery = await stProvider.BeginTransaction();
+                _currentError.Errors.AddRange(transactionQuery.Errors);
                 if (transactionQuery.Success && transactionQuery.Result != null)
                 {
                     stProvider.setTransactionScope(transactionQuery.Result);

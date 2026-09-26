@@ -144,6 +144,13 @@ public class MigrationModel<T> : IMigrationModel where T : IStorable
         result.SetOldName(currentName);
         return result;
     }
+    public MigrationProperty<T, U> UpdateProperty<U>(string name, MigrationPropertyOptions<U>? options = null)
+    {
+        var result = GetOrCreateProperty<U>(name);
+        result.ChangePropertyAction(MigrationPropertyAction.Update);
+        result.SetOptions(options ?? new());
+        return result;
+    }
     public MigrationProperty<T, object> RenameProperty(string currentName, string newName)
     {
         return RenameProperty<object>(currentName, newName);

@@ -8,6 +8,6 @@ public class RenameColumn
     public static List<string> PrepareSQL(TableInfo table, string oldColumn, string newColumn, MySQLStorage storage)
     {
 
-        return [$"ALTER TABLE `{table.SqlTableName}` RENAME COLUMN `{oldColumn}` TO `{newColumn}`"];
+        return [$"ALTER TABLE {storage.QuoteIdentifier(table.SqlTableName)} RENAME COLUMN {storage.QuoteIdentifier(oldColumn)} TO {storage.QuoteIdentifier(newColumn)}"];
     }
 }

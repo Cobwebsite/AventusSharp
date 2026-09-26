@@ -82,7 +82,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
                         {
                             useDatabase = false;
                             connection.Open();
-                            (await Execute("CREATE DATABASE " + Database + ";")).Print();
+                            (await Execute("CREATE DATABASE " + QuoteIdentifier(Database) + ";")).Print();
                             useDatabase = true;
                         }
                         ;
@@ -164,7 +164,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
             return result;
         }
 
-        string sql = "SELECT 'DROP TABLE IF EXISTS \"' || tablename || '\" CASCADE;' as query " +
+        string sql = "SELECT tablename as name " +
                      "FROM pg_tables WHERE schemaname = 'public';";
 
         ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
@@ -177,7 +177,7 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         string dropAllCmd = "";
         foreach (Dictionary<string, string?> line in queryResult.Result)
         {
-            dropAllCmd += line["query"];
+            dropAllCmd += "DROP TABLE IF EXISTS " + QuoteIdentifier(line["name"]!) + " CASCADE;";
         }
 
         VoidWithError executeResult = await Execute(dropAllCmd);
@@ -208,11 +208,11 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
     }
     protected override string PrepareSQLTableRename(string oldName, string newName)
     {
-        return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+        return "RENAME TABLE = " + QuoteIdentifier(oldName) + " TO " + QuoteIdentifier(newName) + "; ";
     }
     protected override string PrepareSQLTableDelete(string name)
     {
-        return "DROP TABLE IF EXISTS `" + name + "`;";
+        return "DROP TABLE IF EXISTS " + QuoteIdentifier(name) + ";";
     }
     #endregion
 

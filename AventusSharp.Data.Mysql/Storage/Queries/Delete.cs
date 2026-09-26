@@ -28,7 +28,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     if (memberInfo is ITableMemberInfoSqlLinkMultiple multiple)
                     {
                         string key = multiple.TableIntermediateKey1 ?? "";
-                        string sql = "DELETE FROM `" + multiple.TableIntermediateName + "` WHERE `" + key + "`=@" + key + "";
+                        string sql = "DELETE FROM " + storage.QuoteIdentifier(multiple.TableIntermediateName ?? "") + " WHERE " + storage.QuoteIdentifier(key) + "=@" + key;
                         result.DeleteNM.Add(sql, new Dictionary<string, ParamsInfo> {
                             {
                                 multiple.TableIntermediateKey1 ?? "", 
@@ -67,7 +67,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     string alias = parentLink.Value;
                     TableInfo info = parentLink.Key;
                     loadMembers(info);
-                    joins.Add("INNER JOIN `" + info.SqlTableName + "` " + alias + " ON " + lastAlias + "." + lastTableInfo.Primary?.SqlName + "=" + alias + "." + info.Primary?.SqlName);
+                    joins.Add("INNER JOIN " + storage.QuoteIdentifier(info.SqlTableName) + " " + alias + " ON " + lastAlias + "." + storage.QuoteIdentifier(lastTableInfo.Primary?.SqlName ?? "") + "=" + alias + "." + storage.QuoteIdentifier(info.Primary?.SqlName ?? ""));
                     lastAlias = alias;
                     lastTableInfo = info;
                     aliases.Insert(0, lastAlias + ".*");
@@ -83,7 +83,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 joinTxt = " " + joinTxt;
             }
 
-            result.Sql = "DELETE " + string.Join(",", aliases) + " FROM `" + mainInfo.TableInfo.SqlTableName + "` " + mainInfo.Alias
+            result.Sql = "DELETE " + string.Join(",", aliases) + " FROM " + storage.QuoteIdentifier(mainInfo.TableInfo.SqlTableName) + " " + mainInfo.Alias
                 + joinTxt
                 + whereTxt;
 

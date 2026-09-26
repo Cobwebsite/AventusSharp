@@ -95,7 +95,7 @@ namespace AventusSharp.Data.Storage.Relational
                             if (fctGrp != null && fieldGrp != null)
                             {
                                 string action = fctGrp.Fct == WhereGroupFctEnum.Equal ? " IS NULL" : " IS NOT NULL";
-                                subQuery = fieldGrp.Alias + "." + fieldGrp.SqlName + action;
+                                subQuery = fieldGrp.Alias + "." + storage.QuoteIdentifier(fieldGrp.SqlName) + action;
                                 break;
                             }
                         }
@@ -146,7 +146,7 @@ namespace AventusSharp.Data.Storage.Relational
                     }
                     else if (queryGroup is WhereGroupField fieldGrp)
                     {
-                        subQuery += fieldGrp.Alias + "." + fieldGrp.SqlName;
+                        subQuery += fieldGrp.Alias + "." + storage.QuoteIdentifier(fieldGrp.SqlName);
                     }
                     lastGroup = queryGroup;
                 }
@@ -159,7 +159,7 @@ namespace AventusSharp.Data.Storage.Relational
                     ? whereSingleBool.FalseValue
                     : whereSingleBool.TrueValue;
                 string value = FormatConstant(transformedValue, storage);
-                whereTxt += whereSingleBool.Alias + "." + whereSingleBool.TableMemberInfo.SqlName + " = " + value;
+                whereTxt += whereSingleBool.Alias + "." + storage.QuoteIdentifier(whereSingleBool.TableMemberInfo.SqlName) + " = " + value;
                 applyNegate = false;
             }
 

@@ -24,7 +24,7 @@ public class AddColumn
             if (member is ITableMemberInfoSqlWritable memberWritable)
             {
                 string typeTxt = storage.GetSqlColumnType(memberWritable.SqlType, member);
-                string schemaProp = "\tADD `" + member.SqlName + "` " + typeTxt;
+                string schemaProp = "\tADD " + storage.QuoteIdentifier(member.SqlName) + " " + typeTxt;
                 if (!member.IsNullable)
                 {
                     schemaProp += " NOT NULL";
@@ -52,18 +52,18 @@ public class AddColumn
 
                 if (member.IsPrimary)
                 {
-                    primaryConstraint.Add("`" + member.SqlName + "`");
+                    primaryConstraint.Add(storage.QuoteIdentifier(member.SqlName));
                 }
 
                 if (member.IsUnique)
                 {
                     string constraintName = "UC_" + member.SqlName + "_" + table.SqlTableName;
-                    uniqueConstraint.Add("\tADD CONSTRAINT `" + constraintName + "` UNIQUE (`" + member.SqlName + "`)");
+                    uniqueConstraint.Add("\tADD CONSTRAINT " + storage.QuoteIdentifier(constraintName) + " UNIQUE (" + storage.QuoteIdentifier(member.SqlName) + ")");
                 }
                 else if (member.IsIndex)
                 {
                     string constraintName = "IND_" + member.SqlName + "_" + table.SqlTableName;
-                    indexConstraint.Add($"\tCREATE INDEX `{constraintName}` ON `{table.SqlTableName}` (`{member.SqlName}`)");
+                    indexConstraint.Add($"\tCREATE INDEX {storage.QuoteIdentifier(constraintName)} ON {storage.QuoteIdentifier(table.SqlTableName)} ({storage.QuoteIdentifier(member.SqlName)})");
                 }
 
             }
@@ -96,9 +96,9 @@ public class AddColumn
                 bool deleteSetNull = pri.Value.FirstOrDefault(p => p.IsDeleteSetNull) != null;
                 string constraintName = "FK_" + string.Join("_", pri.Value.Select(field => field.SqlName)) + "_" + table.SqlTableName + "_" + primary.Key;
                 constraintName = Utils.CheckConstraint(constraintName);
-                string foreignKey = string.Join(", ", pri.Value.Select(field => "`" + field.SqlName + "`"));
-                string foreignTable = string.Join(", ", pri.Value.Select(field => "`" + ((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName + "`"));
-                string constraintProp = "\tADD CONSTRAINT `" + constraintName + "` FOREIGN KEY (" + foreignKey + ") REFERENCES `" + primary.Key + "` (" + foreignTable + ")";
+                string foreignKey = string.Join(", ", pri.Value.Select(field => storage.QuoteIdentifier(field.SqlName)));
+                string foreignTable = string.Join(", ", pri.Value.Select(field => storage.QuoteIdentifier(((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName ?? "")));
+                string constraintProp = "\tADD CONSTRAINT " + storage.QuoteIdentifier(constraintName) + " FOREIGN KEY (" + foreignKey + ") REFERENCES " + storage.QuoteIdentifier(primary.Key) + " (" + foreignTable + ")";
                 if (deleteOnCascade)
                 {
                     // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
@@ -117,17 +117,17 @@ public class AddColumn
 
         if (schema.Count > 0)
         {
-            result.Add($"ALTER TABLE `{table.SqlTableName}` " + string.Join(",", schema));
+            result.Add($"ALTER TABLE {storage.QuoteIdentifier(table.SqlTableName)} " + string.Join(",", schema));
         }
         if (primaryConstraint.Count > 0)
         {
             string joinedPrimary = string.Join(",", primaryConstraint);
-            string sql2 = $"ALTER TABLE `{table.SqlTableName}` ADD CONSTRAINT `PK_" + table.SqlTableName + "` PRIMARY KEY (" + joinedPrimary + ")";
+            string sql2 = $"ALTER TABLE {storage.QuoteIdentifier(table.SqlTableName)} ADD CONSTRAINT " + storage.QuoteIdentifier("PK_" + table.SqlTableName) + " PRIMARY KEY (" + joinedPrimary + ")";
             result.Add(sql2);
         }
         if (uniqueConstraint.Count > 0)
         {
-            string sql2 = $"ALTER TABLE `{table.SqlTableName}` " + string.Join(",", schema);
+            string sql2 = $"ALTER TABLE {storage.QuoteIdentifier(table.SqlTableName)} " + string.Join(",", schema);
             result.Add(sql2);
         }
         if (indexConstraint.Count > 0)
@@ -136,7 +136,7 @@ public class AddColumn
         }
         if(foreignConstraint.Count > 0)
         {
-            string sql2 = $"ALTER TABLE `{table.SqlTableName}` " + string.Join(",", foreignConstraint);
+            string sql2 = $"ALTER TABLE {storage.QuoteIdentifier(table.SqlTableName)} " + string.Join(",", foreignConstraint);
             result.Add(sql2);
         }
 

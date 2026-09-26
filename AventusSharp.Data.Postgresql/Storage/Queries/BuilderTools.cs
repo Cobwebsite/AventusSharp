@@ -9,7 +9,7 @@ public static class BuilderTools
 {
     public static string Where(List<IWhereRootGroup>? wheres, IDBStorage storage)
     {
-        string sql = QuoteQualifiedColumns(CommonBuilderTools.Where(wheres, storage));
+        string sql = CommonBuilderTools.Where(wheres, storage);
         return Regex.Replace(
             sql,
             @"\b(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)\(([^()]+)\)",

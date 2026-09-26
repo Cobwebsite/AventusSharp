@@ -24,7 +24,7 @@ public class Exist
                 {
                     continue;
                 }
-                joins.Add("LEFT OUTER JOIN \"" + databaseQueryBuilderInfo.TableInfo.SqlTableName + "\" " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + "." + tableMemberInfo.SqlName + "=" + databaseQueryBuilderInfo.Alias + "." + databaseQueryBuilderInfo.TableInfo.Primary?.SqlName);
+                joins.Add("LEFT OUTER JOIN " + storage.QuoteIdentifier(databaseQueryBuilderInfo.TableInfo.SqlTableName) + " " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + "." + storage.QuoteIdentifier(tableMemberInfo.SqlName) + "=" + databaseQueryBuilderInfo.Alias + "." + storage.QuoteIdentifier(databaseQueryBuilderInfo.TableInfo.Primary?.SqlName ?? ""));
                 path.Add(tableMemberInfo.Name);
                 types.Add(tableMemberInfo.MemberType);
                 loadInfo(databaseQueryBuilderInfo, path, types);
@@ -44,7 +44,7 @@ public class Exist
         }
 
         string sql = "SELECT " + string.Join(",", fields)
-            + " FROM \"" + mainInfo.TableInfo.SqlTableName + "\" " + mainInfo.Alias
+            + " FROM " + storage.QuoteIdentifier(mainInfo.TableInfo.SqlTableName) + " " + mainInfo.Alias
             + joinTxt
             + whereTxt;
 

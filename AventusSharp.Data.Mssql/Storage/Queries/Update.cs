@@ -54,7 +54,7 @@ public class Update
                         TypeLvl0 = baseInfo.TableInfo.Type,
                         MembersList = membersListTemp
                     });
-                    fields.Add(name + " = @" + name.Replace(".", "_"));
+                    fields.Add(alias + "." + storage.QuoteIdentifier(member.Key.SqlName) + " = @" + name.Replace(".", "_"));
                 }
                 else if (member.Key is ITableMemberInfoSqlLinkMultiple memberNM)
                 {
@@ -64,7 +64,7 @@ public class Update
                         continue;
                     }
 
-                    string sqlDeleteNM = "DELETE FROM [" + memberNM.TableIntermediateName + "] WHERE [" + memberNM.TableIntermediateKey1 + "]=@" + memberNM.TableIntermediateKey1 + "";
+                    string sqlDeleteNM = "DELETE FROM " + storage.QuoteIdentifier(memberNM.TableIntermediateName ?? "") + " WHERE " + storage.QuoteIdentifier(memberNM.TableIntermediateKey1 ?? "") + "=@" + memberNM.TableIntermediateKey1;
                     DatabaseUpdateBuilderInfoQuery deleteQuery = new DatabaseUpdateBuilderInfoQuery(sqlDeleteNM, new List<ParamsInfo>(), new List<ParamsInfo>() {
                             new ParamsInfo()
                             {
@@ -76,7 +76,7 @@ public class Update
                         });
                     updateBefore.Add(deleteQuery);
 
-                    string linkInsert = $"INSERT INTO [{intermediateTableName}] ([{memberNM.TableIntermediateKey1}], [{memberNM.TableIntermediateKey2}]) VALUES (@{memberNM.TableIntermediateKey1}, @{memberNM.TableIntermediateKey2});";
+                    string linkInsert = $"INSERT INTO {storage.QuoteIdentifier(intermediateTableName ?? "")} ({storage.QuoteIdentifier(memberNM.TableIntermediateKey1 ?? "")}, {storage.QuoteIdentifier(memberNM.TableIntermediateKey2 ?? "")}) VALUES (@{memberNM.TableIntermediateKey1}, @{memberNM.TableIntermediateKey2});";
                     List<ParamsInfo> linkInfo = new List<ParamsInfo>()
                         {
                             new ParamsInfo()
@@ -105,9 +105,9 @@ public class Update
                 TableInfo info = parentLink.Key;
                 if (updateBuilder.AllFieldsUpdate)
                 {
-                    LoadTableFieldUpdate(info, alias, baseInfo, paramsInfosGrab, fields);
+                    LoadTableFieldUpdate(info, alias, baseInfo, paramsInfosGrab, fields, storage);
                 }
-                joins.Add("INNER JOIN [" + info.SqlTableName + "] " + alias + " ON " + lastAlias + "." + lastTableInfo.Primary?.SqlName + "=" + alias + "." + info.Primary?.SqlName);
+                joins.Add("INNER JOIN " + storage.QuoteIdentifier(info.SqlTableName) + " " + alias + " ON " + lastAlias + "." + storage.QuoteIdentifier(lastTableInfo.Primary?.SqlName ?? "") + "=" + alias + "." + storage.QuoteIdentifier(info.Primary?.SqlName ?? ""));
                 lastAlias = alias;
                 lastTableInfo = info;
             }
@@ -120,7 +120,7 @@ public class Update
                 {
                     continue;
                 }
-                joins.Add("LEFT OUTER JOIN [" + databaseQueryBuilderInfo.TableInfo.SqlTableName + "] " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + "." + tableMemberInfo.SqlName + "=" + databaseQueryBuilderInfo.Alias + "." + databaseQueryBuilderInfo.TableInfo.Primary?.SqlName);
+                joins.Add("LEFT OUTER JOIN " + storage.QuoteIdentifier(databaseQueryBuilderInfo.TableInfo.SqlTableName) + " " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + "." + storage.QuoteIdentifier(tableMemberInfo.SqlName) + "=" + databaseQueryBuilderInfo.Alias + "." + storage.QuoteIdentifier(databaseQueryBuilderInfo.TableInfo.Primary?.SqlName ?? ""));
                 membersList.Add(tableMemberInfo);
                 loadInfo(databaseQueryBuilderInfo, membersList);
                 membersList.Remove(tableMemberInfo);
@@ -145,7 +145,7 @@ public class Update
         string sql = "UPDATE " + mainInfo.Alias
             + joinTxt
             + " SET " + string.Join(",", fields)
-            + " FROM [" + mainInfo.TableInfo.SqlTableName + "] " + mainInfo.Alias
+            + " FROM " + storage.QuoteIdentifier(mainInfo.TableInfo.SqlTableName) + " " + mainInfo.Alias
             + whereTxt;
 
         DatabaseUpdateBuilderInfoQuery resultTemp = new(sql, updateBuilder.WhereParamsInfo.Values.ToList(), paramsInfosGrab);
@@ -156,8 +156,8 @@ public class Update
         {
             throw new Exception("Can't find Id... 0_o");
         }
-        string idField = pair.Value + "." + pair.Key.SqlName;
-        result.QuerySql = "SELECT " + idField + " FROM [" + mainInfo.TableInfo.SqlTableName + "] " + mainInfo.Alias + joinTxt + whereTxt;
+        string idField = pair.Value + "." + storage.QuoteIdentifier(pair.Key.SqlName);
+        result.QuerySql = "SELECT " + idField + " FROM " + storage.QuoteIdentifier(mainInfo.TableInfo.SqlTableName) + " " + mainInfo.Alias + joinTxt + whereTxt;
 
 
         result.Queries.AddRange(updateBefore);
@@ -168,7 +168,7 @@ public class Update
         return result;
     }
 
-    private static void LoadTableFieldUpdate(TableInfo tableInfo, string alias, DatabaseBuilderInfo baseInfo, List<ParamsInfo> updateParamsInfo, List<string> fields)
+    private static void LoadTableFieldUpdate(TableInfo tableInfo, string alias, DatabaseBuilderInfo baseInfo, List<ParamsInfo> updateParamsInfo, List<string> fields, MsSqlStorage storage)
     {
         foreach (TableMemberInfoSql member in tableInfo.Members)
         {
@@ -187,7 +187,7 @@ public class Update
                     TypeLvl0 = tableInfo.Type,
                     MembersList = new List<TableMemberInfoSql>() { member }
                 });
-                fields.Add(name + " = @" + name);
+                fields.Add(alias + "." + storage.QuoteIdentifier(member.SqlName) + " = @" + name);
             }
         }
 

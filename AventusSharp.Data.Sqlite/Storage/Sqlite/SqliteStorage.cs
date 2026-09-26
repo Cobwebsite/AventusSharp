@@ -141,7 +141,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         }
 
         // Récupérer toutes les tables existantes
-        string sql = "SELECT 'DROP TABLE IF EXISTS \"' || name || '\";' AS query " +
+        string sql = "SELECT name " +
                      "FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
 
         ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
@@ -154,7 +154,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         string dropAllCmd = "PRAGMA foreign_keys = OFF;";
         foreach (Dictionary<string, string?> line in queryResult.Result)
         {
-            dropAllCmd += line["query"];
+            dropAllCmd += "DROP TABLE IF EXISTS " + QuoteIdentifier(line["name"]!) + ";";
         }
         dropAllCmd += "PRAGMA foreign_keys = ON;";
 
@@ -188,11 +188,11 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
     protected override string PrepareSQLTableRename(string oldName, string newName)
     {
-        return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+        return "RENAME TABLE = " + QuoteIdentifier(oldName) + " TO " + QuoteIdentifier(newName) + "; ";
     }
     protected override string PrepareSQLTableDelete(string name)
     {
-        return "DROP TABLE IF EXISTS `" + name + "`;";
+        return "DROP TABLE IF EXISTS " + QuoteIdentifier(name) + ";";
     }
 
     #endregion

@@ -11,7 +11,7 @@ internal class CreateTable
 {
     public static List<string> GetQuery(TableInfo table, MsSqlStorage storage)
     {
-        string sql = "CREATE TABLE [" + table.SqlTableName + "] (\n";
+        string sql = "CREATE TABLE " + storage.QuoteIdentifier(table.SqlTableName) + " (\n";
 
         List<string> schema = new();
         List<string> primaryConstraint = new();
@@ -28,7 +28,7 @@ internal class CreateTable
             if (member is ITableMemberInfoSqlWritable memberWritable)
             {
                 string typeTxt = storage.GetSqlColumnType(memberWritable.SqlType, member);
-                string schemaProp = "\t[" + member.SqlName + "] " + typeTxt;
+                string schemaProp = "\t" + storage.QuoteIdentifier(member.SqlName) + " " + typeTxt;
                 if (!member.IsNullable)
                 {
                     schemaProp += " NOT NULL";
@@ -52,18 +52,18 @@ internal class CreateTable
 
                 if (member.IsPrimary)
                 {
-                    primaryConstraint.Add("[" + member.SqlName + "]");
+                    primaryConstraint.Add(storage.QuoteIdentifier(member.SqlName));
                 }
 
                 if (member.IsUnique)
                 {
                     string constraintName = "UC_" + member.SqlName + "_" + table.SqlTableName;
-                    uniqueConstraint.Add("\tCONSTRAINT [" + constraintName + "] UNIQUE ([" + member.SqlName + "])");
+                    uniqueConstraint.Add("\tCONSTRAINT " + storage.QuoteIdentifier(constraintName) + " UNIQUE (" + storage.QuoteIdentifier(member.SqlName) + ")");
                 }
                 else if (member.IsIndex)
                 {
                     string constraintName = "IND_" + member.SqlName + "_" + table.SqlTableName;
-                    indexConstraint.Add($"CREATE INDEX {constraintName} ON [{table.SqlTableName}] ([{member.SqlName}])");
+                    indexConstraint.Add($"CREATE INDEX {storage.QuoteIdentifier(constraintName)} ON {storage.QuoteIdentifier(table.SqlTableName)} ({storage.QuoteIdentifier(member.SqlName)})");
                 }
             }
 
@@ -97,9 +97,9 @@ internal class CreateTable
                 bool deleteSetNull = pri.Value.FirstOrDefault(p => p.IsDeleteSetNull) != null;
                 string constraintName = "FK_" + string.Join("_", pri.Value.Select(field => field.SqlName)) + "_" + table.SqlTableName + "_" + primary.Key;
                 constraintName = Utils.CheckConstraint(constraintName);
-                string foreignKey = string.Join(", ", pri.Value.Select(field => "[" + field.SqlName + "]"));
-                string foreignTable = string.Join(", ", pri.Value.Select(field => "[" + ((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName + "]"));
-                string constraintProp = "\t" + "CONSTRAINT [" + constraintName + "] FOREIGN KEY (" + foreignKey + ") REFERENCES [" + primary.Key + "] (" + foreignTable + ")";
+                string foreignKey = string.Join(", ", pri.Value.Select(field => storage.QuoteIdentifier(field.SqlName)));
+                string foreignTable = string.Join(", ", pri.Value.Select(field => storage.QuoteIdentifier(((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName ?? "")));
+                string constraintProp = "\t" + "CONSTRAINT " + storage.QuoteIdentifier(constraintName) + " FOREIGN KEY (" + foreignKey + ") REFERENCES " + storage.QuoteIdentifier(primary.Key) + " (" + foreignTable + ")";
                 if (deleteOnCascade)
                 {
                     // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
@@ -120,7 +120,7 @@ internal class CreateTable
         {
             sql += separator;
             string joinedPrimary = string.Join(",", primaryConstraint);
-            string primaryProp = "\tCONSTRAINT [PK_" + table.SqlTableName + "] PRIMARY KEY (" + joinedPrimary + ")";
+            string primaryProp = "\tCONSTRAINT " + storage.QuoteIdentifier("PK_" + table.SqlTableName) + " PRIMARY KEY (" + joinedPrimary + ")";
             sql += primaryProp;
         }
         if (foreignConstraint.Count > 0)

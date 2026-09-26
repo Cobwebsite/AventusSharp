@@ -29,7 +29,7 @@ public class Query
             {
                 TableMemberInfoSql member = baseInfo.TableInfo.TypeMember;
                 string alias = baseInfo.Alias;
-                fields.Add(alias + ".\"" + member.SqlName + "\" \"" + alias + "*" + member.SqlName + "\"");
+                fields.Add(alias + "." + storage.QuoteIdentifier(member.SqlName) + " " + storage.QuoteIdentifier(alias + "*" + member.SqlName));
             }
             string lastAlias = baseInfo.Alias;
             TableInfo lastTableInfo = baseInfo.TableInfo;
@@ -44,9 +44,9 @@ public class Query
                 else if (parentLink.Key.TypeMember != null)
                 {
                     TableMemberInfoSql member = parentLink.Key.TypeMember;
-                    fields.Add(alias + ".\"" + member.SqlName + "\" \"" + alias + "*" + member.SqlName + "\"");
+                    fields.Add(alias + "." + storage.QuoteIdentifier(member.SqlName) + " " + storage.QuoteIdentifier(alias + "*" + member.SqlName));
                 }
-                joins.Add("INNER JOIN \"" + info.SqlTableName + "\" " + alias + " ON " + lastAlias + ".\"" + lastTableInfo.Primary?.SqlName + "\"=" + alias + ".\"" + info.Primary?.SqlName + "\"");
+                joins.Add("INNER JOIN " + storage.QuoteIdentifier(info.SqlTableName) + " " + alias + " ON " + lastAlias + "." + storage.QuoteIdentifier(lastTableInfo.Primary?.SqlName ?? "") + "=" + alias + "." + storage.QuoteIdentifier(info.Primary?.SqlName ?? ""));
                 lastAlias = alias;
                 lastTableInfo = info;
             }
@@ -65,9 +65,9 @@ public class Query
                     else if (child.TableInfo.TypeMember != null)
                     {
                         TableMemberInfoSql member = child.TableInfo.TypeMember;
-                        fields.Add(alias + ".\"" + member.SqlName + "\" \"" + alias + "*" + member.SqlName + "\"");
+                        fields.Add(alias + "." + storage.QuoteIdentifier(member.SqlName) + " " + storage.QuoteIdentifier(alias + "*" + member.SqlName));
                     }
-                    joins.Add("LEFT OUTER JOIN \"" + child.TableInfo.SqlTableName + "\" " + child.Alias + " ON " + parentAlias + ".\"" + parentPrimName + "\"=" + alias + ".\"" + primName + "\"");
+                    joins.Add("LEFT OUTER JOIN " + storage.QuoteIdentifier(child.TableInfo.SqlTableName) + " " + child.Alias + " ON " + parentAlias + "." + storage.QuoteIdentifier(parentPrimName ?? "") + "=" + alias + "." + storage.QuoteIdentifier(primName));
                     loadChild(child.Children, alias, primName);
                 }
             };
@@ -88,17 +88,17 @@ public class Query
                     {
                         alias = queryBuilder.CreateAlias(baseInfo.TableInfo, linkMultiple.TableLinked);
                     }
-                    fields.Add("STRING_AGG((" + alias + ".\"" + linkMultiple.TableIntermediateKey2 + "\")::text, ',') \"" + baseInfo.Alias + "*" + member.Key.SqlName + "\"");
-                    joins.Add("LEFT OUTER JOIN \"" + linkMultiple.TableIntermediateName + "\" " + alias + " ON " + alias + ".\"" + linkMultiple.TableIntermediateKey1 + "\"=" + baseInfo.Alias + ".\"" + baseInfo.TableInfo.Primary?.SqlName + "\"");
+                    fields.Add("STRING_AGG((" + alias + "." + storage.QuoteIdentifier(linkMultiple.TableIntermediateKey2 ?? "") + ")::text, ',') " + storage.QuoteIdentifier(baseInfo.Alias + "*" + member.Key.SqlName));
+                    joins.Add("LEFT OUTER JOIN " + storage.QuoteIdentifier(linkMultiple.TableIntermediateName ?? "") + " " + alias + " ON " + alias + "." + storage.QuoteIdentifier(linkMultiple.TableIntermediateKey1 ?? "") + "=" + baseInfo.Alias + "." + storage.QuoteIdentifier(baseInfo.TableInfo.Primary?.SqlName ?? ""));
                     if (groupBy == "")
                     {
-                        groupBy = " GROUP BY " + mainInfo.Alias + ".\"" + mainInfo.TableInfo.Primary?.SqlName + "\"";
+                        groupBy = " GROUP BY " + mainInfo.Alias + "." + storage.QuoteIdentifier(mainInfo.TableInfo.Primary?.SqlName ?? "");
                     }
                 }
                 else
                 {
                     string alias = member.Value.Alias;
-                    fields.Add(alias + ".\"" + member.Key.SqlName + "\" \"" + alias + "*" + member.Key.SqlName + "\"");
+                    fields.Add(alias + "." + storage.QuoteIdentifier(member.Key.SqlName) + " " + storage.QuoteIdentifier(alias + "*" + member.Key.SqlName));
                 }
 
             }
@@ -111,7 +111,7 @@ public class Query
                 {
                     continue;
                 }
-                joins.Add("LEFT OUTER JOIN \"" + databaseQueryBuilderInfo.TableInfo.SqlTableName + "\" " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + ".\"" + tableMemberInfo.SqlName + "\"=" + databaseQueryBuilderInfo.Alias + ".\"" + databaseQueryBuilderInfo.TableInfo.Primary?.SqlName + "\"");
+                joins.Add("LEFT OUTER JOIN " + storage.QuoteIdentifier(databaseQueryBuilderInfo.TableInfo.SqlTableName) + " " + databaseQueryBuilderInfo.Alias + " ON " + baseInfo.Alias + "." + storage.QuoteIdentifier(tableMemberInfo.SqlName) + "=" + databaseQueryBuilderInfo.Alias + "." + storage.QuoteIdentifier(databaseQueryBuilderInfo.TableInfo.Primary?.SqlName ?? ""));
                 path.Add(tableMemberInfo.Name);
                 types.Add(tableMemberInfo.MemberType);
                 loadInfo(databaseQueryBuilderInfo, path, types);
@@ -126,7 +126,7 @@ public class Query
         if (queryBuilder.Groups != null)
         {
             string groups = string.Join(", ", queryBuilder.Groups.Select(
-                group => group.Alias + ".\"" + group.TableMember.SqlName + "\""));
+                group => group.Alias + "." + storage.QuoteIdentifier(group.TableMember.SqlName)));
             groupBy = groupBy == ""
                 ? " GROUP BY " + groups
                 : groupBy + ", " + groups;
@@ -146,7 +146,7 @@ public class Query
             foreach (SortInfo sortInfo in queryBuilder.Sorting)
             {
                 string order = sortInfo.Sort == Sort.ASC ? "ASC" : "DESC";
-                orderByPart.Add(sortInfo.Alias + ".\"" + sortInfo.TableMember.SqlName + "\" " + order);
+                orderByPart.Add(sortInfo.Alias + "." + storage.QuoteIdentifier(sortInfo.TableMember.SqlName) + " " + order);
             }
         }
         string orderBy = "";
@@ -165,7 +165,7 @@ public class Query
         }
 
         string sql = "SELECT " + string.Join(",", fields)
-            + " FROM \"" + mainInfo.TableInfo.SqlTableName + "\" " + mainInfo.Alias
+            + " FROM " + storage.QuoteIdentifier(mainInfo.TableInfo.SqlTableName) + " " + mainInfo.Alias
             + joinTxt
             + whereTxt
             + groupBy

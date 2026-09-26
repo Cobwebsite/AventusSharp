@@ -78,7 +78,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
                         {
                             useDatabase = false;
                             connection.Open();
-                            (await Execute("CREATE DATABASE " + Database + ";")).Print();
+                            (await Execute("CREATE DATABASE " + QuoteIdentifier(Database) + ";")).Print();
                             useDatabase = true;
                         }
                         ;
@@ -142,7 +142,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
             return result;
         }
 
-        string sql = "SELECT 'DROP TABLE [' + TABLE_NAME + '];' as query " +
+        string sql = "SELECT TABLE_NAME as name " +
                      "FROM INFORMATION_SCHEMA.TABLES " +
                      "WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_CATALOG = '" + this.Database + "';";
 
@@ -156,7 +156,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         string dropAllCmd = "EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';";
         foreach (Dictionary<string, string?> line in queryResult.Result)
         {
-            dropAllCmd += line["query"];
+            dropAllCmd += "DROP TABLE " + QuoteIdentifier(line["name"]!) + ";";
         }
         dropAllCmd += "EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';";
 
@@ -188,11 +188,11 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
     }
     protected override string PrepareSQLTableRename(string oldName, string newName)
     {
-        return "RENAME TABLE = [" + oldName + "] TO [" + newName + "]; ";
+        return "RENAME TABLE = " + QuoteIdentifier(oldName) + " TO " + QuoteIdentifier(newName) + "; ";
     }
     protected override string PrepareSQLTableDelete(string name)
     {
-        return "DROP TABLE IF EXISTS [" + name + "];";
+        return "DROP TABLE IF EXISTS " + QuoteIdentifier(name) + ";";
     }
     #endregion
 

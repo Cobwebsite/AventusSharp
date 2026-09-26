@@ -12,6 +12,7 @@ namespace AventusSharp.Data.Storage.Mssql.Queries
     {
         public static DatabaseCreateBuilderInfo PrepareSQL<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId) where X : IStorable
         {
+            var storage = createBuilder.Storage;
             DatabaseCreateBuilderInfo result = new();
 
             void createSql(TableInfo tableInfo)
@@ -47,7 +48,7 @@ namespace AventusSharp.Data.Storage.Mssql.Queries
                         };
 
                         paramsInfos.Add(paramsInfo);
-                        columns.Add("[" + member.SqlName + "]");
+                        columns.Add(storage.QuoteIdentifier(member.SqlName));
                         values.Add("@" + member.SqlName);
                     }
                     else if (member is ITableMemberInfoSqlLinkMultiple)
@@ -63,7 +64,7 @@ namespace AventusSharp.Data.Storage.Mssql.Queries
                     allValues.Add("(" + string.Join(",", values.Select(p => p + "__" + i)) + ")");
                 }
 
-                string sql = $"INSERT INTO [{tableInfo.SqlTableName}] ({string.Join(",", columns)}) VALUES {string.Join(",", allValues)};";
+                string sql = $"INSERT INTO {storage.QuoteIdentifier(tableInfo.SqlTableName)} ({string.Join(",", columns)}) VALUES {string.Join(",", allValues)};";
 
 
                 DatabaseCreateBuilderInfoQuery resultTemp = new(sql, false, paramsInfos);

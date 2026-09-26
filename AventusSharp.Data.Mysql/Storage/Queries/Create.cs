@@ -11,6 +11,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
     {
         public static DatabaseCreateBuilderInfo PrepareSQL<X>(DatabaseCreateBuilder<X> createBuilder) where X : IStorable
         {
+            var storage = createBuilder.Storage;
             DatabaseCreateBuilderInfo result = new();
 
             void createSql(TableInfo tableInfo)
@@ -54,7 +55,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                         {
                             paramsInfos.Add(paramsInfo);
                         }
-                        columns.Add("`" + member.SqlName + "`");
+                        columns.Add(storage.QuoteIdentifier(member.SqlName));
                         values.Add("@" + member.SqlName);
                     }
                     else if (member is ITableMemberInfoSqlLinkMultiple memberNM)
@@ -65,7 +66,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                             continue;
                         }
 
-                        string linkInsert = $"INSERT INTO `{intermediateTableName}` (`{memberNM.TableIntermediateKey1}`, `{memberNM.TableIntermediateKey2}`) VALUES (@{memberNM.TableIntermediateKey1}, @{memberNM.TableIntermediateKey2});";
+                        string linkInsert = $"INSERT INTO {storage.QuoteIdentifier(intermediateTableName ?? "")} ({storage.QuoteIdentifier(memberNM.TableIntermediateKey1 ?? "")}, {storage.QuoteIdentifier(memberNM.TableIntermediateKey2 ?? "")}) VALUES (@{memberNM.TableIntermediateKey1}, @{memberNM.TableIntermediateKey2});";
                         List<ParamsInfo> linkInfo = new List<ParamsInfo>()
                         {
                             new ParamsInfo()
@@ -89,7 +90,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
 
                 }
 
-                string sql = $"INSERT INTO `{tableInfo.SqlTableName}` ({string.Join(",", columns)}) VALUES ({string.Join(",", values)});";
+                string sql = $"INSERT INTO {storage.QuoteIdentifier(tableInfo.SqlTableName)} ({string.Join(",", columns)}) VALUES ({string.Join(",", values)});";
 
                 if (hasPrimaryResult)
                 {

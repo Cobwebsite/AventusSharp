@@ -26,6 +26,11 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 - [x] Traduire `Contains` et sa négation sur les relations N-N.
 - [ ] Prendre en charge les expressions qui nécessitent une sous-requête externe, mentionnées dans la documentation du site.
 
+## Normalisation SQL
+
+- [x] Centraliser l'échappement des identifiants des requêtes CRUD, jointures, filtres, tris et regroupements avec `QuoteIdentifier` pour les quatre stockages. Test de régression ajouté avec des noms réservés SQL ; validation complète avec Docker réussie.
+- [x] Appliquer `QuoteIdentifier` à la création du schéma, aux tables intermédiaires, aux index et contraintes, aux commandes de migration existantes et à la suppression des tables. Suite complète : 747 tests exécutés et réussis, aucun échec ; 6 spécifications explicites non exécutées sur des fonctionnalités encore en attente. MySQL, PostgreSQL et SQL Server testés sous Docker, SQLite testé directement.
+
 ## Priorité 4 — Tests, intégration et documentation
 
 - [ ] Créer un `MockDatabaseDM` fidèle aux contrats du gestionnaire réel pour les tests unitaires.

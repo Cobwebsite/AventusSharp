@@ -8,6 +8,6 @@ public class DropColumn
     public static List<string> PrepareSQL(TableInfo table, string column, MySQLStorage storage)
     {
 
-        return [$"ALTER TABLE `{table.SqlTableName}` DROP COLUMN `{column}`"];
+        return [$"ALTER TABLE {storage.QuoteIdentifier(table.SqlTableName)} DROP COLUMN {storage.QuoteIdentifier(column)}"];
     }
 }

@@ -11,7 +11,7 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
     {
         public static List<string> GetQuery(TableInfo table, SqliteStorage storage)
         {
-            string sql = "CREATE TABLE \"" + table.SqlTableName + "\" (\n";
+            string sql = "CREATE TABLE " + storage.QuoteIdentifier(table.SqlTableName) + " (\n";
 
             List<string> schema = new();
             List<string> primaryConstraint = new();
@@ -28,14 +28,14 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
                 if (member is ITableMemberInfoSqlWritable memberWritable)
                 {
                     string typeTxt = storage.GetSqlColumnType(memberWritable.SqlType, member);
-                    string schemaProp = "\t\"" + member.SqlName + "\" " + typeTxt;
+                    string schemaProp = "\t" + storage.QuoteIdentifier(member.SqlName) + " " + typeTxt;
                     if (!member.IsNullable)
                     {
                         schemaProp += " NOT NULL";
                     }
                     if (member.IsAutoIncrement)
                     {
-                        schemaProp = "\t\"" + member.SqlName + "\" INTEGER PRIMARY KEY AUTOINCREMENT";
+                        schemaProp = "\t" + storage.QuoteIdentifier(member.SqlName) + " INTEGER PRIMARY KEY AUTOINCREMENT";
                     }
                     if (member.DefaultValue != null)
                     {
@@ -52,18 +52,18 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
 
                     if (member.IsPrimary && !member.IsAutoIncrement)
                     {
-                        primaryConstraint.Add("\"" + member.SqlName + "\"");
+                        primaryConstraint.Add(storage.QuoteIdentifier(member.SqlName));
                     }
 
                     if (member.IsUnique)
                     {
                         string constraintName = "UC_" + member.SqlName + "_" + table.SqlTableName;
-                        uniqueConstraint.Add("\tCONSTRAINT \"" + constraintName + "\" UNIQUE (\"" + member.SqlName + "\")");
+                        uniqueConstraint.Add("\tCONSTRAINT " + storage.QuoteIdentifier(constraintName) + " UNIQUE (" + storage.QuoteIdentifier(member.SqlName) + ")");
                     }
                     else if (member.IsIndex)
                     {
                         string indexName = "IND_" + member.SqlName + "_" + table.SqlTableName;
-                        queries.Add("CREATE INDEX \"" + indexName + "\" ON \"" + table.SqlTableName + "\" (\"" + member.SqlName + "\");");
+                        queries.Add("CREATE INDEX " + storage.QuoteIdentifier(indexName) + " ON " + storage.QuoteIdentifier(table.SqlTableName) + " (" + storage.QuoteIdentifier(member.SqlName) + ");");
                     }
 
                 }
@@ -97,9 +97,9 @@ namespace AventusSharp.Data.Storage.Sqlite.Queries
                     bool deleteOnCascade = pri.Value.FirstOrDefault(p => p.IsDeleteOnCascade) != null;
                     bool deleteSetNull = pri.Value.FirstOrDefault(p => p.IsDeleteSetNull) != null;
                     
-                    string foreignKey = string.Join(", ", pri.Value.Select(field => "\"" + field.SqlName + "\""));
-                    string foreignTable = string.Join(", ", pri.Value.Select(field => "\"" + ((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName + "\""));
-                    string constraintProp = "\tFOREIGN KEY (" + foreignKey + ") REFERENCES \"" + primary.Key + "\" (" + foreignTable + ")";
+                    string foreignKey = string.Join(", ", pri.Value.Select(field => storage.QuoteIdentifier(field.SqlName)));
+                    string foreignTable = string.Join(", ", pri.Value.Select(field => storage.QuoteIdentifier(((ITableMemberInfoSqlLink)field).TableLinked?.Primary?.SqlName ?? "")));
+                    string constraintProp = "\tFOREIGN KEY (" + foreignKey + ") REFERENCES " + storage.QuoteIdentifier(primary.Key) + " (" + foreignTable + ")";
                     if (deleteOnCascade)
                     {
                         // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)

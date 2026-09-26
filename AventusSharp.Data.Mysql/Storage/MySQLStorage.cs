@@ -79,7 +79,7 @@ namespace AventusSharp.Data.Storage.Mysql
                             {
                                 useDatabase = false;
                                 connection.Open();
-                                (await Execute("CREATE DATABASE " + Database + ";")).Print();
+                                (await Execute("CREATE DATABASE " + QuoteIdentifier(Database) + ";")).Print();
                                 useDatabase = true;
                             }
                             ;
@@ -148,7 +148,7 @@ namespace AventusSharp.Data.Storage.Mysql
                 result.Result = true;
                 return result;
             }
-            string sql = "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') as query FROM information_schema.tables WHERE table_schema = '" + this.Database + "'; ";
+            string sql = "SELECT table_name as name FROM information_schema.tables WHERE table_schema = '" + this.Database + "'; ";
             ResultWithError<List<Dictionary<string, string?>>> queryResult = await Query(sql);
             if (!queryResult.Success || queryResult.Result == null)
             {
@@ -159,7 +159,7 @@ namespace AventusSharp.Data.Storage.Mysql
             string dropAllCmd = "SET FOREIGN_KEY_CHECKS = 0;";
             foreach (Dictionary<string, string?> line in queryResult.Result)
             {
-                dropAllCmd += line["query"];
+                dropAllCmd += "DROP TABLE IF EXISTS " + QuoteIdentifier(line["name"]!) + ";";
             }
             dropAllCmd += "SET FOREIGN_KEY_CHECKS = 1;";
 
@@ -190,11 +190,11 @@ namespace AventusSharp.Data.Storage.Mysql
         }
         protected override string PrepareSQLTableRename(string oldName, string newName)
         {
-            return "RENAME TABLE = `" + oldName + "` TO `" + newName + "`; ";
+            return "RENAME TABLE = " + QuoteIdentifier(oldName) + " TO " + QuoteIdentifier(newName) + "; ";
         }
         protected override string PrepareSQLTableDelete(string name)
         {
-            return "DROP TABLE IF EXISTS `" + name + "`;";
+            return "DROP TABLE IF EXISTS " + QuoteIdentifier(name) + ";";
         }
 
         #endregion

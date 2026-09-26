@@ -84,6 +84,13 @@ namespace AventusSharp.Data.Manager.DB
         }
     }
 
+    public class WhereGroupLinkContains : IWhereGroup
+    {
+        public required ITableMemberInfoSqlLinkMultiple Link { get; init; }
+        public required string OwnerAlias { get; init; }
+        public required int LinkedId { get; init; }
+    }
+
     public class WhereGroupSingleBool : IWhereRootGroup
     {
         public string Alias { get; set; }

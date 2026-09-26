@@ -1222,6 +1222,7 @@ namespace AventusSharp.Data.Manager.DB
                 return node;
             }
 
+            // allow contains null
             if (
                 node.Method.Name == "Contains" &&
                 node.Object != null &&
@@ -1258,6 +1259,37 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     translatingNullableContains = false;
                 }
+                return node;
+            }
+
+            // allow contains N-N
+            if (node.Method.Name == "Contains" && node.Object != null && GetDirectQueryMember(node.Object) is ITableMemberInfoSqlLinkMultiple link)
+            {
+                if (
+                    node.Arguments.Count != 1 ||
+                    !TryEvaluateValue(node.Arguments[0], out object? linked) ||
+                    linked is not IStorable linkedItem ||
+                    linkedItem.Id <= 0
+                )
+                    throw new NotSupportedException("A many-to-many Contains query requires a persisted linked item.");
+
+                WhereGroup containsGroup = new();
+                AddToParentGroup(containsGroup);
+                if (nextGroupNegate)
+                {
+                    containsGroup.negate = true;
+                    nextGroupNegate = false;
+                }
+
+                if (queryGroups.Count == 0)
+                    queryGroupsBase.Add(containsGroup);
+
+                containsGroup.Groups.Add(new WhereGroupLinkContains
+                {
+                    Link = link,
+                    OwnerAlias = databaseBuilder.InfoByPath[""].Alias,
+                    LinkedId = linkedItem.Id
+                });
                 return node;
             }
 

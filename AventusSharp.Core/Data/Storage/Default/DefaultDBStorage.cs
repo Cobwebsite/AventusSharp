@@ -1295,7 +1295,7 @@ namespace AventusSharp.Data.Storage.Default
                     List<X> subqueryRoots = result.Result;
                     if (_materializationScope.Value is MaterializationScope scope)
                         subqueryRoots = result.Result.Where(item => item.Id <= 0 || scope.Expanded.Add((item.GetType(), item.Id))).ToList();
-                    
+
                     foreach (var subquery in queryBuilder.SubQueries)
                     {
                         await result.RunAsync(() => subquery.Value.Run(subqueryRoots));
@@ -2615,6 +2615,12 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Tools
+
+        public virtual string QuoteIdentifier(string identifier)
+        {
+            return "\"" + identifier.Replace("\"", "\"\"") + "\"";
+        }
+
 
         /// <summary>
         /// Order data but type

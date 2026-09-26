@@ -3,6 +3,8 @@ using AventusSharp.Data.Storage.Default;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using AventusSharp.Data.Storage.Default.TableMember;
 
 namespace AventusSharp.Data.Storage.Relational
 {
@@ -50,6 +52,26 @@ namespace AventusSharp.Data.Storage.Relational
                     else if (queryGroup is WhereGroupFctSql fctGroupSql)
                     {
                         subQuery += GetFctSqlName(fctGroupSql.Fct);
+                    }
+                    else if (queryGroup is WhereGroupLinkContains contains)
+                    {
+                        if (
+                            contains.Link is not TableMemberInfoSql member ||
+                            member.TableInfo.Primary == null ||
+                            contains.Link.TableIntermediateName == null ||
+                            contains.Link.TableIntermediateKey1 == null ||
+                            contains.Link.TableIntermediateKey2 == null
+                        )
+                            throw new NotSupportedException("The many-to-many link has no intermediate table or primary key.");
+
+                        string table = string.Join(".", contains.Link.TableIntermediateName.Split('.').Select(storage.QuoteIdentifier));
+                        string key1 = storage.QuoteIdentifier(contains.Link.TableIntermediateKey1);
+                        string key2 = storage.QuoteIdentifier(contains.Link.TableIntermediateKey2);
+                        string ownerKey = storage.QuoteIdentifier(member.TableInfo.Primary.SqlName);
+                        subQuery += "EXISTS (SELECT 1 FROM " + table + " LC WHERE LC." + key1
+                            + " = " + contains.OwnerAlias + "." + ownerKey
+                            + " AND LC." + key2 + " = "
+                            + contains.LinkedId.ToString(CultureInfo.InvariantCulture) + ")";
                     }
                     else if (queryGroup is WhereGroupConstantNull nullConst)
                     {

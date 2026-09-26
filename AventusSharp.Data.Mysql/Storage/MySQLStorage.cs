@@ -248,6 +248,11 @@ namespace AventusSharp.Data.Storage.Mysql
         }
         #endregion
 
+        public override string QuoteIdentifier(string identifier)
+        {
+            return "`" + identifier.Replace("`", "``") + "`";
+        }
+
         protected override object? TransformValueForFct(ParamsInfo paramsInfo)
         {
             if (paramsInfo.Value is string casted)

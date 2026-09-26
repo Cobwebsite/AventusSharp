@@ -19,18 +19,6 @@ son implémentation et ses tests de régression sont terminés.
   `Invalid_many_to_many_link_in_second_buffer_rolls_back_all_buffers`
   restent explicites jusqu'à cette implémentation.
 
-### `Contains` sur une relation multiple du modèle
-
-- [ ] Traduire une expression telle que
-  `scene => scene.Lamps.Contains(lamp)` pour une relation N-N.
-- La traduction devra interroger la table intermédiaire et prendre en charge
-  la négation, notamment les objets dont la collection est vide.
-- Le test de spécification
-  `Many_to_many_collection_can_be_filtered_with_contains_and_its_negation`
-  reste explicite jusqu'à cette prise en charge.
-- Pour une relation SQL, l'absence d'éléments est représentée par zéro ligne
-  liée et non par une collection `NULL`.
-
 ### Chargement explicite des relations imbriquées
 
 - [ ] Corriger `Load(x => x.Room.Lamps)` lorsque `Lamps` est un

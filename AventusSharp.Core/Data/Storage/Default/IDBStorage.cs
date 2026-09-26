@@ -21,6 +21,7 @@ namespace AventusSharp.Data.Storage.Default
         bool IsConnectedOneTime { get; }
         bool Debug { get; set; }
 
+        string QuoteIdentifier(string identifier);
         DbConnection GetConnection();
         VoidWithError CreateLinks();
         VoidWithDataError AddPyramid(PyramidInfo pyramid);

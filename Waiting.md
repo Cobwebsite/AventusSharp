@@ -23,7 +23,7 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 - [x] Traduire `Nullable<T>.GetValueOrDefault()` et sa surcharge avec valeur par défaut.
 - [x] Respecter `Contains(null)` sur les collections nullables.
-- [ ] Traduire `Contains` et sa négation sur les relations N-N.
+- [x] Traduire `Contains` et sa négation sur les relations N-N.
 - [ ] Prendre en charge les expressions qui nécessitent une sous-requête externe, mentionnées dans la documentation du site.
 
 ## Priorité 4 — Tests, intégration et documentation

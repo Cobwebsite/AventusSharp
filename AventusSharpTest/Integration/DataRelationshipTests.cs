@@ -247,7 +247,6 @@ public sealed class DataRelationshipTests
     }
 
     [Test]
-    [Explicit("Specification: LambdaTranslator does not yet query a many-to-many collection member with Contains.")]
     public async Task Many_to_many_collection_can_be_filtered_with_contains_and_its_negation()
     {
         var room = await TestRoom.Create(new TestRoom
@@ -287,6 +286,9 @@ public sealed class DataRelationshipTests
         var doesNotContain = await TestScene.StartQuery()
             .Where(scene => !scene.Lamps.Contains(firstLamp!))
             .RunWithError();
+        var combined = await TestScene.StartQuery()
+            .Where(scene => scene.Name == "Other scene" && !scene.Lamps.Contains(firstLamp!))
+            .RunWithError();
 
         Assert.That(contains.Success, Is.True,
             IntegrationEnvironment.ErrorMessages(contains.Errors));
@@ -296,6 +298,10 @@ public sealed class DataRelationshipTests
             IntegrationEnvironment.ErrorMessages(doesNotContain.Errors));
         Assert.That(doesNotContain.Result!.Select(scene => scene.Id),
             Is.EquivalentTo(new[] { other!.Id, empty!.Id }));
+        Assert.That(combined.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(combined.Errors));
+        Assert.That(combined.Result!.Select(scene => scene.Id),
+            Is.EqualTo(new[] { other!.Id }));
     }
 
     [Test]

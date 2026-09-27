@@ -38,7 +38,7 @@ public sealed class HttpRoutingTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(routes, Has.Count.EqualTo(26));
+            Assert.That(routes, Has.Count.EqualTo(29));
             Assert.That(routes.Any(route =>
                 route.baseUrl == "/tests/hello/{name}" &&
                 route.method == AventusSharp.Routes.Request.MethodType.Get), Is.True);
@@ -106,6 +106,94 @@ public sealed class HttpRoutingTests
 
         var json = JObject.Parse(ReadBody(context));
         Assert.That(json["Result"]?.Value<int>(), Is.EqualTo(11));
+    }
+
+    [TestCase("[{\"left\":4,\"right\":7},{\"left\":2,\"right\":3}]", 16)]
+    [TestCase("[]", 0)]
+    [TestCase("{\"items\":[{\"left\":4,\"right\":7}]}", 11)]
+    public async Task Json_collections_bind_from_the_root_or_a_named_property(string body, int expected)
+    {
+        foreach (string path in new[] { "/tests/sum-list", "/tests/sum-array" })
+        {
+            var context = CreateContext("POST", path);
+            context.Request.ContentType = "application/json";
+            context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+            await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+            Assert.That(context.Response.StatusCode, Is.EqualTo(200), ReadBody(context));
+            Assert.That(JObject.Parse(ReadBody(context))["Result"]?.Value<int>(), Is.EqualTo(expected));
+        }
+    }
+
+    [TestCase("[1,2]", "/tests/sum")]
+    [TestCase("[{\"left\":\"invalid\"}]", "/tests/sum-list")]
+    [TestCase("[", "/tests/sum-list")]
+    [TestCase("42", "/tests/sum-list")]
+    public async Task Invalid_json_collection_requests_return_422(string body, string path)
+    {
+        var context = CreateContext("POST", path);
+        context.Request.ContentType = "application/json";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+        await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(422));
+    }
+
+    [TestCase("name=%C3%89lodie+%2B+Bob&age=32&active=true&ids=1&ids=2")]
+    [TestCase("name=%C3%89lodie+%2B+Bob&age=32&active=true&ids%5B%5D=1&ids%5B%5D=2")]
+    [TestCase("name=%C3%89lodie+%2B+Bob&age=32&active=true&ids%5B0%5D=1&ids%5B1%5D=2")]
+    public async Task Url_encoded_forms_decode_and_bind_scalars_and_collections(string body)
+    {
+        var context = CreateContext("POST", "/tests/form");
+        context.Request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+        await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200), ReadBody(context));
+        var json = JObject.Parse(ReadBody(context));
+        Assert.Multiple(() =>
+        {
+            Assert.That(json["name"]?.Value<string>(), Is.EqualTo("Élodie + Bob"));
+            Assert.That(json["age"]?.Value<int>(), Is.EqualTo(32));
+            Assert.That(json["active"]?.Value<bool>(), Is.True);
+            Assert.That(json["ids"]!.Values<int>(), Is.EqualTo(new[] { 1, 2 }));
+        });
+    }
+
+    [TestCase("body.left=4&body.right=7", "/tests/sum", 11)]
+    [TestCase("body%5Bleft%5D=4&body%5Bright%5D=7", "/tests/sum", 11)]
+    [TestCase("items%5B0%5D.left=4&items%5B0%5D.right=7&items%5B1%5D.left=2&items%5B1%5D.right=3", "/tests/sum-list", 16)]
+    public async Task Url_encoded_forms_bind_nested_objects_and_indexed_lists(string body, string path, int expected)
+    {
+        var context = CreateContext("POST", path);
+        context.Request.ContentType = "application/x-www-form-urlencoded";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+        await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200), ReadBody(context));
+        Assert.That(JObject.Parse(ReadBody(context))["Result"]?.Value<int>(), Is.EqualTo(expected));
+    }
+
+    [TestCase("body.left=invalid&body.right=7")]
+    [TestCase("body=scalar&body.left=4")]
+    [TestCase("body..left=4")]
+    [TestCase("")]
+    public async Task Invalid_or_missing_url_encoded_values_return_422(string body)
+    {
+        var context = CreateContext("POST", "/tests/sum");
+        context.Request.ContentType = "application/x-www-form-urlencoded";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+        await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(422));
+    }
+
+    [TestCase("value=a%3Db%26c", "/tests/optional", "a=b&c")]
+    [TestCase("", "/tests/optional", "<null>")]
+    [TestCase("value=", "/tests/optional", "")]
+    public async Task Url_encoded_forms_preserve_empty_optional_and_escaped_values(string body, string path, string expected)
+    {
+        var context = CreateContext("POST", path);
+        context.Request.ContentType = "application/x-www-form-urlencoded";
+        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+        await RouterAdapter.OnRequest(context, () => Task.CompletedTask);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200), ReadBody(context));
+        Assert.That(ReadBody(context), Is.EqualTo(expected));
     }
 
     [Test]
@@ -639,6 +727,18 @@ public sealed class HttpRoutingTests
         [Post]
         [HttpPath("/sum")]
         public object Sum(SumBody body) => new { Result = body.Left + body.Right };
+
+        [Post]
+        [HttpPath("/sum-list")]
+        public object SumList(List<SumBody> items) => new { Result = items.Sum(item => item.Left + item.Right) };
+
+        [Post]
+        [HttpPath("/sum-array")]
+        public object SumArray(SumBody[] items) => new { Result = items.Sum(item => item.Left + item.Right) };
+
+        [Post]
+        [HttpPath("/form")]
+        public object Form(string name, int age, bool active, List<int> ids) => new { name, age, active, ids };
 
         [Get]
         [HttpPath("/context")]

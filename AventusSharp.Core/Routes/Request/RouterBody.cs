@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace AventusSharp.Routes.Request
     {
         private Dictionary<string, HttpFile> files = new Dictionary<string, HttpFile>();
         private IAventusContext context;
-        private JObject data = new JObject();
+        private JToken data = new JObject();
         public RouterBody(IAventusContext context)
         {
             this.context = context;
@@ -40,11 +41,135 @@ namespace AventusSharp.Routes.Request
                 {
                     return await ParseJson();
                 }
+                if (contentType.Split(';')[0].Trim() == "application/x-www-form-urlencoded")
+                {
+                    return await ParseUrlEncodedForm();
+                }
                 result.Errors.Add(new RouteError(RouteErrorCode.FormContentTypeUnknown, AventusTranslations.Get(AventusMessageKeys.Routes.UnsupportedContentType, contentType)));
             }
             else
             {
                 result.Errors.Add(new RouteError(RouteErrorCode.FormContentTypeUnknown, AventusTranslations.Get(AventusMessageKeys.Routes.UnsupportedContentType, contentType)));
+            }
+            return result;
+        }
+
+        private async Task<VoidWithRouteError> ParseUrlEncodedForm()
+        {
+            VoidWithRouteError result = new();
+            try
+            {
+                using var reader = new StreamReader(context.Request.Body);
+                string body = await reader.ReadToEndAsync();
+                foreach (string pair in body.Split('&', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    int separator = pair.IndexOf('=');
+                    string name = pair;
+                    string value = "";
+                    if (separator >= 0)
+                    {
+                        name = pair.Substring(0, separator);
+                        value = pair.Substring(separator + 1);
+                    }
+                    AddFormValue(WebUtility.UrlDecode(name), WebUtility.UrlDecode(value));
+                }
+            }
+            catch (FormatException e)
+            {
+                result.Errors.Add(new(RouteErrorCode.InvalidFormData, e));
+            }
+            catch (Exception e)
+            {
+                result.Errors.Add(new(RouteErrorCode.UnknownError, e));
+            }
+            return result;
+        }
+
+        private VoidWithRouteError AddFormValue(string name, string value)
+        {
+            VoidWithRouteError result = new();
+            bool append = name.EndsWith("[]", StringComparison.Ordinal);
+            if (append)
+            {
+                name = name.Substring(0, name.Length - 2);
+            }
+            string[] parts = Regex.Replace(name, @"\[(.*?)\]", ".$1").Split('.');
+            JToken container = data;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string part = parts[i];
+                if (part.Length == 0)
+                {
+                    result.Errors.Add(new(RouteErrorCode.InvalidFormData, "A form field path cannot contain an empty segment."));
+                    return result;
+                }
+
+                int index = -1;
+                if (container is JArray array)
+                {
+                    if (!int.TryParse(part, out index) || index < 0 || index > array.Count)
+                    {
+                        result.Errors.Add(new(RouteErrorCode.InvalidFormData, "Form array indices must be contiguous and non-negative."));
+                        return result;
+                    }
+                    if (index == array.Count)
+                    {
+                        array.Add(JValue.CreateNull());
+                    }
+                }
+                else if (container is not JObject)
+                {
+                    result.Errors.Add(new(RouteErrorCode.InvalidFormData, "Conflicting form field paths."));
+                    return result;
+                }
+
+                JToken? current = container is JArray ? container[index] : container[part];
+                JToken next;
+                if (i == parts.Length - 1)
+                {
+                    if (current == null || current.Type == JTokenType.Null)
+                    {
+                        next = new JValue(value);
+                        if (append)
+                        {
+                            next = new JArray(next);
+                        }
+                    }
+                    else if (current is JArray values)
+                    {
+                        values.Add(value);
+                        return result;
+                    }
+                    else if (current is JValue)
+                    {
+                        next = new JArray(current.DeepClone(), new JValue(value));
+                    }
+                    else
+                    {
+                        result.Errors.Add(new(RouteErrorCode.InvalidFormData, "Conflicting form field paths."));
+                        return result;
+                    }
+                }
+                else
+                {
+                    next = current!;
+                    if (current == null || current.Type == JTokenType.Null)
+                    {
+                        next = int.TryParse(parts[i + 1], out _) ? new JArray() : new JObject();
+                    }
+                }
+                if (!ReferenceEquals(current, next))
+                {
+                    if (container is JArray)
+                    {
+                        container[index] = next;
+                    }
+                    else
+                    {
+                        container[part] = next;
+                    }
+                }
+                container = next;
             }
             return result;
         }
@@ -153,7 +278,9 @@ namespace AventusSharp.Routes.Request
                 using (var reader = new StreamReader(context.Request.Body))
                 using (var jsonReader = new JsonTextReader(reader))
                 {
-                    data = await JObject.LoadAsync(jsonReader);
+                    data = await JToken.LoadAsync(jsonReader);
+                    if (data is not JObject && data is not JArray)
+                        throw new JsonReaderException("The JSON request body must be an object or an array.");
                 }
             }
             catch (Exception e)
@@ -293,7 +420,7 @@ namespace AventusSharp.Routes.Request
             try
             {
                 JToken? dataToUse = data;
-                string[] props = propPath.Split(".");
+                string[] props = data is JArray ? Array.Empty<string>() : propPath.Split(".");
                 foreach (string prop in props)
                 {
                     if (dataToUse == null)

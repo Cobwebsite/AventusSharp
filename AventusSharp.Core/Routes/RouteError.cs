@@ -15,6 +15,7 @@ namespace AventusSharp.Routes
         CantCreateFolders,
         RouteAlreadyExist,
         ConfigError,
+        InvalidFormData,
     }
     public class RouteError : GenericError<RouteErrorCode>
     {

@@ -33,7 +33,8 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 ## Priorité 4 — Tests, intégration et documentation
 
-- [ ] Définir le périmètre HTTP attendu : binding automatique de la query string, formulaires URL encodés et tableaux JSON à la racine ; implémenter les cas retenus.
+- [x] Accepter les tableaux JSON à la racine des requêtes HTTP pour les paramètres de collection (`List<T>`, `T[]`). Tableaux vides et propriétés contenant un tableau pris en charge ; données invalides renvoyées en erreur `422`. Tests HTTP : 50 réussis. Query string lue via le contexte et paramètres URL `{id}` conservés ; ces usages sont déjà documentés.
+- [x] Ajouter le binding des formulaires HTTP `application/x-www-form-urlencoded`. Décodage UTF-8, conversions des scalaires, objets imbriqués et listes (clés répétées, `[]` ou indices contigus). Valeurs vides et paramètres optionnels conservés ; erreurs `422` et `RouteErrorCode.InvalidFormData` pour les chemins incohérents. Tests HTTP : 63 réussis. Documentation du site mise à jour.
 - [ ] Définir puis appliquer les règles de méthode et d'en-tête `Accept` des endpoints SSE.
 - [ ] Permettre un statut de refus WebSocket adapté au contexte si le `302` fixe ne convient pas à l'API voulue.
 - [x] Corriger la documentation historique du site qui affirme que seul MySQL est pris en charge, et retirer les mentions de limites résolues. Neuf fichiers mis à jour ; validation Astro sans erreur et compilation des 48 pages réussie.

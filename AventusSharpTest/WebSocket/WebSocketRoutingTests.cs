@@ -3,6 +3,7 @@ using AventusSharp.WebSocket.Attributes;
 using AventusSharp.WebSocket.Event;
 using AventusSharp.WebSocket.Request;
 using AventusSharp.Routes;
+using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
@@ -385,21 +386,33 @@ public sealed class WebSocketRoutingTests
         });
     }
 
-    [Test]
-    public async Task Endpoint_can_refuse_connection_before_open_callback()
+    [TestCase(null, StatusCodes.Status403Forbidden)]
+    [TestCase(StatusCodes.Status401Unauthorized, StatusCodes.Status401Unauthorized)]
+    [TestCase(StatusCodes.Status429TooManyRequests, StatusCodes.Status429TooManyRequests)]
+    [TestCase(StatusCodes.Status503ServiceUnavailable, StatusCodes.Status503ServiceUnavailable)]
+    [TestCase(1, StatusCodes.Status403Forbidden)]
+    [TestCase(302, StatusCodes.Status403Forbidden)]
+    [TestCase(600, StatusCodes.Status403Forbidden)]
+    public async Task Endpoint_can_refuse_connection_before_handshake(
+        int? refusalStatus, int expectedStatus)
     {
         LifecycleEndPoint.Reset(allow: false);
+        LifecycleEndPoint.RefusalStatus = refusalStatus;
         var socket = new CapturingWebSocket();
         var context = CreateWebSocketContext("/lifecycle-ws", socket);
+        var feature = (TestWebSocketFeature)context.Features.Get<IHttpWebSocketFeature>()!;
+        bool nextCalled = false;
 
         await WebSocketMiddleware.OnRequest(
             context,
-            () => Task.CompletedTask);
+            () => { nextCalled = true; return Task.CompletedTask; });
 
         Assert.Multiple(() =>
         {
-            Assert.That(context.Response.StatusCode, Is.EqualTo(302));
-            Assert.That(socket.State, Is.EqualTo(WebSocketState.Aborted));
+            Assert.That(context.Response.StatusCode, Is.EqualTo(expectedStatus));
+            Assert.That(feature.AcceptCount, Is.Zero);
+            Assert.That(socket.State, Is.EqualTo(WebSocketState.Open));
+            Assert.That(nextCalled, Is.False);
             Assert.That(LifecycleEndPoint.OpenCount, Is.Zero);
             Assert.That(LifecycleEndPoint.CloseCount, Is.Zero);
         });
@@ -715,6 +728,7 @@ public sealed class WebSocketRoutingTests
     public sealed class LifecycleEndPoint : WsEndPoint
     {
         public static bool Allow;
+        public static int? RefusalStatus;
         public static int OpenCount;
         public static int CloseCount;
         public static bool LookupSucceeded;
@@ -729,6 +743,7 @@ public sealed class WebSocketRoutingTests
         public static void Reset(bool allow)
         {
             Allow = allow;
+            RefusalStatus = null;
             OpenCount = 0;
             CloseCount = 0;
             LookupSucceeded = false;
@@ -740,9 +755,17 @@ public sealed class WebSocketRoutingTests
 
         public override string DefinePath() => "/lifecycle-ws";
 
-        public override bool CanOpenConnection(
-            HttpContext context,
-            System.Net.WebSockets.WebSocket webSocket) => Allow;
+        public override VoidWithError CanOpenConnection(HttpContext context)
+        {
+            VoidWithError result = new();
+            if (!Allow)
+            {
+                result.Errors.Add(new GenericError(
+                    RefusalStatus ?? StatusCodes.Status403Forbidden,
+                    "Connection refused."));
+            }
+            return result;
+        }
 
         protected override Task OnConnectionOpen(
             WebSocketConnection connection)

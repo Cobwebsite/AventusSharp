@@ -1,5 +1,6 @@
 using AventusSharp.SSE;
 using AventusSharp.SSE.Event;
+using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Newtonsoft.Json.Linq;
@@ -188,10 +189,18 @@ public sealed class SSERoutingTests
         });
     }
 
-    [Test]
-    public async Task Endpoint_can_refuse_connection_without_calling_next()
+    [TestCase(401, 401)]
+    [TestCase(403, 403)]
+    [TestCase(429, 429)]
+    [TestCase(503, 503)]
+    [TestCase(1, 403)]
+    [TestCase(302, 403)]
+    [TestCase(600, 403)]
+    public async Task Endpoint_can_refuse_connection_without_opening_stream(
+        int errorCode, int expectedStatus)
     {
         TestSseEndPoint.Reset(allow: false);
+        TestSseEndPoint.RefusalCode = errorCode;
         var context = CreateContext(CancellationToken.None);
         var nextCalled = false;
 
@@ -203,7 +212,10 @@ public sealed class SSERoutingTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(context.Response.StatusCode, Is.EqualTo(302));
+            Assert.That(context.Response.StatusCode, Is.EqualTo(expectedStatus));
+            Assert.That(context.Response.ContentType, Is.Null);
+            Assert.That(context.Response.Body.Length, Is.Zero);
+            Assert.That(Connections(), Is.Empty);
             Assert.That(nextCalled, Is.False);
             Assert.That(TestSseEndPoint.OpenCount, Is.Zero);
             Assert.That(TestSseEndPoint.CloseCount, Is.Zero);
@@ -449,6 +461,7 @@ public sealed class SSERoutingTests
     {
         public static TestSseEndPoint? Instance;
         public static bool Allow = true;
+        public static int RefusalCode = StatusCodes.Status403Forbidden;
         public static int OpenCount;
         public static int CloseCount;
         public static SSEConnection? LastConnection;
@@ -472,6 +485,7 @@ public sealed class SSERoutingTests
         public static void Reset(bool allow)
         {
             Allow = allow;
+            RefusalCode = StatusCodes.Status403Forbidden;
             OpenCount = 0;
             CloseCount = 0;
             LastConnection = null;
@@ -488,7 +502,15 @@ public sealed class SSERoutingTests
         public override string DefinePath() => "/tests-sse";
         public override bool Main() => true;
 
-        public override bool CanOpenConnection(HttpContext context) => Allow;
+        public override VoidWithError CanOpenConnection(HttpContext context)
+        {
+            VoidWithError result = new();
+            if (!Allow)
+            {
+                result.Errors.Add(new GenericError(RefusalCode, "Connection refused."));
+            }
+            return result;
+        }
 
         protected override async Task OnConnectionOpen(SSEConnection connection)
         {

@@ -490,8 +490,20 @@ namespace AventusSharp.WebSocket
                 string newPath = context.Request.Path.ToString();
                 if (endPointInstances.ContainsKey(newPath))
                 {
+                    WsEndPoint endPoint = endPointInstances[newPath];
+                    VoidWithError authorization = endPoint.CanOpenConnection(context);
+                    if (!authorization.Success)
+                    {
+                        int statusCode = authorization.Errors[0].Code;
+                        if (statusCode < 400 || statusCode > 599)
+                        {
+                            statusCode = StatusCodes.Status403Forbidden;
+                        }
+                        context.Response.StatusCode = statusCode;
+                        return;
+                    }
                     System.Net.WebSockets.WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    await endPointInstances[newPath].StartNewInstance(context, webSocket);
+                    await endPoint.StartNewInstance(context, webSocket);
                 }
                 else
                 {

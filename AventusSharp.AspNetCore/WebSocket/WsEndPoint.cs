@@ -66,15 +66,15 @@ namespace AventusSharp.WebSocket
         }
 
         /// <summary>
-        /// define if the connection can be open
-        /// exemple if authentification needed, return false if not login
+        /// Authorize the request before accepting the WebSocket handshake.
+        /// Return errors to refuse it. The first error code selects the HTTP status
+        /// when it is between 400 and 599; other codes use 403.
         /// </summary>
         /// <param name="context"></param>
-        /// <param name="webSocket"></param>
         /// <returns></returns>
-        public virtual bool CanOpenConnection(HttpContext context, System.Net.WebSockets.WebSocket webSocket)
+        public virtual VoidWithError CanOpenConnection(HttpContext context)
         {
-            return true;
+            return new VoidWithError();
         }
 
         /// <summary>
@@ -85,25 +85,17 @@ namespace AventusSharp.WebSocket
         /// <returns></returns>
         internal async Task StartNewInstance(HttpContext context, System.Net.WebSockets.WebSocket webSocket)
         {
-            if (CanOpenConnection(context, webSocket))
+            WebSocketConnection connection = new(context, webSocket, this);
+            connections.TryAdd(connection, 0);
+            try
             {
-                WebSocketConnection connection = new(context, webSocket, this);
-                connections.TryAdd(connection, 0);
-                try
-                {
-                    await OnConnectionOpen(connection);
-                }
-                catch (Exception ex)
-                {
-                    AventusLogger.Instance.LogError(ex, "Connection with the socket from " + context.Request.Host + " crashed");
-                }
-                await connection.Start();
+                await OnConnectionOpen(connection);
             }
-            else
+            catch (Exception ex)
             {
-                context.Response.StatusCode = 302;
-                webSocket.Abort();
+                AventusLogger.Instance.LogError(ex, "Connection with the socket from " + context.Request.Host + " crashed");
             }
+            await connection.Start();
         }
 
         protected virtual Task OnConnectionOpen(WebSocketConnection connection)

@@ -66,14 +66,15 @@ namespace AventusSharp.SSE
         }
 
         /// <summary>
-        /// define if the connection can be open
-        /// exemple if authentification needed, return false if not login
+        /// Authorize the request before opening the SSE stream.
+        /// Return errors to refuse it. The first error code selects the HTTP status
+        /// when it is between 400 and 599; other codes use 403.
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public virtual bool CanOpenConnection(HttpContext context)
+        public virtual VoidWithError CanOpenConnection(HttpContext context)
         {
-            return true;
+            return new VoidWithError();
         }
 
         /// <summary>
@@ -83,7 +84,8 @@ namespace AventusSharp.SSE
         /// <returns></returns>
         internal async Task StartNewInstance(HttpContext context)
         {
-            if (CanOpenConnection(context))
+            VoidWithError authorization = CanOpenConnection(context);
+            if (authorization.Success)
             {
                 SSEConnection connection = new(context, this);
                 await connection.Init();
@@ -120,7 +122,12 @@ namespace AventusSharp.SSE
             }
             else
             {
-                context.Response.StatusCode = 302;
+                int statusCode = authorization.Errors[0].Code;
+                if (statusCode < 400 || statusCode > 599)
+                {
+                    statusCode = StatusCodes.Status403Forbidden;
+                }
+                context.Response.StatusCode = statusCode;
             }
         }
 

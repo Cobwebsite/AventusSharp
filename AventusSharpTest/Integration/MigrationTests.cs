@@ -82,10 +82,6 @@ internal sealed class CreateEntityMigration : Migration
             .AddProperty<int>("Quantity", new() { Default = 0 });
     }
 
-    public override void Down()
-    {
-        DeleteModel<MigrationTestEntity>();
-    }
 }
 
 [ManualInit]
@@ -98,10 +94,6 @@ internal sealed class RenameEntityPropertyMigration : Migration
         SelectModel<MigrationTestEntity>().RenameProperty<string>("Name", "Label");
     }
 
-    public override void Down()
-    {
-        SelectModel<MigrationTestEntity>().RenameProperty<string>("Label", "Name");
-    }
 }
 
 [ManualInit]
@@ -114,7 +106,4 @@ internal sealed class DeleteEntityMigration : Migration
         DeleteModel<MigrationTestEntity>();
     }
 
-    public override void Down()
-    {
-    }
 }

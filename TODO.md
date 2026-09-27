@@ -78,7 +78,7 @@ son implémentation et ses tests de régression sont terminés.
 - Son attribut `[Explicit]` a été retiré.
 - Vérifier au minimum :
   - conservation des données ;
-  - renommage aller et retour (`Up` et `Down`) ;
+  - renommage aller et retour via deux migrations `Up()` ;
   - type, nullabilité, taille et valeur par défaut ;
   - index, clé étrangère et contrainte unique ;
   - comportement sur SQLite, MySQL, PostgreSQL et SQL Server.

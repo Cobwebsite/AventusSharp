@@ -102,18 +102,6 @@ public static class MigrationGenerator
         }
 
         sb.AppendLine("    }");
-        sb.AppendLine();
-        sb.AppendLine("    public override void Down()");
-        sb.AppendLine("    {");
-
-        // Delete models in reverse order of creation to respect dependencies
-        var reverseTables = sortedTables.AsEnumerable().Reverse();
-        foreach (var table in reverseTables)
-        {
-            sb.AppendLine($"        DeleteModel<{table.Name}>();");
-        }
-
-        sb.AppendLine("    }");
         sb.AppendLine("}");
 
         return sb.ToString();

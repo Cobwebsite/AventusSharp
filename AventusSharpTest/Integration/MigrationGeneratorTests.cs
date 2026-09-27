@@ -33,12 +33,11 @@ public sealed class MigrationGeneratorTests
             Assert.That(code, Does.Contain("AddProperty<string>(\"Name\", new() { Unique = true, Size = new Size(80) })"));
             Assert.That(code, Does.Contain("AddProperty<string>(\"Description\", new() { Nullable = true, Size = new Size(SizeEnum.Text) })"));
             Assert.That(code, Does.Contain("AddTimestamp()"));
-            Assert.That(code, Does.Contain("DeleteModel<products>();"));
         });
     }
 
     [Test]
-    public void Generate_orders_referenced_tables_before_dependants_and_deletes_in_reverse()
+    public void Generate_orders_referenced_tables_before_dependants()
     {
         var rooms = Table("Rooms", Field("Rooms.Id", "Id", "integer", primary: true));
         var lamps = Table("Lamps",
@@ -67,8 +66,6 @@ public sealed class MigrationGeneratorTests
             Assert.That(code.IndexOf("CreateModel<Rooms>()", StringComparison.Ordinal),
                 Is.LessThan(code.IndexOf("CreateModel<Lamps>()", StringComparison.Ordinal)));
             Assert.That(code, Does.Contain("AddRef<Rooms>(\"Room\")"));
-            Assert.That(code.IndexOf("DeleteModel<Lamps>();", StringComparison.Ordinal),
-                Is.LessThan(code.IndexOf("DeleteModel<Rooms>();", StringComparison.Ordinal)));
         });
     }
 

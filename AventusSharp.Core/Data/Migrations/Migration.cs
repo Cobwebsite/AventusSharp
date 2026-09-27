@@ -133,14 +133,6 @@ public abstract class Migration : IMigration
     }
     public abstract void Up();
 
-    public VoidWithError _Down()
-    {
-        _currentError = new VoidWithError();
-        Down();
-        return _currentError;
-    }
-    public abstract void Down();
-
     private MigrationModel<T> GetOrCreateModel<T>() where T : IStorable
     {
         string fullName = typeof(T).FullName ?? "";

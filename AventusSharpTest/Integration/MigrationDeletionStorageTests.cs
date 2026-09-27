@@ -214,5 +214,4 @@ internal sealed class DeletionBatchMigration : Migration
         DeleteModel<DeletionParent>();
         DeleteModel<DeletionChild>();
     }
-    public override void Down() { }
 }

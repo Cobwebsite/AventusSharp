@@ -611,6 +611,11 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                 TableReverseMemberInfo? reverseInfo = parentInfo.GetReverseTableMemberInfo(lambdaPart.Name);
                 if (reverseInfo != null)
                 {
+                    if (parentInfo.TableInfo.Primary is TableMemberInfoSql primary)
+                    {
+                        KeyValuePair<TableMemberInfoSql?, string> primaryWithAlias = parentInfo.GetTableMemberInfoAndAlias(primary.Name);
+                        parentInfo.Members[primary] = new DatabaseBuilderInfoMember(primary, primaryWithAlias.Value, Storage);
+                    }
                     isExternal = true;
                     List<string> namesTemp = new List<string>();
                     for (; i < lambdaParts.Count; i++)
@@ -625,6 +630,12 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                     else
                     {
                         DatabaseSubBuilder subQuery = DatabaseSubBuilder.Make(parentInfo.TableInfo.Type, listType ?? lambdaPart.Type);
+                        string currentPath = "";
+                        foreach (string parentName in parentPath.Split('.', StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            subQuery.ParentMembers.Add(InfoByPath[currentPath].GetTableMemberInfo(parentName)!);
+                            currentPath = currentPath.Length == 0 ? parentName : currentPath + "." + parentName;
+                        }
                         VoidWithError prepareInfo = subQuery.PrepareReverseLink(namesTemp, fields, scopes);
                         if (prepareInfo.Success)
                         {

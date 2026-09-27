@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
+using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Manager.DB;
@@ -14,6 +15,7 @@ namespace AventusSharp.Data.Manager.DB;
 
 public abstract class DatabaseSubBuilder
 {
+    internal List<TableMemberInfoSql> ParentMembers { get; } = [];
     public static DatabaseSubBuilder Make(Type typeFrom, Type typeTo)
     {
         Type genericType = typeof(DatabaseSubBuilder<,>).MakeGenericType(typeFrom, typeTo);
@@ -61,7 +63,28 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
 
     public override Task<VoidWithError> Run<T>(List<T> items)
     {
-        return Run(items.ToList<X>());
+        List<object> parents = items.Cast<object>().ToList();
+        foreach (TableMemberInfoSql member in ParentMembers)
+        {
+            List<object> next = [];
+            foreach (object parent in parents)
+            {
+                object? value = member.GetValue(parent);
+                if (value is IEnumerable collection && value is not IStorable)
+                {
+                    foreach (object child in collection)
+                    {
+                        next.Add(child);
+                    }
+                }
+                else if (value != null)
+                {
+                    next.Add(value);
+                }
+            }
+            parents = next;
+        }
+        return Run(parents.OfType<X>().Distinct().ToList());
     }
     public async Task<VoidWithError> Run(List<X> items)
     {
@@ -117,6 +140,14 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         DataMemberInfo memberX = ReverseLinkMemberX;
         DataMemberInfo reverseMember = ReverseLinkReverseMember;
 
+        foreach (X parent in items)
+        {
+            if (memberX.GetValue(parent) is IList existingList)
+                existingList.Clear();
+            else
+                memberX.SetValue(parent, null);
+        }
+
 
         foreach (Y item in linkedElement)
         {
@@ -159,6 +190,8 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
                         result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
                     }
                 }
+                if (reverseItem is IStorable)
+                    reverseMember.SetValue(item, element);
             }
         }
         return result;

@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 
 namespace AventusSharp.Data.Manager;
@@ -162,6 +164,24 @@ public class LoaderHelper
                             if (o1Temp == null || i == fieldStep.Count - 1)
                             {
                                 field.SetValue(o1, o2);
+                                if (o1 is IStorable parent && dmX is IDatabaseDM databaseDM)
+                                {
+                                    TableReverseMemberInfo? reverse = databaseDM.Storage.GetTableInfo(parent.GetType())?.ReverseMembers.FirstOrDefault(member => member.Name == field.Name);
+                                    if (reverse?.reverseMember != null && !TypeTools.IsPrimitiveType(reverse.reverseMember.MemberType))
+                                    {
+                                        if (o2 is IEnumerable children)
+                                        {
+                                            foreach (object child in children)
+                                            {
+                                                reverse.reverseMember.SetValue(child, parent);
+                                            }
+                                        }
+                                        else if (o2 is IStorable)
+                                        {
+                                            reverse.reverseMember.SetValue(o2, parent);
+                                        }
+                                    }
+                                }
                                 break;
                             }
                             o1 = o1Temp;

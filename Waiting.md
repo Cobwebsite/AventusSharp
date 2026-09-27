@@ -17,7 +17,7 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 - [ ] Décider si une commande publique de rollback `Down()` est requise, puis l'implémenter si cette capacité fait partie du périmètre produit.
 - [x] Compléter `BulkCreate` pour les liens N-N et garantir le rollback de tous les buffers en cas de lien invalide. Liens dédupliqués, listes et dictionnaires pris en charge ; identifiants fournis ou générés, auto-création/mise à jour des relations et rollback global. Documentation du site mise à jour et compilée. Suite complète avec Docker : 798 tests réussis, aucun échec ; une spécification explicite encore en attente.
 - [x] Compléter `BulkCreate` pour l'héritage persistant multi-table. Identifiants partagés entre parent et enfant, lots de types dérivés mixtes, cache canonique et restauration des identifiants générés au rollback. Buffers adaptés à la limite de paramètres SQL Server. Documentation du site mise à jour et compilée. Suite complète avec Docker : 798 tests réussis, aucun échec.
-- [ ] Charger les chemins de relations terminés par un `[ReverseLink]` imbriqué sans remplacer les instances du cache.
+- [x] Charger les chemins de relations terminés par un `[ReverseLink]` imbriqué sans remplacer les instances du cache. Sous-requêtes exécutées sur les parents du chemin avec leur identifiant ; parents déjà affectés conservés, collections rafraîchies sans doublons et références inverses cohérentes, y compris sans cache. Spécification activée et régressions ajoutées : plusieurs racines, relation nullable, chargements répétés et chemin partiellement chargé. Suite complète avec Docker : 801 tests réussis, aucun échec ni test ignoré. Documentation du site mise à jour et compilée.
 
 ## Priorité 3 — Requêtes
 

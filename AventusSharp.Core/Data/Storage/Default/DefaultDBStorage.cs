@@ -104,7 +104,7 @@ namespace AventusSharp.Data.Storage.Default
         private sealed class MaterializationScope
         {
             public Dictionary<(Type Type, int Id), object> Instances { get; } = new();
-            public HashSet<(Type Type, int Id)> Expanded { get; } = new();
+            public HashSet<(Type Type, int Id, string Path)> Expanded { get; } = new();
             public int Depth { get; set; }
         }
         private readonly AsyncLocal<MaterializationScope?> _materializationScope = new();
@@ -1274,12 +1274,13 @@ namespace AventusSharp.Data.Storage.Default
 
                     }
 
-                    List<X> subqueryRoots = result.Result;
-                    if (_materializationScope.Value is MaterializationScope scope)
-                        subqueryRoots = result.Result.Where(item => item.Id <= 0 || scope.Expanded.Add((item.GetType(), item.Id))).ToList();
-
                     foreach (var subquery in queryBuilder.SubQueries)
                     {
+                        List<X> subqueryRoots = result.Result;
+                        if (_materializationScope.Value is MaterializationScope scope)
+                        {
+                            subqueryRoots = result.Result.Where(item => item.Id <= 0 || scope.Expanded.Add((item.GetType(), item.Id, subquery.Key))).ToList();
+                        }
                         await result.RunAsync(() => subquery.Value.Run(subqueryRoots));
                     }
 

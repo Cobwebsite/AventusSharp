@@ -23,16 +23,15 @@ son implémentation et ses tests de régression sont terminés.
 
 ### Chargement explicite des relations imbriquées
 
-- [ ] Corriger `Load(x => x.Room.Lamps)` lorsque `Lamps` est un
+- [x] Corriger `Load(x => x.Room.Lamps)` lorsque `Lamps` est un
   `[ReverseLink]`.
-- État actuel : `Load(x => x.Room)` fonctionne, mais le reverse link imbriqué
-  n'est pas affecté à l'objet joint.
-- Résultat attendu : charger le chemin complet sans remplacer les instances
-  déjà présentes dans le cache.
-- Le test de spécification
-  `Explicit_load_supports_a_nested_reverse_link_path` existe dans
-  `DataRelationshipTests` et reste explicite jusqu'à la correction.
-- Vérifier les variantes :
+- Le chemin complet est chargé sur les parents imbriqués, en conservant les
+  instances du cache et les parents déjà affectés. Les collections sont
+  rafraîchies sans doublons et les enfants référencent le parent du chemin.
+- Le test `Explicit_load_supports_a_nested_reverse_link_path` est activé.
+- Suite complète avec Docker : 801 tests réussis, aucun échec ni test ignoré.
+  Documentation du site mise à jour et compilée.
+- Tests de régression ajoutés pour les variantes :
   - relation directe suivie d'un reverse link ;
   - plusieurs objets racines ;
   - relation nullable ;

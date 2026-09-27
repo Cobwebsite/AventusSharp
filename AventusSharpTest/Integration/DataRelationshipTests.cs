@@ -1,4 +1,5 @@
 using AventusSharpTest.Integration.Models;
+using AventusSharp.Data;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharp.Tools;
@@ -897,7 +898,6 @@ public sealed class DataRelationshipTests
     }
 
     [Test]
-    [Explicit("Specification: nested explicit loading does not yet populate a reverse link on the related object.")]
     public async Task Explicit_load_supports_a_nested_reverse_link_path()
     {
         var room = await TestRoom.Create(new TestRoom
@@ -936,6 +936,37 @@ public sealed class DataRelationshipTests
             Is.EquivalentTo(new[] { first!.Id, second!.Id }));
         Assert.That(loaded.Result.Room.Lamps,
             Has.All.Matches<TestLamp>(lamp => ReferenceEquals(lamp.Room, room)));
+    }
+
+    [Test]
+    public async Task Nested_reverse_load_handles_multiple_roots_null_relations_and_repeated_loads()
+    {
+        var firstRoom = await TestRoom.Create(new TestRoom { Name = "First nested", Code = "first-nested" });
+        var secondRoom = await TestRoom.Create(new TestRoom { Name = "Empty nested", Code = "empty-nested" });
+        var lamp = await TestLamp.Create(new TestLamp { Name = "Nested lamp", Room = firstRoom! });
+        var first = await TestSensor.Create(new TestSensor { Name = "First", Room = firstRoom });
+        var shared = await TestSensor.Create(new TestSensor { Name = "Shared", Room = firstRoom });
+        var empty = await TestSensor.Create(new TestSensor { Name = "Empty", Room = secondRoom });
+        var missing = await TestSensor.Create(new TestSensor { Name = "Missing", Room = null });
+        List<TestSensor> roots = [first!, shared!, empty!, missing!];
+        firstRoom!.Lamps.Clear();
+
+        for (int i = 0; i < 2; i++)
+        {
+            var loaded = await roots.Load(item => item.Room!.Lamps);
+            Assert.That(loaded.Success, Is.True, IntegrationEnvironment.ErrorMessages(loaded.Errors));
+            Assert.Multiple(() =>
+            {
+                Assert.That(first!.Room, Is.SameAs(firstRoom));
+                Assert.That(shared!.Room, Is.SameAs(firstRoom));
+                Assert.That(empty!.Room, Is.SameAs(secondRoom));
+                Assert.That(missing!.Room, Is.Null);
+                Assert.That(firstRoom.Lamps, Has.Count.EqualTo(1));
+                Assert.That(firstRoom.Lamps[0], Is.SameAs(lamp));
+                Assert.That(firstRoom.Lamps[0].Room, Is.SameAs(firstRoom));
+                Assert.That(secondRoom!.Lamps, Is.Empty);
+            });
+        }
     }
 
     [Test]

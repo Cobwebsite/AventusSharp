@@ -9,6 +9,26 @@ namespace AventusSharpTest.Integration;
 public sealed class DataNoCacheAutoReadCycleTests
 {
     [Test]
+    public async Task Nested_reverse_load_preserves_an_existing_parent_without_local_cache()
+    {
+        var room = await NoCacheCycleRoom.Create(new NoCacheCycleRoom { Name = "Explicit cycle" });
+        var lamp = await NoCacheCycleLamp.Create(new NoCacheCycleLamp { Name = "Explicit lamp", Room = room! });
+        var loaded = await NoCacheCycleLamp.GetByIdWithError(lamp!.Id);
+        Assert.That(loaded.Success, Is.True, IntegrationEnvironment.ErrorMessages(loaded.Errors));
+        var existingRoom = loaded.Result!.Room;
+        existingRoom.Lamps.Clear();
+
+        for (int i = 0; i < 2; i++)
+        {
+            var result = await loaded.Result.Load(item => item.Room.Lamps);
+            Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+            Assert.That(loaded.Result.Room, Is.SameAs(existingRoom));
+            Assert.That(existingRoom.Lamps.Select(item => item.Id), Is.EqualTo(new[] { lamp.Id }));
+            Assert.That(existingRoom.Lamps[0].Room, Is.SameAs(existingRoom));
+        }
+    }
+
+    [Test]
     public async Task Bidirectional_auto_read_reuses_instances_without_local_cache()
     {
         var room = await NoCacheCycleRoom.Create(new NoCacheCycleRoom { Name = "Cycle room" });

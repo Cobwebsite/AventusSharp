@@ -76,6 +76,14 @@ namespace CSharpToTypescript
             {
                 AddBaseContainer(result, fileName);
             }
+            else if (SSEEndPointContainer.Is(type, fileName, out result))
+            {
+                AddBaseContainer(result, fileName);
+            }
+            else if (SSEEventContainer.Is(type, fileName, out result))
+            {
+                AddBaseContainer(result, fileName);
+            }
             else if (WsEndPointContainer.Is(type, fileName, out result))
             {
                 AddBaseContainer(result, fileName);
@@ -217,6 +225,8 @@ namespace CSharpToTypescript
                             importByPath.Add(relativePath, new());
                         }
                         string name = symbol.Name;
+                        if (GetContainer(symbol) is SSEBodyContainer && symbol is INamedTypeSymbol payload)
+                            name = SSEBodyContainer.PayloadName(payload, name);
                         if (symbol is ITypeSymbol typeSymbol && typeSymbol.TypeKind == TypeKind.Interface)
                         {
                             name = "type " + name;

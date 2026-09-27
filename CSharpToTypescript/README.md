@@ -20,6 +20,41 @@ dotnet tool update --global AventusSharp.Converter
 
 ## Documentation
 
+### SSE generation
+
+The converter generates `SSEEndPoint` subclasses as AventusJs endpoints and
+`SSEEvent<T>` / `SSEEmptyEvent` subclasses as typed client events. Nested payload
+DTOs are exported with distinct names (for example, `ChangedEventBody`) and keep
+their C# `Fullname` for deserialization. Endpoint attributes, inherited payloads,
+generic payloads, collection payloads and `[Export]` / `[NoExport]` are supported.
+
+Constant `GetTopic()` return values become client paths, without constructing
+server events. For a nonconstant topic, the generated constructor requires a
+`getTopic: () => string` callback. Events call `init()` after construction.
+An explicit `[EndPoint]` selects the endpoint; otherwise, generation selects the
+main endpoint, the only endpoint, or the default `/sse` client endpoint.
+
+Converter configuration:
+
+```json
+{
+  "exportSseEndPointByDefault": true,
+  "exportSseEventByDefault": true,
+  "sseEndpoint": {
+    "host": "localhost",
+    "port": 8080,
+    "useHttps": false,
+    "withCredentials": true,
+    "listenOnBoot": false,
+    "parent": "AventusSharp.SSE.EndPoint"
+  }
+}
+```
+
+The `replacer.sseEndPoint` and `replacer.sseEvent` sections use the same `type`
+and `result` format as the WebSocket replacements. Top-level payload classes
+use the ordinary export rules; mark them `[Export]` when needed.
+
 The documentation is available here [https://aventussharp.com/](https://aventussharp.com/).
 
 ## Contributor

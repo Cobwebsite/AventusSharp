@@ -33,9 +33,12 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 ## Priorité 4 — Tests, intégration et documentation
 
+- [x] Ajouter le client SSE AventusJs sur le modèle du WebSocket : `Socket`, `Connection`, `EndPoint`, `SSEEvent`, abonnements par canal et conversion des payloads. Connexions partagées, reconnexion native EventSource, fermeture au dernier utilisateur. Six tests client réussis et vérification Aventus réussie.
+- [x] Ajouter au convertisseur C# vers AventusJs la génération des endpoints et événements SSE typés. Endpoints, payloads imbriqués, sélection de l’endpoint et canaux dynamiques pris en charge ; deux scénarios de génération compilés avec Aventus, solution compilée sans erreur ni avertissement et documentation du site mise à jour.
+
 - [x] Accepter les tableaux JSON à la racine des requêtes HTTP pour les paramètres de collection (`List<T>`, `T[]`). Tableaux vides et propriétés contenant un tableau pris en charge ; données invalides renvoyées en erreur `422`. Tests HTTP : 50 réussis. Query string lue via le contexte et paramètres URL `{id}` conservés ; ces usages sont déjà documentés.
 - [x] Ajouter le binding des formulaires HTTP `application/x-www-form-urlencoded`. Décodage UTF-8, conversions des scalaires, objets imbriqués et listes (clés répétées, `[]` ou indices contigus). Valeurs vides et paramètres optionnels conservés ; erreurs `422` et `RouteErrorCode.InvalidFormData` pour les chemins incohérents. Tests HTTP : 63 réussis. Documentation du site mise à jour.
-- [ ] Définir puis appliquer les règles de méthode et d'en-tête `Accept` des endpoints SSE.
+- [x] Appliquer les règles de méthode et d'en-tête `Accept` des endpoints SSE : `GET` uniquement, sinon `405` avec `Allow: GET` ; `Accept` absent accepté, négociation de `text/event-stream` avec listes, jokers et priorités `q`, sinon `406`. Contrôles avant création de connexion ; chemins inconnus transmis au middleware suivant. Tests SSE et intégration applicative : 50 réussis. Documentation du site mise à jour.
 - [ ] Permettre un statut de refus WebSocket adapté au contexte si le `302` fixe ne convient pas à l'API voulue.
 - [x] Corriger la documentation historique du site qui affirme que seul MySQL est pris en charge, et retirer les mentions de limites résolues. Neuf fichiers mis à jour ; validation Astro sans erreur et compilation des 48 pages réussie.
 

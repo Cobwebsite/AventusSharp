@@ -20,6 +20,8 @@ namespace CSharpToTypescript
         public bool exportHttpRouteByDefault = true;
         public bool exportWsEndPointByDefault = true;
         public bool exportWsEventByDefault = true;
+        public bool exportSseEndPointByDefault = true;
+        public bool exportSseEventByDefault = true;
         public bool exportWsRouteByDefault = true;
         public bool exportErrorsByDefault = true;
 
@@ -44,6 +46,7 @@ namespace CSharpToTypescript
         public ProjectConfigReplacer replacer = new ProjectConfigReplacer();
         public ProjectConfigHttpRouter httpRouter = new ProjectConfigHttpRouter();
         public ProjectConfigWsEndpoint wsEndpoint = new ProjectConfigWsEndpoint();
+        public ProjectConfigSseEndpoint sseEndpoint = new();
 
         public ProjectConfig()
         {
@@ -102,6 +105,15 @@ namespace CSharpToTypescript
         public string parent = "AventusSharp.WebSocket.EndPoint";
         public string? parentFile;
     }
+    public class ProjectConfigSseEndpoint
+    {
+        public string? host;
+        public int? port;
+        public bool? useHttps;
+        public bool? withCredentials;
+        public bool listenOnBoot = false;
+        public string parent = "AventusSharp.SSE.EndPoint";
+    }
     #endregion
 
 
@@ -117,6 +129,8 @@ namespace CSharpToTypescript
         public ProjectConfigReplacerPart withError = new ProjectConfigReplacerPart();
         public ProjectConfigReplacerPart wsEndPoint = new ProjectConfigReplacerPart();
         public ProjectConfigReplacerPart wsEvent = new ProjectConfigReplacerPart();
+        public ProjectConfigReplacerPart sseEndPoint = new();
+        public ProjectConfigReplacerPart sseEvent = new();
         public ProjectConfigReplacerPart wsRouter = new ProjectConfigReplacerPart();
 
     }

@@ -1,0 +1,6 @@
+import { EndPoint } from './EndPoint.lib.avt';
+import { SSEEvent } from './SSEEvent.lib.avt';
+namespace SSE {
+    export type SSEEventType = abstract new (...args: any[]) => SSEEvent;
+    export type SSEEndPointType = abstract new (...args: any[]) => EndPoint;
+}

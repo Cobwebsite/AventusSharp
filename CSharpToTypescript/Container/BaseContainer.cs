@@ -31,7 +31,7 @@ namespace CSharpToTypescript.Container
         public static bool enumToTypeof = false;
         public List<ISymbol> unresolved = new List<ISymbol>();
         public Dictionary<string, List<string>> importedFiles = new Dictionary<string, List<string>>();
-        public string Namespace { get; private set; } = "";
+        public string Namespace { get; protected set; } = "";
         public INamedTypeSymbol type;
         public string Content { get; private set; } = "";
 
@@ -398,6 +398,8 @@ namespace CSharpToTypescript.Container
             else if (fullName == typeof(WsEvent<>).FullName?.Split("`")[0]) result = "AventusSharp.WebSocket.WsEvent";
             else if (fullName == typeof(WsRouter).FullName) result = "AventusSharp.WebSocket.Router";
             else if (fullName == typeof(WsEndPoint).FullName) result = "AventusSharp.WebSocket.EndPoint";
+            else if (fullName == typeof(AventusSharp.SSE.SSEEndPoint).FullName) result = "AventusSharp.SSE.EndPoint";
+            else if (fullName == typeof(AventusSharp.SSE.Event.SSEEvent<>).FullName?.Split("`")[0]) result = "AventusSharp.SSE.SSEEvent";
             else if (fullName == typeof(HttpFile).FullName) result = "File";
             else if (fullName == typeof(StorableListInt).FullName) result = "number[]";
             else if (fullName == typeof(StorableListFloat).FullName) result = "number[]";

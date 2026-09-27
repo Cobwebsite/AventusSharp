@@ -1,0 +1,50 @@
+namespace SSE {
+    export class Socket {
+        private static connections: Map<string, Socket> = new Map();
+        private elements: Set<any> = new Set();
+        private source: EventSource;
+        private key: string;
+
+        public readonly onOpen: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+        public readonly onClose: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+        public readonly onError: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+        public readonly onMessage: Aventus.Callback<(event: MessageEvent<string>) => void> = new Aventus.Callback();
+
+        public static getInstance(url: string, element: any, withCredentials: boolean = false): Socket {
+            const key = JSON.stringify([url, withCredentials]);
+            let socket = this.connections.get(key);
+            if(!socket || socket.readyState === EventSource.CLOSED) {
+                socket = new Socket(url, key, withCredentials);
+                this.connections.set(key, socket);
+            }
+            socket.elements.add(element);
+            return socket;
+        }
+
+        protected constructor(url: string, key: string, withCredentials: boolean) {
+            this.key = key;
+            this.source = new window.EventSource(url, { withCredentials });
+            this.source.onopen = event => this.onOpen.trigger(event);
+            this.source.onmessage = event => this.onMessage.trigger(event);
+            this.source.onerror = event => {
+                this.onError.trigger(event);
+                this.onClose.trigger(event);
+            };
+        }
+
+        public get readyState(): number { return this.source.readyState; }
+        public isReady(): boolean { return this.readyState === EventSource.OPEN; }
+
+        public close(element: any): void {
+            this.elements.delete(element);
+            if(this.elements.size === 0) {
+                this.source.onopen = null;
+                this.source.onmessage = null;
+                this.source.onerror = null;
+                this.source.close();
+                if(Socket.connections.get(this.key) === this)
+                    Socket.connections.delete(this.key);
+            }
+        }
+    }
+}

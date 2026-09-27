@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Net.Http.Headers;
 
 namespace AventusSharp.SSE;
 
@@ -149,12 +150,59 @@ public class SSEMiddleware
         string newPath = context.Request.Path.ToString();
         if (endPointInstances.ContainsKey(newPath))
         {
+            if (!HttpMethods.IsGet(context.Request.Method))
+            {
+                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                context.Response.Headers.Allow = "GET";
+                return;
+            }
+            if (!AcceptsEventStream(context.Request))
+            {
+                context.Response.StatusCode = StatusCodes.Status406NotAcceptable;
+                return;
+            }
             await endPointInstances[newPath].StartNewInstance(context);
         }
         else
         {
             await next();
         }
+    }
+
+    private static bool AcceptsEventStream(HttpRequest request)
+    {
+        if (Microsoft.Extensions.Primitives.StringValues.IsNullOrEmpty(request.Headers.Accept))
+            return true;
+        if (!MediaTypeHeaderValue.TryParseList(request.Headers.Accept.Select(value => value ?? "").ToArray(), out var accepted))
+            return false;
+
+        int specificity = -1;
+        double quality = 0;
+        foreach (MediaTypeHeaderValue media in accepted)
+        {
+            string? type = media.MediaType.Value;
+            int currentSpecificity;
+            if (string.Equals(type, "text/event-stream", StringComparison.OrdinalIgnoreCase))
+                currentSpecificity = 2;
+            else if (string.Equals(type, "text/*", StringComparison.OrdinalIgnoreCase))
+                currentSpecificity = 1;
+            else if (type == "*/*")
+                currentSpecificity = 0;
+            else
+                continue;
+
+            double currentQuality = media.Quality ?? 1;
+            if (currentSpecificity > specificity)
+            {
+                specificity = currentSpecificity;
+                quality = currentQuality;
+            }
+            else if (currentSpecificity == specificity)
+            {
+                quality = Math.Max(quality, currentQuality);
+            }
+        }
+        return quality > 0;
     }
 
     public static async Task Stop()

@@ -1,0 +1,15 @@
+import { Connection } from './Connection.lib.avt';
+import type { ConnectionOptions } from './ISocket.lib.avt';
+
+namespace SSE {
+    export class EndPoint extends Connection {
+        public static override getInstance(): EndPoint { return Aventus.Instance.get(EndPoint); }
+        protected constructor() { super(); this.register(); }
+        protected register(): void { }
+        protected override configure(options: ConnectionOptions): ConnectionOptions {
+            options.socketName = this.path;
+            return options;
+        }
+        protected get path(): string { return '/sse'; }
+    }
+}

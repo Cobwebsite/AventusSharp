@@ -1,0 +1,22 @@
+namespace SSE {
+    export interface SocketMessage {
+        channel: string;
+        data: string;
+    }
+    export interface SocketRoute<T = any> {
+        channel: string;
+        callback: (data: T, params: Aventus.UriParamsValue) => void;
+    }
+    export type InternalSocketRoute = SocketRoute & Aventus.PreparedUri;
+    export interface ConnectionOptions {
+        host?: string;
+        port?: number;
+        useHttps?: boolean;
+        socketName?: string;
+        routes?: { [channel: string]: InternalSocketRoute[]; };
+        autoStart?: boolean;
+        withCredentials?: boolean;
+        log?: boolean;
+        logPrefix?: string;
+    }
+}

@@ -1,0 +1,137 @@
+import type { ConnectionOptions, SocketRoute, InternalSocketRoute, SocketMessage } from './ISocket.lib.avt';
+import { Socket } from './Socket.lib.avt';
+
+namespace SSE {
+    export abstract class Connection {
+        public static Debug: boolean = false;
+        protected options: Required<ConnectionOptions>;
+        protected socket?: Socket;
+        protected actionGuard: Aventus.ActionGuard = new Aventus.ActionGuard();
+        protected openCallback?: (isOpen: boolean) => void;
+        public readonly onOpen: Aventus.Callback<() => void> = new Aventus.Callback();
+        public readonly onClose: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+        public readonly onError: Aventus.Callback<(event: Event) => void> = new Aventus.Callback();
+
+        public static getInstance(): Connection { return Aventus.Instance.get(Connection); }
+
+        protected constructor() {
+            this.options = this._configure(this.configure({}));
+            this._onOpen = this._onOpen.bind(this);
+            this._onClose = this._onClose.bind(this);
+            this._onError = this._onError.bind(this);
+            this.onMessage = this.onMessage.bind(this);
+            if(this.options.autoStart) this.open();
+        }
+
+        protected abstract configure(options: ConnectionOptions): ConnectionOptions;
+
+        protected _configure(options: ConnectionOptions): Required<ConnectionOptions> {
+            options.host ??= window.location.hostname;
+            options.useHttps ??= window.location.protocol === 'https:';
+            options.port ??= Number(window.location.port) || (options.useHttps ? 443 : 80);
+            options.socketName ??= '/sse';
+            options.routes ??= {};
+            options.autoStart ??= true;
+            options.withCredentials ??= false;
+            options.log ??= Connection.Debug;
+            options.logPrefix ??= '';
+            return options as Required<ConnectionOptions>;
+        }
+
+        private getUrl(): string {
+            const url = new URL(window.location.href);
+            url.protocol = this.options.useHttps ? 'https:' : 'http:';
+            url.hostname = this.options.host;
+            url.port = String(this.options.port);
+            return new URL(this.options.socketName, url.origin).href;
+        }
+
+        public addRoute(route: SocketRoute): void {
+            const routes = this.options.routes[route.channel] ??= [];
+            if(routes.some(info => info.callback === route.callback)) return;
+            const prepared: InternalSocketRoute = { ...route, ...Aventus.Uri.prepare(route.channel) };
+            routes.push(prepared);
+        }
+
+        public removeRoute(route: SocketRoute): void {
+            const routes = this.options.routes[route.channel];
+            if(!routes) return;
+            for(let i = routes.length - 1; i >= 0; i--) {
+                if(routes[i].callback === route.callback) routes.splice(i, 1);
+            }
+        }
+
+        public open(): Promise<boolean> {
+            return this.actionGuard.run(['open'], () => new Promise<boolean>(resolve => {
+                try {
+                    if(this.socket?.readyState === EventSource.CLOSED) this.close();
+                    this.openCallback = resolve;
+                    if(!this.socket) {
+                        this.socket = Socket.getInstance(this.getUrl(), this, this.options.withCredentials);
+                        this.socket.onOpen.add(this._onOpen);
+                        this.socket.onClose.add(this._onClose);
+                        this.socket.onError.add(this._onError);
+                        this.socket.onMessage.add(this.onMessage);
+                    }
+                    if(this.socket.isReady()) this._onOpen();
+                } catch(error) {
+                    this.openCallback = undefined;
+                    this.log(error);
+                    resolve(false);
+                }
+            }));
+        }
+
+        public isReady(): boolean { return this.socket?.isReady() ?? false; }
+
+        protected _onOpen(): void {
+            this.openCallback?.(true);
+            this.openCallback = undefined;
+            this.onOpen.trigger();
+        }
+        protected _onError(event: Event): void {
+            this.openCallback?.(false);
+            this.openCallback = undefined;
+            this.onError.trigger(event);
+        }
+        protected _onClose(event: Event): void { this.onClose.trigger(event); }
+
+        public close(): void {
+            this.openCallback?.(false);
+            this.openCallback = undefined;
+            if(this.socket) {
+                this.socket.onOpen.remove(this._onOpen);
+                this.socket.onClose.remove(this._onClose);
+                this.socket.onError.remove(this._onError);
+                this.socket.onMessage.remove(this.onMessage);
+                this.socket.close(this);
+                this.socket = undefined;
+            }
+        }
+
+        protected onMessage(event: MessageEvent<string>): void {
+            try {
+                const response: SocketMessage = JSON.parse(event.data);
+                if(typeof response.channel !== 'string' || typeof response.data !== 'string')
+                    throw new Error('Invalid SSE message envelope.');
+                const data = Aventus.Converter.transform(JSON.parse(response.data));
+                let value = data;
+                if(data instanceof Aventus.ResultWithError) value = data.result;
+                else if(data instanceof Aventus.VoidWithError) value = undefined;
+                for(const channel in this.options.routes) {
+                    for(const info of [...this.options.routes[channel]]) {
+                        const params = Aventus.Uri.getParams(info, response.channel);
+                        if(params) {
+                            try { info.callback(value, params); }
+                            catch(error) { console.error(error); }
+                        }
+                    }
+                }
+            } catch(error) { console.error(error); }
+        }
+
+        protected log(message: any): void {
+            if(this.options.log) console.log(this.options.logPrefix, message);
+        }
+    }
+}

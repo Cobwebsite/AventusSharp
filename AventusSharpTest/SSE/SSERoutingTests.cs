@@ -52,6 +52,7 @@ public sealed class SSERoutingTests
         cancellation.Cancel();
         var context = new DefaultHttpContext();
         context.Request.Path = "/tests-sse";
+        context.Request.Method = "GET";
         context.RequestAborted = cancellation.Token;
         context.Response.Body = new MemoryStream();
 
@@ -66,6 +67,58 @@ public sealed class SSERoutingTests
             Assert.That(context.Response.Headers["X-Accel-Buffering"].ToString(),
                 Is.EqualTo("no"));
             Assert.That(ReadBody(context), Is.EqualTo(": connected\n\n"));
+        });
+    }
+
+    [TestCase("POST")]
+    [TestCase("PUT")]
+    [TestCase("DELETE")]
+    [TestCase("HEAD")]
+    [TestCase("OPTIONS")]
+    public async Task Unsupported_methods_are_rejected_before_opening_a_connection(string method)
+    {
+        var context = CreateContext(CancellationToken.None);
+        context.Request.Method = method;
+        var nextCalled = false;
+        await SSEMiddleware.OnRequest(context, () => { nextCalled = true; return Task.CompletedTask; });
+        Assert.Multiple(() =>
+        {
+            Assert.That(context.Response.StatusCode, Is.EqualTo(405));
+            Assert.That(context.Response.Headers.Allow.ToString(), Is.EqualTo("GET"));
+            Assert.That(TestSseEndPoint.OpenCount, Is.Zero);
+            Assert.That(Connections(), Is.Empty);
+            Assert.That(nextCalled, Is.False);
+        });
+    }
+
+    [TestCase(null, true)]
+    [TestCase("text/event-stream", true)]
+    [TestCase("TEXT/EVENT-STREAM", true)]
+    [TestCase("text/*", true)]
+    [TestCase("*/*", true)]
+    [TestCase("application/json, text/event-stream;q=0.1", true)]
+    [TestCase("application/json", false)]
+    [TestCase("text/event-stream;q=0", false)]
+    [TestCase("*/*;q=0", false)]
+    [TestCase("text/event-stream;q=0, */*;q=1", false)]
+    [TestCase("text/*;q=0, */*;q=1", false)]
+    [TestCase("text/event-stream;q=0.1, text/*;q=0", true)]
+    [TestCase("not-a-media-type", false)]
+    public async Task Accept_negotiation_controls_connection_creation(string? accept, bool allowed)
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var context = CreateContext(cancellation.Token);
+        if (accept != null)
+            context.Request.Headers.Accept = accept;
+        await SSEMiddleware.OnRequest(context, () => Task.CompletedTask);
+        Assert.Multiple(() =>
+        {
+            Assert.That(context.Response.StatusCode, Is.EqualTo(allowed ? 200 : 406));
+            Assert.That(TestSseEndPoint.OpenCount, Is.EqualTo(allowed ? 1 : 0));
+            Assert.That(Connections(), Is.Empty);
+            if (!allowed)
+                Assert.That(ReadBody(context), Is.Empty);
         });
     }
 
@@ -374,6 +427,7 @@ public sealed class SSERoutingTests
     {
         var context = new DefaultHttpContext();
         context.Request.Path = "/tests-sse";
+        context.Request.Method = "GET";
         context.RequestAborted = token;
         context.Response.Body = new MemoryStream();
         return context;

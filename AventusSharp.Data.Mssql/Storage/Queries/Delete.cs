@@ -40,16 +40,7 @@ internal class Delete
                             }
                         });
                 }
-                else if (memberInfo is ITableMemberInfoSqlLinkSingle single)
-                {
-                    if (memberInfo.IsAutoDelete)
-                    {
-                        // TODO : code
-                        //string sql = "SELECT * FROM product where tag in (1,2)";
-                        //sql = "SELECT COUNT(*)";
 
-                    }
-                }
             }
 
             result.ReverseMembers.AddRange(table.ReverseMembers);

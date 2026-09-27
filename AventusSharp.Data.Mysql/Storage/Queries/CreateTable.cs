@@ -103,12 +103,10 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                     string constraintProp = "\t" + "CONSTRAINT " + storage.QuoteIdentifier(constraintName) + " FOREIGN KEY (" + foreignKey + ") REFERENCES " + storage.QuoteIdentifier(primary.Key) + " (" + foreignTable + ")";
                     if (deleteOnCascade)
                     {
-                        // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
                         constraintProp += " ON DELETE CASCADE";
                     }
                     else if (deleteSetNull)
                     {
-                        // TODO pour les tests mais doit être calculé du côté manager (seulement si stocker dans la RAM?)
                         constraintProp += " ON DELETE SET NULL";
                     }
                     foreignConstraint.Add(constraintProp);

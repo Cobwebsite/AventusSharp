@@ -22,13 +22,5 @@ namespace AventusSharp.SSE
             Converters = new List<JsonConverter>() { new AventusJsonConverter() }
         };
 
-        /// <summary>
-        /// Set to true to list all route on startup
-        /// </summary>
-        public bool PrintRoute { get; set; } = false;
-        /// <summary>
-        /// Set to true to print route triggered
-        /// </summary>
-        public bool PrintTrigger { get; set; } = false;
     }
 }

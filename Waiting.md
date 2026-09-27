@@ -33,9 +33,6 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 
 ## Priorité 4 — Tests, intégration et documentation
 
-- [ ] Créer un `MockDatabaseDM` fidèle aux contrats du gestionnaire réel pour les tests unitaires.
-- [ ] Remplacer la dépendance SQLite en préversion à l'origine de `NU5104`.
-- [ ] Faire fonctionner `SSEConfig.PrintRoute` et `PrintTrigger`, ou retirer ces options si elles ne font pas partie de l'API voulue.
 - [ ] Définir le périmètre HTTP attendu : binding automatique de la query string, formulaires URL encodés et tableaux JSON à la racine ; implémenter les cas retenus.
 - [ ] Définir puis appliquer les règles de méthode et d'en-tête `Accept` des endpoints SSE.
 - [ ] Permettre un statut de refus WebSocket adapté au contexte si le `302` fixe ne convient pas à l'API voulue.

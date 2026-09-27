@@ -38,19 +38,6 @@ son implémentation et ses tests de régression sont terminés.
   - cache activé et désactivé ;
   - chemin déjà partiellement chargé.
 
-### Gestionnaire de données pour les tests unitaires
-
-- [ ] Concevoir un `MockDatabaseDM` destiné aux tests unitaires.
-- Il devra reproduire les contrats importants de `DatabaseDM` :
-  - identité des instances avec cache ;
-  - CRUD et validation ;
-  - transactions et rollback ;
-  - builders de requête ;
-  - événements ;
-  - relations utiles aux tests.
-- Ne pas réintroduire `DummyDM`, qui ne respectait pas suffisamment ces
-  contrats et pouvait produire de faux positifs.
-
 ### BulkCreate et héritage multi-table
 
 - [x] Faire écrire `BulkCreate` dans la table racine puis dans chaque table
@@ -96,12 +83,3 @@ son implémentation et ses tests de régression sont terminés.
   toute suppression avec `DataErrorCode.ModelDeletionBlocked`.
 - Validation : 16 tests ciblés réussis ; suite complète avec Docker :
   772 tests réussis, aucun échec ; 4 spécifications explicites en attente.
-
-## Infrastructure de test
-
-### Dépendance SQLite en préversion
-
-- [ ] Aligner la version du package avec une version stable compatible.
-- État actuel : la compilation réussit, mais NuGet produit l'avertissement
-  `NU5104` car un package AventusSharp stable dépend d'une préversion de
-  `Microsoft.Data.Sqlite`.

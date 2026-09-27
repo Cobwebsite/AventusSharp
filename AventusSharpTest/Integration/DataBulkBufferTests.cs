@@ -96,7 +96,6 @@ public sealed class DataBulkBufferTests
     }
 
     [Test]
-    [Explicit("Specification: optimized BulkCreate does not yet persist many-to-many intermediate rows.")]
     public async Task BulkCreate_withId_persists_many_to_many_links_across_buffers()
     {
         var room = await TestRoom.Create(new TestRoom
@@ -135,7 +134,6 @@ public sealed class DataBulkBufferTests
     }
 
     [Test]
-    [Explicit("Specification: optimized BulkCreate currently ignores many-to-many values, including invalid links.")]
     public async Task Invalid_many_to_many_link_in_second_buffer_rolls_back_all_buffers()
     {
         var room = await TestRoom.Create(new TestRoom

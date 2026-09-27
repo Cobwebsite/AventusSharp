@@ -67,6 +67,11 @@ namespace AventusSharp.Data.Storage.Mssql.Queries
                 string sql = $"INSERT INTO {storage.QuoteIdentifier(tableInfo.SqlTableName)} ({string.Join(",", columns)}) VALUES {string.Join(",", allValues)};";
 
 
+                if (withId && tableInfo.Members.Any(member => member.IsAutoIncrement))
+                {
+                    string tableName = storage.QuoteIdentifier(tableInfo.SqlTableName);
+                    sql = "SET IDENTITY_INSERT " + tableName + " ON;" + sql + "SET IDENTITY_INSERT " + tableName + " OFF;";
+                }
                 DatabaseCreateBuilderInfoQuery resultTemp = new(sql, false, paramsInfos);
 
 

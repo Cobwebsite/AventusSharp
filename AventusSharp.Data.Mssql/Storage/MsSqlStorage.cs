@@ -17,6 +17,8 @@ namespace AventusSharp.Data.Storage.Mssql;
 
 public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
 {
+    // Leave room for the parameters used by sp_executesql itself.
+    protected override int MaxBulkParameters => 2098;
     private bool useDatabase = true;
     protected bool CreateDatabase { get; set; }
     protected MsSqlMigrationProvider MigrationProvider { get; }

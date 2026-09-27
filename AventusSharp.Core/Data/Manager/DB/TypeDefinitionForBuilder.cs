@@ -229,7 +229,17 @@ namespace AventusSharp.Data.Manager.DB
                 {
                     valueToSet = MembersList[MembersList.Count - 1].GetValueToSave(valueToSet);
                 }
-                if (valueToSet is IList listToSet)
+                if (valueToSet is IDictionary dictionaryToSet)
+                {
+                    List<int> ids = new();
+                    foreach (object? entry in dictionaryToSet.Values)
+                    {
+                        if (entry is IStorable linked) ids.Add(linked.Id);
+                        else if (entry is int linkedId) ids.Add(linkedId);
+                    }
+                    valueToSet = ids;
+                }
+                else if (valueToSet is IList listToSet)
                 {
                     bool containsStorable = listToSet
                         .Cast<object?>()

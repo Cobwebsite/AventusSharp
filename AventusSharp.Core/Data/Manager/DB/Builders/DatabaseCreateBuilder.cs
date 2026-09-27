@@ -40,6 +40,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
         public TableInfo TableInfo { get; private set; }
 
         public DatabaseCreateBuilderInfo? info;
+        public bool HasGeneratedIds { get; internal set; }
 
         public ParamsInfo? PrimaryParam { get; set; }
 

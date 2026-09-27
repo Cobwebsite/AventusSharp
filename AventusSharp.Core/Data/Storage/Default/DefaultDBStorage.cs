@@ -1210,26 +1210,7 @@ namespace AventusSharp.Data.Storage.Default
             }
             else
             {
-                //write all combinaisons if one of the parameter is a list
-                List<Dictionary<string, object?>> parametersFinal = new();
-
-                Action<int, Dictionary<string, object?>> combinaisons = (int i, Dictionary<string, object?> current) => { };
-                combinaisons = (int i, Dictionary<string, object?> current) =>
-                {
-                    if (i == parametersValue.Count)
-                    {
-                        parametersFinal.Add(current);
-                        return;
-                    }
-                    KeyValuePair<string, object?> parameterValue = parametersValue.ElementAt(i);
-
-                    current.Add(parameterValue.Key, parameterValue.Value);
-                    combinaisons(i + 1, current);
-                };
-
-                combinaisons(0, new());
-
-                queryResult = await Execute(cmd, parametersFinal);
+                queryResult = await Execute(cmd, parametersValue);
             }
             cmd.Dispose();
             return queryResult;
@@ -1766,13 +1747,73 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Create
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId) where X : IStorable;
-        public async Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
+        protected virtual int MaxBulkParameters => int.MaxValue;
+        public Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
+        {
+            createBuilder.HasGeneratedIds = false;
+            return RunInsideTransaction(() => BulkCreateItems(createBuilder, items, withId));
+        }
+
+        private async Task<VoidWithError> BulkCreateItems<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
         {
             VoidWithError result = new();
+            if (items.Count == 0) return result;
+            var groups = items.GroupBy(item => item.GetType()).ToList();
+            if (groups.Count > 1 || groups[0].Key != createBuilder.TableInfo.Type)
+            {
+                foreach (var group in groups)
+                {
+                    var builder = new DatabaseCreateBuilder<X>(createBuilder.Storage, createBuilder.DM, group.Key);
+                    await result.RunAsync(() => BulkCreateItems(builder, group.ToList(), withId));
+                    createBuilder.HasGeneratedIds |= builder.HasGeneratedIds;
+                }
+                return result;
+            }
+
+            List<TableMemberInfoSql> links = new();
+            List<TableMemberInfoSql> before = new();
+            List<TableReverseMemberInfo> reverse = new();
             int bufferSize = 500;
+            for (TableInfo? table = createBuilder.TableInfo; table != null; table = table.Parent)
+            {
+                int fields = 0;
+                foreach (TableMemberInfoSql member in table.Members)
+                {
+                    if (member is ITableMemberInfoSqlLinkMultiple) links.Add(member);
+                    if (member is ITableMemberInfoSqlLink && (member.IsAutoCreate || member.IsAutoUpdate)) before.Add(member);
+                    if (member is ITableMemberInfoSqlWritable && (!member.IsAutoIncrement || withId)) fields++;
+                }
+                if (fields > 0) bufferSize = Math.Min(bufferSize, Math.Max(1, MaxBulkParameters / fields));
+                foreach (TableReverseMemberInfo member in table.ReverseMembers)
+                    if (member.IsAutoCreate || member.IsAutoUpdate) reverse.Add(member);
+            }
+
+            if (!withId && (createBuilder.TableInfo.Parent != null || links.Count > 0))
+            {
+                createBuilder.HasGeneratedIds = true;
+                createBuilder.info = PrepareSQLForCreate(createBuilder);
+                foreach (X item in items)
+                {
+                    int originalId = item.Id;
+                    transactionScope?.OnRollback(() =>
+                    {
+                        item.Id = originalId;
+                        return Task.FromResult(new VoidWithError());
+                    });
+                    await result.RunAsync(() => CreateFromBuilder(createBuilder, item));
+                    if (!result.Success) return result;
+                }
+                return result;
+            }
+
             for (int i = 0; i < items.Count; i += bufferSize)
             {
                 List<X> buffer = items.GetRange(i, Math.Min(bufferSize, items.Count - i));
+                foreach (X item in buffer)
+                {
+                    await result.RunAsync(() => CheckAutoCUDBeforeCreate(before, item));
+                    if (!result.Success) return result;
+                }
                 List<DatabaseCreateBuilderInfoQuery> queries;
                 createBuilder.info = PrepareSQLForBulkCreate(createBuilder, buffer.Count, withId);
 
@@ -1798,7 +1839,69 @@ namespace AventusSharp.Data.Storage.Default
                     }
 
                 }
+                foreach (X item in buffer)
+                {
+                    foreach (TableMemberInfoSql member in links)
+                    {
+                        await result.RunAsync(() => CreateBulkLinks(member, item));
+                    }
+                    await result.RunAsync(() => CheckReverseLinkAfterCreate(reverse, item, item.Id));
+                    if (!result.Success) return result;
+                }
+            }
+            return result;
+        }
 
+        private async Task<VoidWithError> CreateBulkLinks(TableMemberInfoSql member, IStorable item)
+        {
+            VoidWithError result = new();
+            var link = (ITableMemberInfoSqlLinkMultiple)member;
+            object? value = member.GetValue(item);
+            IEnumerable? values = value as IEnumerable;
+            if (value is IDictionary dictionary) values = dictionary.Values;
+            if (values == null) return result;
+            List<int> ids = new();
+            foreach (object? linked in values)
+            {
+                if (linked is IStorable storable) ids.Add(storable.Id);
+                else if (linked is int id) ids.Add(id);
+                else
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.WrongType, "A many-to-many link must contain model instances or integer identifiers."));
+                    return result;
+                }
+            }
+            result.Errors.AddRange(await member.IsValid(ids, item, StorableAction.Create));
+            if (!result.Success || ids.Count == 0) return result;
+            string prefix = $"INSERT INTO {QuoteIdentifier(link.TableIntermediateName!)} "
+                + $"({QuoteIdentifier(link.TableIntermediateKey1!)}, {QuoteIdentifier(link.TableIntermediateKey2!)}) VALUES ";
+            ids = ids.Distinct().ToList();
+            int bufferSize = Math.Min(500, MaxBulkParameters / 2);
+            for (int offset = 0; offset < ids.Count; offset += bufferSize)
+            {
+                List<string> rows = new();
+                int count = Math.Min(bufferSize, ids.Count - offset);
+                for (int index = 0; index < count; index++) rows.Add($"(@owner_{index}, @linked_{index})");
+                var commandResult = CreateCmd(prefix + string.Join(", ", rows));
+                result.Errors.AddRange(commandResult.Errors);
+                if (!result.Success || commandResult.Result == null) return result;
+                using DbCommand command = commandResult.Result;
+                Dictionary<string, object?> parameters = new();
+                for (int index = 0; index < count; index++)
+                {
+                    DbParameter owner = GetDbParameter();
+                    owner.ParameterName = "@owner_" + index;
+                    owner.DbType = DbType.Int32;
+                    command.Parameters.Add(owner);
+                    parameters[owner.ParameterName] = item.Id;
+                    DbParameter linked = GetDbParameter();
+                    linked.ParameterName = "@linked_" + index;
+                    linked.DbType = link.LinkFieldType;
+                    command.Parameters.Add(linked);
+                    parameters[linked.ParameterName] = ids[offset + index];
+                }
+                await result.RunAsync(() => Execute(command, parameters));
+                if (!result.Success) return result;
             }
             return result;
         }

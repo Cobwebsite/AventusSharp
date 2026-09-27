@@ -633,7 +633,7 @@ namespace AventusSharp.Data.Manager.DB
                     result = await builder.RunBulkWithError(values, withId);
                     if (result.Success && NeedLocalCache)
                     {
-                        if (withId)
+                        if (withId || builder.HasGeneratedIds)
                         {
                             foreach (X item in values)
                             {

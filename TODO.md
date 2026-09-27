@@ -8,7 +8,7 @@ son implémentation et ses tests de régression sont terminés.
 
 ### Relations N-N avec `BulkCreate`
 
-- [ ] Étendre le chemin optimisé `BulkCreate` pour créer les lignes des tables
+- [x] Étendre le chemin optimisé `BulkCreate` pour créer les lignes des tables
   intermédiaires N-N.
 - Les relations ne doivent pas être ignorées silencieusement lorsque les
   propriétaires sont créés avec succès.
@@ -17,7 +17,9 @@ son implémentation et ses tests de régression sont terminés.
 - Les tests
   `BulkCreate_withId_persists_many_to_many_links_across_buffers` et
   `Invalid_many_to_many_link_in_second_buffer_rolls_back_all_buffers`
-  restent explicites jusqu'à cette implémentation.
+  sont activés et réussissent. Les identifiants générés utilisent le parcours
+  de création individuel dans la même transaction ; les identifiants fournis
+  conservent les insertions groupées. Listes et dictionnaires sont couverts.
 
 ### Chargement explicite des relations imbriquées
 
@@ -52,15 +54,18 @@ son implémentation et ses tests de régression sont terminés.
 
 ### BulkCreate et héritage multi-table
 
-- [ ] Faire écrire `BulkCreate` dans la table racine puis dans chaque table
+- [x] Faire écrire `BulkCreate` dans la table racine puis dans chaque table
   enfant lorsque l'héritage persistant utilise plusieurs tables.
 - Avec `withId: true`, le même identifiant explicite doit être propagé dans
   toutes les tables et l'objet dérivé fourni doit devenir l'instance canonique
   du cache partagé.
 - Le test
   `BulkCreate_withId_preserves_canonical_children_in_the_shared_parent_cache`
-  reste explicite. Le cas `[ForceInherit]`, stocké dans une seule table
-  concrète, est déjà couvert et fonctionnel.
+  est activé et réussit. Les lots de types dérivés mixtes et les identifiants
+  générés sont également pris en charge ; rollback des tables, du cache et
+  des identifiants vérifié. Le cas `[ForceInherit]` reste fonctionnel.
+- Validation complète avec Docker : 798 tests réussis, aucun échec ;
+  une spécification explicite encore en attente.
 
 ## Migrations
 

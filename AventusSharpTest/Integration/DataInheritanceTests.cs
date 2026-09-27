@@ -75,7 +75,6 @@ public sealed class DataInheritanceTests
     }
 
     [Test]
-    [Explicit("Specification: BulkCreate does not yet coordinate parent and child inheritance tables.")]
     public async Task BulkCreate_withId_preserves_canonical_children_in_the_shared_parent_cache()
     {
         var dimmer = new TestDimmer
@@ -113,6 +112,62 @@ public sealed class DataInheritanceTests
             Assert.That(all.Result!.Single(item => item.Id == relay.Id),
                 Is.SameAs(relay));
         });
+    }
+
+    [Test]
+    public async Task Bulk_generated_ids_preserve_canonical_mixed_children_and_outer_rollback()
+    {
+        var manager = GenericDM.Get<ITestActuator>();
+        var dimmer = new TestDimmer { Name = "Generated dimmer", Level = 45 };
+        var relay = new TestRelay { Name = "Generated relay", IsClosed = true };
+        List<ITestActuator> values = [dimmer, relay];
+        int dimmerId = 0;
+        int relayId = 0;
+        var transaction = await manager.RunInsideTransaction(async () =>
+        {
+            var creation = await manager.BulkCreateWithError(values);
+            Assert.That(creation.Success, Is.True, IntegrationEnvironment.ErrorMessages(creation.Errors));
+            dimmerId = dimmer.Id;
+            relayId = relay.Id;
+            Assert.That(dimmerId, Is.Positive);
+            Assert.That(relayId, Is.Positive.And.Not.EqualTo(dimmerId));
+            Assert.That((await manager.GetByIdWithError<TestDimmer>(dimmerId)).Result, Is.SameAs(dimmer));
+            Assert.That((await manager.GetByIdWithError<TestRelay>(relayId)).Result, Is.SameAs(relay));
+            creation.Errors.Add(new AventusSharp.Tools.GenericError(9991, "force inherited bulk rollback"));
+            return creation;
+        });
+        Assert.That(transaction.Success, Is.False);
+        Assert.That(dimmer.Id, Is.Zero);
+        Assert.That(relay.Id, Is.Zero);
+        Assert.That((await manager.GetByIdWithError<TestDimmer>(dimmerId)).Success, Is.False);
+        Assert.That((await manager.GetByIdWithError<TestRelay>(relayId)).Success, Is.False);
+        foreach (string table in new[] { "test_actuators", "test_dimmers", "test_relays" })
+        {
+            var rows = await IntegrationEnvironment.Storage.Query($"SELECT COUNT(*) AS count FROM \"{table}\"");
+            Assert.That(rows.Success, Is.True, IntegrationEnvironment.ErrorMessages(rows.Errors));
+            Assert.That(rows.Result!.Single()["count"], Is.EqualTo("0"));
+        }
+    }
+
+    [Test]
+    public async Task Invalid_inherited_parent_in_second_buffer_rolls_back_parent_and_child_tables()
+    {
+        var values = Enumerable.Range(0, 501).Select(index => new TestDimmer
+        {
+            Id = 130_000 + index, Name = "Buffered dimmer " + index, Level = index
+        }).ToList();
+        values[^1].Name = "";
+        var result = await TestDimmer.BulkCreateWithError(values, withId: true);
+        Assert.That(result.Success, Is.False);
+        foreach (string table in new[] { "test_actuators", "test_dimmers" })
+        {
+            var rows = await IntegrationEnvironment.Storage.Query($"SELECT COUNT(*) AS count FROM \"{table}\"");
+            Assert.That(rows.Success, Is.True, IntegrationEnvironment.ErrorMessages(rows.Errors));
+            Assert.That(rows.Result!.Single()["count"], Is.EqualTo("0"));
+        }
+        var manager = GenericDM.Get<ITestActuator>();
+        Assert.That((await manager.GetByIdWithError<TestDimmer>(values[0].Id)).Success, Is.False);
+        Assert.That((await manager.GetByIdWithError<TestDimmer>(values[^1].Id)).Success, Is.False);
     }
 
     [Test]

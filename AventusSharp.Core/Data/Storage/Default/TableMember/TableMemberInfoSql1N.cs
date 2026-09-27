@@ -101,6 +101,11 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
     public class TableMemberInfoSqlParent : TableMemberInfoSql1N
     {
+        public override object? GetSqlValue(object obj)
+        {
+            return GetValue(obj);
+        }
+
         public TableMemberInfoSqlParent(MemberInfo? memberInfo, TableInfo tableInfo, bool isNullable) : base(memberInfo, tableInfo, isNullable)
         {
             IsAutoIncrement = false;

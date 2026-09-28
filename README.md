@@ -44,6 +44,25 @@ return app;
 
 `AventusMauiBridge` can then be resolved from `app.Services` and used by a WebView bridge to execute Aventus routes in-process.
 
+## Adding and deleting properties in migrations
+
+`SelectModel<T>().AddProperty<U>(name, options)` adds a column, including its
+default, nullability, primary/unique constraint and index. `AddRef<U>()` adds a
+foreign key and applies its `DeleteKind`. Creating an existing column returns an
+error; use `UpdateProperty` to change its definition instead.
+
+`RemoveProperty(name)` drops a column and its local constraints/indexes; an
+absent column is ignored. References from other tables block deletion. Collection
+properties manage their intermediate table: use `RemoveProperty<List<U>>(name)`
+when the collection is no longer declared on the model. Supported collections
+are storable lists/dictionaries and existing model members with `[ForeignKey]`.
+Intermediate table names follow the existing source/target naming convention.
+
+SQLite rebuilds the table inside the migration transaction, preserving remaining
+data, indexes, triggers and the autoincrement sequence. SQLite, PostgreSQL and
+SQL Server can roll back these schema changes. MySQL DDL implicitly commits;
+an error in a later operation cannot roll back an earlier schema change.
+
 ## Deleting models in migrations
 
 Use `DeleteModel<T>()` in a migration's `Up()` method to delete a model table.

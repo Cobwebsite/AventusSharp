@@ -259,17 +259,74 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
             + "WHERE parent.schema_id = SCHEMA_ID()";
         var rows = await result.ExtractAsync(() => Query(sql));
         if (rows == null) return result;
+
         var schema = await result.ExtractAsync(() => Query("SELECT SCHEMA_NAME() AS name"));
         if (schema == null) return result;
+
         foreach (var row in rows)
         {
             string table = row["table_name"]!;
-            if (row["schema_name"] != schema[0]["name"]) table = row["schema_name"] + "." + table;
+            if (row["schema_name"] != schema[0]["name"])
+            {
+                table = row["schema_name"] + "." + table;
+            }
+
             string dropSql = "ALTER TABLE " + QuoteIdentifier(row["schema_name"]!) + "."
                 + QuoteIdentifier(row["table_name"]!) + " DROP CONSTRAINT " + QuoteIdentifier(row["name"]!);
             result.Result.Add(new(table, row["referenced_table"]!, dropSql));
         }
         return result;
+    }
+
+    protected override string MigrationIdentityClause => "IDENTITY(1,1)";
+
+    protected override async Task<VoidWithError> DropMigrationColumn(string table, string column)
+    {
+        VoidWithError result = new();
+        List<Dictionary<string, string?>>? incoming = await result.ExtractAsync(() => Query("SELECT OBJECT_NAME(parent_object_id) AS name FROM sys.foreign_key_columns WHERE referenced_object_id = OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table)) + ") AND referenced_column_id = COLUMNPROPERTY(OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table)) + "), " + FormatMigrationDefault(column) + ", 'ColumnId') AND parent_object_id <> referenced_object_id"));
+        if (incoming == null) return result;
+
+        if (incoming.Count > 0)
+        {
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column referenced by table '" + incoming[0]["name"] + "'."));
+            return result;
+        }
+
+        string objectId = "OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table)) + ")";
+        string columnId = "COLUMNPROPERTY(" + objectId + ", " + FormatMigrationDefault(column) + ", 'ColumnId')";
+        string sql = "SELECT name FROM sys.default_constraints WHERE parent_object_id = " + objectId + " AND parent_column_id = " + columnId
+            + " UNION SELECT f.name FROM sys.foreign_keys f JOIN sys.foreign_key_columns c ON c.constraint_object_id = f.object_id WHERE c.parent_object_id = " + objectId + " AND c.parent_column_id = " + columnId
+            + " UNION SELECT name FROM sys.check_constraints WHERE parent_object_id = " + objectId
+            + " AND (parent_column_id = " + columnId + " OR object_id IN (SELECT referencing_id FROM sys.sql_expression_dependencies WHERE referenced_id = " + objectId + " AND referenced_minor_id = " + columnId + "))"
+            + " UNION SELECT k.name FROM sys.key_constraints k JOIN sys.index_columns c ON c.object_id = k.parent_object_id AND c.index_id = k.unique_index_id WHERE c.object_id = " + objectId + " AND c.column_id = " + columnId;
+        var constraints = await result.ExtractAsync(() => Query(sql));
+        if (constraints == null) return result;
+
+        sql = "SELECT DISTINCT i.name FROM sys.indexes i JOIN sys.index_columns c ON c.object_id = i.object_id AND c.index_id = i.index_id WHERE i.object_id = " + objectId + " AND c.column_id = " + columnId + " AND i.is_primary_key = 0 AND i.is_unique_constraint = 0";
+        var indexes = await result.ExtractAsync(() => Query(sql));
+        if (indexes == null) return result;
+
+        foreach (var index in indexes)
+        {
+            await result.RunAsync(() => Execute($"DROP INDEX {QuoteIdentifier(index["name"]!)} ON {QuoteIdentifier(table)}"));
+        }
+
+        foreach (var constraint in constraints)
+        {
+            await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} DROP CONSTRAINT {QuoteIdentifier(constraint["name"]!)}"));
+        }
+
+        await result.RunAsync(() => base.DropMigrationColumn(table, column));
+        return result;
+    }
+
+    protected override async Task<ResultWithError<List<string>>> GetMigrationColumns(string table)
+    {
+        var rows = await Query("SELECT name FROM sys.columns WHERE object_id = OBJECT_ID(" + FormatMigrationDefault(QuoteIdentifier(table)) + ")");
+        return new() { 
+            Errors = rows.Errors, 
+            Result = rows.Result?.Select(row => row["name"]!).ToList() 
+        };
     }
 
     protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)

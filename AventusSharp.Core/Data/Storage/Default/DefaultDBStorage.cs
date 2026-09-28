@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using AventusSharp.Data.Storage.Relational;
 
 namespace AventusSharp.Data.Storage.Default
 {
@@ -67,7 +68,7 @@ namespace AventusSharp.Data.Storage.Default
         }
     }
 
-    public abstract class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
+    public abstract partial class DefaultDBStorage<T> : IDBStorage where T : IDBStorage
     {
         public virtual bool SupportsNativeBoolean => false;
 
@@ -2671,6 +2672,9 @@ namespace AventusSharp.Data.Storage.Default
         #endregion
 
         #region Migration
+        protected virtual string MigrationIdentityClause => "";
+        protected virtual bool MigrationInlineReference => false;
+        
         public virtual Task<ResultWithError<DbTransactionContext>> BeginMigrationTransaction() => BeginTransaction();
 
         public async Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable
@@ -2692,12 +2696,11 @@ namespace AventusSharp.Data.Storage.Default
                     }
                     else if (member.Value.PropertyAction == MigrationPropertyAction.Delete)
                     {
-                        // TODO: drop colonne
+                        await result.RunAsync(() => DeleteMigrationProperty(TableInfo.GetSQLTableName(model.Type), member.Value));
                     }
                     else if (member.Value.PropertyAction == MigrationPropertyAction.Create)
                     {
-                        // TODO: add colonne
-                        // check si la colonne existe, si c'est le cas il faut faire attention aux attributes
+                        await result.RunAsync(() => CreateMigrationProperty(TableInfo.GetSQLTableName(model.Type), member.Value));
                     }
                 }
             }
@@ -2723,6 +2726,167 @@ namespace AventusSharp.Data.Storage.Default
             }
             return result;
         }
+
+        protected abstract Task<ResultWithError<List<string>>> GetMigrationColumns(string table);
+        protected static bool IsMigrationCollection(IMigrationProperty property)
+        {
+            return typeof(IList).IsAssignableFrom(property.Type) || typeof(IDictionary).IsAssignableFrom(property.Type);
+        }
+
+        // Reject duplicate creation rather than silently discarding the requested constraints.
+        protected virtual async Task<VoidWithError> CreateMigrationProperty(string table, IMigrationProperty property)
+        {
+            VoidWithError result = new();
+            if (IsMigrationCollection(property))
+            {
+                TableInfo owner = new(property.Parent);
+                result.Run(() => owner.Init().ToGeneric());
+                if (owner.Primary == null)
+                {
+                    result.Run(() =>
+                        owner.PrepareMembers(new TableMemberInfoSqlBasic(new MigrationMemberId(property.Parent), owner, false)).ToGeneric()
+                    );
+
+                }
+                TableMemberInfoSql relation = owner.Members.FirstOrDefault(member => member.Name == property.Name && member is ITableMemberInfoSqlLinkMultiple) ?? new MigrationCollectionMember(property, owner);
+                result.Run(() => owner.PrepareMembers(relation).ToGeneric());
+                if (!result.Success) return result;
+
+                ITableMemberInfoSqlLinkMultiple multiple = (ITableMemberInfoSqlLinkMultiple)relation;
+                if (multiple.TableLinked == null && multiple.TableLinkedType != null)
+                {
+                    TableInfo linked = new(multiple.TableLinkedType);
+                    result.Run(() => linked.Init().ToGeneric());
+
+                    if (linked.Primary == null)
+                    {
+                        result.Run(() =>
+                            linked.PrepareMembers(new TableMemberInfoSqlBasic(new MigrationMemberId(multiple.TableLinkedType), linked, false)).ToGeneric()
+                        );
+                    }
+                    multiple.TableLinked = linked;
+                }
+                if (!result.Success) return result;
+
+                string relationTable = multiple.TableIntermediateName!;
+                bool exists = await result.ExtractAsync(() => TableExist(relationTable));
+                if (!result.Success) return result;
+
+                if (exists)
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration relation table already exists: " + relationTable));
+                else
+                    await result.RunAsync(() => Execute(PrepareSQLCreateIntermediateTable(relation)));
+
+                return result;
+            }
+
+            List<string>? columns = await result.ExtractAsync(() => GetMigrationColumns(table));
+            if (columns == null) return result;
+
+            if (columns.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column already exists: " + property.Name + ". Use UpdateProperty instead."));
+                return result;
+            }
+
+            string definition = GetMigrationColumnDefinition(property);
+            await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} ADD {definition}"));
+
+            if (property is IMigrationPropertyRef reference && !MigrationInlineReference)
+            {
+                string name = Utils.CheckConstraint("FK_" + property.Name + "_" + table);
+                await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} ADD CONSTRAINT {QuoteIdentifier(name)} FOREIGN KEY ({QuoteIdentifier(property.Name)})" + GetMigrationReference(reference)));
+            }
+
+            if (property.Options.Index && !property.Options.Unique)
+            {
+                string name = Utils.CheckConstraint("IND_" + property.Name + "_" + table);
+                await result.RunAsync(() => Execute($"CREATE INDEX {QuoteIdentifier(name)} ON {QuoteIdentifier(table)} ({QuoteIdentifier(property.Name)})"));
+            }
+            return result;
+        }
+
+        protected string GetMigrationColumnDefinition(IMigrationProperty property)
+        {
+            string type = GetMigrationColumnType(property);
+            if (property is IMigrationPropertyRef reference)
+            {
+                type = GetSqlColumnType(TableMemberInfoSql.GetDbType(reference.Options.KeyKind ?? typeof(int), null) ?? throw new NotSupportedException("Unsupported migration reference key type."), null!);
+            }
+            string definition = QuoteIdentifier(property.Name) + " " + type;
+            if (property.Options.AutoIncrement) definition += " " + MigrationIdentityClause;
+            definition += property.Options.Nullable ? " NULL" : " NOT NULL";
+            if (property.Options.Default != null) definition += " DEFAULT " + FormatMigrationDefault(property.Options.Default);
+            if (property.Options.Primary) definition += " PRIMARY KEY";
+            if (property.Options.Unique) definition += " UNIQUE";
+            if (property is IMigrationPropertyRef link && MigrationInlineReference)
+            {
+                definition += GetMigrationReference(link);
+            }
+            return definition;
+        }
+
+        private string GetMigrationReference(IMigrationPropertyRef link)
+        {
+            string sql = " REFERENCES " + QuoteIdentifier(TableInfo.GetSQLTableName(link.Type))
+                + " (" + QuoteIdentifier(link.Options.KeyName ?? "Id") + ")";
+            if (link.Options.DeleteKind == DeleteKind.DeleteOnCascade) sql += " ON DELETE CASCADE";
+            if (link.Options.DeleteKind == DeleteKind.DeleteSetNull) sql += " ON DELETE SET NULL";
+            return sql;
+        }
+
+        protected virtual async Task<VoidWithError> DeleteMigrationProperty(string table, IMigrationProperty property)
+        {
+            VoidWithError result = new();
+            // A collection is stored in an intermediate table, not in a column.
+            TableInfo info = new(property.Parent);
+            result.Run(() => info.Init().ToGeneric());
+            if (!result.Success) return result;
+
+            TableMemberInfoSql? member = info.Members.FirstOrDefault(member => member.Name == property.Name);
+            if (member == null && IsMigrationCollection(property))
+            {
+                member = new MigrationCollectionMember(property, info);
+                result.Run(() => info.PrepareMembers(member).ToGeneric());
+                if (!result.Success) return result;
+            }
+
+            if (member is ITableMemberInfoSqlLinkMultiple relation && relation.TableIntermediateName != null)
+            {
+                await result.RunAsync(() => TableDelete(relation.TableIntermediateName));
+                return result;
+            }
+
+            List<string>? columns = await result.ExtractAsync(() => GetMigrationColumns(table));
+            if (columns == null || !columns.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
+                return result;
+
+            await result.RunAsync(() => DropMigrationColumn(table, property.Name));
+            return result;
+        }
+
+        protected virtual Task<VoidWithError> DropMigrationColumn(string table, string column)
+        {
+            return Execute($"ALTER TABLE {QuoteIdentifier(table)} DROP COLUMN {QuoteIdentifier(column)}");
+        }
+
+        // Migration schema preparation must not require an initialized runtime data manager.
+        private sealed class MigrationCollectionMember : TableMemberInfoSqlNM
+        {
+            public MigrationCollectionMember(IMigrationProperty property, TableInfo table)
+                : base(new MigrationMember(property), table, property.Options.Nullable) { }
+
+            public override VoidWithDataError PrepareForSQL()
+            {
+                VoidWithDataError result = new();
+                SqlName = Name;
+                TableLinkedType = IsListTypeUsable(MemberType) ?? IsDictionaryTypeUsable(MemberType);
+                if (TableLinkedType == null)
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Unsupported migration collection: " + Name));
+
+                return result;
+            }
+        }
         #endregion
 
         #endregion
@@ -2742,7 +2906,7 @@ namespace AventusSharp.Data.Storage.Default
             {
                 targets.Add(TableInfo.GetSQLTableName(type));
                 if (tables.Any(table => table.Type == type)) continue;
-                
+
                 TableInfo table = new(type);
                 result.Run(() => table.Init().ToGeneric());
                 tables.Add(table);
@@ -2755,7 +2919,7 @@ namespace AventusSharp.Data.Storage.Default
             {
                 foreach (TableMemberInfoSql member in table.Members)
                 {
-                    if (member is not ITableMemberInfoSqlLinkMultiple link || link.TableIntermediateName == null) 
+                    if (member is not ITableMemberInfoSqlLinkMultiple link || link.TableIntermediateName == null)
                         continue;
                     if (modelTables.Contains(table.SqlTableName) || modelTables.Contains(link.LinkTableName))
                         targets.Add(link.TableIntermediateName);

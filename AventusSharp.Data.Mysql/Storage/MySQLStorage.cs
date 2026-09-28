@@ -258,6 +258,7 @@ namespace AventusSharp.Data.Storage.Mysql
                 + FormatMigrationDefault(Database) + " GROUP BY TABLE_SCHEMA, TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME";
             var rows = await result.ExtractAsync(() => Query(sql));
             if (rows == null) return result;
+
             foreach (var row in rows)
             {
                 string table = row["TABLE_NAME"]!;
@@ -267,6 +268,45 @@ namespace AventusSharp.Data.Storage.Mysql
                 result.Result.Add(new(table, row["REFERENCED_TABLE_NAME"]!, dropSql));
             }
             return result;
+        }
+
+        protected override string MigrationIdentityClause => "AUTO_INCREMENT";
+
+        protected override async Task<VoidWithError> DropMigrationColumn(string table, string column)
+        {
+            VoidWithError result = new();
+            var incoming = await result.ExtractAsync(() => Query("SELECT TABLE_NAME AS name FROM information_schema.key_column_usage WHERE REFERENCED_TABLE_SCHEMA = " + FormatMigrationDefault(Database) + " AND REFERENCED_TABLE_NAME = " + FormatMigrationDefault(table) + " AND REFERENCED_COLUMN_NAME = " + FormatMigrationDefault(column) + " AND TABLE_NAME <> " + FormatMigrationDefault(table)));
+            if (incoming == null) return result;
+
+            if (incoming.Count > 0)
+            {
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column referenced by table '" + incoming[0]["name"] + "'."));
+                return result;
+            }
+
+            string sql = "SELECT DISTINCT CONSTRAINT_NAME AS name FROM information_schema.key_column_usage WHERE TABLE_SCHEMA = "
+                + FormatMigrationDefault(Database) + " AND TABLE_NAME = " + FormatMigrationDefault(table)
+                + " AND COLUMN_NAME = " + FormatMigrationDefault(column) + " AND REFERENCED_TABLE_NAME IS NOT NULL";
+            List<Dictionary<string, string?>>? keys = await result.ExtractAsync(() => Query(sql));
+            if (keys == null) return result;
+
+            foreach (var key in keys)
+            {
+                await result.RunAsync(() => Execute($"ALTER TABLE {QuoteIdentifier(table)} DROP FOREIGN KEY {QuoteIdentifier(key["name"]!)}"));
+            }
+
+            await result.RunAsync(() => base.DropMigrationColumn(table, column));
+            return result;
+        }
+
+        protected override async Task<ResultWithError<List<string>>> GetMigrationColumns(string table)
+        {
+            ResultWithError<List<Dictionary<string, string?>>> rows = await Query("SELECT COLUMN_NAME AS name FROM information_schema.columns WHERE TABLE_SCHEMA = " + FormatMigrationDefault(Database) + " AND TABLE_NAME = " + FormatMigrationDefault(table));
+            return new()
+            {
+                Errors = rows.Errors,
+                Result = rows.Result?.Select(row => row["name"]!).ToList()
+            };
         }
 
         protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)

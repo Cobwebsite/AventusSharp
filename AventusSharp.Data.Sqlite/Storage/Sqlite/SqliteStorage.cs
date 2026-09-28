@@ -291,6 +291,215 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         return result;
     }
 
+    protected override string MigrationIdentityClause => "";
+    protected override bool MigrationInlineReference => true;
+
+    protected override async Task<VoidWithError> CreateMigrationProperty(string table, IMigrationProperty property)
+    {
+        if (IsMigrationCollection(property))
+        {
+            return await base.CreateMigrationProperty(table, property);
+        }
+
+        VoidWithError result = new();
+        List<string>? columns = await result.ExtractAsync(() => GetMigrationColumns(table));
+        if (columns == null) return result;
+
+        if (columns.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column already exists: " + property.Name + ". Use UpdateProperty instead."));
+            return result;
+        }
+
+        string definition = GetMigrationColumnDefinition(property);
+        if (property.Options.AutoIncrement)
+        {
+            if (!property.Options.Primary || (property.Type != typeof(int) && property.Type != typeof(long)))
+            {
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "SQLite autoincrement requires an integer primary key."));
+                return result;
+            }
+            definition = QuoteIdentifier(property.Name) + " INTEGER PRIMARY KEY AUTOINCREMENT";
+        }
+
+        await result.RunAsync(() => RebuildMigrationColumns(table, property.Name, definition));
+
+        if (property.Options.Index && !property.Options.Unique)
+        {
+            await result.RunAsync(() => Execute($"CREATE INDEX {QuoteIdentifier(Utils.CheckConstraint("IND_" + property.Name + "_" + table))} ON {QuoteIdentifier(table)} ({QuoteIdentifier(property.Name)})"));
+        }
+        return result;
+    }
+
+    protected override Task<VoidWithError> DropMigrationColumn(string table, string column)
+    {
+        return RebuildMigrationColumns(table, column, null);
+    }
+
+    private static bool MentionsColumn(string sql, string column)
+    {
+        for (int i = 0; i < sql.Length;)
+        {
+            int start = i;
+            if (sql[i] is '\'' or '"' or '`' or '[')
+            {
+                bool literal = sql[i] == '\'';
+                char close = sql[i++] == '[' ? ']' : sql[start];
+                while (i < sql.Length)
+                {
+                    if (sql[i++] != close)
+                        continue;
+
+                    if (i < sql.Length && sql[i] == close)
+                    {
+                        i++;
+                        continue;
+                    }
+                    break;
+                }
+                if (!literal && Unquote(sql[start..i]).Equals(column, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            else if (char.IsLetter(sql[i]) || sql[i] == '_')
+            {
+                while (i < sql.Length && (char.IsLetterOrDigit(sql[i]) || sql[i] is '_' or '$'))
+                {
+                    i++;
+                }
+
+                if (sql[start..i].Equals(column, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            else i++;
+        }
+        return false;
+    }
+
+    private async Task<VoidWithError> RebuildMigrationColumns(string table, string column, string? addedDefinition)
+    {
+        VoidWithError result = new();
+        List<Dictionary<string, string?>>? enabled = await result.ExtractAsync(() => Query("PRAGMA foreign_keys"));
+        if (enabled == null) return result;
+
+        if (getTransactionScope() == null || enabled.Single()["foreign_keys"] != "0")
+        {
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "SQLite column migrations require a migration transaction with foreign keys disabled."));
+            return result;
+        }
+
+        if (addedDefinition == null)
+        {
+            List<Dictionary<string, string?>>? tables = await result.ExtractAsync(() => Query("SELECT name FROM sqlite_schema WHERE type = 'table'"));
+            if (tables == null) return result;
+
+            foreach (Dictionary<string, string?>? other in tables.Where(row => row["name"] != table))
+            {
+                List<Dictionary<string, string?>>? keys = await result.ExtractAsync(() => Query($"PRAGMA foreign_key_list({QuoteIdentifier(other["name"]!)})"));
+                if (keys == null) return result;
+
+                if (keys.Any(key => key["table"] == table && (key["to"] == column || key["to"] == null)))
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column referenced by table '" + other["name"] + "'."));
+                    return result;
+                }
+            }
+        }
+        List<Dictionary<string, string?>>? schema = await result.ExtractAsync(() =>
+            Query("SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = " + FormatMigrationDefault(table))
+        );
+        List<Dictionary<string, string?>>? dependencies = await result.ExtractAsync(() =>
+            Query("SELECT sql FROM sqlite_schema WHERE tbl_name = " + FormatMigrationDefault(table) + " AND type IN ('index', 'trigger') AND sql IS NOT NULL")
+        );
+        List<Dictionary<string, string?>>? columns = await result.ExtractAsync(() =>
+            Query($"PRAGMA table_xinfo({QuoteIdentifier(table)})")
+        );
+        if (schema == null || dependencies == null || columns == null) return result;
+
+        if (schema.Count != 1)
+        {
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration table does not exist: " + table));
+            return result;
+        }
+
+        string original = schema[0]["sql"]!;
+        List<string> parts = SplitDefinitions(original[(original.IndexOf('(') + 1)..], out string suffix);
+
+        if (addedDefinition != null)
+        {
+            parts.Insert(0, addedDefinition);
+        }
+        else
+        {
+            foreach (string part in parts)
+            {
+                string first = Tokens(part).First();
+                if (
+                    !IsConstraint(first) &&
+                    !Unquote(first).Equals(column, StringComparison.OrdinalIgnoreCase) &&
+                    MentionsColumn(part, column)
+                )
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column used by another column definition: " + Unquote(first)));
+                    return result;
+                }
+            }
+            parts.RemoveAll(part =>
+            {
+                if (Unquote(Tokens(part).First()).Equals(column, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (IsConstraint(Tokens(part).First()) && MentionsColumn(part, column))
+                    return true;
+                return false;
+            });
+        }
+
+        string names = string.Join(", ", columns.Where(row => row["hidden"] == "0" && (addedDefinition != null || row["name"] != column)).Select(row => QuoteIdentifier(row["name"]!)));
+        string temporary = "__migration_" + Guid.NewGuid().ToString("N");
+        string? sequence = null;
+        if (original.Contains("AUTOINCREMENT", StringComparison.OrdinalIgnoreCase))
+        {
+            List<Dictionary<string, string?>>? sequences = await result.ExtractAsync(() =>
+                Query("SELECT seq FROM sqlite_sequence WHERE name = " + FormatMigrationDefault(table))
+            );
+            if (sequences == null) return result;
+
+            sequence = sequences.FirstOrDefault()?["seq"];
+        }
+        await result.RunAsync(() => 
+            Execute($"CREATE TABLE {QuoteIdentifier(temporary)} ({string.Join(", ", parts)}){suffix}")
+        );
+        await result.RunAsync(() => 
+            Execute($"INSERT INTO {QuoteIdentifier(temporary)} ({names}) SELECT {names} FROM {QuoteIdentifier(table)}")
+        );
+        await result.RunAsync(() => 
+            Execute($"DROP TABLE {QuoteIdentifier(table)}")
+        );
+        await result.RunAsync(() => 
+            Execute($"ALTER TABLE {QuoteIdentifier(temporary)} RENAME TO {QuoteIdentifier(table)}")
+        );
+        if (sequence != null)
+        {
+            await result.RunAsync(() => Execute("UPDATE sqlite_sequence SET seq = MAX(seq, " + long.Parse(sequence, CultureInfo.InvariantCulture) + ") WHERE name = " + FormatMigrationDefault(table)));
+        }
+        foreach (Dictionary<string, string?> dependency in dependencies)
+        {
+            if (addedDefinition != null || !MentionsColumn(dependency["sql"]!, column))
+            {
+                await result.RunAsync(() => Execute(dependency["sql"]!));
+            }
+        }
+        return result;
+    }
+
+    protected override async Task<ResultWithError<List<string>>> GetMigrationColumns(string table)
+    {
+        var rows = await Query($"PRAGMA table_xinfo({QuoteIdentifier(table)})");
+        return new() { 
+            Errors = rows.Errors, 
+            Result = rows.Result?.Select(row => row["name"]!).ToList() 
+        };
+    }
+
     protected override Task<VoidWithError> RenameMigrationProperty(string table, IMigrationProperty property)
     {
         return Execute($"ALTER TABLE {QuoteIdentifier(table)} RENAME COLUMN {QuoteIdentifier(property.OldName!)} TO {QuoteIdentifier(property.Name)}");
@@ -457,7 +666,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         }
         string names = string.Join(", ", columnNames);
         string source = string.Join(", ", sourceExpressions);
-        
+
         await result.RunAsync(() => Execute($"CREATE TABLE {QuoteIdentifier(temporary)} ({string.Join(", ", parts)}){suffix}"));
         await result.RunAsync(() => Execute($"INSERT INTO {QuoteIdentifier(temporary)} ({names}) SELECT {source} FROM {QuoteIdentifier(table)}"));
         await result.RunAsync(() => Execute($"DROP TABLE {QuoteIdentifier(table)}"));
@@ -488,6 +697,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         return new[] {
             "CONSTRAINT",
             "PRIMARY",
+            "FOREIGN",
             "NOT",
             "NULL",
             "UNIQUE",

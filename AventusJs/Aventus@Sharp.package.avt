@@ -1,4 +1,5 @@
 // AventusSharp@Main:1.0.7
+// npm:@aventusjs/sharp
 //#region js def //
 declare global {
 

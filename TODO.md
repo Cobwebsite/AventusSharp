@@ -1,10 +1,10 @@
 # TODO issus des commentaires du code
 
-Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans les sources, regroupées ci-dessous après lecture des implémentations et des usages. Analyse statique ; les tests existants ont été consultés, sans être exécutés. Les 14 TODO correspondant aux suppressions déjà prises en charge ont été retirés du code et de cette liste ; 27 occurrences restent dans les sources. Les chemins et lignes renvoient à l'état du dépôt lors de cette revue.
+Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans les sources, regroupées ci-dessous après lecture des implémentations et des usages. Analyse statique ; les tests existants ont été consultés, sans être exécutés. Les 14 TODO correspondant aux suppressions déjà prises en charge ont été retirés du code et de cette liste ; 25 occurrences restent dans les sources après implémentation des créations et suppressions de colonnes. Les chemins et lignes renvoient à l'état du dépôt lors de cette revue.
 
 ## Fonctionnalités et corrections à réaliser
 
-- [ ] **Créer et supprimer des colonnes en migration.** Les branches `MigrationPropertyAction.Create` et `Delete` sont vides, contrairement aux branches de renommage et de mise à jour. Implémenter les opérations pour les quatre fournisseurs, gérer l'existence préalable de la colonne, ses contraintes et les tables de relation éventuelles. Tester la conservation des autres données et la remontée des erreurs.
+- [x] **Créer et supprimer des colonnes en migration.** Implémenté pour SQLite, MySQL, PostgreSQL et SQL Server : contraintes, index, valeurs par défaut, références et tables intermédiaires. Un ajout existant est refusé explicitement ; une suppression absente est idempotente. Tests de conservation des données et contraintes, de dépendances entrantes, de triggers et séquences SQLite, et de rollback hors MySQL (DDL avec commit implicite).
   - Source : `AventusSharp.Core/Data/Storage/Default/DefaultDBStorage.cs:2695,2699`.
 
 - [ ] **Supprimer les lignes parentes de l'héritage persistant.** Le SQL Server ne supprime que la table principale ; les jointures sur les parents ne suppriment pas leurs lignes. Construire les suppressions par table à partir des identifiants sélectionnés, dans une même transaction et dans l'ordre des contraintes. Vérifier également PostgreSQL et SQLite, dont les générateurs ne suppriment que la table principale. Tester un héritage sur plusieurs niveaux, les filtres portant sur un parent et le rollback.

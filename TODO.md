@@ -1,6 +1,6 @@
 # TODO issus des commentaires du code
 
-Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans les sources, regroupées ci-dessous après lecture des implémentations et des usages. Analyse statique ; les tests existants ont été consultés, sans être exécutés. Les 14 TODO correspondant aux suppressions déjà prises en charge ont été retirés du code et de cette liste ; 24 occurrences restent dans les sources après implémentation des créations et suppressions de colonnes et de la suppression des lignes parentes d'héritage. Les chemins et lignes renvoient à l'état du dépôt lors de cette revue.
+Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans les sources, regroupées ci-dessous après lecture des implémentations et des usages. Analyse statique ; les tests existants ont été consultés, sans être exécutés. Les 14 TODO correspondant aux suppressions déjà prises en charge ont été retirés du code et de cette liste ; 23 occurrences restent dans les sources après implémentation des trois premiers points. Les chemins et lignes renvoient à l'état du dépôt lors de cette revue.
 
 ## Fonctionnalités et corrections à réaliser
 
@@ -10,7 +10,7 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 - [x] **Supprimer les lignes parentes de l'héritage persistant.** Les identifiants sélectionnés sont supprimés par table, du type concret aux parents persistants, dans une transaction commune. Tests locaux sur trois niveaux, filtre sur parent, suppression via interface et rollback ; tests multi-fournisseurs ajoutés (à relancer quand Docker est disponible).
   - Source : `AventusSharp.Data.Mssql/Storage/Queries/Delete.cs:80` ; comparaison avec les autres `Queries/Delete.cs`.
 
-- [ ] **Respecter une politique explicite pour la suppression des relations inverses.** Le traitement commun décide actuellement de mettre à `null` ou de supprimer uniquement selon la nullabilité du membre inverse. Définir et appliquer la priorité des attributs de suppression et des options d'auto-suppression ; vérifier aussi le cas où aucune suppression automatique n'est demandée. Tester les relations obligatoires et nullables, le cache et le rollback.
+- [x] **Respecter une politique explicite pour la suppression des relations inverses.** `DeleteOnCascade` et `DeleteSetNull` sur la clé étrangère priment sur `AutoDelete` de la relation inverse. Sans politique explicite, `AutoDelete` choisit selon la nullabilité ; désactivé, la contrainte SQL décide. Les politiques incompatibles sont rejetées lorsque des dépendants existent. Tests des relations obligatoires et nullables, du cache et du rollback.
   - Source : `AventusSharp.Core/Data/Storage/Default/DefaultDBStorage.cs:2573`.
 
 - [ ] **Traiter `Ignore` sur une relation externe au SQL principal.** La branche externe lève encore `NotImplementedException`. Propager l'exclusion au builder de la sous-requête concernée, y compris sur les chemins imbriqués, et vérifier que les instances canoniques conservent les valeurs des champs ignorés.

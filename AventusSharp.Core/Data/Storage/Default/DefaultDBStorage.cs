@@ -2571,6 +2571,16 @@ namespace AventusSharp.Data.Storage.Default
             // delete reverse
             foreach (TableReverseMemberInfo reverseMemberInfo in deleteBuilder.info.ReverseMembers)
             {
+                TableMemberInfoSql? inverse = reverseMemberInfo.reverseMember;
+                bool deleteDependent = inverse?.IsDeleteOnCascade == true;
+                bool clearRelation = inverse?.IsDeleteSetNull == true;
+                if (!deleteDependent && !clearRelation && reverseMemberInfo.IsAutoDelete)
+                {
+                    deleteDependent = inverse?.IsNullable != true;
+                    clearRelation = inverse?.IsNullable == true;
+                }
+                if (!deleteDependent && !clearRelation) continue;
+
                 ResultWithDataError<List<IStorable>> resultTemp = await reverseMemberInfo.ReverseQuery(ids);
                 if (!resultTemp.Success)
                 {
@@ -2578,17 +2588,33 @@ namespace AventusSharp.Data.Storage.Default
                     return result;
                 }
 
-                if (resultTemp.Result == null)
+                if (resultTemp.Result == null || resultTemp.Result.Count == 0)
                 {
                     continue;
                 }
 
+                if (inverse?.IsDeleteOnCascade == true && inverse.IsDeleteSetNull)
+                {
+                    result.Errors.Add(new DataError(
+                        DataErrorCode.ValidationError,
+                        "Conflicting delete policies on inverse relation '" + inverse.Name + "'.")
+                    );
+                    return result;
+                }
+                if (clearRelation && inverse?.IsNullable != true)
+                {
+                    result.Errors.Add(new DataError(
+                        DataErrorCode.ValidationError,
+                        "DeleteSetNull requires a nullable inverse relation: '" + inverse?.Name + "'.")
+                    );
+                    return result;
+                }
+
                 foreach (IStorable item in resultTemp.Result)
                 {
-                    // TODO manage update or delete : check attribute
-                    if (reverseMemberInfo.reverseMember != null && reverseMemberInfo.reverseMember.IsNullable)
+                    if (clearRelation)
                     {
-                        reverseMemberInfo.reverseMember?.SetValue(item, null);
+                        inverse!.SetValue(item, null);
                         List<GenericError> errorsTemp = await item.UpdateWithError();
                         if (errorsTemp.Count > 0)
                         {

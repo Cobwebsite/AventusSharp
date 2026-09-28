@@ -21,6 +21,10 @@ public sealed class TestRoom : Storable<TestRoom>
     [ReverseLink(nameof(TestLamp.Room))]
     [AutoRead]
     public List<TestLamp> Lamps { get; set; } = [];
+
+    [ReverseLink(nameof(TestSensor.Room))]
+    [AutoDelete(false)]
+    public List<TestSensor> Sensors { get; set; } = [];
 }
 
 public sealed class TestRoomManager : DatabaseDM<TestRoomManager, TestRoom>
@@ -69,6 +73,65 @@ public sealed class TestSensor : Storable<TestSensor>
 
 public sealed class TestSensorManager : DatabaseDM<TestSensorManager, TestSensor>
 {
+}
+
+[SqlName("test_policy_rooms")]
+public sealed class TestPolicyRoom : Storable<TestPolicyRoom>
+{
+    public string Name { get; set; } = "";
+
+    [ReverseLink(nameof(TestPolicyOptionalCascade.Room))]
+    [AutoDelete(false)]
+    public List<TestPolicyOptionalCascade> OptionalCascades { get; set; } = [];
+
+    [ReverseLink(nameof(TestPolicyNullableFallback.Room))]
+    [AutoDelete]
+    public List<TestPolicyNullableFallback> NullableFallbacks { get; set; } = [];
+
+    [ReverseLink(nameof(TestPolicyRequiredFallback.Room))]
+    [AutoDelete]
+    public List<TestPolicyRequiredFallback> RequiredFallbacks { get; set; } = [];
+
+    [ReverseLink(nameof(TestPolicyRestricted.Room))]
+    [AutoDelete(false)]
+    public List<TestPolicyRestricted> Restricted { get; set; } = [];
+
+    [ReverseLink(nameof(TestPolicyInvalidSetNull.Room))]
+    public List<TestPolicyInvalidSetNull> InvalidSetNulls { get; set; } = [];
+}
+
+[SqlName("test_policy_optional_cascades")]
+public sealed class TestPolicyOptionalCascade : Storable<TestPolicyOptionalCascade>
+{
+    [AventusSharp.Data.Attributes.Nullable]
+    [DeleteOnCascade]
+    public TestPolicyRoom? Room { get; set; }
+}
+
+[SqlName("test_policy_nullable_fallbacks")]
+public sealed class TestPolicyNullableFallback : Storable<TestPolicyNullableFallback>
+{
+    [AventusSharp.Data.Attributes.Nullable]
+    public TestPolicyRoom? Room { get; set; }
+}
+
+[SqlName("test_policy_required_fallbacks")]
+public sealed class TestPolicyRequiredFallback : Storable<TestPolicyRequiredFallback>
+{
+    public TestPolicyRoom Room { get; set; } = null!;
+}
+
+[SqlName("test_policy_restricted")]
+public sealed class TestPolicyRestricted : Storable<TestPolicyRestricted>
+{
+    public TestPolicyRoom Room { get; set; } = null!;
+}
+
+[SqlName("test_policy_invalid_set_nulls")]
+public sealed class TestPolicyInvalidSetNull : Storable<TestPolicyInvalidSetNull>
+{
+    [DeleteSetNull]
+    public TestPolicyRoom Room { get; set; } = null!;
 }
 
 [SqlName("test_lazy_links")]

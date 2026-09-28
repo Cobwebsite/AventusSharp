@@ -16,6 +16,12 @@ public sealed class DataRelationshipTests
     {
         var result = await IntegrationEnvironment.Storage.Execute(
             "DELETE FROM \"test_scenes_test_lamps\";" +
+            "DELETE FROM \"test_policy_optional_cascades\";" +
+            "DELETE FROM \"test_policy_nullable_fallbacks\";" +
+            "DELETE FROM \"test_policy_required_fallbacks\";" +
+            "DELETE FROM \"test_policy_restricted\";" +
+            "DELETE FROM \"test_policy_invalid_set_nulls\";" +
+            "DELETE FROM \"test_policy_rooms\";" +
             "DELETE FROM \"test_scenes\";" +
             "DELETE FROM \"test_sensors\";" +
             "DELETE FROM \"test_lazy_links\";" +
@@ -983,6 +989,108 @@ public sealed class DataRelationshipTests
         Assert.That(loaded.Success, Is.True, IntegrationEnvironment.ErrorMessages(loaded.Errors));
         Assert.That(loaded.Result, Is.Not.Null);
         Assert.That(loaded.Result!.Room, Is.Null);
+    }
+
+    [Test]
+    public async Task Explicit_inverse_cascade_deletes_nullable_dependent_despite_disabled_auto_delete()
+    {
+        var room = await TestPolicyRoom.Create(new TestPolicyRoom { Name = "explicit cascade" });
+        var dependent = await TestPolicyOptionalCascade.Create(new TestPolicyOptionalCascade { Room = room });
+        Assert.That(room, Is.Not.Null);
+        Assert.That(dependent, Is.Not.Null);
+        var cached = await TestPolicyOptionalCascade.GetByIdWithError(dependent!.Id);
+        Assert.That(cached.Result, Is.SameAs(dependent));
+
+        var deletion = await TestPolicyRoom.DeleteWithError(room!);
+        Assert.That(deletion.Success, Is.True, IntegrationEnvironment.ErrorMessages(deletion.Errors));
+        var after = await TestPolicyOptionalCascade.GetByIdWithError(dependent.Id);
+        Assert.That(after.Success, Is.False);
+        var rows = await IntegrationEnvironment.Storage.Query(
+            $"SELECT \"Id\" FROM \"test_policy_optional_cascades\" WHERE \"Id\" = {dependent.Id}");
+        Assert.That(rows.Result, Is.Empty);
+    }
+
+    [Test]
+    public async Task Reverse_auto_delete_uses_nullability_only_without_explicit_fk_policy()
+    {
+        var room = await TestPolicyRoom.Create(new TestPolicyRoom { Name = "auto fallback" });
+        var optional = await TestPolicyNullableFallback.Create(new TestPolicyNullableFallback { Room = room });
+        var required = await TestPolicyRequiredFallback.Create(new TestPolicyRequiredFallback { Room = room! });
+        Assert.That(optional, Is.Not.Null);
+        Assert.That(required, Is.Not.Null);
+        var cachedOptional = await TestPolicyNullableFallback.GetByIdWithError(optional!.Id);
+        var cachedRequired = await TestPolicyRequiredFallback.GetByIdWithError(required!.Id);
+        Assert.That(cachedOptional.Result, Is.SameAs(optional));
+        Assert.That(cachedRequired.Result, Is.SameAs(required));
+
+        var deletion = await TestPolicyRoom.DeleteWithError(room!);
+        Assert.That(deletion.Success, Is.True, IntegrationEnvironment.ErrorMessages(deletion.Errors));
+        Assert.That(optional.Room, Is.Null);
+        Assert.That((await TestPolicyNullableFallback.GetByIdWithError(optional.Id)).Result, Is.SameAs(optional));
+        Assert.That((await TestPolicyRequiredFallback.GetByIdWithError(required.Id)).Success, Is.False);
+        var rows = await IntegrationEnvironment.Storage.Query(
+            $"SELECT \"Room\" FROM \"test_policy_nullable_fallbacks\" WHERE \"Id\" = {optional.Id}");
+        Assert.That(rows.Result!.Single()["Room"], Is.Null);
+    }
+
+    [Test]
+    public async Task Disabled_reverse_auto_delete_leaves_required_relation_and_rejects_parent_delete()
+    {
+        var room = await TestPolicyRoom.Create(new TestPolicyRoom { Name = "restricted" });
+        var dependent = await TestPolicyRestricted.Create(new TestPolicyRestricted { Room = room! });
+        Assert.That(dependent, Is.Not.Null);
+
+        var deletion = await TestPolicyRoom.DeleteWithError(room!);
+        Assert.That(deletion.Success, Is.False);
+        var rooms = await IntegrationEnvironment.Storage.Query(
+            $"SELECT \"Id\" FROM \"test_policy_rooms\" WHERE \"Id\" = {room!.Id}");
+        var dependents = await IntegrationEnvironment.Storage.Query(
+            $"SELECT \"Room\" FROM \"test_policy_restricted\" WHERE \"Id\" = {dependent!.Id}");
+        Assert.That(rooms.Result, Has.Count.EqualTo(1));
+        Assert.That(dependents.Result!.Single()["Room"], Is.EqualTo(room.Id.ToString()));
+    }
+
+    [Test]
+    public async Task Explicit_set_null_on_required_inverse_relation_is_rejected_before_parent_deletion()
+    {
+        var room = await TestPolicyRoom.Create(new TestPolicyRoom { Name = "invalid set null" });
+        var dependent = await TestPolicyInvalidSetNull.Create(new TestPolicyInvalidSetNull { Room = room! });
+        Assert.That(dependent, Is.Not.Null);
+
+        var deletion = await TestPolicyRoom.DeleteWithError(room!);
+        Assert.That(deletion.Success, Is.False);
+        Assert.That(deletion.Errors.OfType<DataError>().Any(error => error.Code == DataErrorCode.ValidationError), Is.True);
+        var rooms = await IntegrationEnvironment.Storage.Query(
+            $"SELECT \"Id\" FROM \"test_policy_rooms\" WHERE \"Id\" = {room!.Id}");
+        var dependents = await IntegrationEnvironment.Storage.Query(
+            $"SELECT \"Room\" FROM \"test_policy_invalid_set_nulls\" WHERE \"Id\" = {dependent!.Id}");
+        Assert.That(rooms.Result, Has.Count.EqualTo(1));
+        Assert.That(dependents.Result!.Single()["Room"], Is.EqualTo(room.Id.ToString()));
+    }
+
+    [Test]
+    public async Task Inverse_policy_rollback_restores_dependent_rows_and_cached_relations()
+    {
+        var room = await TestPolicyRoom.Create(new TestPolicyRoom { Name = "policy rollback" });
+        var optional = await TestPolicyNullableFallback.Create(new TestPolicyNullableFallback { Room = room });
+        var required = await TestPolicyRequiredFallback.Create(new TestPolicyRequiredFallback { Room = room! });
+        var cascade = await TestPolicyOptionalCascade.Create(new TestPolicyOptionalCascade { Room = room });
+        Assert.That(optional, Is.Not.Null);
+        Assert.That(required, Is.Not.Null);
+        Assert.That(cascade, Is.Not.Null);
+        var manager = GenericDM.Get<TestPolicyRoom>();
+        var transaction = await manager.RunInsideTransaction(async () =>
+        {
+            var deleted = await TestPolicyRoom.DeleteWithError(room!);
+            Assert.That(deleted.Success, Is.True, IntegrationEnvironment.ErrorMessages(deleted.Errors));
+            deleted.Errors.Add(new GenericError(9950, "force inverse policy rollback"));
+            return deleted;
+        });
+        Assert.That(transaction.Success, Is.False);
+        Assert.That(optional!.Room, Is.SameAs(room));
+        Assert.That((await TestPolicyNullableFallback.GetByIdWithError(optional.Id)).Result, Is.SameAs(optional));
+        Assert.That((await TestPolicyRequiredFallback.GetByIdWithError(required!.Id)).Success, Is.True);
+        Assert.That((await TestPolicyOptionalCascade.GetByIdWithError(cascade!.Id)).Success, Is.True);
     }
 
     [Test]

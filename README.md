@@ -71,6 +71,15 @@ uses the IDs returned by its selection query, so filters on parent fields and
 deletes through a parent interface affect the same records. A failed delete
 rolls back the rows already removed from lower levels.
 
+For an inverse relation, `DeleteOnCascade` and `DeleteSetNull` on the foreign
+key determine what happens to dependent records when the referenced record is
+deleted. These explicit policies take priority over `AutoDelete` on the reverse
+collection. Without an explicit policy, `[AutoDelete]` on that collection clears
+a nullable link or deletes a dependent with a required link. When automatic
+deletion is disabled, the database foreign key decides whether the parent can
+be deleted. `DeleteSetNull` on a required link returns a validation error when
+dependents exist. Conflicting delete attributes also return a validation error.
+
 ## Deleting models in migrations
 
 Use `DeleteModel<T>()` in a migration's `Up()` method to delete a model table.

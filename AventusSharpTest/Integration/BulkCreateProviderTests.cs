@@ -192,6 +192,51 @@ public sealed class BulkCreateProviderTests
         Assert.That(parents.Success, Is.True, IntegrationEnvironment.ErrorMessages(parents.Errors));
         Assert.That(parents.Result!.Select(row => int.Parse(row["Id"]!)), Is.EquivalentTo(values.Select(value => value.Id)));
     }
+
+    [TestCase("MySQL")]
+    [TestCase("PostgreSQL")]
+    [TestCase("SQLServer")]
+    public async Task Deleting_three_level_inheritance_removes_each_table_and_preserves_other_rows(string kind)
+    {
+        var storage = Storage(kind);
+        var rootType = IntegrationEnvironment.Storage.GetTableInfo(typeof(TestAdvancedDimmer))!.Parent!.Parent!.Type;
+        var middleType = IntegrationEnvironment.Storage.GetTableInfo(typeof(TestAdvancedDimmer))!.Parent!.Type;
+        var registered = storage.AddPyramid(new(typeof(Storable<ITestActuator>), new())
+        {
+            isForceInherit = true,
+            children = [new(rootType, new())
+            {
+                aliasType = typeof(ITestActuator),
+                children = [new(middleType, new())
+                {
+                    aliasType = typeof(ITestAdvancedActuator),
+                    children = [new(typeof(TestAdvancedDimmer), new())]
+                }]
+            }]
+        });
+        Assert.That(registered.Success, Is.True, IntegrationEnvironment.ErrorMessages(registered.Errors));
+        string Q(string name) => storage.QuoteIdentifier(name);
+        foreach (string table in new[] { "test_advanced_dimmers", "test_advanced_actuators", "test_actuators" })
+            await Execute(storage, $"DROP TABLE IF EXISTS {Q(table)}");
+        await Execute(storage, $"CREATE TABLE {Q("test_actuators")} ({Q("Id")} int PRIMARY KEY, {Q("Name")} varchar(100), {Q("__type")} varchar(1000))");
+        await Execute(storage, $"CREATE TABLE {Q("test_advanced_actuators")} ({Q("Id")} int PRIMARY KEY, {Q("Category")} varchar(100), FOREIGN KEY ({Q("Id")}) REFERENCES {Q("test_actuators")} ({Q("Id")}))");
+        await Execute(storage, $"CREATE TABLE {Q("test_advanced_dimmers")} ({Q("Id")} int PRIMARY KEY, {Q("Brightness")} int, FOREIGN KEY ({Q("Id")}) REFERENCES {Q("test_advanced_actuators")} ({Q("Id")}))");
+        foreach (int id in new[] { 1, 2 })
+        {
+            await Execute(storage, $"INSERT INTO {Q("test_actuators")} VALUES ({id}, 'name{id}', '{typeof(TestAdvancedDimmer).AssemblyQualifiedName!.Replace("'", "''")}')");
+            await Execute(storage, $"INSERT INTO {Q("test_advanced_actuators")} VALUES ({id}, 'category{id}')");
+            await Execute(storage, $"INSERT INTO {Q("test_advanced_dimmers")} VALUES ({id}, {id * 10})");
+        }
+        var manager = GenericDM.Get<ITestActuator>();
+        var deleted = await new DatabaseDeleteBuilder<ITestActuator>(storage, manager, false, typeof(TestAdvancedDimmer))
+            .Where(item => item.Name == "name1").RunWithError();
+        Assert.That(deleted.Success, Is.True, IntegrationEnvironment.ErrorMessages(deleted.Errors));
+        foreach (string table in new[] { "test_actuators", "test_advanced_actuators", "test_advanced_dimmers" })
+        {
+            var rows = await storage.Query($"SELECT {Q("Id")} FROM {Q(table)}");
+            Assert.That(rows.Result!.Select(row => row["Id"]), Is.EqualTo(new[] { "2" }), table);
+        }
+    }
 }
 
 [ManualInit]

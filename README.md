@@ -63,6 +63,14 @@ data, indexes, triggers and the autoincrement sequence. SQLite, PostgreSQL and
 SQL Server can roll back these schema changes. MySQL DDL implicitly commits;
 an error in a later operation cannot roll back an earlier schema change.
 
+## Deleting persisted inheritance rows
+
+Deleting a derived record removes its rows from the concrete table and each
+persisted parent table, deepest first, in one transaction. The delete builder
+uses the IDs returned by its selection query, so filters on parent fields and
+deletes through a parent interface affect the same records. A failed delete
+rolls back the rows already removed from lower levels.
+
 ## Deleting models in migrations
 
 Use `DeleteModel<T>()` in a migration's `Up()` method to delete a model table.

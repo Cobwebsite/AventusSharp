@@ -77,9 +77,6 @@ internal class Delete
             + joinTxt
             + whereTxt;
 
-            // TODO Correct sql to delete parent by multiple query
-
-
         return result;
     }
 

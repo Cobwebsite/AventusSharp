@@ -2533,9 +2533,16 @@ namespace AventusSharp.Data.Storage.Default
 
         #region Delete
         protected abstract DatabaseDeleteBuilderInfo PrepareSQLForDelete<X>(DatabaseDeleteBuilder<X> deleteBuilder) where X : IStorable;
-        public async Task<VoidWithError> DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> deleteBuilder, List<X> elementsToDelete) where X : IStorable
+        public Task<VoidWithError> DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> deleteBuilder, List<X> elementsToDelete) where X : IStorable
+        {
+            return RunInsideTransaction(() => DeleteFromBuilderInTransaction(deleteBuilder, elementsToDelete));
+        }
+
+        private async Task<VoidWithError> DeleteFromBuilderInTransaction<X>(DatabaseDeleteBuilder<X> deleteBuilder, List<X> elementsToDelete) where X : IStorable
         {
             VoidWithError result = new();
+            if (elementsToDelete.Count == 0) return result;
+
             if (deleteBuilder.info == null)
             {
                 deleteBuilder.info = PrepareSQLForDelete(deleteBuilder);
@@ -2551,7 +2558,14 @@ namespace AventusSharp.Data.Storage.Default
                     parameterInfo.Value.Value = ids;
                     parametersDeleteNM.Add(parameterInfo.Value, QueryParameterType.Normal);
                 }
-                ResultWithError<List<Dictionary<string, string?>>> deleteResultNM = await QueryGeneric(StorableAction.Delete, deleteNM.Key, parametersDeleteNM);
+                List<Dictionary<string, string?>>? deleteResultNM = await result.ExtractAsync(() =>
+                    QueryGeneric(StorableAction.Delete, deleteNM.Key, parametersDeleteNM)
+                );
+
+                if (deleteResultNM == null)
+                {
+                    return result;
+                }
             }
 
             // delete reverse
@@ -2598,21 +2612,56 @@ namespace AventusSharp.Data.Storage.Default
 
             #region delete
 
-            Dictionary<ParamsInfo, QueryParameterType> parametersDelete = new();
-            foreach (KeyValuePair<string, ParamsInfo> parameterInfo in deleteBuilder.WhereParamsInfo)
-            {
-                parametersDelete.Add(parameterInfo.Value, QueryParameterType.Normal);
-            }
-
-            string sql = deleteBuilder.info.Sql;
-            ResultWithError<List<Dictionary<string, string?>>> deleteResult = await QueryGeneric(StorableAction.Delete, sql, parametersDelete);
-            if (!deleteResult.Success)
-            {
-                result.Errors.AddRange(deleteResult.Errors);
-                return result;
-            }
-
             TableInfo deletedTable = deleteBuilder.InfoByPath[""].TableInfo;
+            Dictionary<TableInfo, HashSet<int>> idsByTable = new();
+            foreach (X item in elementsToDelete)
+            {
+                TableInfo? table = GetTableInfo(item.GetType());
+                if (table == null)
+                {
+                    result.Errors.Add(new DataError(
+                        DataErrorCode.TypeNotExistInsideStorage,
+                        AventusTranslations.Get(AventusMessageKeys.Data.StorageTypeMissing, item.GetType())
+                    ));
+                    return result;
+                }
+                while (table != null)
+                {
+                    if (!table.IsForceInherit)
+                    {
+                        if (!idsByTable.TryGetValue(table, out HashSet<int>? tableIds))
+                        {
+                            idsByTable[table] = tableIds = [];
+                        }
+                        tableIds.Add(item.Id);
+                    }
+                    table = table.Parent;
+                }
+            }
+            static int depth(TableInfo table)
+            {
+                int count = 0;
+                for (TableInfo? current = table.Parent; current != null; current = current.Parent)
+                {
+                    count++;
+                }
+                return count;
+            }
+
+            var orderedIds = idsByTable.OrderByDescending(entry => depth(entry.Key));
+            foreach (KeyValuePair<TableInfo, HashSet<int>> entry in orderedIds)
+            {
+                TableInfo table = entry.Key;
+                List<int> tableIds = entry.Value.ToList();
+                for (int offset = 0; offset < tableIds.Count; offset += 500)
+                {
+                    string selectedIds = string.Join(",", tableIds.Skip(offset).Take(500));
+                    string sql = $"DELETE FROM {QuoteIdentifier(table.SqlTableName)} WHERE {QuoteIdentifier(table.Primary!.SqlName)} IN ({selectedIds})";
+                    await result.RunAsync(() => Execute(sql));
+                    if (!result.Success) return result;
+                }
+            }
+
             HashSet<int> deletedIds = elementsToDelete.Select(item => item.Id).ToHashSet();
             HashSet<TableMemberInfoSql> synchronizedMembers = [];
             foreach (TableInfo table in allTableInfos.Values.Distinct())
@@ -2674,7 +2723,7 @@ namespace AventusSharp.Data.Storage.Default
         #region Migration
         protected virtual string MigrationIdentityClause => "";
         protected virtual bool MigrationInlineReference => false;
-        
+
         public virtual Task<ResultWithError<DbTransactionContext>> BeginMigrationTransaction() => BeginTransaction();
 
         public async Task<VoidWithError> ApplyMigration<X>(IMigrationModel model) where X : notnull, IStorable

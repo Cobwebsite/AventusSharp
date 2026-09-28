@@ -1,13 +1,13 @@
 # TODO issus des commentaires du code
 
-Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans les sources, regroupées ci-dessous après lecture des implémentations et des usages. Analyse statique ; les tests existants ont été consultés, sans être exécutés. Les 14 TODO correspondant aux suppressions déjà prises en charge ont été retirés du code et de cette liste ; 25 occurrences restent dans les sources après implémentation des créations et suppressions de colonnes. Les chemins et lignes renvoient à l'état du dépôt lors de cette revue.
+Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans les sources, regroupées ci-dessous après lecture des implémentations et des usages. Analyse statique ; les tests existants ont été consultés, sans être exécutés. Les 14 TODO correspondant aux suppressions déjà prises en charge ont été retirés du code et de cette liste ; 24 occurrences restent dans les sources après implémentation des créations et suppressions de colonnes et de la suppression des lignes parentes d'héritage. Les chemins et lignes renvoient à l'état du dépôt lors de cette revue.
 
 ## Fonctionnalités et corrections à réaliser
 
 - [x] **Créer et supprimer des colonnes en migration.** Implémenté pour SQLite, MySQL, PostgreSQL et SQL Server : contraintes, index, valeurs par défaut, références et tables intermédiaires. Un ajout existant est refusé explicitement ; une suppression absente est idempotente. Tests de conservation des données et contraintes, de dépendances entrantes, de triggers et séquences SQLite, et de rollback hors MySQL (DDL avec commit implicite).
   - Source : `AventusSharp.Core/Data/Storage/Default/DefaultDBStorage.cs:2695,2699`.
 
-- [ ] **Supprimer les lignes parentes de l'héritage persistant.** Le SQL Server ne supprime que la table principale ; les jointures sur les parents ne suppriment pas leurs lignes. Construire les suppressions par table à partir des identifiants sélectionnés, dans une même transaction et dans l'ordre des contraintes. Vérifier également PostgreSQL et SQLite, dont les générateurs ne suppriment que la table principale. Tester un héritage sur plusieurs niveaux, les filtres portant sur un parent et le rollback.
+- [x] **Supprimer les lignes parentes de l'héritage persistant.** Les identifiants sélectionnés sont supprimés par table, du type concret aux parents persistants, dans une transaction commune. Tests locaux sur trois niveaux, filtre sur parent, suppression via interface et rollback ; tests multi-fournisseurs ajoutés (à relancer quand Docker est disponible).
   - Source : `AventusSharp.Data.Mssql/Storage/Queries/Delete.cs:80` ; comparaison avec les autres `Queries/Delete.cs`.
 
 - [ ] **Respecter une politique explicite pour la suppression des relations inverses.** Le traitement commun décide actuellement de mettre à `null` ou de supprimer uniquement selon la nullabilité du membre inverse. Définir et appliquer la priorité des attributs de suppression et des options d'auto-suppression ; vérifier aussi le cas où aucune suppression automatique n'est demandée. Tester les relations obligatoires et nullables, le cache et le rollback.

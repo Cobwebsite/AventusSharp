@@ -21,6 +21,8 @@ public sealed class DataInheritanceTests
 
         var result = await IntegrationEnvironment.Storage.Execute(
             "DELETE FROM \"test_forced_asset_bindings\";" +
+            "DELETE FROM \"test_advanced_dimmers\";" +
+            "DELETE FROM \"test_advanced_actuators\";" +
             "DELETE FROM \"test_forced_gateways\";" +
             "DELETE FROM \"test_forced_cameras\";" +
             "DELETE FROM \"test_forced_speakers\";" +
@@ -146,6 +148,68 @@ public sealed class DataInheritanceTests
             var rows = await IntegrationEnvironment.Storage.Query($"SELECT COUNT(*) AS count FROM \"{table}\"");
             Assert.That(rows.Success, Is.True, IntegrationEnvironment.ErrorMessages(rows.Errors));
             Assert.That(rows.Result!.Single()["count"], Is.EqualTo("0"));
+        }
+    }
+
+    [Test]
+    public async Task Deleting_three_level_inheritance_uses_selected_ids_and_preserves_siblings()
+    {
+        var selected = new TestAdvancedDimmer { Name = "remove", Category = "target", Brightness = 12 };
+        var retained = new TestAdvancedDimmer { Name = "keep", Category = "other", Brightness = 20 };
+        var sibling = new TestRelay { Name = "relay", IsClosed = true };
+        Assert.That((await TestAdvancedDimmer.CreateWithError(selected)).Success, Is.True);
+        Assert.That((await TestAdvancedDimmer.CreateWithError(retained)).Success, Is.True);
+        Assert.That((await TestRelay.CreateWithError(sibling)).Success, Is.True);
+
+        var manager = GenericDM.Get<ITestActuator>();
+        var deleted = await manager.CreateDelete<TestAdvancedDimmer>()
+            .Where(item => item.Category == "target")
+            .RunWithError();
+        Assert.That(deleted.Success, Is.True, IntegrationEnvironment.ErrorMessages(deleted.Errors));
+        Assert.That(deleted.Result!.Select(item => item.Id), Is.EquivalentTo(new[] { selected.Id }));
+        foreach (string table in new[] { "test_actuators", "test_advanced_actuators", "test_advanced_dimmers" })
+        {
+            var rows = await IntegrationEnvironment.Storage.Query($"SELECT \"Id\" FROM \"{table}\"");
+            Assert.That(rows.Success, Is.True, IntegrationEnvironment.ErrorMessages(rows.Errors));
+            Assert.That(rows.Result!.Select(row => row["Id"]), Does.Not.Contain(selected.Id.ToString()));
+            Assert.That(rows.Result!.Select(row => row["Id"]), Does.Contain(retained.Id.ToString()));
+        }
+        var parentRows = await IntegrationEnvironment.Storage.Query("SELECT \"Id\" FROM \"test_actuators\"");
+        Assert.That(parentRows.Result!.Select(row => row["Id"]), Does.Contain(sibling.Id.ToString()));
+
+        var deletedFromParent = await manager.CreateDelete<ITestActuator>()
+            .Where(item => item.Name == "keep")
+            .RunWithError();
+        Assert.That(deletedFromParent.Success, Is.True, IntegrationEnvironment.ErrorMessages(deletedFromParent.Errors));
+        foreach (string table in new[] { "test_actuators", "test_advanced_actuators", "test_advanced_dimmers" })
+        {
+            var rows = await IntegrationEnvironment.Storage.Query($"SELECT \"Id\" FROM \"{table}\" WHERE \"Id\" = {retained.Id}");
+            Assert.That(rows.Result, Is.Empty, table);
+        }
+    }
+
+    [Test]
+    public async Task Parent_delete_failure_rolls_back_all_inheritance_tables()
+    {
+        var item = new TestAdvancedDimmer { Name = "rollback", Category = "target", Brightness = 16 };
+        Assert.That((await TestAdvancedDimmer.CreateWithError(item)).Success, Is.True);
+        var trigger = await IntegrationEnvironment.Storage.Execute(
+            "CREATE TRIGGER block_inherited_parent_delete BEFORE DELETE ON \"test_actuators\" " +
+            "BEGIN SELECT RAISE(ABORT, 'blocked parent'); END");
+        Assert.That(trigger.Success, Is.True, IntegrationEnvironment.ErrorMessages(trigger.Errors));
+        try
+        {
+            var deleted = await TestAdvancedDimmer.DeleteWithError(item);
+            Assert.That(deleted.Success, Is.False);
+            foreach (string table in new[] { "test_actuators", "test_advanced_actuators", "test_advanced_dimmers" })
+            {
+                var rows = await IntegrationEnvironment.Storage.Query($"SELECT \"Id\" FROM \"{table}\" WHERE \"Id\" = {item.Id}");
+                Assert.That(rows.Result, Has.Count.EqualTo(1), table);
+            }
+        }
+        finally
+        {
+            await IntegrationEnvironment.Storage.Execute("DROP TRIGGER block_inherited_parent_delete");
         }
     }
 

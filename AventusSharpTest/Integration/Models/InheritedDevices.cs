@@ -28,6 +28,23 @@ public sealed class TestRelay : TestActuator<TestRelay>
     public bool IsClosed { get; set; }
 }
 
+public interface ITestAdvancedActuator : ITestActuator
+{
+    string Category { get; set; }
+}
+
+[SqlName("test_advanced_actuators")]
+public abstract class TestAdvancedActuator<T> : TestActuator<T>, ITestAdvancedActuator where T : ITestAdvancedActuator
+{
+    public string Category { get; set; } = "";
+}
+
+[SqlName("test_advanced_dimmers")]
+public sealed class TestAdvancedDimmer : TestAdvancedActuator<TestAdvancedDimmer>
+{
+    public int Brightness { get; set; }
+}
+
 public interface ITestForcedAsset : IStorable
 {
     string Label { get; set; }

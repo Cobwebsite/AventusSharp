@@ -71,7 +71,9 @@ namespace AventusSharp.Routes.Request
                         name = pair.Substring(0, separator);
                         value = pair.Substring(separator + 1);
                     }
-                    AddFormValue(WebUtility.UrlDecode(name), WebUtility.UrlDecode(value));
+                    result.Run(() =>
+                        AddFormValue(WebUtility.UrlDecode(name), WebUtility.UrlDecode(value))
+                    );
                 }
             }
             catch (FormatException e)

@@ -165,7 +165,7 @@ public sealed class BulkCreateProviderTests
         });
         Assert.That(registered.Success, Is.True, IntegrationEnvironment.ErrorMessages(registered.Errors));
         string Q(string name) => storage.QuoteIdentifier(name);
-        foreach (string table in new[] { "test_dimmers", "test_relays", "test_actuators" })
+        foreach (string table in new[] { "test_advanced_dimmers", "test_advanced_actuators", "test_dimmers", "test_relays", "test_actuators" })
             await Execute(storage, $"DROP TABLE IF EXISTS {Q(table)}");
         await Execute(storage, $"CREATE TABLE {Q("test_actuators")} ({Q("Id")} {Identity(kind)}, "
             + $"{Q("Name")} varchar(100) NOT NULL, {Q("__type")} varchar(1000) NOT NULL)");
@@ -216,7 +216,7 @@ public sealed class BulkCreateProviderTests
         });
         Assert.That(registered.Success, Is.True, IntegrationEnvironment.ErrorMessages(registered.Errors));
         string Q(string name) => storage.QuoteIdentifier(name);
-        foreach (string table in new[] { "test_advanced_dimmers", "test_advanced_actuators", "test_actuators" })
+        foreach (string table in new[] { "test_advanced_dimmers", "test_advanced_actuators", "test_dimmers", "test_relays", "test_actuators" })
             await Execute(storage, $"DROP TABLE IF EXISTS {Q(table)}");
         await Execute(storage, $"CREATE TABLE {Q("test_actuators")} ({Q("Id")} int PRIMARY KEY, {Q("Name")} varchar(100), {Q("__type")} varchar(1000))");
         await Execute(storage, $"CREATE TABLE {Q("test_advanced_actuators")} ({Q("Id")} int PRIMARY KEY, {Q("Category")} varchar(100), FOREIGN KEY ({Q("Id")}) REFERENCES {Q("test_actuators")} ({Q("Id")}))");

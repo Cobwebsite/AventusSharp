@@ -56,7 +56,10 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
             if (result.Success && result.Result != null)
             {
-                MergeScopeAndWhere();
+                if (!queryBuilder.RequiresPostProcessing)
+                {
+                    MergeScopeAndWhere();
+                }
                 VoidWithError resultTemp = await Storage.DeleteFromBuilder(this, result.Result);
                 if (resultTemp.Success && DM is IDatabaseDM databaseDM)
                 {
@@ -89,23 +92,43 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public IDeleteBuilder<T> Where(Expression<Func<T, bool>> func)
         {
-            WhereGeneric(func);
-            queryBuilder.Where(func);
+            if (!queryBuilder.RequiresPostProcessing && !ExternalExpressionLoader<T>.RequiresExternal(this, func))
+            {
+                WhereGeneric(func);
+                queryBuilder.Where(func);
+            }
+            else
+            {
+                queryBuilder.Where(func);
+            }
             return this;
         }
 
         public IDeleteBuilder<T> OrWhere(Expression<Func<T, bool>> func)
         {
-            OrWhereGeneric(func);
-            queryBuilder.OrWhere(func);
+            if (!queryBuilder.RequiresPostProcessing && !ExternalExpressionLoader<T>.RequiresExternal(this, func))
+            {
+                OrWhereGeneric(func);
+                queryBuilder.OrWhere(func);
+            }
+            else
+            {
+                queryBuilder.OrWhere(func);
+            }
             return this;
         }
 
         public DeleteBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
-
-            WhereGenericWithParameters(func);
-            queryBuilder.WhereWithParameters(func);
+            if (!queryBuilder.RequiresPostProcessing && !ExternalExpressionLoader<T>.RequiresExternal(this, func))
+            {
+                WhereGenericWithParameters(func);
+                queryBuilder.WhereWithParameters(func);
+            }
+            else
+            {
+                queryBuilder.WhereWithParameters(func);
+            }
             return new(this);
         }
 

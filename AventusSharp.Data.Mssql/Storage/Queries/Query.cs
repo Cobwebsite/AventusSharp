@@ -21,7 +21,7 @@ public class Query
 
         void loadInfo(DatabaseBuilderInfo baseInfo, List<string> path, List<Type> types)
         {
-            
+
             bool loadMembers = queryBuilder.MustLoadMembers(path);
             if (loadMembers)
             {
@@ -134,16 +134,17 @@ public class Query
                 })
                 .Distinct()
                 .ToList();
+                
             groupBy = " GROUP BY " + string.Join(", ", selectedFields);
         }
 
-        if (queryBuilder.Groups != null)
+        if (queryBuilder.SqlGroups != null)
         {
-            string groups = string.Join(", ", queryBuilder.Groups.Select(
-                group => group.Alias + "." + storage.QuoteIdentifier(group.TableMember.SqlName)));
-            groupBy = groupBy == ""
-                ? " GROUP BY " + groups
-                : groupBy + ", " + groups;
+            string groups = string.Join(", ", queryBuilder.SqlGroups.Select(
+                group => group.Alias + "." + storage.QuoteIdentifier(group.TableMember.SqlName)
+            ));
+
+            groupBy = groupBy == "" ? " GROUP BY " + groups : groupBy + ", " + groups;
         }
 
         string whereTxt = BuilderTools.Where(queryBuilder.Wheres, storage);
@@ -155,19 +156,19 @@ public class Query
         }
 
         List<string> orderByPart = new List<string>();
-        if (queryBuilder.Sorting != null)
+        if (queryBuilder.SqlSorting != null)
         {
-            foreach (SortInfo sortInfo in queryBuilder.Sorting)
+            foreach (SortInfo sortInfo in queryBuilder.SqlSorting)
             {
                 string order = sortInfo.Sort == Sort.ASC ? "ASC" : "DESC";
                 orderByPart.Add(sortInfo.Alias + "." + storage.QuoteIdentifier(sortInfo.TableMember.SqlName) + " " + order);
             }
         }
         string limitOffset = "";
-        if (queryBuilder.LimitSize != null)
+        if (queryBuilder.SqlLimitSize != null)
         {
-            int offset = queryBuilder.OffsetSize ?? 0;
-            limitOffset = $" OFFSET {offset} ROWS FETCH NEXT {queryBuilder.LimitSize} ROWS ONLY";
+            int offset = queryBuilder.SqlOffsetSize ?? 0;
+            limitOffset = $" OFFSET {offset} ROWS FETCH NEXT {queryBuilder.SqlLimitSize} ROWS ONLY";
             if (orderByPart.Count == 0)
             {
                 DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];

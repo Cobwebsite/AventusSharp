@@ -1245,34 +1245,35 @@ namespace AventusSharp.Data.Storage.Default
                 }
                 string sql = queryBuilder.info.Sql;
 
-                ResultWithError<List<Dictionary<string, string?>>> queryResult = await QueryGeneric(StorableAction.Read, sql, queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal));
-                result.Errors.AddRange(queryResult.Errors);
-                if (queryResult.Success && queryResult.Result != null)
+                Dictionary<ParamsInfo, QueryParameterType> parameters = new();
+                if (!queryBuilder.RequiresPostProcessing || !queryBuilder.ReplaceWhereByParameters)
+                {
+                    parameters = queryBuilder.WhereParamsInfo.ToDictionary(p => p.Value, p => QueryParameterType.Normal);
+                }
+                List<Dictionary<string, string?>>? queryResult = await result.ExtractAsync(() =>
+                    QueryGeneric(StorableAction.Read, sql, parameters)
+                );
+                if (queryResult != null)
                 {
                     result.Result = new List<X>();
                     DatabaseBuilderInfo baseInfo = queryBuilder.InfoByPath[""];
 
-                    for (int i = 0; i < queryResult.Result.Count; i++)
+                    for (int i = 0; i < queryResult.Count; i++)
                     {
-                        Dictionary<string, string?> itemFields = queryResult.Result[i];
-                        ResultWithError<object> resultTemp = await CreateObject(baseInfo, itemFields, false);
-                        if (resultTemp.Success && resultTemp.Result != null)
+                        Dictionary<string, string?> itemFields = queryResult[i];
+                        object? objectTemp = await result.ExtractAsync(() => CreateObject(baseInfo, itemFields, false));
+                        if (objectTemp != null)
                         {
-                            if (resultTemp.Result is X oCasted)
+                            if (objectTemp is X oCasted)
                             {
                                 await queryBuilder.DM.OnItemLoaded(oCasted);
                                 result.Result.Add(oCasted);
                             }
                             else
                             {
-                                result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.CastFailed, resultTemp.Result.GetType().Name, typeof(X).Name)));
+                                result.Errors.Add(new DataError(DataErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Data.CastFailed, objectTemp.GetType().Name, typeof(X).Name)));
                             }
                         }
-                        else
-                        {
-                            result.Errors.AddRange(resultTemp.Errors);
-                        }
-
                     }
 
                     foreach (var subquery in queryBuilder.SubQueries)
@@ -1296,13 +1297,16 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             string rootName = path.Split('.')[0];
                             TableMemberInfo? relation = baseInfo.TableInfo.ReverseMembers.FirstOrDefault(member => member.Name == rootName);
+                            
                             if (relation != null)
+                            {
                                 selectedMembers.Add(relation);
+                            }
                         }
 
                         for (int i = 0; i < result.Result.Count; i++)
                         {
-                            Dictionary<string, string?> fields = queryResult.Result[i];
+                            Dictionary<string, string?> fields = queryResult[i];
                             List<TableMemberInfo> loadedMembers = baseInfo.Members
                                 .Where(pair => fields.ContainsKey(pair.Value.Alias + "*" + pair.Key.SqlName))
                                 .Select(pair => (TableMemberInfo)pair.Key)

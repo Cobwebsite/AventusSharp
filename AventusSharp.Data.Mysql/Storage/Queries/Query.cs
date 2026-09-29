@@ -1,4 +1,4 @@
-﻿using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Manager.DB;
 using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
@@ -144,9 +144,9 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 joinTxt = " " + joinTxt;
             }
 
-            if (queryBuilder.Groups != null)
+            if (queryBuilder.SqlGroups != null)
             {
-                foreach (GroupInfo groupInfo in queryBuilder.Groups)
+                foreach (GroupInfo groupInfo in queryBuilder.SqlGroups)
                 {
                     groupByPart.Add(groupInfo.Alias + "." + storage.QuoteIdentifier(groupInfo.TableMember.SqlName));
                 }
@@ -158,9 +158,9 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
             }
 
             List<string> orderByPart = new List<string>();
-            if (queryBuilder.Sorting != null)
+            if (queryBuilder.SqlSorting != null)
             {
-                foreach (SortInfo sortInfo in queryBuilder.Sorting)
+                foreach (SortInfo sortInfo in queryBuilder.SqlSorting)
                 {
                     string order = sortInfo.Sort == Sort.ASC ? "ASC" : "DESC";
                     orderByPart.Add(sortInfo.Alias + "." + storage.QuoteIdentifier(sortInfo.TableMember.SqlName) + " " + order);
@@ -172,17 +172,17 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                 orderBy = " ORDER BY " + string.Join(", ", orderByPart);
             }
             string limitOffset = "";
-            if (queryBuilder.LimitSize != null)
+            if (queryBuilder.SqlLimitSize != null)
             {
-                limitOffset = " LIMIT " + queryBuilder.LimitSize;
-                if (queryBuilder.OffsetSize != null)
+                limitOffset = " LIMIT " + queryBuilder.SqlLimitSize;
+                if (queryBuilder.SqlOffsetSize != null)
                 {
-                    limitOffset += " OFFSET " + queryBuilder.OffsetSize;
+                    limitOffset += " OFFSET " + queryBuilder.SqlOffsetSize;
                 }
             }
-            else if (queryBuilder.OffsetSize != null)
+            else if (queryBuilder.SqlOffsetSize != null)
             {
-                limitOffset = " LIMIT 18446744073709551615 OFFSET " + queryBuilder.OffsetSize;
+                limitOffset = " LIMIT 18446744073709551615 OFFSET " + queryBuilder.SqlOffsetSize;
             }
 
             string sql = "SELECT " + string.Join(",", fields)

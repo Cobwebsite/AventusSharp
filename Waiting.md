@@ -24,7 +24,7 @@ Liste consolidée à partir de `TODO.md` et des limites publiées dans `D:\Avent
 - [x] Traduire `Nullable<T>.GetValueOrDefault()` et sa surcharge avec valeur par défaut.
 - [x] Respecter `Contains(null)` sur les collections nullables.
 - [x] Traduire `Contains` et sa négation sur les relations N-N.
-- [ ] Prendre en charge les expressions qui nécessitent une sous-requête externe, mentionnées dans la documentation du site.
+- [x] Prendre en charge les expressions sur les relations chargées par une requête externe : filtres et scopes, tri et regroupement par clé scalaire, requêtes préparées, existence, mise à jour et suppression après sélection des identifiants. Pagination appliquée après chargement des relations ; parcours SQL local conservé. Régressions SQLite, MySQL, PostgreSQL et SQL Server ajoutées ; suite complète avec Docker : 900 tests réussis, aucun échec ni test ignoré. Documentation du site mise à jour et compilée.
 
 ## Normalisation SQL
 

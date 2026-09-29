@@ -5,6 +5,7 @@ using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
@@ -27,6 +28,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
     public class DatabaseQueryBuilder<T> : DatabaseGenericBuilder<T>, IQueryBuilder<T>, ILambdaTranslatable where T : IStorable
     {
+        protected override bool SupportsExternalExpressions => true;
 
         public DatabaseQueryBuilderInfo? info = null;
         public bool UseShortObject { get; set; } = true;
@@ -55,7 +57,39 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 };
             }
             MergeScopeAndWhere();
-            var result = await Storage.QueryFromBuilder(this);
+            if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
+            {
+                foreach (var predicate in QueryPredicates)
+                {
+                    ExternalExpressionLoader<T>.LoadFields(this, predicate.Predicate);
+                }
+                foreach (var scope in QueryScopes)
+                {
+                    ExternalExpressionLoader<T>.LoadFields(this, scope);
+                }
+                foreach (var sort in QuerySorts)
+                {
+                    ExternalExpressionLoader<T>.LoadFields(this, sort.Expression);
+                }
+                foreach (var group in QueryGroups)
+                {
+                    ExternalExpressionLoader<T>.LoadFields(this, group);
+                }
+            }
+
+            ResultWithError<List<T>> result = await Storage.QueryFromBuilder(this);
+            if (result.Success && result.Result != null && (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup))
+            {
+                try
+                {
+                    result.Result = ProcessExternalExpressions(result.Result);
+                }
+                catch (Exception exception)
+                {
+                    result.Errors.Add(new DataError(DataErrorCode.UnknownError, exception));
+                }
+            }
+
             DM.PrintErrors(result);
             return result;
 
@@ -71,11 +105,178 @@ namespace AventusSharp.Data.Manager.DB.Builders
                     Errors = runErrors
                 };
             }
+
             MergeScopeAndWhere();
+            if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
+            {
+                ResultWithError<List<T>> loaded = await RunWithError();
+                VoidWithError processed = new VoidWithError { Errors = loaded.Errors };
+
+                if (!processed.Success || loaded.Result == null)
+                    return processed;
+
+                foreach (T item in loaded.Result)
+                {
+                    VoidWithError callback = await action(item);
+                    processed.Errors.AddRange(callback.Errors);
+
+                    if (!callback.Success)
+                        break;
+                }
+                return processed;
+            }
+
             VoidWithError result = await Storage.QueryStreamFromBuilder(this, action);
             DM.PrintErrors(result);
             return result;
 
+        }
+
+        private List<T> ProcessExternalExpressions(List<T> items)
+        {
+            IEnumerable<T> selected = items;
+            if (RequiresPostProcessing)
+            {
+                List<(Func<T, bool> Evaluate, WhereGroupFctEnum Link)> predicates = QueryPredicates
+                    .Select(item => (Evaluate: item.Predicate.Compile(), item.Link))
+                    .ToList();
+
+                List<Func<T, bool>> scopes = QueryScopes.Select(scope => scope.Compile()).ToList();
+
+                selected = selected.Where(item =>
+                {
+                    bool matches = predicates.Count == 0;
+                    for (int i = 0; i < predicates.Count; i++)
+                    {
+                        (Func<T, bool> Evaluate, WhereGroupFctEnum Link) predicate = predicates[i];
+                        bool value = SafePredicate(predicate.Evaluate, item);
+                        if (predicate.Link == WhereGroupFctEnum.Or)
+                        {
+                            matches = matches || value;
+                        }
+                        else if (i == 0)
+                        {
+                            matches = value;
+                        }
+                        else
+                        {
+                            matches = matches && value;
+                        }
+                    }
+                    return matches && scopes.All(scope => SafePredicate(scope, item));
+                });
+            }
+
+            if (RequiresPostProcessing || RequiresPostGroup)
+            {
+                List<Func<T, object?>> keys = QueryGroups.Select(CompileKey).ToList();
+                if (keys.Count > 0)
+                {
+                    selected = selected
+                                .GroupBy(item =>
+                                    keys.Select(key => SafeKey(key, item)).ToArray(),
+                                    StructuralKeyComparer.Instance
+                                )
+                                .Select(group => group.First());
+
+                }
+            }
+
+            if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
+            {
+                IOrderedEnumerable<T>? ordered = null;
+                foreach ((LambdaExpression Expression, Sort Direction) sort in QuerySorts)
+                {
+                    Func<T, object?> key = CompileKey(sort.Expression);
+                    if (ordered == null)
+                    {
+                        if (sort.Direction == DB.Sort.ASC)
+                        {
+                            ordered = selected.OrderBy(item => SafeKey(key, item), ObjectKeyComparer.Instance);
+                        }
+                        else
+                        {
+                            ordered = selected.OrderByDescending(item => SafeKey(key, item), ObjectKeyComparer.Instance);
+                        }
+                    }
+                    else
+                    {
+                        if (sort.Direction == DB.Sort.ASC)
+                        {
+                            ordered = ordered.ThenBy(item => SafeKey(key, item), ObjectKeyComparer.Instance);
+                        }
+                        else
+                        {
+                            ordered = ordered.ThenByDescending(item => SafeKey(key, item), ObjectKeyComparer.Instance);
+                        }
+                    }
+                }
+
+                if (ordered != null)
+                {
+                    selected = ordered;
+                }
+
+                if (OffsetSize.HasValue)
+                {
+                    selected = selected.Skip(OffsetSize.Value);
+                }
+
+                if (LimitSize.HasValue)
+                {
+                    selected = selected.Take(LimitSize.Value);
+                }
+            }
+            return selected.ToList();
+        }
+
+        private static bool SafePredicate(Func<T, bool> predicate, T item)
+        {
+            try
+            {
+                return predicate(item);
+            }
+            catch (NullReferenceException)
+            {
+                return false;
+            }
+        }
+
+        private static object? SafeKey(Func<T, object?> key, T item)
+        {
+            try
+            {
+                return key(item);
+            }
+            catch (NullReferenceException)
+            {
+                return null;
+            }
+        }
+
+        private static Func<T, object?> CompileKey(LambdaExpression expression)
+        {
+            Expression body = Expression.Convert(expression.Body, typeof(object));
+            return Expression.Lambda<Func<T, object?>>(body, expression.Parameters).Compile();
+        }
+
+        private sealed class StructuralKeyComparer : IEqualityComparer<object?[]>
+        {
+            public static readonly StructuralKeyComparer Instance = new();
+            public bool Equals(object?[]? x, object?[]? y) => StructuralComparisons.StructuralEqualityComparer.Equals(x, y);
+            public int GetHashCode(object?[] value) => StructuralComparisons.StructuralEqualityComparer.GetHashCode(value);
+        }
+
+        private sealed class ObjectKeyComparer : IComparer<object?>
+        {
+            public static readonly ObjectKeyComparer Instance = new();
+            public int Compare(object? x, object? y)
+            {
+                if (ReferenceEquals(x, y)) return 0;
+                if (x == null) return -1;
+                if (y == null) return 1;
+                return Comparer.DefaultInvariant.Compare(x, y);
+            }
         }
 
         public async Task<T?> Single()

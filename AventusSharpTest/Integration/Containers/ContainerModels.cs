@@ -84,6 +84,8 @@ public sealed class MsSqlDeviceManager : DatabaseDM<MsSqlDeviceManager, MsSqlDev
 public sealed class MySqlRelationParent : Storable<MySqlRelationParent>
 {
     public string Name { get; set; } = "";
+    [ReverseLink(nameof(MySqlRelationChild.Parent))]
+    public List<MySqlRelationChild> Children { get; set; } = [];
 }
 
 public sealed class MySqlRelationParentManager
@@ -127,6 +129,8 @@ public sealed class MySqlRelationGroupManager
 public sealed class PostgreSqlRelationParent : Storable<PostgreSqlRelationParent>
 {
     public string Name { get; set; } = "";
+    [ReverseLink(nameof(PostgreSqlRelationChild.Parent))]
+    public List<PostgreSqlRelationChild> Children { get; set; } = [];
 }
 
 public sealed class PostgreSqlRelationParentManager
@@ -170,6 +174,8 @@ public sealed class PostgreSqlRelationGroupManager
 public sealed class MsSqlRelationParent : Storable<MsSqlRelationParent>
 {
     public string Name { get; set; } = "";
+    [ReverseLink(nameof(MsSqlRelationChild.Parent))]
+    public List<MsSqlRelationChild> Children { get; set; } = [];
 }
 
 public sealed class MsSqlRelationParentManager

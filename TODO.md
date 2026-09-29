@@ -16,8 +16,8 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 - [x] **Traiter `Ignore` sur une relation externe au SQL principal.** L'exclusion est propagée au builder de la sous-requête concernée, y compris sur les chemins imbriqués, sans effacer les valeurs des instances canoniques.
   - Source : `AventusSharp.Core/Data/Manager/DB/DatabaseGenericBuilder.cs:382`.
 
-- [ ] **Définir et implémenter le tri et le regroupement sur les relations externes.** Les deux branches externes lèvent `NotImplementedException`. Définir d'abord la sémantique pour les collections et l'interaction avec `Limit`/`Offset`, puis choisir entre traduction SQL et traitement après chargement. Le TODO de `GroupGeneric` parle de tri par erreur : il s'agit bien de regroupement. Tester les relations nulles et les chemins imbriqués. Ce sujet recoupe les sous-requêtes externes déjà mentionnées dans `Waiting.md`.
-  - Sources : `AventusSharp.Core/Data/Manager/DB/DatabaseGenericBuilder.cs:424,463`.
+- [x] **Définir et implémenter le tri et le regroupement sur les relations externes.** Les clés scalaires, y compris `Count` sur une collection, sont évaluées après chargement ; les collections entières sont refusées comme clés. `Limit` et `Offset` sont appliqués après le tri ou le regroupement. Les relations nulles et les chemins imbriqués sont testés.
+  - Source : `AventusSharp.Core/Data/Manager/DB/DatabaseGenericBuilder.cs`.
 
 - [ ] **Prendre en charge les collections de valeurs simples et d'enums.** Les listes et dictionnaires ordinaires sont reconnus comme relations seulement si leur valeur implémente `IStorable`. Le cas `List<int>` avec `[ForeignKey]` existe déjà et ne doit pas être réimplémenté. Choisir le stockage des collections de valeurs simples, puis couvrir création, lecture, mise à jour, suppression, migration et requêtes ; traiter les enums et les valeurs nullables.
   - Source : `AventusSharp.Core/Data/Storage/Default/TableMember/TableMemberInfoSql.cs:183`.

@@ -123,13 +123,13 @@ public class Query
 
         loadInfo(mainInfo, new List<string>(), new List<Type>());
 
-        if (queryBuilder.Groups != null)
+        if (queryBuilder.SqlGroups != null)
         {
-            string groups = string.Join(", ", queryBuilder.Groups.Select(
-                group => group.Alias + "." + storage.QuoteIdentifier(group.TableMember.SqlName)));
-            groupBy = groupBy == ""
-                ? " GROUP BY " + groups
-                : groupBy + ", " + groups;
+            string groups = string.Join(", ", queryBuilder.SqlGroups.Select(
+                group => group.Alias + "." + storage.QuoteIdentifier(group.TableMember.SqlName)
+            ));
+
+            groupBy = groupBy == "" ? " GROUP BY " + groups : groupBy + ", " + groups;
         }
 
         string whereTxt = BuilderTools.Where(queryBuilder.Wheres, storage);
@@ -141,9 +141,9 @@ public class Query
         }
 
         List<string> orderByPart = new List<string>();
-        if (queryBuilder.Sorting != null)
+        if (queryBuilder.SqlSorting != null)
         {
-            foreach (SortInfo sortInfo in queryBuilder.Sorting)
+            foreach (SortInfo sortInfo in queryBuilder.SqlSorting)
             {
                 string order = sortInfo.Sort == Sort.ASC ? "ASC" : "DESC";
                 orderByPart.Add(sortInfo.Alias + "." + storage.QuoteIdentifier(sortInfo.TableMember.SqlName) + " " + order);
@@ -155,12 +155,12 @@ public class Query
             orderBy = " ORDER BY " + string.Join(", ", orderByPart);
         }
         string limitOffset = "";
-        if (queryBuilder.LimitSize != null)
+        if (queryBuilder.SqlLimitSize != null)
         {
-            limitOffset = " LIMIT " + queryBuilder.LimitSize;
-            if (queryBuilder.OffsetSize != null)
+            limitOffset = " LIMIT " + queryBuilder.SqlLimitSize;
+            if (queryBuilder.SqlOffsetSize != null)
             {
-                limitOffset += " OFFSET " + queryBuilder.OffsetSize;
+                limitOffset += " OFFSET " + queryBuilder.SqlOffsetSize;
             }
         }
 

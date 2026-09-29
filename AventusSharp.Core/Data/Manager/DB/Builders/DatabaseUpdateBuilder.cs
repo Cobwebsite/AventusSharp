@@ -60,12 +60,48 @@ namespace AventusSharp.Data.Manager.DB.Builders
         public Dictionary<string, ParamsInfo> UpdateParamsInfo { get; set; } = new Dictionary<string, ParamsInfo>();
 
         public DatabaseUpdateBuilderInfo? Query { get; set; }
+        private DatabaseQueryBuilder<T>? selectionQuery;
+        private readonly List<(Expression<Func<T, bool>> Predicate, bool IsOr)> selectionPredicates = new();
         private readonly bool NeedUpdateField;
         public bool AllFieldsUpdate { get; private set; } = true;
 
         public DatabaseUpdateBuilder(IDBStorage storage, IGenericDM dm, bool needUpdateField, Type? baseType = null) : base(storage, dm, baseType)
         {
             NeedUpdateField = needUpdateField;
+        }
+
+        private DatabaseQueryBuilder<T> GetSelectionQuery()
+        {
+            if (selectionQuery != null)
+            {
+                return selectionQuery;
+            }
+
+            DatabaseQueryBuilder<T> query = new DatabaseQueryBuilder<T>(Storage, DM);
+            if (_noScope)
+            {
+                query.WithoutScope();
+            }
+            else if (ManualScopes != null)
+            {
+                foreach (IScope scope in ManualScopes)
+                {
+                    query.WithScope(scope);
+                }
+            }
+            foreach ((Expression<Func<T, bool>> Predicate, bool IsOr) predicate in selectionPredicates)
+            {
+                if (predicate.IsOr)
+                {
+                    query.OrWhere(predicate.Predicate);
+                }
+                else
+                {
+                    query.Where(predicate.Predicate);
+                }
+            }
+            selectionQuery = query;
+            return query;
         }
 
 
@@ -88,7 +124,26 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 result.Errors = runErrors;
                 return result;
             }
-            MergeScopeAndWhere();
+            if (selectionQuery?.RequiresPostProcessing == true)
+            {
+                List<T>? selected = await result.ExtractAsync(selectionQuery.RunWithError);
+                if (selected == null)
+                    return result;
+
+                List<int> ids = selected.Select(value => value.Id).Distinct().ToList();
+                if (ids.Count == 0)
+                {
+                    result.Result = new List<T>();
+                    return result;
+                }
+                Expression<Func<T, bool>> idPredicate = value => ids.Contains(value.Id);
+                Wheres = new LambdaTranslator<T>(this).Translate(idPredicate).Wheres;
+                Query = null;
+            }
+            else
+            {
+                MergeScopeAndWhere();
+            }
             ResultWithError<List<int>> resultTemp = await Storage.UpdateFromBuilder(this, item);
             if (resultTemp.Success && resultTemp.Result != null)
             {
@@ -201,44 +256,80 @@ namespace AventusSharp.Data.Manager.DB.Builders
 
         public IUpdateBuilder<T> Where(Expression<Func<T, bool>> func)
         {
-            WhereGeneric(func);
+            bool external = ExternalExpressionLoader<T>.RequiresExternal(this, func);
+            if (selectionQuery == null && !external)
+            {
+                WhereGeneric(func);
+                selectionPredicates.Add((func, false));
+                return this;
+            }
+
+            GetSelectionQuery().Where(func);
+            selectionPredicates.Add((func, false));
             return this;
         }
 
         public IUpdateBuilder<T> OrWhere(Expression<Func<T, bool>> func)
         {
-            OrWhereGeneric(func);
+            bool external = ExternalExpressionLoader<T>.RequiresExternal(this, func);
+            if (selectionQuery == null && !external)
+            {
+                OrWhereGeneric(func);
+                selectionPredicates.Add((func, true));
+                return this;
+            }
+
+            GetSelectionQuery().OrWhere(func);
+            selectionPredicates.Add((func, true));
             return this;
         }
 
         public UpdateBuilderPrepared<T> WhereWithParameters(Expression<Func<T, bool>> func)
         {
-            WhereGenericWithParameters(func);
+            if (selectionPredicates.Count > 0)
+            {
+                WhereGenericWithParameters(func);
+                return new(this);
+            }
+
+            if (!ExternalExpressionLoader<T>.RequiresExternal(this, func))
+            {
+                WhereGenericWithParameters(func);
+            }
+            else
+            {
+                GetSelectionQuery().WhereWithParameters(func);
+            }
             return new(this);
         }
 
         void IUpdateBuilder<T>.PrepareInternal(params object[] objects)
         {
             PrepareGeneric(objects);
+            ((IQueryBuilder<T>?)selectionQuery)?.PrepareInternal(objects);
         }
 
         void IUpdateBuilder<T>.SetVariableInternal(string name, object value)
         {
             SetVariableGeneric(name, value);
+            ((IQueryBuilder<T>?)selectionQuery)?.SetVariableInternal(name, value);
         }
         void IUpdateBuilder<T>.ResetPreparedParametersInternal()
         {
             ResetPreparedParametersGeneric();
+            ((IQueryBuilder<T>?)selectionQuery)?.ResetPreparedParametersInternal();
         }
 
         public IUpdateBuilder<T> WithScope<X>() where X : IScope, new()
         {
             WithScopeGeneric<X>();
+            selectionQuery?.WithScope(ManualScopes!.Last());
             return this;
         }
         public IUpdateBuilder<T> WithoutScope()
         {
             WithoutScopeGeneric();
+            selectionQuery?.WithoutScope();
             return this;
         }
     }

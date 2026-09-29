@@ -31,6 +31,66 @@ public sealed class DockerLambdaTranslatorMatrixTests
         VerifyLambdaMatrix<MsSqlDevice>(CreateDevice<MsSqlDevice>);
 
     [Test]
+    public Task MySql_filters_external_reverse_relations() =>
+        VerifyExternalRelation(
+            name => new MySqlRelationParent { Name = name },
+            (name, parent) => new MySqlRelationChild { Name = name, Parent = parent });
+
+    [Test]
+    public Task PostgreSql_filters_external_reverse_relations() =>
+        VerifyExternalRelation(
+            name => new PostgreSqlRelationParent { Name = name },
+            (name, parent) => new PostgreSqlRelationChild { Name = name, Parent = parent });
+
+    [Test]
+    public Task SqlServer_filters_external_reverse_relations() =>
+        VerifyExternalRelation(
+            name => new MsSqlRelationParent { Name = name },
+            (name, parent) => new MsSqlRelationChild { Name = name, Parent = parent });
+
+    private static async Task VerifyExternalRelation<TParent, TChild>(
+        Func<string, TParent> createParent,
+        Func<string, TParent, TChild> createChild)
+        where TParent : class, IStorable
+        where TChild : class, IStorable
+    {
+        var parents = GenericDM.Get<TParent>();
+        var children = GenericDM.Get<TChild>();
+        AssertSuccess(await children.CreateDelete<TChild>().Where(child => child.Id > 0).RunWithError(), "child cleanup");
+        AssertSuccess(await parents.CreateDelete<TParent>().Where(parent => parent.Id > 0).RunWithError(), "parent cleanup");
+
+        var seeded = await parents.CreateWithError(new List<TParent>
+        {
+            createParent("With child"),
+            createParent("Without child")
+        });
+        AssertSuccess(seeded, "parent seed");
+        var childSeed = await children.CreateWithError(createChild("Target", seeded.Result![0]));
+        AssertSuccess(childSeed, "child seed");
+
+        var parentParameter = Expression.Parameter(typeof(TParent), "parent");
+        var childParameter = Expression.Parameter(typeof(TChild), "child");
+        var childList = Expression.PropertyOrField(parentParameter, "Children");
+        var childName = Expression.PropertyOrField(childParameter, "Name");
+        var match = Expression.Equal(childName, Expression.Constant("Target"));
+        var any = Expression.Call(typeof(Enumerable), nameof(Enumerable.Any),
+            new[] { typeof(TChild) }, childList,
+            Expression.Lambda<Func<TChild, bool>>(match, childParameter));
+        var predicate = Expression.Lambda<Func<TParent, bool>>(any, parentParameter);
+        var count = Expression.Lambda<Func<TParent, int>>(
+            Expression.Property(childList, "Count"), parentParameter);
+
+        var result = await parents.CreateQuery<TParent>()
+            .Where(predicate)
+            .Sort(count, Sort.DESC)
+            .Limit(1)
+            .RunWithError();
+        AssertSuccess(result, "external predicate and sort");
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.That(result.Result![0].Id, Is.EqualTo(seeded.Result[0].Id));
+    }
+
+    [Test]
     public Task MySql_translates_date_components() =>
         VerifyDateComponents<MySqlDevice>(CreateDevice<MySqlDevice>);
 

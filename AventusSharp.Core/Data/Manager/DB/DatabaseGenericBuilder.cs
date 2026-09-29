@@ -31,6 +31,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     public bool ReplaceWhereByParameters { get; set; } = false;
 
     public Dictionary<string, ParamsInfo> WhereParamsInfo { get; set; } = new Dictionary<string, ParamsInfo>(); // type is the type of the variable to use
+    public object? GetPreparedExternalValue(string name) => WhereParamsInfo[name].RootValue;
 
     public int? LimitSize { get; private set; } = null;
     public int? OffsetSize { get; private set; } = null;
@@ -45,6 +46,52 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     internal List<TableMemberInfoSql> Included { get; private set; } = new List<TableMemberInfoSql>();
     internal Dictionary<string, DatabaseSubBuilder> SubQueries { get; private set; } = new();
+    protected virtual bool SupportsExternalExpressions => false;
+    protected readonly List<(Expression<Func<T, bool>> Predicate, WhereGroupFctEnum Link)> QueryPredicates = new();
+    protected readonly List<(LambdaExpression Expression, Sort Direction)> QuerySorts = new();
+    protected readonly List<LambdaExpression> QueryGroups = new();
+    protected readonly List<Expression<Func<T, bool>>> QueryScopes = new();
+    public bool RequiresPostProcessing { get; protected set; }
+    public bool RequiresPostSort { get; protected set; }
+    public bool RequiresPostGroup { get; protected set; }
+    public int? SqlLimitSize
+    {
+        get
+        {
+            if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
+                return null;
+            return LimitSize;
+        }
+    }
+
+    public int? SqlOffsetSize
+    {
+        get
+        {
+            if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
+                return null;
+            return OffsetSize;
+        }
+    }
+
+    public List<GroupInfo>? SqlGroups
+    {
+        get
+        {
+            if (RequiresPostProcessing || RequiresPostGroup)
+                return null;
+            return Groups;
+        }
+    }
+    public List<SortInfo>? SqlSorting
+    {
+        get
+        {
+            if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
+                return null;
+            return Sorting;
+        }
+    }
 
 
     public DatabaseGenericBuilder(IDBStorage storage, IGenericDM DM, Type? baseType = null) : base()
@@ -186,6 +233,20 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         try
         {
             ReplaceWhereByParameters = false;
+            if (SupportsExternalExpressions)
+            {
+                bool external = ExternalExpressionLoader<T>.RequiresExternal(this, expression);
+                if (external)
+                    ExternalExpressionLoader<T>.Load(this, expression);
+
+                QueryPredicates.Add((expression, link));
+                if (external || RequiresPostProcessing)
+                {
+                    RequiresPostProcessing = true;
+                    Wheres = null;
+                    return;
+                }
+            }
             LambdaTranslator<T> translator = new(this);
             TranslateResult translateResult = translator.Translate(expression);
             if (!translateResult.IsExternal)
@@ -217,11 +278,19 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     {
         try
         {
-            if (Wheres != null)
+            if (Wheres != null || QueryPredicates.Count > 0)
             {
                 throw new Exception("Can't use twice the where action");
             }
             ReplaceWhereByParameters = true;
+            if (SupportsExternalExpressions && ExternalExpressionLoader<T>.RequiresExternal(this, expression))
+            {
+                ExternalExpressionLoader<T>.Load(this, expression);
+                QueryPredicates.Add((PreparedExternalExpression<T>.Rewrite(this, expression), WhereGroupFctEnum.And));
+                RequiresPostProcessing = true;
+                Wheres = null;
+                return;
+            }
             LambdaTranslator<T> translator = new(this);
             TranslateResult translateResult = translator.Translate(expression);
             if (!translateResult.IsExternal)
@@ -408,7 +477,23 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     }
     protected void SortGeneric(LambdaExpression lambdaExpression, Sort sort)
     {
+        if (SupportsExternalExpressions)
+        {
+            bool external = ExternalExpressionLoader<T>.RequiresExternal(this, lambdaExpression);
+            if (external)
+                ExternalExpressionLoader<T>.Load(this, lambdaExpression);
 
+            QuerySorts.Add((lambdaExpression, sort));
+            if (external || RequiresPostSort)
+            {
+                if (lambdaExpression.ReturnType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(lambdaExpression.ReturnType))
+                    throw new NotSupportedException("Sorting an external collection requires a scalar expression, such as Count.");
+
+                RequiresPostSort = true;
+                Sorting = null;
+                return;
+            }
+        }
         if (Sorting == null)
         {
             Sorting = new List<SortInfo>();
@@ -446,7 +531,23 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     }
     protected void GroupGeneric(LambdaExpression lambdaExpression)
     {
-
+        if (SupportsExternalExpressions)
+        {
+            bool external = ExternalExpressionLoader<T>.RequiresExternal(this, lambdaExpression);
+            if (external)
+                ExternalExpressionLoader<T>.Load(this, lambdaExpression);
+            
+            QueryGroups.Add(lambdaExpression);
+            if (external || RequiresPostGroup)
+            {
+                if (lambdaExpression.ReturnType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(lambdaExpression.ReturnType))
+                    throw new NotSupportedException("Grouping an external collection requires a scalar expression, such as Count.");
+                
+                RequiresPostGroup = true;
+                Groups = null;
+                return;
+            }
+        }
         if (Groups == null)
         {
             Groups = new();
@@ -737,12 +838,14 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     }
     protected void MergeScopeAndWhere()
     {
+        QueryScopes.Clear();
         if (_noScope)
         {
             return;
         }
         List<IScope>? scopes = ManualScopes ?? Scopes;
         if (scopes == null) return;
+        
         scopes = scopes.ToList();
 
         LambdaTranslator<T> translator = new(this);
@@ -750,14 +853,38 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         bool hasScope = false;
         foreach (var scope in scopes)
         {
-            var scopeFct = scope.Where(AventusContextAccessorBase.Current);
+            Expression<Func<object, bool>>? scopeFct = scope.Where(AventusContextAccessorBase.Current);
             if (scopeFct != null)
             {
+                if (SupportsExternalExpressions &&
+                    scopeFct.Body is InvocationExpression invocation &&
+                    invocation.Expression is Expression<Func<T, bool>> queryScope)
+                {
+                    bool external = ExternalExpressionLoader<T>.RequiresExternal(this, queryScope);
+                    if (external)
+                    {
+                        ExternalExpressionLoader<T>.Load(this, queryScope);
+                    }
+
+                    QueryScopes.Add(queryScope);
+
+                    if (external)
+                    {
+                        RequiresPostProcessing = true;
+                        Wheres = null;
+                    }
+                    if (RequiresPostProcessing)
+                    {
+                        continue;
+                    }
+                }
                 hasScope = true;
                 if (whereGroup.Groups.Count > 0)
+                {
                     whereGroup.Groups.Add(new WhereGroupFct(WhereGroupFctEnum.And));
+                }
 
-                var translateResult = translator.Translate(scopeFct);
+                TranslateResult translateResult = translator.Translate(scopeFct);
                 if (!translateResult.IsExternal)
                 {
                     whereGroup.Groups.AddRange(translateResult.Wheres);
@@ -770,6 +897,12 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
 
         if (!hasScope) return;
+
+        if (RequiresPostProcessing)
+        {
+            Wheres = null;
+            return;
+        }
 
         if (Wheres == null)
         {

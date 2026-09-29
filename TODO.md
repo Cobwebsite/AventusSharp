@@ -13,7 +13,7 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 - [x] **Respecter une politique explicite pour la suppression des relations inverses.** `DeleteOnCascade` et `DeleteSetNull` sur la clé étrangère priment sur `AutoDelete` de la relation inverse. Sans politique explicite, `AutoDelete` choisit selon la nullabilité ; désactivé, la contrainte SQL décide. Les politiques incompatibles sont rejetées lorsque des dépendants existent. Tests des relations obligatoires et nullables, du cache et du rollback.
   - Source : `AventusSharp.Core/Data/Storage/Default/DefaultDBStorage.cs:2573`.
 
-- [ ] **Traiter `Ignore` sur une relation externe au SQL principal.** La branche externe lève encore `NotImplementedException`. Propager l'exclusion au builder de la sous-requête concernée, y compris sur les chemins imbriqués, et vérifier que les instances canoniques conservent les valeurs des champs ignorés.
+- [x] **Traiter `Ignore` sur une relation externe au SQL principal.** L'exclusion est propagée au builder de la sous-requête concernée, y compris sur les chemins imbriqués, sans effacer les valeurs des instances canoniques.
   - Source : `AventusSharp.Core/Data/Manager/DB/DatabaseGenericBuilder.cs:382`.
 
 - [ ] **Définir et implémenter le tri et le regroupement sur les relations externes.** Les deux branches externes lèvent `NotImplementedException`. Définir d'abord la sémantique pour les collections et l'interaction avec `Limit`/`Offset`, puis choisir entre traduction SQL et traitement après chargement. Le TODO de `GroupGeneric` parle de tri par erreur : il s'agit bien de regroupement. Tester les relations nulles et les chemins imbriqués. Ce sujet recoupe les sous-requêtes externes déjà mentionnées dans `Waiting.md`.

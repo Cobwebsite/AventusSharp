@@ -39,6 +39,8 @@ public abstract class DatabaseSubBuilder
     public abstract VoidWithError PrepareExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
 
     public abstract VoidWithError ExtendExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
+
+    public abstract VoidWithError Ignore(List<string> names, bool initializeProjection);
 }
 public enum DatabaseSubBuilderKind
 {
@@ -48,6 +50,29 @@ public enum DatabaseSubBuilderKind
 }
 public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable where Y : IStorable
 {
+
+    public override VoidWithError Ignore(List<string> names, bool initializeProjection)
+    {
+        VoidWithError result = new();
+        QueryBuilderPrepared<Y>? query = Kind switch
+        {
+            DatabaseSubBuilderKind.ReverseLink => ReverseLinkQuery,
+            DatabaseSubBuilderKind.ExternalStorage => ExternalStorageQuery,
+            _ => null
+        };
+        if (query == null || names.Count == 0)
+        {
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot ignore a field in an unprepared relation query."));
+            return result;
+        }
+        if (initializeProjection) query.Fields();
+        ParameterExpression parameter = Expression.Parameter(typeof(Y), "item");
+        Expression body = parameter;
+        foreach (string name in names)
+            body = Expression.PropertyOrField(body, name);
+        query.Ignore(Expression.Lambda(body, parameter));
+        return result;
+    }
 
 
 

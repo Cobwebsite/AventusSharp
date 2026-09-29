@@ -339,6 +339,11 @@ namespace AventusSharp.Data.Manager
             builder.Ignore(expression);
             return this;
         }
+        public QueryBuilderPrepared<T> Ignore(LambdaExpression expression)
+        {
+            builder.Ignore(expression);
+            return this;
+        }
         /// <summary>
         /// Specifies sorting for the query based on the provided expression and sorting order.
         /// </summary>

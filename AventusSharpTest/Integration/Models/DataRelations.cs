@@ -46,6 +46,30 @@ public sealed class TestLampManager : DatabaseDM<TestLampManager, TestLamp>
 {
 }
 
+[SqlName("test_projection_parents")]
+public sealed class TestProjectionParent : Storable<TestProjectionParent>
+{
+    public string Name { get; set; } = "";
+
+    [ReverseLink(nameof(TestProjectionChild.Parent))]
+    public TestProjectionChild? Child { get; set; }
+}
+
+[SqlName("test_projection_children")]
+public sealed class TestProjectionChild : Storable<TestProjectionChild>
+{
+    public string Name { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public TestProjectionParent Parent { get; set; } = null!;
+}
+
+[SqlName("test_projection_wrappers")]
+public sealed class TestProjectionWrapper : Storable<TestProjectionWrapper>
+{
+    [AutoRead]
+    public TestProjectionParent Parent { get; set; } = null!;
+}
+
 [SqlName("test_scenes")]
 public sealed class TestScene : Storable<TestScene>
 {

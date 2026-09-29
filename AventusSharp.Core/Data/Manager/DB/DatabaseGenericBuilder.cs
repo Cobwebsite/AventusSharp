@@ -349,7 +349,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     }
     protected string IgnoreGeneric(LambdaExpression lambdaExpression)
     {
-
+        HashSet<string> preparedSubQueries = SubQueries.Keys.ToHashSet();
         LambdaIncludeResult lambdaResult = LambdaInclude(
             lambdaExpression,
             fields: null,
@@ -379,8 +379,22 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
         else
         {
-            // TODO ignore in sub query
-            throw new NotImplementedException("Missing implementation to ignore in subquery");
+            string path = fullPath != "" ? fullPath + "." + lastName : lastName;
+            string? subQueryPath = SubQueries.Keys
+                .Where(key => path.StartsWith(key + ".", StringComparison.Ordinal))
+                .OrderByDescending(key => key.Length)
+                .FirstOrDefault();
+            if (subQueryPath == null)
+            {
+                Errors.Add(new DataError(DataErrorCode.ValidationError,
+                    "No external relation query was prepared for '" + path + "'."));
+            }
+            else
+            {
+                List<string> relativeNames = path[(subQueryPath.Length + 1)..].Split('.').ToList();
+                VoidWithError ignored = SubQueries[subQueryPath].Ignore(relativeNames, !preparedSubQueries.Contains(subQueryPath));
+                Errors.AddRange(ignored.Errors);
+            }
         }
 
 

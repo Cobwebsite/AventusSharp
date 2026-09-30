@@ -32,7 +32,7 @@ namespace AventusSharp.Data.Storage.Default.TableMember
         }
 
 
-        public Func<int, Task<ResultWithDataError<List<IStorable>>>>? reverseQueryBuilder;
+        public Func<List<int>, Task<ResultWithDataError<List<IStorable>>>>? reverseQueryBuilder;
         public TableMemberInfoSql? reverseMember;
         public Type? ReverseLinkType;
         public bool isSingle = false;
@@ -119,11 +119,22 @@ namespace AventusSharp.Data.Storage.Default.TableMember
             return result;
         }
 
-        public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(int Id)
+        public Task<ResultWithDataError<List<IStorable>>> ReverseQuery(int id)
+        {
+            return ReverseQuery(new List<int> { id });
+        }
+
+        public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(List<int> ids)
         {
             ResultWithDataError<List<IStorable>> result = new();
             try
             {
+                if (ids.Count == 0)
+                {
+                    result.Result = new List<IStorable>();
+                    return result;
+                }
+
                 if (reverseQueryBuilder == null)
                 {
                     if (ReverseLinkType == null || reverseMember == null)
@@ -134,19 +145,17 @@ namespace AventusSharp.Data.Storage.Default.TableMember
 
                     ParameterExpression argParam = Expression.Parameter(ReverseLinkType, "t");
                     Expression nameProperty;
-                    Type varType;
                     if (TypeTools.IsPrimitiveType(reverseMember.MemberType))
                     {
-                        varType = reverseMember.MemberType;
                         nameProperty = Expression.PropertyOrField(argParam, reverseMember.Name);
                     }
                     else
                     {
-                        varType = typeof(int);
                         Expression temp = Expression.PropertyOrField(argParam, reverseMember.Name);
                         nameProperty = Expression.PropertyOrField(temp, Storable.Id);
                     }
-                    Expression<Func<int>> idLambda = () => Id;
+                    List<int> queryIds = new();
+                    Expression<Func<List<int>>> idsLambda = () => queryIds;
 
                     Type? typeIfNullable = System.Nullable.GetUnderlyingType(nameProperty.Type);
                     if (typeIfNullable != null)
@@ -154,7 +163,11 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                         nameProperty = Expression.Call(nameProperty, "GetValueOrDefault", Type.EmptyTypes);
                     }
 
-                    Expression e1 = Expression.Equal(nameProperty, idLambda.Body);
+                    Expression e1 = Expression.Call(
+                        idsLambda.Body,
+                        typeof(List<int>).GetMethod(nameof(List<>.Contains), [typeof(int)])!,
+                        nameProperty
+                    );
                     LambdaExpression lambda = Expression.Lambda(e1, argParam);
 
                     IGenericDM dm = GenericDM.Get(ReverseLinkType);
@@ -165,18 +178,6 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                         result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, AventusTranslations.Get(AventusMessageKeys.Data.QueryCreationFailed)));
                         return result;
                     }
-                    // MethodInfo? setVariable = query.GetType().GetMethod("SetVariable");
-                    // if (setVariable == null)
-                    // {
-                    //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function setVariable"));
-                    //     return result;
-                    // }
-                    // MethodInfo? runWithError = query.GetType().GetMethod("RunWithError");
-                    // if (runWithError == null)
-                    // {
-                    //     result.Errors.Add(new DataError(DataErrorCode.ErrorCreatingReverseQuery, "Can't get the function runWithError"));
-                    //     return result;
-                    // }
                     MethodInfo? whereWithParam = query.GetType().GetMethod("WhereWithParameters");
                     if (whereWithParam == null)
                     {
@@ -196,12 +197,12 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                         return result;
                     }
 
-                    reverseQueryBuilder = async delegate (int id)
+                    reverseQueryBuilder = async delegate (List<int> queryIds)
                     {
                         ResultWithDataError<List<IStorable>> result = new();
                         IResultWithError? resultWithError = await _preparedQuery.New().SetVariables((define) =>
                         {
-                            define(Storable.Id, id);
+                            define(nameof(queryIds), queryIds);
                         }).RunWithError();
                         if (resultWithError != null)
                         {
@@ -227,38 +228,16 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                         return result;
                     };
                 }
-                result = await reverseQueryBuilder(Id);
+                result = await reverseQueryBuilder(ids.Distinct().ToList());
+                if (result.Result != null)
+                {
+                    result.Result = result.Result.GroupBy(item => item.Id).Select(group => group.Last()).ToList();
+                }
             }
             catch (Exception e)
             {
                 result.Errors.Add(new DataError(DataErrorCode.UnknownError, e));
             }
-            return result;
-        }
-
-        public async Task<ResultWithDataError<List<IStorable>>> ReverseQuery(List<int> ids)
-        {
-            // TODO change the list to be the main code used by single id
-            ResultWithDataError<List<IStorable>> result = new();
-            Dictionary<int, IStorable> elements = new Dictionary<int, IStorable>();
-            foreach (int id in ids)
-            {
-                ResultWithDataError<List<IStorable>> resultTemp = await ReverseQuery(id);
-                if (!resultTemp.Success)
-                {
-                    result.Errors.AddRange(resultTemp.Errors);
-                    return result;
-                }
-                if (resultTemp.Result == null)
-                {
-                    continue;
-                }
-                foreach (IStorable storable in resultTemp.Result)
-                {
-                    elements[storable.Id] = storable;
-                }
-            }
-            result.Result = elements.Select(p => p.Value).ToList();
             return result;
         }
 

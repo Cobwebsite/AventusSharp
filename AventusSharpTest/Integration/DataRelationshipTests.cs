@@ -50,6 +50,28 @@ public sealed class DataRelationshipTests
     }
 
     [Test]
+    public async Task Reverse_query_batches_parent_ids_and_handles_empty_and_duplicate_ids()
+    {
+        var firstRoom = await TestRoom.Create(new TestRoom { Name = "Batch room one" });
+        var secondRoom = await TestRoom.Create(new TestRoom { Name = "Batch room two" });
+        var firstLamp = await TestLamp.Create(new TestLamp { Name = "Batch lamp one", Room = firstRoom! });
+        var secondLamp = await TestLamp.Create(new TestLamp { Name = "Batch lamp two", Room = secondRoom! });
+        var reverseMember = IntegrationEnvironment.Storage.GetTableInfo(typeof(TestRoom))!
+            .ReverseMembers.Single(member => member.Name == nameof(TestRoom.Lamps));
+
+        var empty = await reverseMember.ReverseQuery(new List<int>());
+        var batch = await reverseMember.ReverseQuery(new List<int> { firstRoom!.Id, secondRoom!.Id, firstRoom.Id });
+        var single = await reverseMember.ReverseQuery(firstRoom.Id);
+
+        Assert.That(empty.Success, Is.True, IntegrationEnvironment.ErrorMessages(empty.Errors));
+        Assert.That(empty.Result, Is.Empty);
+        Assert.That(batch.Success, Is.True, IntegrationEnvironment.ErrorMessages(batch.Errors));
+        Assert.That(batch.Result!.Select(item => item.Id), Is.EquivalentTo(new[] { firstLamp!.Id, secondLamp!.Id }));
+        Assert.That(single.Success, Is.True, IntegrationEnvironment.ErrorMessages(single.Errors));
+        Assert.That(single.Result!.Select(item => item.Id), Is.EqualTo(new[] { firstLamp.Id }));
+    }
+
+    [Test]
     public async Task Direct_relation_can_be_reassigned_and_cleared_when_nullable()
     {
         var firstRoom = await TestRoom.Create(new TestRoom

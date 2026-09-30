@@ -246,6 +246,25 @@ public sealed class TestSpecializedDataManager
 {
 }
 
+[SqlName("test_value_collections")]
+public sealed class TestValueCollections : Storable<TestValueCollections>
+{
+    public List<int> Numbers { get; set; } = [];
+    public List<string?> Labels { get; set; } = [];
+    public List<PrimitiveRecordState> States { get; set; } = [];
+    public List<PrimitiveRecordState?> OptionalStates { get; set; } = [];
+    public List<int?> OptionalNumbers { get; set; } = [];
+    public Dictionary<string, int?> Counts { get; set; } = [];
+    public Dictionary<int, PrimitiveRecordState?> StateByKey { get; set; } = [];
+    [AventusSharp.Data.Attributes.Nullable]
+    public List<string>? NullableLabels { get; set; }
+}
+
+public sealed class TestValueCollectionsManager
+    : DatabaseDM<TestValueCollectionsManager, TestValueCollections>
+{
+}
+
 public sealed class TestDocumentFile
     : AventusSharp.Data.CustomTableMembers.AventusFile<TestSpecializedData>
 {

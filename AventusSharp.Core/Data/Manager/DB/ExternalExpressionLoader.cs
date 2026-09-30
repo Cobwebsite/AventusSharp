@@ -79,6 +79,9 @@ internal sealed class ExternalExpressionLoader<T> : ExpressionVisitor where T : 
             if (member == null)
                 return false;
 
+            if (member is PrimitiveCollectionTableMember)
+                return true;
+
             if (member is not ITableMemberInfoSqlLink link)
                 return false;
 

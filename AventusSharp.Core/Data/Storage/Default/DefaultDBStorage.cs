@@ -1723,6 +1723,10 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     member = new TableMemberInfoSql1N(propertyRef, table);
                 }
+                else if (PrimitiveCollectionTableMember.Supports(property.Type))
+                {
+                    member = new PrimitiveCollectionTableMember(new MigrationMember(property), table, property.Options.Nullable);
+                }
                 else
                 {
                     member = new TableMemberInfoSqlBasic(property, table);
@@ -2849,7 +2853,12 @@ namespace AventusSharp.Data.Storage.Default
         protected abstract Task<ResultWithError<List<string>>> GetMigrationColumns(string table);
         protected static bool IsMigrationCollection(IMigrationProperty property)
         {
-            return typeof(IList).IsAssignableFrom(property.Type) || typeof(IDictionary).IsAssignableFrom(property.Type);
+            if(PrimitiveCollectionTableMember.Supports(property.Type)) return false;
+
+            if(typeof(IList).IsAssignableFrom(property.Type)) return true;
+            if(typeof(IDictionary).IsAssignableFrom(property.Type)) return true;
+
+            return false;
         }
 
         // Reject duplicate creation rather than silently discarding the requested constraints.
@@ -3094,11 +3103,20 @@ namespace AventusSharp.Data.Storage.Default
         public string GetMigrationColumnType(IMigrationProperty property)
         {
             TableInfo table = new(property.Parent);
-            TableMemberInfoSqlBasic member = new(property, table);
-            var prepared = table.PrepareMembers(member);
+            TableMemberInfoSql member;
+            if(PrimitiveCollectionTableMember.Supports(property.Type))
+            {
+                member = new PrimitiveCollectionTableMember(new MigrationMember(property), table, property.Options.Nullable);
+            }
+            else
+            {
+                member = new TableMemberInfoSqlBasic(property, table);
+            }
+            VoidWithDataError prepared = table.PrepareMembers(member);
             if (!prepared.Success)
                 throw new NotSupportedException(string.Join("; ", prepared.Errors.Select(error => error.Message)));
-            return GetSqlColumnType(member.SqlType, member);
+
+            return GetSqlColumnType(((ITableMemberInfoSqlWritable)member).SqlType, member);
         }
 
         public string FormatMigrationDefault(object value)

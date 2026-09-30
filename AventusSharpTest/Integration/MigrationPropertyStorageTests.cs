@@ -67,6 +67,44 @@ public sealed class MigrationPropertyStorageTests
     [TestCase("MySQL")]
     [TestCase("PostgreSQL")]
     [TestCase("SQLServer")]
+    public async Task Scalar_collection_column_can_be_added_updated_and_removed(string kind)
+    {
+        var storage = GetStorage(kind);
+        await Prepare(storage);
+        string Q(string name) => storage.QuoteIdentifier(name);
+
+        var add = new MigrationModel<MigrationTestEntity>();
+        add.AddProperty<List<PrimitiveRecordState?>>("States", new() { Nullable = true });
+        var added = await Apply(storage, add);
+        Assert.That(added.Success, Is.True, IntegrationEnvironment.ErrorMessages(added.Errors));
+
+        var value = await storage.Execute(
+            $"UPDATE {Q("migration_test_entities")} SET {Q("States")} = '[\"Ready\",null]' WHERE {Q("Id")} = 1");
+        Assert.That(value.Success, Is.True, IntegrationEnvironment.ErrorMessages(value.Errors));
+
+        var update = new MigrationModel<MigrationTestEntity>();
+        update.UpdateProperty<List<PrimitiveRecordState?>>("States", new() { Nullable = false });
+        var updated = await Apply(storage, update);
+        Assert.That(updated.Success, Is.True, IntegrationEnvironment.ErrorMessages(updated.Errors));
+        var rows = await storage.Query(
+            $"SELECT {Q("States")} FROM {Q("migration_test_entities")} WHERE {Q("Id")} = 1");
+        Assert.That(rows.Success, Is.True, IntegrationEnvironment.ErrorMessages(rows.Errors));
+        Assert.That(rows.Result!.Single()["States"], Is.EqualTo("[\"Ready\",null]"));
+
+        var remove = new MigrationModel<MigrationTestEntity>();
+        remove.RemoveProperty<List<PrimitiveRecordState?>>("States");
+        var removed = await Apply(storage, remove);
+        Assert.That(removed.Success, Is.True, IntegrationEnvironment.ErrorMessages(removed.Errors));
+        var remaining = await storage.Query(
+            $"SELECT {Q("Name")} FROM {Q("migration_test_entities")} WHERE {Q("Id")} = 1");
+        Assert.That(remaining.Success, Is.True, IntegrationEnvironment.ErrorMessages(remaining.Errors));
+        Assert.That(remaining.Result!.Single()["Name"], Is.EqualTo("before"));
+    }
+
+    [TestCase("SQLite")]
+    [TestCase("MySQL")]
+    [TestCase("PostgreSQL")]
+    [TestCase("SQLServer")]
     public async Task Rename_round_trip_preserves_rows_indexes_and_foreign_keys(string kind)
     {
         var storage = GetStorage(kind);

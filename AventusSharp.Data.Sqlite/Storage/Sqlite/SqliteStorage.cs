@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
@@ -465,16 +467,16 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
             sequence = sequences.FirstOrDefault()?["seq"];
         }
-        await result.RunAsync(() => 
+        await result.RunAsync(() =>
             Execute($"CREATE TABLE {QuoteIdentifier(temporary)} ({string.Join(", ", parts)}){suffix}")
         );
-        await result.RunAsync(() => 
+        await result.RunAsync(() =>
             Execute($"INSERT INTO {QuoteIdentifier(temporary)} ({names}) SELECT {names} FROM {QuoteIdentifier(table)}")
         );
-        await result.RunAsync(() => 
+        await result.RunAsync(() =>
             Execute($"DROP TABLE {QuoteIdentifier(table)}")
         );
-        await result.RunAsync(() => 
+        await result.RunAsync(() =>
             Execute($"ALTER TABLE {QuoteIdentifier(temporary)} RENAME TO {QuoteIdentifier(table)}")
         );
         if (sequence != null)
@@ -494,9 +496,10 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
     protected override async Task<ResultWithError<List<string>>> GetMigrationColumns(string table)
     {
         var rows = await Query($"PRAGMA table_xinfo({QuoteIdentifier(table)})");
-        return new() { 
-            Errors = rows.Errors, 
-            Result = rows.Result?.Select(row => row["name"]!).ToList() 
+        return new()
+        {
+            Errors = rows.Errors,
+            Result = rows.Result?.Select(row => row["name"]!).ToList()
         };
     }
 
@@ -554,13 +557,30 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
                     throw new InvalidOperationException("Existing values exceed the requested column size.");
                 if (value != null && type != typeof(string))
                 {
-                    if (type.IsEnum) Enum.Parse(type, value);
+                    if (PrimitiveCollectionTableMember.Supports(type))
+                    {
+                        JsonSerializer.Deserialize(value, type, new JsonSerializerOptions
+                        {
+                            Converters = { new JsonStringEnumConverter() }
+                        });
+                    }
+
+                    else if (type.IsEnum)
+                    {
+                        Enum.Parse(type, value);
+                    }
                     else if (type == typeof(bool))
                     {
                         if (value != "0" && value != "1") bool.Parse(value);
                     }
-                    else if (type == typeof(TimeSpan)) TimeSpan.Parse(value, CultureInfo.InvariantCulture);
-                    else if (type == typeof(TimeOnly)) TimeOnly.Parse(value, CultureInfo.InvariantCulture);
+                    else if (type == typeof(TimeSpan))
+                    {
+                        TimeSpan.Parse(value, CultureInfo.InvariantCulture);
+                    }
+                    else if (type == typeof(TimeOnly))
+                    {
+                        TimeOnly.Parse(value, CultureInfo.InvariantCulture);
+                    }
                     else System.Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
             }

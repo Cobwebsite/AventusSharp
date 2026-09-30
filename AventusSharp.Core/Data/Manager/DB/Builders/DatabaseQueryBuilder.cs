@@ -86,6 +86,7 @@ namespace AventusSharp.Data.Manager.DB.Builders
             }
             MergeScopeAndWhere();
             List<LambdaExpression> ignoredProjection = IgnoredExpressions.ToList();
+            bool defaultProjection = AllMembersByPath.TryGetValue("", out bool allMembers) && allMembers;
             bool restoreIgnoredProjection = ignoredProjection.Count > 0 &&  (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup);
             
             if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
@@ -106,6 +107,15 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 {
                     ExternalExpressionLoader<T>.LoadFields(this, group);
                 }
+            }
+
+            if (defaultProjection && ignoredProjection.Count == 0 &&
+                (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup) &&
+                InfoByPath[""].TableInfo.Primary is TableMemberInfoSql primary &&
+                !InfoByPath[""].Members.ContainsKey(primary))
+            {
+                DatabaseBuilderInfo root = InfoByPath[""];
+                root.Members[primary] = new DatabaseBuilderInfoMember(primary, root.Alias, Storage);
             }
 
             if (restoreIgnoredProjection)

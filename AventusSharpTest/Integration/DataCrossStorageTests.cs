@@ -19,6 +19,86 @@ public sealed class DataCrossStorageTests
     }
 
     [Test]
+    public async Task Ignore_excludes_a_field_in_the_other_storage()
+    {
+        var record = (await DedicatedStorageRecord.Create(
+            new DedicatedStorageRecord { Name = "Remote" }))!;
+        var owner = (await CrossStorageOwner.Create(new CrossStorageOwner
+        {
+            Name = "Local", Record = record
+        }))!;
+
+        ((IDatabaseDM)GenericDM.Get<CrossStorageOwner>())
+            .RemoveRecordsItems<CrossStorageOwner>([owner.Id]);
+        var removedRecord = ((IDatabaseDM)GenericDM.Get<DedicatedStorageRecord>())
+            .RemoveRecordsItems<DedicatedStorageRecord>([record.Id]);
+        Assert.That(removedRecord, Has.Count.EqualTo(1));
+
+        var result = await CrossStorageOwner.StartQuery()
+            .Ignore(item => item.Record!.Name)
+            .Where(item => item.Record!.Name == "Remote")
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Result![0].Name, Is.EqualTo("Local"));
+            Assert.That(result.Result[0].Record!.Id, Is.EqualTo(record.Id));
+            Assert.That(result.Result[0].Record!.Name, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task Ignore_preserves_a_cached_field_in_the_other_storage()
+    {
+        var record = (await DedicatedStorageRecord.Create(
+            new DedicatedStorageRecord { Name = "Remote" }))!;
+        var owner = (await CrossStorageOwner.Create(new CrossStorageOwner
+        {
+            Name = "Local", Record = record
+        }))!;
+
+        var result = await CrossStorageOwner.StartQuery()
+            .Ignore(item => item.Record!.Name)
+            .Where(item => item.Record!.Name == "Remote")
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Result![0].Record, Is.SameAs(record));
+            Assert.That(result.Result[0].Record!.Name, Is.EqualTo("Remote"));
+        });
+    }
+
+    [Test]
+    public async Task Ignore_excludes_a_collection_in_the_other_storage()
+    {
+        var record = (await DedicatedStorageRecord.Create(
+            new DedicatedStorageRecord { Name = "Remote" }))!;
+        var owner = (await CrossStorageOwner.Create(new CrossStorageOwner
+        {
+            Name = "Local", Records = [record]
+        }))!;
+
+        ((IDatabaseDM)GenericDM.Get<CrossStorageOwner>())
+            .RemoveRecordsItems<CrossStorageOwner>([owner.Id]);
+        ((IDatabaseDM)GenericDM.Get<DedicatedStorageRecord>())
+            .RemoveRecordsItems<DedicatedStorageRecord>([record.Id]);
+
+        var result = await CrossStorageOwner.StartQuery()
+            .Ignore(item => item.Records)
+            .Where(item => item.Records.Any(value => value.Name == "Remote"))
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.That(result.Result![0].Records, Is.Empty);
+    }
+
+    [Test]
     public async Task Link_can_be_loaded_and_filtered_across_two_storages()
     {
         var record = (await DedicatedStorageRecord.Create(

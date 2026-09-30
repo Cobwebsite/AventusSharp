@@ -46,6 +46,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     internal List<TableMemberInfoSql> Included { get; private set; } = new List<TableMemberInfoSql>();
     internal Dictionary<string, DatabaseSubBuilder> SubQueries { get; private set; } = new();
+    internal HashSet<string> IgnoredRelationPaths { get; } = new();
     protected readonly List<LambdaExpression> IgnoredExpressions = new();
     private readonly HashSet<string> ExplicitProjectionSubQueries = new();
     protected virtual bool SupportsExternalExpressions => false;
@@ -466,7 +467,18 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         {
             string path = fullPath != "" ? fullPath + "." + lastName : lastName;
             if (SubQueries.Remove(path))
+            {
+                IgnoredRelationPaths.Add(path);
+                if (InfoByPath.TryGetValue(fullPath, out DatabaseBuilderInfo? relationParent))
+                {
+                    TableMemberInfoSql? relationMember = relationParent.GetTableMemberInfo(lastName);
+                    if (relationMember != null)
+                    {
+                        relationParent.Members.Remove(relationMember);
+                    }
+                }
                 return path;
+            }
 
             string? subQueryPath = SubQueries.Keys
                 .Where(key => path.StartsWith(key + ".", StringComparison.Ordinal))

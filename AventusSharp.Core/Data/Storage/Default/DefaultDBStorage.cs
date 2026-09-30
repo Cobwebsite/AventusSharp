@@ -1461,11 +1461,17 @@ namespace AventusSharp.Data.Storage.Default
                             {
                                 string idValue = itemFields[key] ?? string.Empty;
                                 IGenericDM? dm = memberInfo1N.TableLinked?.DM;
-                                if (dm != null)
+                                if (dm is IDatabaseDM linkedManager && !ReferenceEquals(linkedManager.Storage, this))
+                                {
+                                    memberInfo.SetValue(o, int.Parse(idValue));
+                                    hasValue = true;
+                                }
+                                else if (dm != null)
                                 {
                                     object? oTemp = await dm.GetById(int.Parse(idValue));
                                     if (oTemp != null)
                                         hasValue = true;
+                                        
                                     memberInfo.SetValue(o, oTemp);
                                 }
 
@@ -1551,6 +1557,14 @@ namespace AventusSharp.Data.Storage.Default
             {
                 foreach (TableMemberInfoSql member in tableInfo.Members)
                 {
+                    string memberPath = path.Count == 0
+                        ? member.Name : string.Join(".", path) + "." + member.Name;
+                    if (queryBuilder.IgnoredRelationPaths.Contains(memberPath) &&
+                        queryBuilder is DatabaseQueryBuilder<X> projectionQuery &&
+                        !projectionQuery.SuppressCacheRegistration)
+                    {
+                        continue;
+                    }
                     if (!member.IsAutoRead && !queryBuilder.Included.Contains(member))
                     {
                         continue;

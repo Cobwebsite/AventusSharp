@@ -1,5 +1,6 @@
 using AventusSharp.Localization;
 using AventusSharp.Data.Manager;
+using AventusSharp.Data.Manager.DB;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -188,6 +189,24 @@ namespace AventusSharp.Data.Storage.Default.TableMember
                 {
                     ids.Add(id);
                 }
+            }
+
+            if (
+                LinkDM is IDatabaseDM linkedManager &&
+                TableInfo.DM is IDatabaseDM ownerManager &&
+                !ReferenceEquals(linkedManager.Storage, ownerManager.Storage) &&
+                TableLinkedType != null
+            )
+            {
+                IList references = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(TableLinkedType))!;
+                foreach (int id in ids)
+                {
+                    IStorable reference = (IStorable)Activator.CreateInstance(TableLinkedType)!;
+                    reference.Id = id;
+                    references.Add(reference);
+                }
+                SetValue(obj, references);
+                return;
             }
 
             object? objItem = GetByIds?.Invoke(LinkDM, new object[] { ids });

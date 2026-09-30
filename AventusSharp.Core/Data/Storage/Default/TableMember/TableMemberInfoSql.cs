@@ -41,6 +41,20 @@ namespace AventusSharp.Data.Storage.Default.TableMember
     }
     public abstract class TableMemberInfoSql : TableMemberInfo
     {
+        public static bool IsLinkInStorage(ITableMemberInfoSqlLink link, IDBStorage storage)
+        {
+            if (link.TableLinked == null)
+                return false;
+
+            if (link.TableLinked.DM is not IDatabaseDM manager)
+                return true;
+
+            if (ReferenceEquals(manager.Storage, storage))
+                return true;
+
+            return false;
+        }
+
         public static DbType? GetDbType(Type? type, TableMemberInfoSql? member)
         {
             if (member != null && member.OverrideDBType != null)

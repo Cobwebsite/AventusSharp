@@ -22,8 +22,7 @@ internal class CreateIntermediateTable
 
         TableInfo instance = memberInfo.TableInfo;
         TableInfo? link = memberMultiple.TableLinked;
-        // si on a pas de lien, il faut rajouter la table intermédiaire sans la contrainte
-        bool addLinkConstraint = link != null;
+        bool addLinkConstraint = TableMemberInfoSql.IsLinkInStorage(memberMultiple, storage);
         string linkFieldType = storage.GetSqlColumnType(memberMultiple.LinkFieldType, link?.Primary);
         string linkTableName = memberMultiple.LinkTableName;
         string linkPrimaryName = memberMultiple.LinkPrimaryName;

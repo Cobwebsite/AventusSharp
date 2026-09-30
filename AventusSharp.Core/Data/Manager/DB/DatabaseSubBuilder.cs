@@ -485,90 +485,53 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
             return result;
         }
 
-        Dictionary<int, List<IStorable>> elements = new();
-        bool isList = false;
-        foreach (var item in items)
+        HashSet<int> ids = new();
+        foreach (X item in items)
         {
             object? value = ExternalStorageMemberX.GetValue(item);
             if (value is IStorable storable)
             {
-                if (!elements.ContainsKey(storable.Id))
-                {
-                    elements.Add(storable.Id, new());
-                }
-                elements[storable.Id].Add(storable);
+                ids.Add(storable.Id);
             }
             else if (value is IList list)
             {
-                isList = true;
                 foreach (object o in list)
                 {
-                    if (value is IStorable storable1)
+                    if (o is IStorable linked)
                     {
-                        if (!elements.ContainsKey(storable1.Id))
-                        {
-                            elements.Add(storable1.Id, new());
-                        }
-                        elements[storable1.Id].Add(storable1);
+                        ids.Add(linked.Id);
                     }
                 }
             }
         }
 
-        if (elements.Count > 0)
+        if (ids.Count > 0)
         {
-            var query = ExternalStorageQuery.New();
-            List<int> ids = elements.Keys.ToList();
-            query.Prepare(ids);
+            QueryBuilderPreparedInstance<Y> query = ExternalStorageQuery.New();
+            query.Prepare(ids.ToList());
 
             List<Y>? resultTemp = await result.ExtractAsync(query.RunWithError);
             if (resultTemp == null) return result;
 
-            if (isList)
+            Dictionary<int, Y> linkedById = resultTemp.ToDictionary(linked => linked.Id);
+            foreach (X item in items)
             {
-                Dictionary<int, List<Y>> finalResult = new();
-                foreach (Y itemTemp in resultTemp)
+                object? value = ExternalStorageMemberX.GetValue(item);
+                if (value is IStorable linked)
                 {
-                    int id = itemTemp.Id;
-
-                    if (elements.ContainsKey(id))
-                    {
-                        foreach (X element in elements[id])
-                        {
-                            if (!finalResult.ContainsKey(element.Id))
-                            {
-                                finalResult[element.Id] = new();
-                            }
-                            finalResult[element.Id].Add(itemTemp);
-                        }
-                    }
-
-
+                    ExternalStorageMemberX.SetValue(item, linkedById.GetValueOrDefault(linked.Id));
                 }
-                foreach (KeyValuePair<int, List<Y>> pair in finalResult)
+                else if (value is IList list)
                 {
-                    if (elements.ContainsKey(pair.Key))
+                    List<Y> linkedItems = new();
+                    foreach (object o in list)
                     {
-                        foreach (X element in elements[pair.Key])
+                        if (o is IStorable reference && linkedById.TryGetValue(reference.Id, out Y? loaded))
                         {
-                            ExternalStorageMemberX.SetValue(element, pair.Value);
+                            linkedItems.Add(loaded);
                         }
                     }
-                }
-            }
-            else
-            {
-                foreach (Y itemTemp in resultTemp)
-                {
-                    int id = itemTemp.Id;
-
-                    if (elements.ContainsKey(id))
-                    {
-                        foreach (X element in elements[id])
-                        {
-                            ExternalStorageMemberX.SetValue(element, itemTemp);
-                        }
-                    }
+                    ExternalStorageMemberX.SetValue(item, linkedItems);
                 }
             }
         }
@@ -617,6 +580,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         if (names.Count > 1)
         {
             ParameterExpression argParam2 = Expression.Parameter(typeof(Y), "t");
+            query.Field(Expression.Lambda(Expression.PropertyOrField(argParam2, Storable.Id), argParam2));
             Expression nameProperty2 = Expression.PropertyOrField(argParam2, names[1]);
             for (int i = 2; i < names.Count; i++)
             {
@@ -651,6 +615,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         if (names.Count > 1)
         {
             ParameterExpression argParam2 = Expression.Parameter(typeof(Y), "t");
+            ExternalStorageQuery.Field(Expression.Lambda(Expression.PropertyOrField(argParam2, Storable.Id), argParam2));
             Expression nameProperty2 = Expression.PropertyOrField(argParam2, names[1]);
             for (int i = 2; i < names.Count; i++)
             {

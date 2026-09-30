@@ -82,7 +82,7 @@ internal sealed class ExternalExpressionLoader<T> : ExpressionVisitor where T : 
             if (member is not ITableMemberInfoSqlLink link)
                 return false;
 
-            if (builder.DM is not IDatabaseDM manager || !manager.IsSameStorage(member.DM))
+            if (builder.DM is not IDatabaseDM manager || !manager.IsSameStorage(link.TableLinked?.DM))
                 return true;
 
             table = link.TableLinked;
@@ -123,7 +123,7 @@ internal sealed class ExternalExpressionLoader<T> : ExpressionVisitor where T : 
         {
             return false;
         }
-        if (!manager.IsSameStorage(member.DM))
+        if (!manager.IsSameStorage(multiple.TableLinked.DM))
         {
             return false;
         }

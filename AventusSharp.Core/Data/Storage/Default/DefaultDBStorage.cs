@@ -693,16 +693,39 @@ namespace AventusSharp.Data.Storage.Default
                                 }
                                 else
                                 {
-                                    result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, AventusTranslations.Get(AventusMessageKeys.Data.LinkTypeNotFound, memberInfoSqlLink.TableLinkedType, memberInfo.Name, memberInfo.TableInfo.Name)));
+                                    IGenericDM linkedManager = GenericDM.Get(memberInfoSqlLink.TableLinkedType);
+                                    if (linkedManager is IDatabaseDM linkedDatabaseManager && !ReferenceEquals(linkedDatabaseManager.Storage, this))
+                                    {
+                                        memberInfoSqlLink.TableLinked = linkedDatabaseManager.Storage.GetTableInfo(memberInfoSqlLink.TableLinkedType);
+                                    }
+                                    if (memberInfoSqlLink.TableLinked == null)
+                                    {
+                                        result.Errors.Add(new DataError(DataErrorCode.TypeNotFound, AventusTranslations.Get(AventusMessageKeys.Data.LinkTypeNotFound, memberInfoSqlLink.TableLinkedType, memberInfo.Name, memberInfo.TableInfo.Name)));
+                                    }
                                 }
                             }
                         }
                     }
                     foreach (TableReverseMemberInfo reversMember in info.ReverseMembers)
                     {
-                        if (reversMember.ReverseLinkType != null && allTableInfos.ContainsKey(reversMember.ReverseLinkType))
+                        TableInfo? reverseTable = null;
+                        if(reversMember.ReverseLinkType != null)
                         {
-                            VoidWithDataError resultTemp = reversMember.PrepareReverseLink(allTableInfos[reversMember.ReverseLinkType]);
+                            reverseTable = GetTableInfo(reversMember.ReverseLinkType);
+                        }
+                        
+                        if (
+                            reverseTable == null && 
+                            reversMember.ReverseLinkType != null &&
+                            GenericDM.Get(reversMember.ReverseLinkType) is IDatabaseDM reverseManager
+                        )
+                        {
+                            reverseTable = reverseManager.Storage.GetTableInfo(reversMember.ReverseLinkType);
+                        }
+                        
+                        if (reverseTable != null)
+                        {
+                            VoidWithDataError resultTemp = reversMember.PrepareReverseLink(reverseTable);
                             if (!resultTemp.Success)
                             {
                                 result.Errors.AddRange(resultTemp.Errors);

@@ -70,7 +70,7 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
 
                 if (member is ITableMemberInfoSqlLinkSingle memberLink)
                 {
-                    if (memberLink.TableLinked != null)
+                if (memberLink.TableLinked != null && TableMemberInfoSql.IsLinkInStorage(memberLink, storage))
                     {
                         if (!primariesByClass.ContainsKey(memberLink.TableLinked.SqlTableName))
                         {

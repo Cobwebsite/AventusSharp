@@ -24,10 +24,30 @@ public sealed class DedicatedTestStorage : SqliteStorage
 public sealed class DedicatedStorageRecord : Storable<DedicatedStorageRecord>
 {
     public string Name { get; set; } = "";
+
+    [ReverseLink(nameof(CrossStorageOwner.Record))]
+    public List<CrossStorageOwner> Owners { get; set; } = [];
 }
 
 public sealed class DedicatedStorageRecordManager
     : DatabaseDM<DedicatedStorageRecordManager, DedicatedStorageRecord>
+{
+}
+
+[SqlName("cross_storage_owners")]
+public sealed class CrossStorageOwner : Storable<CrossStorageOwner>
+{
+    public string Name { get; set; } = "";
+
+    [AutoRead]
+    public DedicatedStorageRecord? Record { get; set; }
+
+    [AutoRead]
+    public List<DedicatedStorageRecord> Records { get; set; } = [];
+}
+
+public sealed class CrossStorageOwnerManager
+    : DatabaseDM<CrossStorageOwnerManager, CrossStorageOwner>
 {
 }
 

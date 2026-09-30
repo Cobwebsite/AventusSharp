@@ -690,7 +690,11 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                 TableMemberInfoSql? memberInfoLink = parentInfo.GetTableMemberInfo(lambdaPart.Name);
                 if (memberInfoLink != null)
                 {
-                    if (DM is IDatabaseDM databaseDM && databaseDM.IsSameStorage(memberInfoLink.DM))
+                    if (
+                        DM is IDatabaseDM databaseDM &&
+                        memberInfoLink is ITableMemberInfoSqlLink linkedMember &&
+                        databaseDM.IsSameStorage(linkedMember.TableLinked?.DM)
+                    )
                     {
                         if (memberInfoLink is ITableMemberInfoSqlLinkMultiple multiple && multiple.TableLinked != null)
                         {

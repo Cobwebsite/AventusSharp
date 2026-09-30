@@ -465,7 +465,6 @@ namespace AventusSharp.Data.Manager.DB.Builders
                     MethodInfo containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) })!;
                     ConstantExpression searchConstant = Expression.Constant(search, typeof(string));
 
-                    // TODO check if null maybe it will crash
                     fieldCondition = Expression.Call(propertyAccess, containsMethod, searchConstant);
                 }
                 else if (member.MemberType == typeof(DateTime) || member.MemberType == typeof(DateTime?))

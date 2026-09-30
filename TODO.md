@@ -56,11 +56,5 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 
 ## TODO obsolètes ou à reformuler
 
-- **Boucle infinie dans `AddDataDependency` : pas de cycle dans la récursion actuelle.** La méthode descend uniquement dans les arguments de types génériques construits, puis normalise leur définition. Elle ne suit ni les propriétés du type ni le graphe de dépendances entre modèles ; les arguments forment une structure finie. Retirer ce TODO ou le remplacer par cette explication. Ne pas confondre ce parcours avec la détection des cycles entre managers.
-  - Source : `AventusSharp.Core/Data/DataMainManager.cs:430`.
-
-- **Crash de `Contains` sur une chaîne nulle : risque à reformuler.** Le code construit une expression destinée à la traduction SQL, sans appeler `Contains` sur l'objet stocké. Une colonne SQL nulle ne déclenche pas une `NullReferenceException` lors de cette construction. Retirer l'hypothèse de crash ; compléter plutôt les tests de recherche avec une colonne nullable et vérifier la traduction chez les fournisseurs. Les tests actuels de recherche textuelle ne couvrent pas ce cas.
-  - Source : `AventusSharp.Core/Data/Manager/DB/Builders/DatabaseQueryBuilder.cs:181` ; tests dans `AventusSharpTest/Integration/DataTextSearchQueryTests.cs`.
-
 - **`DatabaseBuilderInfo.ReverseLinks` : nettoyage possible, avec vérification de compatibilité.** La recherche des usages trouve la déclaration et deux écritures (`Add`), sans lecture dans les sources du dépôt. Supprimer la collection et ses écritures si elle n'est pas utilisée par des consommateurs externes ; c'est une propriété publique, donc vérifier la compatibilité avant retrait. Reformuler le TODO en tâche de nettoyage, pas en défaut de chargement des relations inverses.
   - Source : `AventusSharp.Core/Data/Manager/DB/TypeDefinitionForBuilder.cs:436` ; écritures dans `DefaultDBStorage.cs:1572,2282`.

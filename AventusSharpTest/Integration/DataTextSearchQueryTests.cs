@@ -68,6 +68,33 @@ public sealed class DataTextSearchQueryTests
     }
 
     [Test]
+    public async Task Text_search_ignores_null_string_columns()
+    {
+        var token = $"nullable-search-{Guid.NewGuid():N}";
+        var withoutDescription = await TestRoom.Create(new TestRoom
+        {
+            Name = $"Null description {token}",
+            Code = $"null-{token}",
+            Description = null
+        });
+        var withDescription = await TestRoom.Create(new TestRoom
+        {
+            Name = $"Matching description {token}",
+            Code = $"match-{token}",
+            Description = token
+        });
+
+        var result = await TestRoom.StartQuery()
+            .Where(token, [nameof(TestRoom.Description)])
+            .RunWithError();
+
+        Assert.That(withoutDescription, Is.Not.Null);
+        Assert.That(withDescription, Is.Not.Null);
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(room => room.Id), Is.EqualTo(new[] { withDescription!.Id }));
+    }
+
+    [Test]
     public async Task Invalid_field_name_returns_an_error_result()
     {
         var result = await Device.StartQuery()

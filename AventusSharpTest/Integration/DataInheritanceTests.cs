@@ -1,3 +1,4 @@
+using AventusSharp.Data;
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
 using AventusSharpTest.Integration.Models;
@@ -93,9 +94,9 @@ public sealed class DataInheritanceTests
         };
 
         var dimmerCreation = await TestDimmer.BulkCreateWithError(
-            [dimmer], withId: true);
+            [dimmer], new BulkCreateOptions { WithId = true });
         var relayCreation = await TestRelay.BulkCreateWithError(
-            [relay], withId: true);
+            [relay], new BulkCreateOptions { WithId = true });
         var manager = GenericDM.Get<ITestActuator>();
         var dimmerById = await manager.GetByIdWithError<TestDimmer>(dimmer.Id);
         var relayById = await manager.GetByIdWithError<TestRelay>(relay.Id);
@@ -221,7 +222,7 @@ public sealed class DataInheritanceTests
             Id = 130_000 + index, Name = "Buffered dimmer " + index, Level = index
         }).ToList();
         values[^1].Name = "";
-        var result = await TestDimmer.BulkCreateWithError(values, withId: true);
+        var result = await TestDimmer.BulkCreateWithError(values, new BulkCreateOptions { WithId = true });
         Assert.That(result.Success, Is.False);
         foreach (string table in new[] { "test_actuators", "test_dimmers" })
         {
@@ -373,7 +374,7 @@ public sealed class DataInheritanceTests
         };
 
         var creation = await TestForcedGateway.BulkCreateWithError(
-            [gateway], withId: true);
+            [gateway], new BulkCreateOptions { WithId = true });
         var loaded = await TestForcedGateway.GetByIdWithError(gateway.Id);
 
         Assert.Multiple(() =>
@@ -404,7 +405,7 @@ public sealed class DataInheritanceTests
         var transaction = await manager.RunInsideTransaction(async () =>
         {
             var creation = await TestForcedGateway.BulkCreateWithError(
-                [gateway], withId: true);
+                [gateway], new BulkCreateOptions { WithId = true });
             creation.Errors.Add(new AventusSharp.Tools.GenericError(
                 9923, "force ForceInherit bulk rollback"));
             return creation;
@@ -492,9 +493,9 @@ public sealed class DataInheritanceTests
         };
 
         var gatewayCreation = await TestForcedGateway.BulkCreateWithError(
-            [gateway], withId: true);
+            [gateway], new BulkCreateOptions { WithId = true });
         var bindingCreation = await TestForcedAssetBinding.BulkCreateWithError(
-            [binding], withId: true);
+            [binding], new BulkCreateOptions { WithId = true });
         var cached = await TestForcedAssetBinding.GetByIdWithError(binding.Id);
         var noCache = await ((SimpleDatabaseDM<TestForcedAssetBinding>)
                 GenericDM.Get<TestForcedAssetBinding>())

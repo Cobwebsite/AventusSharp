@@ -56,8 +56,8 @@ namespace AventusSharp.Data.Manager
         #region Create
         Task<List<X>> Create<X>(List<X> values) where X : notnull, IStorable;
         Task<ResultWithError<List<X>>> CreateWithError<X>(List<X> values) where X : notnull, IStorable;
-        Task<bool> BulkCreate<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
-        Task<VoidWithError> BulkCreateWithError<X>(List<X> values, bool withId = false) where X : notnull, IStorable;
+        Task<bool> BulkCreate<X>(List<X> values, BulkCreateOptions? options = null) where X : notnull, IStorable;
+        Task<VoidWithError> BulkCreateWithError<X>(List<X> values, BulkCreateOptions? options = null) where X : notnull, IStorable;
         Task<X?> Create<X>(X value) where X : notnull, IStorable;
         Task<ResultWithError<X>> CreateWithError<X>(X value) where X : notnull, IStorable;
 

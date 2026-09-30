@@ -111,7 +111,7 @@ public class CSVImporter
                         records.Add(record);
                         if (records.Count == config.BufferSize)
                         {
-                            await result.RunAsync(() => dm.BulkCreateWithError(records, config.WithId));
+                            await result.RunAsync(() => dm.BulkCreateWithError(records, new BulkCreateOptions { WithId = config.WithId, BatchSize = config.BufferSize }));
                             if (!result.Success)
                             {
                                 return result;
@@ -124,7 +124,7 @@ public class CSVImporter
                     {
                         if (bulk || config.WithId)
                         {
-                            await result.RunAsync(() => dm.BulkCreateWithError(records, config.WithId));
+                            await result.RunAsync(() => dm.BulkCreateWithError(records, new BulkCreateOptions { WithId = config.WithId, BatchSize = config.BufferSize }));
 
                         }
                         else

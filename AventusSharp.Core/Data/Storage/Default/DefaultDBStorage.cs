@@ -709,20 +709,20 @@ namespace AventusSharp.Data.Storage.Default
                     foreach (TableReverseMemberInfo reversMember in info.ReverseMembers)
                     {
                         TableInfo? reverseTable = null;
-                        if(reversMember.ReverseLinkType != null)
+                        if (reversMember.ReverseLinkType != null)
                         {
                             reverseTable = GetTableInfo(reversMember.ReverseLinkType);
                         }
-                        
+
                         if (
-                            reverseTable == null && 
+                            reverseTable == null &&
                             reversMember.ReverseLinkType != null &&
                             GenericDM.Get(reversMember.ReverseLinkType) is IDatabaseDM reverseManager
                         )
                         {
                             reverseTable = reverseManager.Storage.GetTableInfo(reversMember.ReverseLinkType);
                         }
-                        
+
                         if (reverseTable != null)
                         {
                             VoidWithDataError resultTemp = reversMember.PrepareReverseLink(reverseTable);
@@ -1323,7 +1323,7 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             string rootName = path.Split('.')[0];
                             TableMemberInfo? relation = baseInfo.TableInfo.ReverseMembers.FirstOrDefault(member => member.Name == rootName);
-                            
+
                             if (relation != null)
                             {
                                 selectedMembers.Add(relation);
@@ -1471,7 +1471,7 @@ namespace AventusSharp.Data.Storage.Default
                                     object? oTemp = await dm.GetById(int.Parse(idValue));
                                     if (oTemp != null)
                                         hasValue = true;
-                                        
+
                                     memberInfo.SetValue(o, oTemp);
                                 }
 
@@ -1798,14 +1798,27 @@ namespace AventusSharp.Data.Storage.Default
         #region Create
         protected abstract DatabaseCreateBuilderInfo PrepareSQLForBulkCreate<X>(DatabaseCreateBuilder<X> createBuilder, int nbItems, bool withId) where X : IStorable;
         protected virtual int MaxBulkParameters => int.MaxValue;
-        public Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
+
+        public Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, BulkCreateOptions? options = null) where X : IStorable
         {
+            VoidWithError result = new();
+            if (options == null)
+            {
+                options = new();
+            }
+            else
+            {
+                result.Run(options.Validate);
+            }
             createBuilder.HasGeneratedIds = false;
-            return RunInsideTransaction(() => BulkCreateItems(createBuilder, items, withId));
+            return result.RunAsync(() =>
+                RunInsideTransaction(() => BulkCreateItems(createBuilder, items, options))
+            );
         }
 
-        private async Task<VoidWithError> BulkCreateItems<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, bool withId) where X : IStorable
+        private async Task<VoidWithError> BulkCreateItems<X>(DatabaseCreateBuilder<X> createBuilder, List<X> items, BulkCreateOptions options) where X : IStorable
         {
+            bool withId = options.WithId;
             VoidWithError result = new();
             if (items.Count == 0) return result;
             var groups = items.GroupBy(item => item.GetType()).ToList();
@@ -1814,7 +1827,7 @@ namespace AventusSharp.Data.Storage.Default
                 foreach (var group in groups)
                 {
                     var builder = new DatabaseCreateBuilder<X>(createBuilder.Storage, createBuilder.DM, group.Key);
-                    await result.RunAsync(() => BulkCreateItems(builder, group.ToList(), withId));
+                    await result.RunAsync(() => BulkCreateItems(builder, group.ToList(), options));
                     createBuilder.HasGeneratedIds |= builder.HasGeneratedIds;
                 }
                 return result;
@@ -1823,7 +1836,7 @@ namespace AventusSharp.Data.Storage.Default
             List<TableMemberInfoSql> links = new();
             List<TableMemberInfoSql> before = new();
             List<TableReverseMemberInfo> reverse = new();
-            int bufferSize = 500;
+            int bufferSize = options.BatchSize;
             for (TableInfo? table = createBuilder.TableInfo; table != null; table = table.Parent)
             {
                 int fields = 0;
@@ -2853,10 +2866,10 @@ namespace AventusSharp.Data.Storage.Default
         protected abstract Task<ResultWithError<List<string>>> GetMigrationColumns(string table);
         protected static bool IsMigrationCollection(IMigrationProperty property)
         {
-            if(PrimitiveCollectionTableMember.Supports(property.Type)) return false;
+            if (PrimitiveCollectionTableMember.Supports(property.Type)) return false;
 
-            if(typeof(IList).IsAssignableFrom(property.Type)) return true;
-            if(typeof(IDictionary).IsAssignableFrom(property.Type)) return true;
+            if (typeof(IList).IsAssignableFrom(property.Type)) return true;
+            if (typeof(IDictionary).IsAssignableFrom(property.Type)) return true;
 
             return false;
         }
@@ -3104,7 +3117,7 @@ namespace AventusSharp.Data.Storage.Default
         {
             TableInfo table = new(property.Parent);
             TableMemberInfoSql member;
-            if(PrimitiveCollectionTableMember.Supports(property.Type))
+            if (PrimitiveCollectionTableMember.Supports(property.Type))
             {
                 member = new PrimitiveCollectionTableMember(new MigrationMember(property), table, property.Options.Nullable);
             }

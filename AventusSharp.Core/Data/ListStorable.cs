@@ -47,37 +47,27 @@ public static class ListStorable
         };
         return result;
     }
-
     /// <summary>
     /// Create inside the DM a bunch of elements and return them
     /// If something went wrong an empty list will be returned
     /// </summary>
     /// <param name="values"></param>
-    /// <param name="withId"></param>
+    /// <param name="options"></param>
     /// <returns></returns>
-    public static async Task<bool> BulkCreate<T>(this List<T> values, bool withId = false) where T : IStorable
+    public static async Task<bool> BulkCreate<T>(this List<T> values, BulkCreateOptions? options = null) where T : IStorable
     {
-        // TODO change withId by a config object to add bufferSize
-        if (values != null && values.Count > 0)
-        {
-            return await GenericDM.Get<T>().BulkCreate(values, withId);
-        }
-        return true;
+        return (await BulkCreateWithError(values, options)).Success;
     }
 
     /// <summary>
     /// Create inside the DM a bunch of elements and return them
     /// </summary>
     /// <param name="values"></param>
-    /// <param name="withId"></param>
+    /// <param name="options"></param>
     /// <returns></returns>
-    public static async Task<VoidWithError> BulkCreateWithError<T>(this List<T> values, bool withId = false) where T : IStorable
+    public static async Task<VoidWithError> BulkCreateWithError<T>(this List<T> values, BulkCreateOptions? options = null) where T : IStorable
     {
-        if (values != null && values.Count > 0)
-        {
-            return await GenericDM.Get<T>().BulkCreateWithError(values, withId);
-        }
-        return new();
+        return await GenericDM.Get<T>().BulkCreateWithError(values, options);
     }
 
     #endregion

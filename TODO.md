@@ -33,7 +33,7 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 
 ## Optimisations et évolutions à cadrer
 
-- [ ] **Rendre la taille des lots de `BulkCreate` configurable si nécessaire.** Les deux TODO restent pertinents pour l'API, mais le découpage existe déjà : taille par défaut de 500, réduite selon la limite de paramètres du fournisseur. Introduire des options communes aux variantes avec/sans erreurs et aux listes, en gardant les surcharges avec `withId`. Une taille demandée doit rester bornée par les limites SQL ; tester les valeurs invalides et le rollback sur plusieurs lots.
+- [x] **Rendre la taille des lots de `BulkCreate` configurable si nécessaire.** `BulkCreateOptions` expose `WithId` et `BatchSize` (500 par défaut) aux variantes statiques, aux listes et aux managers. Le stockage borne la taille demandée selon sa limite de paramètres SQL. Les tailles invalides, le rollback sur plusieurs lots et le plafonnement SQL Server sont testés.
   - Sources : `AventusSharp.Core/Data/Storable.cs:204`, `AventusSharp.Core/Data/ListStorable.cs:60` ; découpage dans `DefaultDBStorage.cs:1777`.
 
 - [ ] **Regrouper les lectures de relations inverses par lot.** `ReverseQuery(List<int>)` boucle encore sur `ReverseQuery(int)` et déduplique ensuite les résultats. Faire du traitement par liste la base commune, utiliser un filtre sur les identifiants et déléguer l'appel unitaire à ce traitement. Conserver les scopes, les erreurs et la déduplication ; mesurer le nombre de requêtes et couvrir la liste vide.

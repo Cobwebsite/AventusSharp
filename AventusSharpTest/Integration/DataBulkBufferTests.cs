@@ -1,3 +1,6 @@
+using AventusSharp.Data;
+using AventusSharp.Data.Manager;
+using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharpTest.Integration.Models;
 using NUnit.Framework;
 
@@ -7,6 +10,74 @@ namespace AventusSharpTest.Integration;
 [NonParallelizable]
 public sealed class DataBulkBufferTests
 {
+    [Test]
+    public async Task Configured_batch_size_is_shared_by_static_and_list_entry_points()
+    {
+        var first = Enumerable.Range(0, 5)
+            .Select(index => new TestOwnedProfile { Id = 30_000 + index, Label = $"Configured static {index}" })
+            .ToList();
+        var second = Enumerable.Range(0, 5)
+            .Select(index => new TestOwnedProfile { Id = 31_000 + index, Label = $"Configured list {index}" })
+            .ToList();
+        var options = new BulkCreateOptions { WithId = true, BatchSize = 2 };
+
+        var staticResult = await TestOwnedProfile.BulkCreateWithError(first, options);
+        var listResult = await second.BulkCreate(options);
+        var rows = await IntegrationEnvironment.Storage.Query("SELECT COUNT(*) AS count FROM \"test_owned_profiles\";");
+
+        Assert.That(staticResult.Success, Is.True, IntegrationEnvironment.ErrorMessages(staticResult.Errors));
+        Assert.That(listResult, Is.True);
+        Assert.That(rows.Result!.Single()["count"], Is.EqualTo("10"));
+        Assert.That(first.Concat(second).Select(item => item.Id),
+            Is.EqualTo(Enumerable.Range(30_000, 5).Concat(Enumerable.Range(31_000, 5))));
+    }
+
+    [TestCase(0)]
+    [TestCase(-1)]
+    public async Task Invalid_batch_size_returns_an_error_even_for_an_empty_list(int batchSize)
+    {
+        var options = new BulkCreateOptions { BatchSize = batchSize };
+        var staticResult = await TestOwnedProfile.BulkCreateWithError([], options);
+        var listResult = await new List<TestOwnedProfile>().BulkCreateWithError(options);
+        var booleanResult = await new List<TestOwnedProfile>().BulkCreate(options);
+
+        Assert.That(staticResult.Success, Is.False);
+        Assert.That(listResult.Success, Is.False);
+        Assert.That(booleanResult, Is.False);
+        Assert.That(staticResult.Errors, Has.Some.Matches<AventusSharp.Tools.GenericError>(error =>
+            error is DataError dataError && dataError.Code == DataErrorCode.ValidationError));
+    }
+
+    [Test]
+    public async Task Direct_builder_rejects_an_invalid_batch_size_without_entering_the_batch_loop()
+    {
+        var builder = new DatabaseCreateBuilder<TestOwnedProfile>(
+            IntegrationEnvironment.Storage, GenericDM.Get<TestOwnedProfile>());
+
+        var result = await builder.RunBulkWithError(
+            [new TestOwnedProfile { Label = "Invalid builder batch" }],
+            new BulkCreateOptions { BatchSize = 0 });
+
+        Assert.That(result.Success, Is.False);
+        var rows = await IntegrationEnvironment.Storage.Query("SELECT COUNT(*) AS count FROM \"test_owned_profiles\";");
+        Assert.That(rows.Result!.Single()["count"], Is.EqualTo("0"));
+    }
+
+    [Test]
+    public async Task Configured_multiple_batches_roll_back_together()
+    {
+        var profiles = Enumerable.Range(0, 5)
+            .Select(index => new TestOwnedProfile { Label = $"Configured rollback {index}" })
+            .ToList();
+        profiles[^1].Label = profiles[0].Label;
+
+        var result = await profiles.BulkCreateWithError(new BulkCreateOptions { BatchSize = 2 });
+        var rows = await IntegrationEnvironment.Storage.Query("SELECT COUNT(*) AS count FROM \"test_owned_profiles\";");
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(rows.Result!.Single()["count"], Is.EqualTo("0"));
+    }
+
     [SetUp]
     public async Task ClearTables()
     {
@@ -80,7 +151,7 @@ public sealed class DataBulkBufferTests
             })
             .ToList();
 
-        var creation = await TestOwnedProfile.BulkCreateWithError(profiles, withId: true);
+        var creation = await TestOwnedProfile.BulkCreateWithError(profiles, new BulkCreateOptions { WithId = true });
         var rows = await IntegrationEnvironment.Storage.Query(
             "SELECT MIN(\"Id\") AS min_id, MAX(\"Id\") AS max_id, " +
             "COUNT(*) AS count FROM \"test_owned_profiles\";");
@@ -117,7 +188,7 @@ public sealed class DataBulkBufferTests
             })
             .ToList();
 
-        var creation = await TestScene.BulkCreateWithError(scenes, withId: true);
+        var creation = await TestScene.BulkCreateWithError(scenes, new BulkCreateOptions { WithId = true });
         var ownerRows = await IntegrationEnvironment.Storage.Query(
             "SELECT COUNT(*) AS count FROM \"test_scenes\";");
         var intermediateRows = await IntegrationEnvironment.Storage.Query(
@@ -156,7 +227,7 @@ public sealed class DataBulkBufferTests
             .ToList();
         scenes[500].Lamps = [TestLamp.OnlyId(999_999)];
 
-        var creation = await TestScene.BulkCreateWithError(scenes, withId: true);
+        var creation = await TestScene.BulkCreateWithError(scenes, new BulkCreateOptions { WithId = true });
         var ownerRows = await IntegrationEnvironment.Storage.Query(
             "SELECT COUNT(*) AS count FROM \"test_scenes\";");
         var intermediateRows = await IntegrationEnvironment.Storage.Query(
@@ -188,7 +259,7 @@ public sealed class DataBulkBufferTests
             })
             .ToList();
 
-        var creation = await TestLamp.BulkCreateWithError(lamps, withId: true);
+        var creation = await TestLamp.BulkCreateWithError(lamps, new BulkCreateOptions { WithId = true });
         var linkedRows = await IntegrationEnvironment.Storage.Query(
             $"SELECT COUNT(*) AS count FROM \"test_lamps\" WHERE \"Room\" = {room!.Id};");
         var beforeBoundary = await TestLamp.GetByIdWithError(lamps[499].Id);
@@ -221,7 +292,7 @@ public sealed class DataBulkBufferTests
             Room = TestRoom.OnlyId(room!.Id)
         };
 
-        var creation = await TestLamp.BulkCreateWithError([lamp], withId: true);
+        var creation = await TestLamp.BulkCreateWithError([lamp], new BulkCreateOptions { WithId = true });
         var cached = await TestLamp.GetByIdWithError(lamp.Id);
         var noCache = await ((TestLampManager)
                 AventusSharp.Data.Manager.GenericDM.Get<TestLamp>())
@@ -257,7 +328,7 @@ public sealed class DataBulkBufferTests
 
         var transaction = await manager.RunInsideTransaction(async () =>
         {
-            var creation = await TestLamp.BulkCreateWithError([lamp], withId: true);
+            var creation = await TestLamp.BulkCreateWithError([lamp], new BulkCreateOptions { WithId = true });
             Assert.That(lamp.Room, Is.SameAs(room),
                 "The relation must be canonical while the transaction is active.");
             creation.Errors.Add(new AventusSharp.Tools.GenericError(
@@ -295,7 +366,7 @@ public sealed class DataBulkBufferTests
             .ToList();
         lamps[500].Room = TestRoom.OnlyId(999_999);
 
-        var creation = await TestLamp.BulkCreateWithError(lamps, withId: true);
+        var creation = await TestLamp.BulkCreateWithError(lamps, new BulkCreateOptions { WithId = true });
         var rows = await IntegrationEnvironment.Storage.Query(
             "SELECT COUNT(*) AS count FROM \"test_lamps\";");
         var firstCached = await TestLamp.GetByIdWithError(lamps[0].Id);
@@ -332,7 +403,7 @@ public sealed class DataBulkBufferTests
 
         var transaction = await manager.RunInsideTransaction(async () =>
         {
-            var creation = await TestLamp.BulkCreateWithError(lamps, withId: true);
+            var creation = await TestLamp.BulkCreateWithError(lamps, new BulkCreateOptions { WithId = true });
             creation.Errors.Add(new AventusSharp.Tools.GenericError(
                 9924, "force direct relation bulk rollback"));
             return creation;

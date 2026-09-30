@@ -266,7 +266,7 @@ namespace AventusSharp.Data.Manager.DB
             foreach (TableMemberInfo member in selectedMembers.Distinct())
             {
                 if (!member.TableInfo.Type.IsInstanceOfType(canonical)) continue;
-                
+
                 previousValues.Add((member, member.GetValue(canonical)));
                 member.SetValue(canonical, member.GetValue(item));
             }
@@ -620,8 +620,9 @@ namespace AventusSharp.Data.Manager.DB
             });
         }
 
-        protected override Task<VoidWithError> BulkCreateLogic<X>(List<X> values, bool withId)
+        protected override Task<VoidWithError> BulkCreateLogic<X>(List<X> values, BulkCreateOptions options)
         {
+            bool withId = options.WithId;
             return RunInsideTransaction(async delegate ()
             {
                 VoidWithError result = new();
@@ -630,7 +631,7 @@ namespace AventusSharp.Data.Manager.DB
                     if (values.Count == 0) return new();
                     X value = values[0];
                     DatabaseCreateBuilder<X> builder = new DatabaseCreateBuilder<X>(Storage, this, value.GetType());
-                    result = await builder.RunBulkWithError(values, withId);
+                    result = await builder.RunBulkWithError(values, options);
                     if (result.Success && NeedLocalCache)
                     {
                         if (withId || builder.HasGeneratedIds)

@@ -1,3 +1,4 @@
+using AventusSharp.Data;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using AventusSharpTest.Integration.Models;
@@ -37,7 +38,7 @@ public sealed class DataBulkAndEventTests
             NewDevice(502, "Second")
         };
 
-        var result = await Device.BulkCreateWithError(values, withId: true);
+        var result = await Device.BulkCreateWithError(values, new BulkCreateOptions { WithId = true });
         var rows = await IntegrationEnvironment.Storage.Query(
             "SELECT \"Id\" FROM \"devices\" ORDER BY \"Id\";");
 

@@ -31,9 +31,9 @@ namespace AventusSharp.Data.Manager
         /// Executes a bulk insert 
         /// </summary>
         /// <param name="items">The items to be created.</param>
-        /// <param name="withId">Set to true if you need insert Id</param>
+        /// <param name="options">Set to true if you need insert Id</param>
         /// <returns></returns>
-        public Task<VoidWithError> RunBulkWithError(List<T> items, bool withId);
+        public Task<VoidWithError> RunBulkWithError(List<T> items, BulkCreateOptions? options = null);
 
     }
 

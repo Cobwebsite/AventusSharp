@@ -1,3 +1,4 @@
+using AventusSharp.Data;
 using AventusSharp.Data.Manager;
 using AventusSharp.Tools;
 using AventusSharpTest.Integration.Models;
@@ -122,7 +123,7 @@ public sealed class DataCacheConcurrencyTests
         second.Id = 80_002;
         second.RuntimeState = "second runtime state";
 
-        var creation = await Device.BulkCreateWithError([first, second], withId: true);
+        var creation = await Device.BulkCreateWithError([first, second], new BulkCreateOptions { WithId = true });
         var firstById = await Device.GetByIdWithError(first.Id);
         var all = await manager.GetAllWithError<Device>();
 
@@ -148,7 +149,7 @@ public sealed class DataCacheConcurrencyTests
 
         var transaction = await manager.RunInsideTransaction(async () =>
         {
-            var creation = await Device.BulkCreateWithError([item], withId: true);
+            var creation = await Device.BulkCreateWithError([item], new BulkCreateOptions { WithId = true });
             creation.Errors.Add(new GenericError(9916, "force explicit bulk rollback"));
             return creation;
         });
@@ -185,7 +186,7 @@ public sealed class DataCacheConcurrencyTests
             .ToList();
         items[^1].Id = items[0].Id;
 
-        var creation = await Device.BulkCreateWithError(items, withId: true);
+        var creation = await Device.BulkCreateWithError(items, new BulkCreateOptions { WithId = true });
         var rows = await IntegrationEnvironment.Storage.Query(
             "SELECT COUNT(*) AS count FROM \"devices\";");
         var all = await manager.GetAllWithError<Device>();
@@ -219,7 +220,7 @@ public sealed class DataCacheConcurrencyTests
             })
             .ToList();
 
-        var creation = await Device.BulkCreateWithError(items, withId: true);
+        var creation = await Device.BulkCreateWithError(items, new BulkCreateOptions { WithId = true });
         var beforeBoundary = await Device.GetByIdWithError(items[499].Id);
         var afterBoundary = await Device.GetByIdWithError(items[500].Id);
         var all = await manager.GetAllWithError<Device>();

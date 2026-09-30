@@ -1272,7 +1272,7 @@ namespace AventusSharp.Data.Manager
         public event OnCreatedHandler<U> OnCreated;
 
         #region List
-        protected abstract Task<VoidWithError> BulkCreateLogic<X>(List<X> values, bool withId) where X : U;
+        protected abstract Task<VoidWithError> BulkCreateLogic<X>(List<X> values, BulkCreateOptions options) where X : U;
         protected abstract Task<ResultWithError<List<X>>> CreateLogic<X>(List<X> values) where X : U;
         protected virtual Task<List<GenericError>> CanCreate<X>(List<X> values) where X : U
         {
@@ -1387,24 +1387,31 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public Task<VoidWithError> BulkCreateWithError<X>(List<X> values, bool withId = false) where X : U
+        public Task<VoidWithError> BulkCreateWithError<X>(List<X> values, BulkCreateOptions? options = null) where X : U
         {
-            return BulkCreateLogic(values, withId);
+            VoidWithError result = new VoidWithError();
+            if (options == null)
+            {
+                options = new BulkCreateOptions();
+            }
+            else
+            {
+                 result.Run(options.Validate);
+            }
+            return result.RunAsync(() =>
+                BulkCreateLogic(values, options)
+            );
         }
-        /// <summary>
-        /// <inheritdoc />
-        /// </summary>
-        async Task<VoidWithError> IGenericDM.BulkCreateWithError<X>(List<X> values, bool withId)
+        async Task<VoidWithError> IGenericDM.BulkCreateWithError<X>(List<X> values, BulkCreateOptions? options)
         {
             try
             {
-                List<U> valuesTemp = TransformList<X, U>(values);
-                return await BulkCreateWithError(valuesTemp, withId);
+                return await BulkCreateWithError(TransformList<X, U>(values), options);
             }
             catch (Exception e)
             {
-                VoidWithError result = new VoidWithError();
-                if (e is AventusException aventusException)
+                VoidWithError result = new();
+                if(e is AventusException aventusException)
                 {
                     result.Errors.Add(aventusException.Error);
                 }
@@ -1455,27 +1462,16 @@ namespace AventusSharp.Data.Manager
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        public async Task<bool> BulkCreate<X>(List<X> values, bool withId = false) where X : U
+        public async Task<bool> BulkCreate<X>(List<X> values, BulkCreateOptions? options = null) where X : U
         {
-            return (await BulkCreateWithError(values, withId)).Success;
+            return (await BulkCreateWithError(values, options)).Success;
         }
-        private MethodInfo? IBulkCreateList = null;
         /// <summary>
         /// <inheritdoc />
         /// </summary>
-        async Task<bool> IGenericDM.BulkCreate<X>(List<X> values, bool withId)
+        async Task<bool> IGenericDM.BulkCreate<X>(List<X> values, BulkCreateOptions? options)
         {
-            try
-            {
-                List<U> valuesTemp = TransformList<X, U>(values);
-                bool? resultTemp = await InvokeMethodAsync<bool, U>(ref IBulkCreateList, new object[] { valuesTemp, withId });
-                return resultTemp ?? false;
-            }
-            catch (Exception e)
-            {
-                AventusLogger.Instance.LogError(exception: e, message: "InvokeMethod crashed for BulkCreate<" + TypeTools.GetReadableName(typeof(X)) + ">");
-                return false;
-            }
+            return (await ((IGenericDM)this).BulkCreateWithError(values, options)).Success;
         }
 
         #endregion

@@ -82,9 +82,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
         }
 
 
-        public async Task<VoidWithError> RunBulkWithError(List<T> items, bool withId)
+        public async Task<VoidWithError> RunBulkWithError(List<T> items, BulkCreateOptions? options = null)
         {
-            VoidWithError result = await Storage.BulkCreateFromBuilder(this, items, withId);
+            VoidWithError result = await Storage.BulkCreateFromBuilder(this, items, options);
             DM.PrintErrors(result);
             return result;
         }

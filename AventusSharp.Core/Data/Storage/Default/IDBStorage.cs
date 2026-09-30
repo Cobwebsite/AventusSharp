@@ -29,7 +29,7 @@ namespace AventusSharp.Data.Storage.Default
         Task<ResultWithError<List<X>>> QueryFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder) where X : IStorable;
         Task<VoidWithError> QueryStreamFromBuilder<X>(DatabaseQueryBuilder<X> queryBuilder, Func<X, Task<VoidWithError>> action) where X : IStorable;
         Task<ResultWithError<bool>> ExistFromBuilder<X>(DatabaseExistBuilder<X> queryBuilder) where X : IStorable;
-        Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> queryBuilder, List<X> items, bool withId) where X : IStorable;
+        Task<VoidWithError> BulkCreateFromBuilder<X>(DatabaseCreateBuilder<X> queryBuilder, List<X> items, BulkCreateOptions? options = null) where X : IStorable;
         Task<VoidWithError> CreateFromBuilder<X>(DatabaseCreateBuilder<X> queryBuilder, X item) where X : IStorable;
         Task<ResultWithError<List<int>>> UpdateFromBuilder<X>(DatabaseUpdateBuilder<X> queryBuilder, X item) where X : IStorable;
         Task<VoidWithError> DeleteFromBuilder<X>(DatabaseDeleteBuilder<X> queryBuilder, List<X> elementsToDelete) where X : IStorable;

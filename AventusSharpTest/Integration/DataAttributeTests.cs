@@ -73,7 +73,7 @@ public sealed class DataAttributeTests
             RequiredText = "present"
         };
 
-        var creation = await AttributeRecord.BulkCreateWithError([item], withId: true);
+        var creation = await AttributeRecord.BulkCreateWithError([item], new BulkCreateOptions { WithId = true });
         var raw = await IntegrationEnvironment.Storage.Query(
             $"SELECT \"Code\" FROM \"attribute_records\" WHERE \"Id\" = {item.Id};");
         var cached = await AttributeRecord.GetByIdWithError(item.Id);
@@ -105,7 +105,7 @@ public sealed class DataAttributeTests
 
         var transaction = await manager.RunInsideTransaction(async () =>
         {
-            var creation = await AttributeRecord.BulkCreateWithError([item], withId: true);
+            var creation = await AttributeRecord.BulkCreateWithError([item], new BulkCreateOptions { WithId = true });
             creation.Errors.Add(new AventusSharp.Tools.GenericError(
                 9917, "force transformed bulk rollback"));
             return creation;
@@ -136,7 +136,7 @@ public sealed class DataAttributeTests
         };
 
         var creation = await FailingBulkTransformRecord.BulkCreateWithError(
-            [item], withId: true);
+            [item], new BulkCreateOptions { WithId = true });
         var rows = await IntegrationEnvironment.Storage.Query(
             "SELECT COUNT(*) AS count FROM \"failing_bulk_transform_records\";");
         var cached = await FailingBulkTransformRecord.GetByIdWithError(item.Id);
@@ -172,7 +172,7 @@ public sealed class DataAttributeTests
         };
 
         var creation = await FailingBulkTransformRecord.BulkCreateWithError(
-            [first, second], withId: true);
+            [first, second], new BulkCreateOptions { WithId = true });
         var rows = await IntegrationEnvironment.Storage.Query(
             "SELECT COUNT(*) AS count FROM \"failing_bulk_transform_records\";");
         var firstCached = await FailingBulkTransformRecord.GetByIdWithError(first.Id);

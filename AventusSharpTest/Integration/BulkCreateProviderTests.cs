@@ -69,6 +69,23 @@ public sealed class BulkCreateProviderTests
         return storage;
     }
 
+    [Test]
+    public async Task Requested_batch_size_is_capped_by_sql_server_parameter_limit()
+    {
+        var storage = await PrepareLinks("SQLServer");
+        var values = Enumerable.Range(0, 700).Select(index => new BulkLinkOwner
+        {
+            Id = 60_000 + index, Name = "Capped " + index
+        }).ToList();
+        var builder = new DatabaseCreateBuilder<BulkLinkOwner>(storage, GenericDM.Get<Device>());
+
+        var result = await builder.RunBulkWithError(values,
+            new BulkCreateOptions { WithId = true, BatchSize = 700 });
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(await Count(storage, "bulk_link_owners"), Is.EqualTo(values.Count));
+    }
+
     [TestCase("MySQL")]
     [TestCase("PostgreSQL")]
     [TestCase("SQLServer")]
@@ -87,10 +104,10 @@ public sealed class BulkCreateProviderTests
             }
         };
         var explicitOwner = NewOwner(40_000);
-        var explicitResult = await builder.RunBulkWithError([explicitOwner], withId: true);
+        var explicitResult = await builder.RunBulkWithError([explicitOwner], new BulkCreateOptions { WithId = true });
         Assert.That(explicitResult.Success, Is.True, IntegrationEnvironment.ErrorMessages(explicitResult.Errors));
         var generatedOwner = NewOwner(0);
-        var generatedResult = await builder.RunBulkWithError([generatedOwner], withId: false);
+        var generatedResult = await builder.RunBulkWithError([generatedOwner], new BulkCreateOptions { WithId = false });
         Assert.That(generatedResult.Success, Is.True, IntegrationEnvironment.ErrorMessages(generatedResult.Errors));
         Assert.That(generatedOwner.Id, Is.Positive.And.Not.EqualTo(explicitOwner.Id));
         Assert.That(await Count(storage, "bulk_link_owners"), Is.EqualTo(2));
@@ -113,7 +130,7 @@ public sealed class BulkCreateProviderTests
         }).ToList();
         values[0].Tags = [];
         var builder = new DatabaseCreateBuilder<BulkLinkOwner>(storage, GenericDM.Get<Device>());
-        var result = await builder.RunBulkWithError(values, withId);
+        var result = await builder.RunBulkWithError(values, new BulkCreateOptions { WithId = withId });
         Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
         Assert.That(await Count(storage, "bulk_link_owners"), Is.EqualTo(count));
         Assert.That(await Count(storage, "bulk_link_owners_bulk_link_tags"), Is.EqualTo((count - 1) * 2));
@@ -136,7 +153,7 @@ public sealed class BulkCreateProviderTests
         }).ToList();
         values[^1].Tags = [999_999];
         var builder = new DatabaseCreateBuilder<BulkLinkOwner>(storage, GenericDM.Get<Device>());
-        var result = await builder.RunBulkWithError(values, withId);
+        var result = await builder.RunBulkWithError(values, new BulkCreateOptions { WithId = withId });
         Assert.That(result.Success, Is.False);
         Assert.That(await Count(storage, "bulk_link_owners"), Is.Zero);
         Assert.That(await Count(storage, "bulk_link_owners_bulk_link_tags"), Is.Zero);
@@ -183,7 +200,7 @@ public sealed class BulkCreateProviderTests
             else values.Add(new TestRelay { Id = id, Name = "Relay " + index, IsClosed = true });
         }
         var builder = new DatabaseCreateBuilder<ITestActuator>(storage, GenericDM.Get<ITestActuator>(), typeof(TestDimmer));
-        var result = await builder.RunBulkWithError(values, withId);
+        var result = await builder.RunBulkWithError(values, new BulkCreateOptions { WithId = withId });
         Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
         Assert.That(await Count(storage, "test_actuators"), Is.EqualTo(count));
         Assert.That(await Count(storage, "test_dimmers"), Is.EqualTo(count / 2));

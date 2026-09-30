@@ -69,7 +69,7 @@ public class AddColumn
             }
             if (member is ITableMemberInfoSqlLinkSingle memberLink)
             {
-                if (memberLink.TableLinked != null)
+                if (memberLink.TableLinked != null && TableMemberInfoSql.IsLinkInStorage(memberLink, storage))
                 {
                     if (!primariesByClass.ContainsKey(memberLink.TableLinked.SqlTableName))
                     {
@@ -80,10 +80,6 @@ public class AddColumn
                         primariesByClass[memberLink.TableLinked.SqlTableName][member.Name] = new List<TableMemberInfoSql>();
                     }
                     primariesByClass[memberLink.TableLinked.SqlTableName][member.Name].Add(member);
-                }
-                else
-                {
-                    // TODO code external link
                 }
             }
         }

@@ -1,5 +1,9 @@
 using AventusSharp.Data.Manager;
 using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Attributes;
+using AventusSharp.Data;
+using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Data.Storage.Sqlite;
 using AventusSharpTest.Integration.Models;
 using NUnit.Framework;
 
@@ -9,6 +13,52 @@ namespace AventusSharpTest.Integration;
 [NonParallelizable]
 public sealed class DataCrossStorageTests
 {
+    [Test]
+    public void Unknown_link_target_returns_a_type_not_found_error()
+    {
+        var storage = new SqliteStorage(Path.Combine(TestContext.CurrentContext.WorkDirectory, "unresolved-link.db"));
+        var manager = new SimpleDatabaseDM<UnresolvedLinkOwner>();
+        var registeredManager = GenericDM.Set(typeof(UnresolvedLinkOwner), manager);
+        Assert.That(registeredManager.Success, Is.True, IntegrationEnvironment.ErrorMessages(registeredManager.Errors));
+        var registeredTable = storage.AddPyramid(new(typeof(UnresolvedLinkOwner), new()));
+        Assert.That(registeredTable.Success, Is.True, IntegrationEnvironment.ErrorMessages(registeredTable.Errors));
+
+        var result = storage.CreateLinks();
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Errors, Has.Some.Matches<AventusSharp.Tools.GenericError>(error =>
+            error is DataError dataError && dataError.Code == DataErrorCode.TypeNotFound));
+    }
+
+    [Test]
+    public async Task Cross_storage_links_keep_their_columns_without_foreign_keys_to_the_other_database()
+    {
+        var table = IntegrationEnvironment.Storage.GetTableInfo(typeof(CrossStorageOwner))!;
+        var single = (ITableMemberInfoSqlLinkSingle)table.Members.Single(member => member.Name == nameof(CrossStorageOwner.Record));
+        var multiple = (ITableMemberInfoSqlLinkMultiple)table.Members.Single(member => member.Name == nameof(CrossStorageOwner.Records));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(single.TableLinked, Is.Not.Null);
+            Assert.That(multiple.TableLinked, Is.Not.Null);
+            Assert.That(TableMemberInfoSql.IsLinkInStorage(single, IntegrationEnvironment.Storage), Is.False);
+            Assert.That(TableMemberInfoSql.IsLinkInStorage(multiple, IntegrationEnvironment.Storage), Is.False);
+        });
+
+        var ownerColumns = await IntegrationEnvironment.Storage.Query("PRAGMA table_info('cross_storage_owners');");
+        var ownerKeys = await IntegrationEnvironment.Storage.Query("PRAGMA foreign_key_list('cross_storage_owners');");
+        var joinColumns = await IntegrationEnvironment.Storage.Query($"PRAGMA table_info('{multiple.TableIntermediateName}');");
+        var joinKeys = await IntegrationEnvironment.Storage.Query($"PRAGMA foreign_key_list('{multiple.TableIntermediateName}');");
+
+        Assert.That(ownerColumns.Success && ownerKeys.Success && joinColumns.Success && joinKeys.Success,
+            Is.True, IntegrationEnvironment.ErrorMessages(ownerColumns.Errors.Concat(ownerKeys.Errors).Concat(joinColumns.Errors).Concat(joinKeys.Errors)));
+        Assert.That(ownerColumns.Result!.Select(row => row["name"]), Does.Contain("Record"));
+        Assert.That(ownerKeys.Result, Has.None.Matches<Dictionary<string, string?>>(row => row["table"] == "dedicated_storage_records"));
+        Assert.That(joinColumns.Result!.Select(row => row["name"]), Does.Contain(multiple.TableIntermediateKey2));
+        Assert.That(joinKeys.Result, Has.Some.Matches<Dictionary<string, string?>>(row => row["table"] == "cross_storage_owners"));
+        Assert.That(joinKeys.Result, Has.None.Matches<Dictionary<string, string?>>(row => row["table"] == "dedicated_storage_records"));
+    }
+
     [SetUp]
     public async Task ClearTables()
     {
@@ -188,4 +238,15 @@ public sealed class DataCrossStorageTests
         Assert.That(result.Result, Has.Count.EqualTo(1));
         Assert.That(result.Result![0].Owners.Select(item => item.Id), Is.EqualTo(new[] { owner.Id }));
     }
+}
+
+[ManualInit]
+public sealed class UnresolvedLinkOwner : AventusSharp.Data.Storable<UnresolvedLinkOwner>
+{
+    public UnregisteredLinkTarget? Target { get; set; }
+}
+
+[ManualInit]
+public sealed class UnregisteredLinkTarget : AventusSharp.Data.Storable<UnregisteredLinkTarget>
+{
 }

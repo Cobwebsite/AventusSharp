@@ -82,10 +82,6 @@ namespace AventusSharp.Data.Storage.Mysql.Queries
                         }
                         primariesByClass[memberLink.TableLinked.SqlTableName][member.Name].Add(member);
                     }
-                    else
-                    {
-                        // TODO code external link
-                    }
                 }
             }
 

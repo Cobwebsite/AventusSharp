@@ -693,7 +693,7 @@ namespace AventusSharp.Data.Storage.Default
                                 }
                                 else
                                 {
-                                    IGenericDM linkedManager = GenericDM.Get(memberInfoSqlLink.TableLinkedType);
+                                    IGenericDM? linkedManager = result.Extract(() => GenericDM.GetWithError(memberInfoSqlLink.TableLinkedType));
                                     if (linkedManager is IDatabaseDM linkedDatabaseManager && !ReferenceEquals(linkedDatabaseManager.Storage, this))
                                     {
                                         memberInfoSqlLink.TableLinked = linkedDatabaseManager.Storage.GetTableInfo(memberInfoSqlLink.TableLinkedType);

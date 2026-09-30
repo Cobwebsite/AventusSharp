@@ -70,6 +70,30 @@ public sealed class TestProjectionWrapper : Storable<TestProjectionWrapper>
     public TestProjectionParent Parent { get; set; } = null!;
 }
 
+[SqlName("test_auto_projection_parents")]
+public sealed class TestAutoProjectionParent : Storable<TestAutoProjectionParent>
+{
+    public string Name { get; set; } = "";
+    [ReverseLink(nameof(TestAutoProjectionChild.Parent))]
+    [AutoRead]
+    public TestAutoProjectionChild? Child { get; set; }
+}
+
+[SqlName("test_auto_projection_children")]
+public sealed class TestAutoProjectionChild : Storable<TestAutoProjectionChild>
+{
+    public string Name { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public TestAutoProjectionParent Parent { get; set; } = null!;
+}
+
+[SqlName("test_auto_projection_wrappers")]
+public sealed class TestAutoProjectionWrapper : Storable<TestAutoProjectionWrapper>
+{
+    [AutoRead]
+    public TestAutoProjectionParent Parent { get; set; } = null!;
+}
+
 [SqlName("test_scenes")]
 public sealed class TestScene : Storable<TestScene>
 {

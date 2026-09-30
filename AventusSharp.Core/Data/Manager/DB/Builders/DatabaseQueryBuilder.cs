@@ -15,6 +15,12 @@ using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Manager.DB.Builders
 {
+    internal interface IQuerySqlCache
+    {
+        void InvalidateSql();
+        void SetEvaluationMode(bool enabled);
+    }
+
     public class DatabaseQueryBuilderInfo
     {
         public string Sql;
@@ -26,8 +32,30 @@ namespace AventusSharp.Data.Manager.DB.Builders
     }
 
 
-    public class DatabaseQueryBuilder<T> : DatabaseGenericBuilder<T>, IQueryBuilder<T>, ILambdaTranslatable where T : IStorable
+    public class DatabaseQueryBuilder<T> : DatabaseGenericBuilder<T>, IQueryBuilder<T>, ILambdaTranslatable, IQuerySqlCache where T : IStorable
     {
+        public void InvalidateSql() => info = null;
+        internal bool SuppressCacheRegistration { get; private set; }
+        private bool? savedCanonicalCache;
+        public void SetEvaluationMode(bool enabled)
+        {
+            if (enabled)
+            {
+                savedCanonicalCache ??= UseCanonicalCache;
+                UseCanonicalCache = false;
+                SuppressCacheRegistration = true;
+            }
+            else if (savedCanonicalCache.HasValue)
+            {
+                UseCanonicalCache = savedCanonicalCache.Value;
+                savedCanonicalCache = null;
+                SuppressCacheRegistration = false;
+            }
+            foreach (DatabaseSubBuilder subQuery in SubQueries.Values)
+            {
+                subQuery.SetEvaluationMode(enabled);
+            }
+        }
         protected override bool SupportsExternalExpressions => true;
 
         public DatabaseQueryBuilderInfo? info = null;
@@ -57,6 +85,9 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 };
             }
             MergeScopeAndWhere();
+            List<LambdaExpression> ignoredProjection = IgnoredExpressions.ToList();
+            bool restoreIgnoredProjection = ignoredProjection.Count > 0 &&  (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup);
+            
             if (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup)
             {
                 foreach (var predicate in QueryPredicates)
@@ -77,12 +108,57 @@ namespace AventusSharp.Data.Manager.DB.Builders
                 }
             }
 
-            ResultWithError<List<T>> result = await Storage.QueryFromBuilder(this);
+            if (restoreIgnoredProjection)
+            {
+                info = null;
+            }
+
+            if (restoreIgnoredProjection)
+            {
+                SetEvaluationMode(true);
+            }
+
+            ResultWithError<List<T>> result;
+            try
+            {
+                result = await Storage.QueryFromBuilder(this);
+            }
+            finally
+            {
+                if (restoreIgnoredProjection)
+                {
+                    SetEvaluationMode(false);
+                }
+            }
+
             if (result.Success && result.Result != null && (RequiresPostProcessing || RequiresPostSort || RequiresPostGroup))
             {
                 try
                 {
                     result.Result = ProcessExternalExpressions(result.Result);
+                    if (restoreIgnoredProjection && result.Result.Count > 0)
+                    {
+                        // Fetch the selected rows again with the requested projection.
+                        // The evaluation-only fields must not leak into the result.
+                        List<int> selectedIds = result.Result.Select(item => item.Id).ToList();
+                        foreach (LambdaExpression ignored in ignoredProjection)
+                        {
+                            IgnoreGeneric(ignored, record: false);
+                        }
+                        
+                        info = null;
+                        ResultWithError<List<T>> projected = await Storage.QueryFromBuilder(this);
+                        result.Errors.AddRange(projected.Errors);
+                        if (projected.Success && projected.Result != null)
+                        {
+                            ILookup<int, T> byId = projected.Result.ToLookup(item => item.Id);
+                            result.Result = selectedIds
+                                .Select(id => byId[id].FirstOrDefault())
+                                .Where(item => item != null)
+                                .Select(item => item!)
+                                .ToList();
+                        }
+                    }
                 }
                 catch (Exception exception)
                 {

@@ -46,6 +46,8 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
 
     internal List<TableMemberInfoSql> Included { get; private set; } = new List<TableMemberInfoSql>();
     internal Dictionary<string, DatabaseSubBuilder> SubQueries { get; private set; } = new();
+    protected readonly List<LambdaExpression> IgnoredExpressions = new();
+    private readonly HashSet<string> ExplicitProjectionSubQueries = new();
     protected virtual bool SupportsExternalExpressions => false;
     protected readonly List<(Expression<Func<T, bool>> Predicate, WhereGroupFctEnum Link)> QueryPredicates = new();
     protected readonly List<(LambdaExpression Expression, Sort Direction)> QuerySorts = new();
@@ -410,15 +412,29 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             fields: null,
             addToMembers: true
         );
-        return string.Join(".", lambdaResult.Steps.Select(p => p.Name));
+        string path = string.Join(".", lambdaResult.Steps.Select(p => p.Name));
+        if (lambdaResult.IsExternal)
+        {
+            string? subQueryPath = SubQueries.Keys
+                .Where(key => path == key || path.StartsWith(key + ".", StringComparison.Ordinal))
+                .OrderByDescending(key => key.Length)
+                .FirstOrDefault();
+            
+            if (subQueryPath != null) 
+                ExplicitProjectionSubQueries.Add(subQueryPath);
+        }
+        return path;
     }
     protected string IgnoreGeneric<X>(Expression<Func<T, X>> expression)
     {
         return IgnoreGeneric((LambdaExpression)expression);
     }
-    protected string IgnoreGeneric(LambdaExpression lambdaExpression)
+    protected string IgnoreGeneric(LambdaExpression lambdaExpression, bool record = true)
     {
-        HashSet<string> preparedSubQueries = SubQueries.Keys.ToHashSet();
+        if (record) {
+            IgnoredExpressions.Add(lambdaExpression);
+        }
+        
         LambdaIncludeResult lambdaResult = LambdaInclude(
             lambdaExpression,
             fields: null,
@@ -449,6 +465,9 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         else
         {
             string path = fullPath != "" ? fullPath + "." + lastName : lastName;
+            if (SubQueries.Remove(path))
+                return path;
+
             string? subQueryPath = SubQueries.Keys
                 .Where(key => path.StartsWith(key + ".", StringComparison.Ordinal))
                 .OrderByDescending(key => key.Length)
@@ -461,8 +480,9 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             else
             {
                 List<string> relativeNames = path[(subQueryPath.Length + 1)..].Split('.').ToList();
-                VoidWithError ignored = SubQueries[subQueryPath].Ignore(relativeNames, !preparedSubQueries.Contains(subQueryPath));
+                VoidWithError ignored = SubQueries[subQueryPath].Ignore(relativeNames, !ExplicitProjectionSubQueries.Contains(subQueryPath));
                 Errors.AddRange(ignored.Errors);
+                ExplicitProjectionSubQueries.Add(subQueryPath);
             }
         }
 
@@ -595,6 +615,16 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         );
 
         string relationPath = string.Join(".", lambdaResult.Steps.Select(step => step.Name));
+        if (lambdaResult.IsExternal)
+        {
+            string? subQueryPath = SubQueries.Keys
+                .Where(key => relationPath == key || relationPath.StartsWith(key + ".", StringComparison.Ordinal))
+                .OrderByDescending(key => key.Length)
+                .FirstOrDefault();
+                
+            if (subQueryPath != null) 
+                ExplicitProjectionSubQueries.Add(subQueryPath);
+        }
         if (!lambdaResult.IsExternal && InfoByPath.TryGetValue(relationPath, out DatabaseBuilderInfo? relationInfo))
         {
             List<IScope> scopesToApply = scopes ?? relationInfo.TableInfo.Scopes.ToList();

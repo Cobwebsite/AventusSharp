@@ -19,6 +19,8 @@ public sealed class DataExternalExpressionQueryTests
     {
         var clear = await IntegrationEnvironment.Storage.Execute(
             "DELETE FROM \"test_sensors\";DELETE FROM \"test_lamps\";DELETE FROM \"test_rooms\";" +
+            "DELETE FROM \"test_auto_projection_wrappers\";DELETE FROM \"test_auto_projection_children\";" +
+            "DELETE FROM \"test_auto_projection_parents\";" +
             "DELETE FROM \"test_projection_wrappers\";DELETE FROM \"test_projection_children\";" +
             "DELETE FROM \"test_projection_parents\";");
         Assert.That(clear.Success, Is.True, IntegrationEnvironment.ErrorMessages(clear.Errors));
@@ -33,6 +35,224 @@ public sealed class DataExternalExpressionQueryTests
         await TestSensor.Create(new TestSensor { Name = "Hot", Room = first });
         await TestSensor.Create(new TestSensor { Name = "Cold", Room = first });
         await TestSensor.Create(new TestSensor { Name = "Warm", Room = second });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task External_predicate_still_works_when_its_field_is_ignored(bool whereFirst)
+    {
+        var parent = (await TestProjectionParent.Create(
+            new TestProjectionParent { Name = "Selected" }))!;
+        var child = (await TestProjectionChild.Create(new TestProjectionChild
+        {
+            Name = "Filter", Detail = "Visible", Parent = parent
+        }))!;
+
+        ((IDatabaseDM)GenericDM.Get<TestProjectionChild>())
+            .RemoveRecordsItems<TestProjectionChild>([child.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestProjectionParent>())
+            .RemoveRecordsItems<TestProjectionParent>([parent.Id]);
+
+        var query = TestProjectionParent.StartQuery();
+        if (whereFirst)
+            query.Where(item => item.Child!.Name == "Filter")
+                .Ignore(item => item.Child!.Name);
+        else
+            query.Ignore(item => item.Child!.Name)
+                .Where(item => item.Child!.Name == "Filter");
+        var result = await query.RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Result![0].Id, Is.EqualTo(parent.Id));
+            Assert.That(result.Result[0].Child!.Name, Is.Empty);
+            Assert.That(result.Result[0].Child!.Detail, Is.EqualTo("Visible"));
+        });
+    }
+
+    [Test]
+    public async Task External_predicate_does_not_clear_ignored_field_on_cached_child()
+    {
+        var parent = (await TestProjectionParent.Create(
+            new TestProjectionParent { Name = "Cached" }))!;
+        var child = (await TestProjectionChild.Create(new TestProjectionChild
+        {
+            Name = "Filter", Detail = "Visible", Parent = parent
+        }))!;
+
+        var query = TestProjectionParent.StartQuery()
+            .Ignore(item => item.Child!.Name)
+            .Where(item => item.Child!.Name == "Filter");
+        var first = await query.RunWithError();
+        var second = await query.RunWithError();
+
+        Assert.That(first.Success && second.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(first.Errors.Concat(second.Errors)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(first.Result, Has.Count.EqualTo(1));
+            Assert.That(second.Result, Has.Count.EqualTo(1));
+            Assert.That(first.Result![0].Child!.Id, Is.EqualTo(child.Id));
+            Assert.That(second.Result![0].Child!.Name, Is.EqualTo("Filter"));
+            Assert.That(child.Name, Is.EqualTo("Filter"));
+        });
+    }
+
+    [Test]
+    public async Task Nested_external_predicate_respects_ignored_field()
+    {
+        var parent = (await TestProjectionParent.Create(
+            new TestProjectionParent { Name = "Nested" }))!;
+        var child = (await TestProjectionChild.Create(new TestProjectionChild
+        {
+            Name = "Filter", Detail = "Visible", Parent = parent
+        }))!;
+        var wrapper = (await TestProjectionWrapper.Create(
+            new TestProjectionWrapper { Parent = parent }))!;
+
+        ((IDatabaseDM)GenericDM.Get<TestProjectionChild>())
+            .RemoveRecordsItems<TestProjectionChild>([child.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestProjectionParent>())
+            .RemoveRecordsItems<TestProjectionParent>([parent.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestProjectionWrapper>())
+            .RemoveRecordsItems<TestProjectionWrapper>([wrapper.Id]);
+
+        var result = await TestProjectionWrapper.StartQuery()
+            .Ignore(item => item.Parent.Child!.Name)
+            .Where(item => item.Parent.Child!.Name == "Filter")
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Result![0].Id, Is.EqualTo(wrapper.Id));
+            Assert.That(result.Result[0].Parent.Child!.Name, Is.Empty);
+            Assert.That(result.Result[0].Parent.Child!.Detail, Is.EqualTo("Visible"));
+        });
+    }
+
+    [Test]
+    public async Task External_sort_and_group_respect_ignored_field()
+    {
+        var first = (await TestProjectionParent.Create(
+            new TestProjectionParent { Name = "First" }))!;
+        var second = (await TestProjectionParent.Create(
+            new TestProjectionParent { Name = "Second" }))!;
+        var firstChild = (await TestProjectionChild.Create(new TestProjectionChild
+        {
+            Name = "A", Detail = "First detail", Parent = first
+        }))!;
+        var secondChild = (await TestProjectionChild.Create(new TestProjectionChild
+        {
+            Name = "B", Detail = "Second detail", Parent = second
+        }))!;
+
+        ((IDatabaseDM)GenericDM.Get<TestProjectionChild>())
+            .RemoveRecordsItems<TestProjectionChild>([firstChild.Id, secondChild.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestProjectionParent>())
+            .RemoveRecordsItems<TestProjectionParent>([first.Id, second.Id]);
+
+        var sorted = await TestProjectionParent.StartQuery()
+            .Ignore(item => item.Child!.Name)
+            .Sort(item => item.Child!.Name, Sort.DESC)
+            .RunWithError();
+        var grouped = await TestProjectionParent.StartQuery()
+            .Ignore(item => item.Child!.Name)
+            .Group(item => item.Child!.Name)
+            .Sort(item => item.Child!.Name, Sort.ASC)
+            .RunWithError();
+
+        Assert.That(sorted.Success && grouped.Success, Is.True,
+            IntegrationEnvironment.ErrorMessages(sorted.Errors.Concat(grouped.Errors)));
+        Assert.Multiple(() =>
+        {
+            Assert.That(sorted.Result!.Select(item => item.Name),
+                Is.EqualTo(new[] { "Second", "First" }));
+            Assert.That(sorted.Result!.All(item => item.Child!.Name == ""), Is.True);
+            Assert.That(grouped.Result!.Select(item => item.Name),
+                Is.EqualTo(new[] { "First", "Second" }));
+            Assert.That(grouped.Result!.All(item => item.Child!.Name == ""), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task External_collection_predicate_respects_ignored_relation()
+    {
+        var result = await TestRoom.StartQuery()
+            .Ignore(room => room.Sensors)
+            .Where(room => room.Sensors.Any(sensor => sensor.Name == "Hot"))
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Result![0].Name, Is.EqualTo("First"));
+            Assert.That(result.Result[0].Sensors, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task External_scope_respects_ignored_collection()
+    {
+        var result = await TestRoom.StartQuery()
+            .Ignore(room => room.Sensors)
+            .WithScope<RoomWithSensorsScope>()
+            .Sort(room => room.Name, Sort.ASC)
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result!.Select(room => room.Name),
+            Is.EqualTo(new[] { "First", "Second" }));
+        Assert.That(result.Result!.All(room => room.Sensors.Count == 0), Is.True);
+    }
+
+    [Test]
+    public async Task AutoRead_retains_canonical_value_of_ignored_nested_field()
+    {
+        var parentCreation = await TestAutoProjectionParent.CreateWithError(
+            new TestAutoProjectionParent { Name = "Parent" });
+        Assert.That(parentCreation.Success, Is.True, IntegrationEnvironment.ErrorMessages(parentCreation.Errors));
+        var parent = parentCreation.Result!;
+        var childCreation = await TestAutoProjectionChild.CreateWithError(new TestAutoProjectionChild
+        {
+            Name = "Filter", Detail = "Visible", Parent = parent
+        });
+        Assert.That(childCreation.Success, Is.True, IntegrationEnvironment.ErrorMessages(childCreation.Errors));
+        var child = childCreation.Result!;
+        var wrapperCreation = await TestAutoProjectionWrapper.CreateWithError(new TestAutoProjectionWrapper
+        {
+            Parent = parent
+        });
+        Assert.That(wrapperCreation.Success, Is.True, IntegrationEnvironment.ErrorMessages(wrapperCreation.Errors));
+        var wrapper = wrapperCreation.Result!;
+
+        ((IDatabaseDM)GenericDM.Get<TestAutoProjectionChild>())
+            .RemoveRecordsItems<TestAutoProjectionChild>([child.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestAutoProjectionParent>())
+            .RemoveRecordsItems<TestAutoProjectionParent>([parent.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestAutoProjectionWrapper>())
+            .RemoveRecordsItems<TestAutoProjectionWrapper>([wrapper.Id]);
+
+        var result = await TestAutoProjectionWrapper.StartQuery()
+            .Ignore(item => item.Parent.Child!.Name)
+            .Where(item => item.Parent.Child!.Name == "Filter")
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        var canonical = await GenericDM.Get<TestAutoProjectionChild>()
+            .GetByIdWithError<TestAutoProjectionChild>(child.Id);
+        Assert.That(canonical.Success, Is.True, IntegrationEnvironment.ErrorMessages(canonical.Errors));
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Result![0].Parent.Child, Is.SameAs(canonical.Result));
+            Assert.That(result.Result[0].Parent.Child!.Name, Is.EqualTo("Filter"));
+            Assert.That(result.Result[0].Parent.Child!.Detail, Is.EqualTo("Visible"));
+        });
     }
 
     [Test]

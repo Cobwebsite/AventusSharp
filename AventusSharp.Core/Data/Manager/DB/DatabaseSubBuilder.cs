@@ -41,6 +41,7 @@ public abstract class DatabaseSubBuilder
     public abstract VoidWithError ExtendExternalStorage(List<string> names, List<LambdaExpression>? fields, List<IScope>? scopes);
 
     public abstract VoidWithError Ignore(List<string> names, bool initializeProjection);
+    public abstract void SetEvaluationMode(bool enabled);
 }
 public enum DatabaseSubBuilderKind
 {
@@ -50,6 +51,11 @@ public enum DatabaseSubBuilderKind
 }
 public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable where Y : IStorable
 {
+    public override void SetEvaluationMode(bool enabled)
+    {
+        QueryBuilderPrepared<Y>? query = Kind == DatabaseSubBuilderKind.ReverseLink ? ReverseLinkQuery : ExternalStorageQuery;
+        query?.SetEvaluationMode(enabled);
+    }
 
     public override VoidWithError Ignore(List<string> names, bool initializeProjection)
     {

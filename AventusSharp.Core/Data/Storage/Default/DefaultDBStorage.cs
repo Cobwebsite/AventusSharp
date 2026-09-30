@@ -1266,7 +1266,10 @@ namespace AventusSharp.Data.Storage.Default
                         {
                             if (objectTemp is X oCasted)
                             {
-                                await queryBuilder.DM.OnItemLoaded(oCasted);
+                                if (!queryBuilder.SuppressCacheRegistration)
+                                {
+                                    await queryBuilder.DM.OnItemLoaded(oCasted);
+                                }
                                 result.Result.Add(oCasted);
                             }
                             else

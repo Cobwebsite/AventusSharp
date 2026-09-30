@@ -1,5 +1,6 @@
 ﻿using AventusSharp.Data.Attributes;
 using AventusSharp.Data.Manager.DB;
+using AventusSharp.Data.Manager.DB.Builders;
 using AventusSharp.Tools;
 using System;
 using System.Collections.Generic;
@@ -307,6 +308,10 @@ namespace AventusSharp.Data.Manager
         public QueryBuilderPrepared<T> Field<U>(Expression<Func<T, U?>> expression)
         {
             builder.Field(expression);
+            if (builder is IQuerySqlCache databaseQuery)
+            {
+                databaseQuery.InvalidateSql();
+            }
             return this;
         }
         /// <summary>
@@ -317,6 +322,10 @@ namespace AventusSharp.Data.Manager
         public QueryBuilderPrepared<T> Field(LambdaExpression expression)
         {
             builder.Field(expression);
+            if (builder is IQuerySqlCache databaseQuery)
+            {
+                databaseQuery.InvalidateSql();
+            }
             return this;
         }
         /// <summary>
@@ -326,6 +335,10 @@ namespace AventusSharp.Data.Manager
         public QueryBuilderPrepared<T> Fields()
         {
             builder.Fields();
+            if (builder is IQuerySqlCache databaseQuery)
+            {
+                databaseQuery.InvalidateSql();
+            }
             return this;
         }
         /// <summary>
@@ -337,12 +350,27 @@ namespace AventusSharp.Data.Manager
         public QueryBuilderPrepared<T> Ignore<U>(Expression<Func<T, U?>> expression)
         {
             builder.Ignore(expression);
+            if (builder is IQuerySqlCache databaseQuery)
+            {
+                databaseQuery.InvalidateSql();
+            }
             return this;
         }
         public QueryBuilderPrepared<T> Ignore(LambdaExpression expression)
         {
             builder.Ignore(expression);
+            if (builder is IQuerySqlCache databaseQuery)
+            {
+                databaseQuery.InvalidateSql();
+            }
             return this;
+        }
+        internal void SetEvaluationMode(bool enabled)
+        {
+            if (builder is IQuerySqlCache databaseQuery)
+            {
+                databaseQuery.SetEvaluationMode(enabled);
+            }
         }
         /// <summary>
         /// Specifies sorting for the query based on the provided expression and sorting order.

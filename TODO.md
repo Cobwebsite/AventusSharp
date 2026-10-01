@@ -39,12 +39,6 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 - [x] **Regrouper les lectures de relations inverses par lot.** `ReverseQuery(List<int>)` est le traitement commun : un filtre `Contains` sur les identifiants distincts exécute une seule requête préparée pour le lot, au lieu d'une par identifiant ; l'appel unitaire délègue à la liste. La liste vide n'exécute aucune requête. Les erreurs, les scopes du builder et la déduplication des résultats sont conservés. Test d'intégration ajouté pour les lots, les doublons, la liste vide et l'appel unitaire.
   - Source : `AventusSharp.Core/Data/Storage/Default/TableMember/TableReverseMemberInfo.cs:241`.
 
-- [ ] **Évaluer une mise à jour sans relecture.** Le builder de mise à jour appelle encore `DM.GetByIdsWithError` après l'écriture ; cela peut passer par le cache et ne signifie pas systématiquement une requête SQL supplémentaire. Mesurer les requêtes avec/sans cache avant de créer une API retournant seulement le résultat de l'écriture. Préserver les événements, les valeurs générées en base, les relations et la cohérence du cache pour tous les managers.
-  - Source : `AventusSharp.Core/Data/Manager/GenericDM.cs:1740` ; appel dans `AventusSharp.Core/Data/Manager/DB/Builders/DatabaseUpdateBuilder.cs:95`.
-
-- [ ] **Profiler la matérialisation avant de mettre les métadonnées en cache.** La méthode reconstruit notamment les clés `alias*colonne` et parcourt les membres pour chaque objet. Le registre d'identité déjà présent évite les doublons d'instances, mais ne remplace pas un plan de matérialisation. Mesurer le coût, puis pré-calculer les correspondances stables par projection si le gain le justifie ; ne pas partager les données propres à une exécution.
-  - Source : `AventusSharp.Core/Data/Storage/Default/DefaultDBStorage.cs:1411`.
-
 - [ ] **Évaluer une diffusion concurrente SSE et WebSocket.** Les envois aux clients sont actuellement attendus séquentiellement : un client lent retarde les suivants. Prévoir une concurrence bornée entre connexions, conserver l'ordre et sérialiser les écritures sur une même connexion, isoler les erreurs par client et gérer annulation/déconnexion. Mesurer le gain avec plusieurs clients dont un lent.
   - Sources : `AventusSharp.AspNetCore/SSE/SSEEndPoint.cs:224`, `AventusSharp.AspNetCore/WebSocket/WsEndPoint.cs:409`.
 

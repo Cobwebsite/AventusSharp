@@ -1439,7 +1439,6 @@ namespace AventusSharp.Data.Storage.Default
             }
 
             bool hasValue = false;
-            // TODO : optimize this method by storing needed values
             foreach (KeyValuePair<TableMemberInfoSql, DatabaseBuilderInfoMember> member in info.Members)
             {
                 string alias = member.Value.Alias;

@@ -1733,8 +1733,6 @@ namespace AventusSharp.Data.Manager
             }
         }
 
-        // todo maybe add a function to update without reload to optimize request (be aware for all DM)
-        // public VoidWithError UpdateWithErrorNoReload<X>(List<X> values)
         #endregion
 
         #region Item

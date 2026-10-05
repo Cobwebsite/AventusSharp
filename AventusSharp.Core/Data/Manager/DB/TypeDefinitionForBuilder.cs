@@ -433,7 +433,6 @@ namespace AventusSharp.Data.Manager.DB
 
         public Dictionary<TableMemberInfoSql, DatabaseBuilderInfo> joins = new();
         public Dictionary<ITableMemberInfoSqlLinkMultiple, string> joinsNM = new();
-        // TODO maybe delete?
         public List<TableReverseMemberInfo> ReverseLinks { get; set; } = new List<TableReverseMemberInfo>();
 
         public DatabaseBuilderInfo(string alias, TableInfo tableInfo)

@@ -550,8 +550,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
         else
         {
-            // TODO : add sort after loading
-            throw new NotImplementedException("Missing implementation to sort after loading");
+            throw new InvalidOperationException("An external sort was not detected before SQL sorting was prepared.");
         }
     }
 
@@ -605,8 +604,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
         else
         {
-            // TODO : add sort after loading
-            throw new NotImplementedException("Missing implementation to group after loading");
+            throw new InvalidOperationException("An external group was not detected before SQL grouping was prepared.");
         }
 
     }

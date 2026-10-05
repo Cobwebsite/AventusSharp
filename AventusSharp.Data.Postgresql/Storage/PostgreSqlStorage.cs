@@ -58,7 +58,6 @@ public class PostgreSqlStorage : DefaultDBStorage<PostgreSqlStorage>
         VoidWithError result = new();
         try
         {
-            IsConnectedOneTime = true;
             using (DbConnection connection = GetConnection())
             {
                 await connection.OpenAsync();

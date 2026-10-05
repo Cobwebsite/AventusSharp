@@ -61,7 +61,6 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
         VoidWithError result = new();
         try
         {
-            IsConnectedOneTime = true;
             using (DbConnection connection = GetConnection())
             {
                 await connection.OpenAsync();

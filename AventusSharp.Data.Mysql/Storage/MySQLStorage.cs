@@ -54,7 +54,6 @@ namespace AventusSharp.Data.Storage.Mysql
             VoidWithError result = new();
             try
             {
-                IsConnectedOneTime = true;
                 using (DbConnection connection = GetConnection())
                 {
                     await connection.OpenAsync();

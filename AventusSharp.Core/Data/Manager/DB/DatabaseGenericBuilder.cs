@@ -229,9 +229,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         AddWhereGeneric(expression, WhereGroupFctEnum.Or);
     }
 
-    private void AddWhereGeneric(
-        Expression<Func<T, bool>> expression,
-        WhereGroupFctEnum link)
+    private void AddWhereGeneric(Expression<Func<T, bool>> expression, WhereGroupFctEnum link)
     {
         try
         {

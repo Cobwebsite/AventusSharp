@@ -91,7 +91,6 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         VoidWithError result = new();
         try
         {
-            IsConnectedOneTime = true;
             using (DbConnection connection = GetConnection())
             {
                 await connection.OpenAsync();

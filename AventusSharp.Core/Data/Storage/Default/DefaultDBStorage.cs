@@ -34,8 +34,8 @@ namespace AventusSharp.Data.Storage.Default
         public string Username { get; set; } = "";
         public string Password { get; set; } = "";
         public string Database { get; set; } = "";
-        public bool TrustServerCertificate = false;
-        public bool AddCreatedAndUpdatedDate = true;
+        public bool TrustServerCertificate { get; set; } = false;
+        public bool AddCreatedAndUpdatedDate { get; set; } = true;
 
     }
 

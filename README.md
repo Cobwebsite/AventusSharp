@@ -38,11 +38,15 @@ builder
 var app = builder.Build();
 app.UseAventusData();
 app.UseAventusHttp();
+app.UseAventusScheduler();
+app.UseAventusExport();
+app.UseAventusDbDiagram();
 
 return app;
 ```
 
 `AventusMauiBridge` can then be resolved from `app.Services` and used by a WebView bridge to execute Aventus routes in-process.
+`UseAventusScheduler` also accepts assemblies and a configuration callback, like the ASP.NET Core extension. The export and database diagram methods act when the process is launched with `--export-info` and `--db-diagram`, respectively.
 
 ## Adding and deleting properties in migrations
 

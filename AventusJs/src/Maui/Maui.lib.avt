@@ -7,7 +7,7 @@ type MauiConfig = {
 
 export class Maui {
     private static config: MauiConfig = {
-        filter: (url, method) => url.includes("/api"),
+        filter: (url, method) => url.toLowerCase().startsWith(location.protocol + "//" + location.host + "/api"),
         showLog: false,
         autoLoad: true,
     };
@@ -24,7 +24,7 @@ export class Maui {
             await this.loadBlazor();
     }
 
-    private static loadBlazor() {
+    public static loadBlazor() {
         return new Promise<void>(async (resolve) => {
             const script = document.createElement("script");
             script.setAttribute("autostart", "false");

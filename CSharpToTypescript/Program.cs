@@ -3,6 +3,12 @@ using System.Diagnostics;
 using CSharpToTypescript;
 using Newtonsoft.Json;
 
+if (args.Length >= 2 && args[0] == "--maui-export")
+{
+    Environment.ExitCode = MauiExport.Run(args[1]);
+    return;
+}
+
 if (args.Length >= 1)
 {
     string configPath = args[0];

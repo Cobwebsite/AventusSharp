@@ -165,14 +165,21 @@ namespace CSharpToTypescript
 
             if (Config.httpRouter.useCompiledDll || Config.wsEndpoint.useCompiledDll)
             {
-                LoadHttpRoute(outputPath);
+                LoadHttpRoute(outputPath, IsMauiProject());
             }
             Config.outputDir = tempOutputDir;
             Config.compiledAssembly = Assembly.LoadFrom(outputPath);
             return true;
         }
 
-        private void LoadHttpRoute(string dll)
+        private bool IsMauiProject()
+        {
+            return XDocument.Load(Config.csProj)
+                .Descendants("UseMaui")
+                .Any(value => string.Equals(value.Value.Trim(), "true", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void LoadHttpRoute(string dll, bool isMaui)
         {
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
@@ -180,7 +187,9 @@ namespace CSharpToTypescript
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.CreateNoWindow = true;
 
-            string cmd = $"\"{dll}\" --export-info";
+            string cmd = isMaui
+                ? $"\"{Assembly.GetExecutingAssembly().Location}\" --maui-export \"{dll}\" --export-info"
+                : $"\"{dll}\" --export-info";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 p.StartInfo.FileName = "cmd.exe";

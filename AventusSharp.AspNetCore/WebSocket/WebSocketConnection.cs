@@ -1,4 +1,4 @@
-﻿using AventusSharp.Tools;
+using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
@@ -13,6 +13,7 @@ using System;
 using AventusSharp.WebSocket.Request;
 using Scriban.Parsing;
 using Microsoft.Extensions.Logging;
+using AventusSharp.AspNetCore.Hosting;
 
 namespace AventusSharp.WebSocket
 {
@@ -31,6 +32,7 @@ namespace AventusSharp.WebSocket
         private bool IsStopped = false;
 
         private CancellationTokenSource tokenSource;
+        private readonly SendQueue sendQueue = new();
 
         /// <summary>
         /// get context of the request
@@ -61,6 +63,11 @@ namespace AventusSharp.WebSocket
             this.webSocket = webSocket;
             this.instance = instance;
             tokenSource = new CancellationTokenSource();
+            context.RequestAborted.Register(() => tokenSource.Cancel());
+        }
+
+        internal void CancelPendingSends() {
+            tokenSource.Cancel();
         }
         /// <summary>
         /// Start the WebSocket connection
@@ -199,13 +206,14 @@ namespace AventusSharp.WebSocket
             {
                 if (webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived)
                 {
-                    await webSocket.SendAsync(dataToSend, WebSocketMessageType.Text, true, tokenSource.Token);
+                    await sendQueue.Run(() => webSocket.SendAsync(dataToSend, WebSocketMessageType.Text, true, tokenSource.Token), tokenSource.Token);
                 }
                 else
                 {
                     await instance.RemoveInstance(this);
                 }
             }
+            catch (OperationCanceledException) when (tokenSource.IsCancellationRequested || context.RequestAborted.IsCancellationRequested) { }
             catch (Exception e)
             {
                 AventusLogger.Instance.LogError(e, "Can't send data though the websocket");

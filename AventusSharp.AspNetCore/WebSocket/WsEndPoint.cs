@@ -1,5 +1,6 @@
-﻿using AventusSharp.Routes;
+using AventusSharp.Routes;
 using AventusSharp.Tools;
+using AventusSharp.AspNetCore.Hosting;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Event;
 using AventusSharp.WebSocket.Request;
@@ -14,6 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 using Convert = System.Convert;
 
 namespace AventusSharp.WebSocket
@@ -31,6 +33,7 @@ namespace AventusSharp.WebSocket
     {
         internal Dictionary<string, WebSocketRouteInfo> routesInfo = new Dictionary<string, WebSocketRouteInfo>();
         internal readonly ConcurrentDictionary<WebSocketConnection, byte> connections = new();
+        private readonly SemaphoreSlim broadcastOrder = new(1, 1);
         private readonly List<Func<WebSocketConnection, string, WebSocketRouterBody, string, Task<bool>>> middlewares = new();
         internal JsonSerializerSettings settings;
         public string Path { get; }
@@ -108,6 +111,7 @@ namespace AventusSharp.WebSocket
         /// <param name="connection"></param>
         public async Task RemoveInstance(WebSocketConnection connection)
         {
+            connection.CancelPendingSends();
             try
             {
                 if (connections.TryRemove(connection, out _))
@@ -394,22 +398,27 @@ namespace AventusSharp.WebSocket
                     connections = GetConnectionsSnapshot();
                 }
 
-                foreach (WebSocketConnection conn in connections.ToList())
+                HashSet<WebSocketConnection> excluded = new(omit);
+                await broadcastOrder.WaitAsync();
+                try
                 {
-                    if (omit.Contains(conn))
-                    {
-                        continue;
-                    }
-                    if (conn.GetWebSocket().State != System.Net.WebSockets.WebSocketState.Open)
-                    {
-                        await RemoveInstance(conn);
-                    }
-                    else
-                    {
-                        // todo implement parallelism here
-                        await conn.Send(dataToSend);
-                    }
+                    await ConcurrentBroadcast.Send(
+                        connections.ToList().Where(conn => !excluded.Contains(conn)),
+                        async conn =>
+                        {
+                            if (conn.GetWebSocket().State != System.Net.WebSockets.WebSocketState.Open)
+                            {
+                                await RemoveInstance(conn);
+                            }
+                            else
+                            {
+                                await conn.Send(dataToSend);
+                            }
+                        }, 
+                        error => AventusLogger.Instance.LogError(error, "Can't send data though the websocket")
+                    );
                 }
+                finally { broadcastOrder.Release(); }
             }
             catch (Exception e)
             {

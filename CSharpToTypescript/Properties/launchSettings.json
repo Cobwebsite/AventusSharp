@@ -2,7 +2,7 @@
   "profiles": {
     "CSharpToTypescript": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\Projets\\Tableau\\tableauApp\\aventus.sharp.avt"
+      "commandLineArgs": "C:\\Projets\\Scanner\\New\\aventus.sharp.avt"
     },
     "WSL": {
       "commandName": "WSL2",

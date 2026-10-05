@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace AventusSharp.SSE
 {
@@ -28,6 +29,7 @@ namespace AventusSharp.SSE
     public abstract class SSEEndPoint : ISSEEndPoint
     {
         internal readonly ConcurrentDictionary<SSEConnection, byte> connections = new();
+        private readonly SemaphoreSlim broadcastOrder = new(1, 1);
         private readonly List<Func<SSEConnection, string, Task<bool>>> middlewares = new();
         internal JsonSerializerSettings settings;
         public string Path { get; }
@@ -186,7 +188,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the sse connection");
             }
         }
 
@@ -212,22 +214,24 @@ namespace AventusSharp.SSE
                     connections = GetConnectionsSnapshot();
                 }
 
-                List<SSEConnection> connectionsCloned = connections.ToList();
-                for (int i = 0; i < connectionsCloned.Count; i++)
+                HashSet<SSEConnection> excluded = new(omit);
+                await broadcastOrder.WaitAsync();
+                try
                 {
-                    SSEConnection conn = connectionsCloned.ElementAt(i);
-                    if (omit.Contains(conn))
-                    {
-                        continue;
-                    }
-
-                    // todo implement parallelism here
-                    await conn.Send(eventName, data);
+                    await ConcurrentBroadcast.Send(
+                        connections.ToList().Where(conn => !excluded.Contains(conn)),
+                        conn => conn.Send(eventName, data),
+                        error => AventusLogger.Instance.LogError(error, "Can't send the event " + eventName + " though the sse connection")
+                    );
+                }
+                finally
+                {
+                    broadcastOrder.Release();
                 }
             }
             catch (Exception e)
             {
-                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the sse connection");
             }
         }
 
@@ -267,7 +271,7 @@ namespace AventusSharp.SSE
             }
             catch (Exception e)
             {
-                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the sse connection");
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the sse connection");
             }
         }
 

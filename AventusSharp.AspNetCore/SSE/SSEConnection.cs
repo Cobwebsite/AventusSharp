@@ -1,4 +1,4 @@
-﻿using AventusSharp.Tools;
+using AventusSharp.Tools;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
@@ -12,6 +12,7 @@ using System;
 using Scriban.Parsing;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http.Features;
+using AventusSharp.AspNetCore.Hosting;
 
 namespace AventusSharp.SSE
 {
@@ -24,6 +25,7 @@ namespace AventusSharp.SSE
         private readonly HttpContext context;
         private readonly TaskCompletionSource _tcs;
         private readonly CancellationTokenSource tokenSource;
+        private readonly SendQueue sendQueue = new();
         public readonly SSEEndPoint instance;
 
         public Task WaitForShutdown => _tcs.Task;
@@ -45,7 +47,11 @@ namespace AventusSharp.SSE
         {
             _tcs = new TaskCompletionSource();
             tokenSource = new CancellationTokenSource();
-            context.RequestAborted.Register(() => _tcs.TrySetResult());
+            context.RequestAborted.Register(() =>
+            {
+                _tcs.TrySetResult();
+                tokenSource.Cancel();
+            });
             this.context = context;
             SessionId = context.Features.Get<ISessionFeature>()?.Session?.Id
                 ?? Guid.NewGuid().ToString("N");
@@ -88,9 +94,13 @@ namespace AventusSharp.SSE
                     { "channel", eventName },
                     { "data", data }
                 };
-                await context.Response.WriteAsync($"data: {toSend.ToString(Formatting.None)}\n\n", tokenSource.Token);
-                await context.Response.Body.FlushAsync(tokenSource.Token);
+                await sendQueue.Run(async () =>
+                {
+                    await context.Response.WriteAsync($"data: {toSend.ToString(Formatting.None)}\n\n", tokenSource.Token);
+                    await context.Response.Body.FlushAsync(tokenSource.Token);
+                }, tokenSource.Token);
             }
+            catch (OperationCanceledException) when (tokenSource.IsCancellationRequested || context.RequestAborted.IsCancellationRequested) { }
             catch (Exception e)
             {
                 AventusLogger.Instance.LogError(exception: e, message: "Can't send the event "+eventName+" though the sse connection");

@@ -200,7 +200,7 @@ public sealed class DiagramSchemaTests
         Assert.Multiple(() =>
         {
             Assert.That(relationship.Id, Is.EqualTo("persisted-relationship"));
-            Assert.That(relationship.Name, Is.EqualTo("readings_devices"));
+            Assert.That(relationship.Name, Is.EqualTo("readings_DeviceId_devices"));
             Assert.That(relationship.SourceTableId, Is.EqualTo(reading.Id));
             Assert.That(relationship.SourceFieldId, Is.EqualTo($"{reading.Id}.DeviceId"));
             Assert.That(relationship.TargetTableId, Is.EqualTo("old-device"));
@@ -297,6 +297,13 @@ public sealed class DiagramSchemaTests
         Assert.That(
             persisted.Relationships.Select(relation => relation.Id),
             Is.EquivalentTo(new[] { "relation-primary", "relation-secondary" }));
+        Assert.That(
+            persisted.Relationships.Select(relation => relation.Name),
+            Is.EquivalentTo(new[]
+            {
+                "readings_DeviceId_devices",
+                "readings_SecondaryDeviceId_devices"
+            }));
     }
 
     [Test]

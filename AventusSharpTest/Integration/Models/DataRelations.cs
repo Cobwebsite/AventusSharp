@@ -46,6 +46,21 @@ public sealed class TestLampManager : DatabaseDM<TestLampManager, TestLamp>
 {
 }
 
+[SqlName("diagram_targets")]
+public sealed class DiagramTarget : Storable<DiagramTarget>
+{
+    public string Name { get; set; } = "";
+}
+
+[SqlName("diagram_sources")]
+public sealed class DiagramSource : Storable<DiagramSource>
+{
+    public DiagramTarget PrimaryTarget { get; set; } = null!;
+
+    [SqlName("backup_target_id")]
+    public DiagramTarget BackupTarget { get; set; } = null!;
+}
+
 [SqlName("test_projection_parents")]
 public sealed class TestProjectionParent : Storable<TestProjectionParent>
 {

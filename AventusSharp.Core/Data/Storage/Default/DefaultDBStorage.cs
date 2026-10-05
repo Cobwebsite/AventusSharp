@@ -3457,14 +3457,13 @@ namespace AventusSharp.Data.Storage.Default
                 };
                 table.Fields.Add(field);
 
-                if (member is ITableMemberInfoSqlLinkSingle rel && rel.TableLinked?.Primary != null && info.Primary != null)
+                if (member is ITableMemberInfoSqlLinkSingle rel && rel.TableLinked?.Primary != null)
                 {
-                    // TODO add relation name
                     DiagramRelationship relationship = new DiagramRelationship()
                     {
-                        Name = table.Name + "_" + rel.TableLinked.SqlTableName,
+                        Name = table.Name + "_" + member.SqlName + "_" + rel.TableLinked.SqlTableName,
                         SourceTableId = table.Name,
-                        SourceFieldId = table.Name + "." + info.Primary.SqlName,
+                        SourceFieldId = field.Id,
                         TargetTableId = rel.TableLinked.SqlTableName,
                         TargetFieldId = rel.TableLinked.SqlTableName + "." + rel.TableLinked.Primary.SqlName
                     };

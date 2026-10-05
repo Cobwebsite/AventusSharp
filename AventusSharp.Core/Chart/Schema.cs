@@ -324,8 +324,7 @@ public class DiagramObject
                     newRel.Id = existingRelationshipId;
                 }
 
-                // Optionnel : Générer un nom propre
-                newRel.Name = $"{sourceTableName}_{targetTableName}";
+                newRel.Name = $"{sourceTableName}_{sourceFieldName}_{targetTableName}";
 
                 finalRelationships.Add(newRel);
             }

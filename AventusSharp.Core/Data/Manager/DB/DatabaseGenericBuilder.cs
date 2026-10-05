@@ -485,7 +485,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             if (subQueryPath == null)
             {
                 Errors.Add(new DataError(DataErrorCode.ValidationError,
-                    "No external relation query was prepared for '" + path + "'."));
+                    AventusTranslations.Get(AventusMessageKeys.Data.ExternalRelationQueryNotPrepared, path)));
             }
             else
             {
@@ -517,7 +517,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             if (external || RequiresPostSort)
             {
                 if (lambdaExpression.ReturnType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(lambdaExpression.ReturnType))
-                    throw new NotSupportedException("Sorting an external collection requires a scalar expression, such as Count.");
+                    throw new NotSupportedException(AventusTranslations.Get(AventusMessageKeys.Data.ExternalSortRequiresScalar));
 
                 RequiresPostSort = true;
                 Sorting = null;
@@ -571,7 +571,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             if (external || RequiresPostGroup)
             {
                 if (lambdaExpression.ReturnType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(lambdaExpression.ReturnType))
-                    throw new NotSupportedException("Grouping an external collection requires a scalar expression, such as Count.");
+                    throw new NotSupportedException(AventusTranslations.Get(AventusMessageKeys.Data.ExternalGroupRequiresScalar));
                 
                 RequiresPostGroup = true;
                 Groups = null;

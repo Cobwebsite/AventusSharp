@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using AventusSharp.Routes.Request;
+using AventusSharp.Localization;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using FileTypeChecker;
@@ -25,9 +26,9 @@ public class ImageFile
         try
         {
             if (format != SKEncodedImageFormat.Webp && format != SKEncodedImageFormat.Png && format != SKEncodedImageFormat.Jpeg)
-                throw new ArgumentException("The output format must be WebP, PNG or JPEG.", nameof(format));
+                throw new ArgumentException(AventusTranslations.Get(AventusMessageKeys.Image.OutputFormatUnsupported), nameof(format));
             if (quality < 0 || quality > 100)
-                throw new ArgumentOutOfRangeException(nameof(quality), "Quality must be between 0 and 100.");
+                throw new ArgumentOutOfRangeException(nameof(quality), AventusTranslations.Get(AventusMessageKeys.Image.QualityOutOfRange));
 
             var svgResult = IsSvg(path);
             if (!svgResult.Success)
@@ -47,11 +48,11 @@ public class ImageFile
                 : bitmap != null ? SKImage.FromBitmap(bitmap) : null;
             if (image == null)
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "The source cannot be decoded as an image."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, AventusTranslations.Get(AventusMessageKeys.Image.SourceUndecodable)));
                 return result;
             }
             using SKData? encoded = image.Encode(format, quality);
-            if (encoded == null) throw new InvalidOperationException($"Cannot encode the image as {format}.");
+            if (encoded == null) throw new InvalidOperationException(AventusTranslations.Get(AventusMessageKeys.Image.EncodingFailed, format));
             string target = Path.ChangeExtension(savePath ?? path, format.ToString().ToLowerInvariant());
             using (FileStream output = File.Create(target)) encoded.SaveTo(output);
             result.Result = target;
@@ -88,7 +89,7 @@ public class ImageFile
 
                     if (!found)
                     {
-                        result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "The file " + path + " isn't recognized"));
+                        result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, AventusTranslations.Get(AventusMessageKeys.Image.FileUnrecognized, path)));
                     }
                 }
 
@@ -165,7 +166,7 @@ public class ImageFile
                 string? extensionName = Enum.GetName(format);
                 if (extensionName == null)
                 {
-                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, "File format isn't inside extension enum"));
+                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Image.FormatUnknown)));
                     return result;
                 }
                 pathWithExtension.Add(extensionName.ToLower());
@@ -245,7 +246,7 @@ public class ImageFile
             }
             else
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NoSize, "You must provide at least width or height to resize"));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NoSize, AventusTranslations.Get(AventusMessageKeys.Image.ResizeSizeRequired)));
                 return result;
             }
 
@@ -299,7 +300,7 @@ public class ImageFile
             }
             if (!isSvgResult.Result)
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FileNotSvg, "File isn't a valid svg"));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FileNotSvg, AventusTranslations.Get(AventusMessageKeys.Image.InvalidSvg)));
                 return result;
             }
             using (var stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
@@ -309,7 +310,7 @@ public class ImageFile
 
                 if (svg.Picture == null)
                 {
-                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "Can't parse the svg file"));
+                    result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, AventusTranslations.Get(AventusMessageKeys.Image.SvgParsingFailed)));
                     return result;
                 }
 
@@ -335,7 +336,7 @@ public class ImageFile
                             string? name = Enum.GetName<SKEncodedImageFormat>(format);
                             if (name == null)
                             {
-                                result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, "File format isn't inside extension enum"));
+                                result.Errors.Add(new ImageFileError(ImageFileErrorCode.UnknownError, AventusTranslations.Get(AventusMessageKeys.Image.FormatUnknown)));
                                 return result;
                             }
                             savePath = path.Replace(".svg", "." + name.ToLower());
@@ -429,7 +430,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
             FileInfo source = new(file.FilePath);
             if (constraints?.MaximumFileSizeBytes is long maximumFileSize && source.Length > maximumFileSize)
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FileTooLarge, $"The image cannot exceed {maximumFileSize} bytes."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FileTooLarge, AventusTranslations.Get(AventusMessageKeys.Image.FileTooLarge, maximumFileSize)));
                 return result;
             }
 
@@ -442,14 +443,14 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
             using SKCodec? codec = SKCodec.Create(data);
             if (codec == null)
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, "The uploaded file is not a valid image."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.NotValidImage, AventusTranslations.Get(AventusMessageKeys.Image.UploadInvalid)));
                 return result;
             }
 
             SKEncodedImageFormat format = codec.EncodedFormat;
             if (constraints.AllowedFormats is { Count: > 0 } && !constraints.AllowedFormats.Contains(format))
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FormatNotAllowed, $"The image format {format} is not allowed."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.FormatNotAllowed, AventusTranslations.Get(AventusMessageKeys.Image.FormatNotAllowed, format)));
             }
 
             string? expectedContentType = ImageUploadConstraints.GetContentType(format);
@@ -461,7 +462,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
                 )
             )
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.ContentTypeMismatch, "The image content does not match its content type."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.ContentTypeMismatch, AventusTranslations.Get(AventusMessageKeys.Image.ContentTypeMismatch)));
             }
 
             int width = codec.Info.Width;
@@ -471,14 +472,14 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
                 (constraints.MinimumHeight is int minimumHeight && height < minimumHeight)
             )
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.DimensionsTooSmall, "The image dimensions are too small."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.DimensionsTooSmall, AventusTranslations.Get(AventusMessageKeys.Image.DimensionsTooSmall)));
             }
             if (
                 (constraints.MaximumWidth is int maximumWidth && width > maximumWidth) ||
                 (constraints.MaximumHeight is int maximumHeight && height > maximumHeight)
             )
             {
-                result.Errors.Add(new ImageFileError(ImageFileErrorCode.DimensionsTooLarge, "The image dimensions are too large."));
+                result.Errors.Add(new ImageFileError(ImageFileErrorCode.DimensionsTooLarge, AventusTranslations.Get(AventusMessageKeys.Image.DimensionsTooLarge)));
             }
         }
         catch (Exception exception)
@@ -536,7 +537,7 @@ public abstract class AventusImage<T> : AventusFile<T> where T : IStorable
         {
             Result = isValidImg,
             Errors = isValidImg ? new() : new() {
-                    new ImageFileError(ImageFileErrorCode.NotValidImage, "The file " + Upload.FileName + " isn't valid")
+                    new ImageFileError(ImageFileErrorCode.NotValidImage, AventusTranslations.Get(AventusMessageKeys.Image.FileInvalid, Upload.FileName))
                 }
         };
 

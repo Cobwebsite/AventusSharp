@@ -1,5 +1,6 @@
 using AventusSharp.Data.Storage.Default;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 using System.Threading.Tasks;
 
 namespace AventusSharp.Data.Storage.Sqlite;
@@ -19,7 +20,7 @@ public class SqliteMigrationProvider : StorageMigrationProvider<SqliteStorage>
             var check = await storage.Query("PRAGMA foreign_key_check");
             result.Errors.AddRange(check.Errors);
             if (check.Result?.Count > 0)
-                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration violates a foreign key."));
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationForeignKeyViolation)));
         }
         await base.AfterUp(result);
     }

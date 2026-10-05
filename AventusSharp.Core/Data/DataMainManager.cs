@@ -427,7 +427,6 @@ namespace AventusSharp.Data
                     {
                         foreach (Type type in typeDependency.GenericTypeArguments)
                         {
-                            // TODO check how to prevent infinite loop
                             AddDataDependency(typeFrom, type, name);
                         }
                     }

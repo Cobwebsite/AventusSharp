@@ -5,6 +5,7 @@ using AventusSharp.Data.Storage.Mysql;
 using AventusSharp.Data.Storage.Postgresql;
 using AventusSharp.Data.Storage.Sqlite;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 
 namespace DatabaseQuery;
 
@@ -43,7 +44,7 @@ public static class ExecuteQuery
 
         if (storage == null)
         {
-            result.Errors.Add(new GenericError(500, "Database type " + payload.Type + " can't be used"));
+            result.Errors.Add(new GenericError(500, AventusTranslations.Get(AventusMessageKeys.Data.DatabaseTypeUnavailable, payload.Type)));
             return result;
         }
 

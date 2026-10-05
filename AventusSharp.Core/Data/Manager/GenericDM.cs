@@ -2304,7 +2304,7 @@ namespace AventusSharp.Data.Manager
                     if (transactionContext.IsRolledBack)
                     {
                         result.Errors.Add(new DataError(DataErrorCode.TransactionAlreadyRolledBack,
-                            "The transaction was rolled back by a nested operation."));
+                            AventusTranslations.Get(AventusMessageKeys.Data.TransactionAlreadyRolledBack)));
                         return result;
                     }
                     transactionContext.count++;

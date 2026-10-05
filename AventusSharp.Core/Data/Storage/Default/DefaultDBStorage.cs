@@ -231,7 +231,7 @@ namespace AventusSharp.Data.Storage.Default
                 DbConnection? connection = transactionScope.Connection;
                 if (connection == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionMissing, GetType().Name), " doesn't have a connection"));
+                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionMissing, GetType().Name)));
                     return result;
                 }
 
@@ -451,7 +451,7 @@ namespace AventusSharp.Data.Storage.Default
                 DbConnection? connection = transactionScope.Connection;
                 if (connection == null)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionMissing, GetType().Name), " doesn't have a connection"));
+                    result.Errors.Add(new DataError(DataErrorCode.NoConnectionInsideStorage, AventusTranslations.Get(AventusMessageKeys.Data.StorageConnectionMissing, GetType().Name)));
                     return result;
                 }
 
@@ -605,7 +605,7 @@ namespace AventusSharp.Data.Storage.Default
                     if (transactionScope.IsRolledBack)
                     {
                         result.Errors.Add(new DataError(DataErrorCode.TransactionAlreadyRolledBack,
-                            "The transaction was rolled back by a nested operation."));
+                            AventusTranslations.Get(AventusMessageKeys.Data.TransactionAlreadyRolledBack)));
                         return result;
                     }
                     transactionScope.count++;
@@ -1258,7 +1258,7 @@ namespace AventusSharp.Data.Storage.Default
             {
                 if (materializationScope?.Depth > 64)
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, "AutoRead relation loading exceeded the maximum recursion depth."));
+                    result.Errors.Add(new DataError(DataErrorCode.InfiniteLoop, AventusTranslations.Get(AventusMessageKeys.Data.AutoReadDepthExceeded)));
                     return result;
                 }
 
@@ -1929,7 +1929,7 @@ namespace AventusSharp.Data.Storage.Default
                 else if (linked is int id) ids.Add(id);
                 else
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.WrongType, "A many-to-many link must contain model instances or integer identifiers."));
+                    result.Errors.Add(new DataError(DataErrorCode.WrongType, AventusTranslations.Get(AventusMessageKeys.Data.ManyToManyItemType)));
                     return result;
                 }
             }
@@ -2657,7 +2657,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     result.Errors.Add(new DataError(
                         DataErrorCode.ValidationError,
-                        "Conflicting delete policies on inverse relation '" + inverse.Name + "'.")
+                        AventusTranslations.Get(AventusMessageKeys.Data.ConflictingDeletePolicies, inverse.Name))
                     );
                     return result;
                 }
@@ -2665,7 +2665,7 @@ namespace AventusSharp.Data.Storage.Default
                 {
                     result.Errors.Add(new DataError(
                         DataErrorCode.ValidationError,
-                        "DeleteSetNull requires a nullable inverse relation: '" + inverse?.Name + "'.")
+                        AventusTranslations.Get(AventusMessageKeys.Data.DeleteSetNullRequiresNullable, inverse?.Name))
                     );
                     return result;
                 }
@@ -2913,7 +2913,7 @@ namespace AventusSharp.Data.Storage.Default
                 if (!result.Success) return result;
 
                 if (exists)
-                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration relation table already exists: " + relationTable));
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationRelationTableExists, relationTable)));
                 else
                     await result.RunAsync(() => Execute(PrepareSQLCreateIntermediateTable(relation)));
 
@@ -2925,7 +2925,7 @@ namespace AventusSharp.Data.Storage.Default
 
             if (columns.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
             {
-                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column already exists: " + property.Name + ". Use UpdateProperty instead."));
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationColumnExists, property.Name)));
                 return result;
             }
 
@@ -2951,7 +2951,7 @@ namespace AventusSharp.Data.Storage.Default
             string type = GetMigrationColumnType(property);
             if (property is IMigrationPropertyRef reference)
             {
-                type = GetSqlColumnType(TableMemberInfoSql.GetDbType(reference.Options.KeyKind ?? typeof(int), null) ?? throw new NotSupportedException("Unsupported migration reference key type."), null!);
+                type = GetSqlColumnType(TableMemberInfoSql.GetDbType(reference.Options.KeyKind ?? typeof(int), null) ?? throw new NotSupportedException(AventusTranslations.Get(AventusMessageKeys.Data.UnsupportedMigrationReferenceKeyType)), null!);
             }
             string definition = QuoteIdentifier(property.Name) + " " + type;
             if (property.Options.AutoIncrement) definition += " " + MigrationIdentityClause;
@@ -3022,7 +3022,7 @@ namespace AventusSharp.Data.Storage.Default
                 SqlName = Name;
                 TableLinkedType = IsListTypeUsable(MemberType) ?? IsDictionaryTypeUsable(MemberType);
                 if (TableLinkedType == null)
-                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Unsupported migration collection: " + Name));
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.UnsupportedMigrationCollection, Name)));
 
                 return result;
             }
@@ -3073,8 +3073,8 @@ namespace AventusSharp.Data.Storage.Default
             {
                 if (targets.Contains(foreignKey.ReferencedTable) && !targets.Contains(foreignKey.Table))
                     result.Errors.Add(new DataError(DataErrorCode.ModelDeletionBlocked,
-                        "Cannot delete model table '" + foreignKey.ReferencedTable + "': table '"
-                        + foreignKey.Table + "' still references it. Include the dependent model in the migration."));
+                        AventusTranslations.Get(AventusMessageKeys.Data.ModelDeletionBlocked,
+                            foreignKey.ReferencedTable, foreignKey.Table)));
             }
             if (!result.Success) return result;
 

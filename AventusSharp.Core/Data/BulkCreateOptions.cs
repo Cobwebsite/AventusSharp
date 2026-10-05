@@ -1,4 +1,5 @@
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 
 namespace AventusSharp.Data;
 
@@ -15,7 +16,7 @@ public sealed class BulkCreateOptions
         VoidWithError result = new();
         if (BatchSize <= 0)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Batch size must be positive."));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.BatchSizePositive)));
         }
         return result;
     }

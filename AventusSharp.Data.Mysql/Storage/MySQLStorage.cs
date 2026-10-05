@@ -6,6 +6,7 @@ using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Data.Storage.Relational;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
@@ -279,7 +280,7 @@ namespace AventusSharp.Data.Storage.Mysql
 
             if (incoming.Count > 0)
             {
-                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column referenced by table '" + incoming[0]["name"] + "'."));
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.ColumnReferencedByTable, incoming[0]["name"])));
                 return result;
             }
 
@@ -324,7 +325,7 @@ namespace AventusSharp.Data.Storage.Mysql
 
             if (columns.Count != 1)
             {
-                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column does not exist: " + property.Name));
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationColumnMissing, property.Name)));
                 return result;
             }
             string definition = GetMigrationColumnType(property) + (property.Options.Nullable ? " NULL" : " NOT NULL");

@@ -2,6 +2,7 @@ using System.Data.Common;
 using AventusSharp.Data.Storage.Default;
 using Microsoft.Data.SqlClient;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 using System;
 using System.Collections.Generic;
 using AventusSharp.Data.Storage.Default.TableMember;
@@ -287,7 +288,7 @@ public class MsSqlStorage : DefaultDBStorage<MsSqlStorage>
 
         if (incoming.Count > 0)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column referenced by table '" + incoming[0]["name"] + "'."));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.ColumnReferencedByTable, incoming[0]["name"])));
             return result;
         }
 

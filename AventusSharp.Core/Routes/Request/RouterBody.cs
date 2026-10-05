@@ -102,7 +102,7 @@ namespace AventusSharp.Routes.Request
                 string part = parts[i];
                 if (part.Length == 0)
                 {
-                    result.Errors.Add(new(RouteErrorCode.InvalidFormData, "A form field path cannot contain an empty segment."));
+                    result.Errors.Add(new(RouteErrorCode.InvalidFormData, AventusTranslations.Get(AventusMessageKeys.Routes.EmptyFormPathSegment)));
                     return result;
                 }
 
@@ -111,7 +111,7 @@ namespace AventusSharp.Routes.Request
                 {
                     if (!int.TryParse(part, out index) || index < 0 || index > array.Count)
                     {
-                        result.Errors.Add(new(RouteErrorCode.InvalidFormData, "Form array indices must be contiguous and non-negative."));
+                        result.Errors.Add(new(RouteErrorCode.InvalidFormData, AventusTranslations.Get(AventusMessageKeys.Routes.InvalidFormArrayIndices)));
                         return result;
                     }
                     if (index == array.Count)
@@ -121,7 +121,7 @@ namespace AventusSharp.Routes.Request
                 }
                 else if (container is not JObject)
                 {
-                    result.Errors.Add(new(RouteErrorCode.InvalidFormData, "Conflicting form field paths."));
+                    result.Errors.Add(new(RouteErrorCode.InvalidFormData, AventusTranslations.Get(AventusMessageKeys.Routes.ConflictingFormPaths)));
                     return result;
                 }
 
@@ -148,7 +148,7 @@ namespace AventusSharp.Routes.Request
                     }
                     else
                     {
-                        result.Errors.Add(new(RouteErrorCode.InvalidFormData, "Conflicting form field paths."));
+                        result.Errors.Add(new(RouteErrorCode.InvalidFormData, AventusTranslations.Get(AventusMessageKeys.Routes.ConflictingFormPaths)));
                         return result;
                     }
                 }

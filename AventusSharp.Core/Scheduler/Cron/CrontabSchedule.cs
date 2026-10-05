@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using AventusSharp.Localization;
 using Debug = System.Diagnostics.Debug;
 
 namespace AventusSharp.Scheduler.Cron;
@@ -98,11 +99,9 @@ internal sealed partial class CrontabSchedule
         {
             return errorSelector(() =>
             {
-                var components =
-                    includingSeconds
-                    ? "6 components of a schedule in the sequence of seconds, minutes, hours, days, months, and days of week"
-                    : "5 components of a schedule in the sequence of minutes, hours, days, months, and days of week";
-                return new CrontabException($"'{expression}' is an invalid crontab expression. It must contain {components}.");
+                return new CrontabException(AventusTranslations.Get(
+                    includingSeconds ? AventusMessageKeys.Cron.InvalidSixPartExpression : AventusMessageKeys.Cron.InvalidFivePartExpression,
+                    expression));
             });
         }
 
@@ -112,10 +111,13 @@ internal sealed partial class CrontabSchedule
         for (var i = 0; i < tokens.Length; i++)
         {
             var kind = (CrontabFieldKind)i + offset;
-            var field = CrontabField.TryParse(kind, tokens[i], v => new { ErrorProvider = (ExceptionProvider?)null, Value = (CrontabField?)v },
+            string token = tokens[i];
+            var field = CrontabField.TryParse(kind, token, v => new { ErrorProvider = (ExceptionProvider?)null, Value = (CrontabField?)v },
                                                                e => new { ErrorProvider = (ExceptionProvider?)e, Value = (CrontabField?)null });
             if (field?.ErrorProvider != null)
-                return errorSelector(field.ErrorProvider);
+                return errorSelector(() => new CrontabException(
+                    AventusTranslations.Get(AventusMessageKeys.Cron.InvalidScheduleField, expression, kind, token),
+                    field.ErrorProvider()));
             fields[i + offset] = field!.Value!;
         }
 

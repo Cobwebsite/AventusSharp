@@ -16,6 +16,7 @@ using AventusSharp.Data.Storage.Default;
 using AventusSharp.Data.Storage.Default.TableMember;
 using AventusSharp.Data.Storage.Relational;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 using Microsoft.Data.Sqlite;
 
 namespace AventusSharp.Data.Storage.Sqlite;
@@ -308,7 +309,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
         if (columns.Contains(property.Name, StringComparer.OrdinalIgnoreCase))
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column already exists: " + property.Name + ". Use UpdateProperty instead."));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationColumnExists, property.Name)));
             return result;
         }
 
@@ -317,7 +318,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         {
             if (!property.Options.Primary || (property.Type != typeof(int) && property.Type != typeof(long)))
             {
-                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "SQLite autoincrement requires an integer primary key."));
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.SqliteAutoincrementIntegerKey)));
                 return result;
             }
             definition = QuoteIdentifier(property.Name) + " INTEGER PRIMARY KEY AUTOINCREMENT";
@@ -384,7 +385,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
         if (getTransactionScope() == null || enabled.Single()["foreign_keys"] != "0")
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "SQLite column migrations require a migration transaction with foreign keys disabled."));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.SqliteMigrationTransactionRequired)));
             return result;
         }
 
@@ -400,7 +401,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
                 if (keys.Any(key => key["table"] == table && (key["to"] == column || key["to"] == null)))
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column referenced by table '" + other["name"] + "'."));
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.ColumnReferencedByTable, other["name"])));
                     return result;
                 }
             }
@@ -418,7 +419,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
         if (schema.Count != 1)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration table does not exist: " + table));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationTableMissing, table)));
             return result;
         }
 
@@ -440,7 +441,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
                     MentionsColumn(part, column)
                 )
                 {
-                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot delete a column used by another column definition: " + Unquote(first)));
+                    result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.ColumnUsedByDefinition, Unquote(first))));
                     return result;
                 }
             }
@@ -516,7 +517,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         if (getTransactionScope() == null || foreignKeys.Single()["foreign_keys"] != "0")
         {
             result.Errors.Add(new DataError(DataErrorCode.ValidationError,
-                "SQLite column updates require a migration transaction with foreign keys disabled."));
+                AventusTranslations.Get(AventusMessageKeys.Data.SqliteMigrationTransactionRequired)));
             return result;
         }
         List<Dictionary<string, string?>>? schema = await result.ExtractAsync(() =>
@@ -526,7 +527,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
 
         if (schema.Count != 1)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration table does not exist: " + table));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationTableMissing, table)));
             return result;
         }
         string original = schema[0]["sql"]!;
@@ -535,7 +536,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         int changed = parts.FindIndex(part => Tokens(part).FirstOrDefault() is string token && Unquote(token).Equals(property.Name, StringComparison.OrdinalIgnoreCase));
         if (changed < 0)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "The migration column does not exist: " + property.Name));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.MigrationColumnMissing, property.Name)));
             return result;
         }
 
@@ -599,7 +600,7 @@ public class SqliteStorage : DefaultDBStorage<SqliteStorage>
         {
             if (type != typeof(int) && type != typeof(long))
             {
-                result.Errors.Add(new DataError(DataErrorCode.ValidationError, "An autoincrement column must remain an integer."));
+                result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.AutoincrementMustRemainInteger)));
                 return result;
             }
             newType = "INTEGER";

@@ -45,8 +45,8 @@ Revue du 27 septembre 2026 : 41 occurrences de TODO recensées initialement dans
 - [x] **Clarifier le nom des relations du diagramme.** Le nom inclut maintenant la colonne source (`table_source_colonne_table_cible`) dans le diagramme généré et après fusion. `SourceFieldId` pointe sur cette colonne de relation, y compris lorsqu'elle porte un nom SQL personnalisé. Test d'intégration avec deux liens vers la même table, tests de fusion et de migration : 20 réussis.
   - Sources : `AventusSharp.Core/Data/Storage/Default/DefaultDBStorage.cs`, `AventusSharp.Core/Chart/Schema.cs`, `AventusSharpTest/Integration/DiagramGenerationTests.cs`.
 
-- [ ] **Unifier la localisation des erreurs cron.** Le message par défaut est encore `Crontab error.`, et d'autres erreurs cron sont également écrites directement en anglais. Utiliser les clés de traduction du projet pour les messages utiles à l'utilisateur, avec les valeurs du champ et de l'expression ; conserver les exceptions internes. Le constructeur sans argument n'a pas d'appel identifié dans les sources : son seul message n'est donc pas une priorité fonctionnelle.
-  - Source : `AventusSharp.Core/Scheduler/Cron/CrontabFieldImpl.cs:26` ; autres messages dans `CrontabField.cs` et `CrontabSchedule.cs`.
+- [x] **Unifier la localisation des erreurs utilisateur dans le projet.** Les erreurs cron incluent le champ, sa valeur et l'expression complète. Les messages directs des résultats d'erreur ont aussi été remplacés dans les images, formulaires, dates, données, migrations, fournisseurs SQL et `DatabaseQuery` ; plusieurs exceptions de validation publiques du planificateur, de MAUI et du convertisseur suivent également la culture active. Les diagnostics internes restent tels quels. Ressources anglaises et françaises vérifiées ; compilation de la solution sans avertissement ; suite complète : 808 réussis, 129 ignorés, aucun échec.
+  - Sources : `AventusSharp.Core/Localization/Messages.resx`, `Messages.fr.resx`, `AventusSharp.Core/Scheduler/Cron`, `AventusSharpTest/Tools/TranslationTests.cs`.
 
 ## TODO obsolètes ou à reformuler
 

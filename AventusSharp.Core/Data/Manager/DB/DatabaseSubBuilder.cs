@@ -68,7 +68,7 @@ public class DatabaseSubBuilder<X, Y> : DatabaseSubBuilder where X : IStorable w
         };
         if (query == null || names.Count == 0)
         {
-            result.Errors.Add(new DataError(DataErrorCode.ValidationError, "Cannot ignore a field in an unprepared relation query."));
+            result.Errors.Add(new DataError(DataErrorCode.ValidationError, AventusTranslations.Get(AventusMessageKeys.Data.RelationQueryNotPrepared)));
             return result;
         }
         if (initializeProjection) query.Fields();

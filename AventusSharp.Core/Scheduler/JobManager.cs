@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AventusSharp.Scheduler.Event;
 using AventusSharp.Scheduler.Util;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Scheduler
@@ -102,7 +103,7 @@ namespace AventusSharp.Scheduler
                 IJob job = JobFactory.GetJobInstance<T>();
                 if (job == null)
                 {
-                    throw new InvalidOperationException("The configured IJobFactory returned null.");
+                    throw new InvalidOperationException(AventusTranslations.Get(AventusMessageKeys.Scheduler.JobFactoryReturnedNull));
                 }
 
                 try
@@ -139,7 +140,7 @@ namespace AventusSharp.Scheduler
 
                 if (job == null)
                 {
-                    throw new InvalidOperationException("The given Func<IJob> returned null.");
+                    throw new InvalidOperationException(AventusTranslations.Get(AventusMessageKeys.Scheduler.JobFunctionReturnedNull));
                 }
 
                 try

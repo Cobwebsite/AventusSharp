@@ -2,6 +2,7 @@ namespace AventusSharp.Maui.Routes;
 
 using AventusSharp.Hosting;
 using AventusSharp.Routes;
+using AventusSharp.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Microsoft.Maui;
@@ -17,7 +18,7 @@ public static class RouterAdapter
 
     public static async Task<AdapterResponse> EmulateRequest(string method, string url, byte[]? body, string? contentType, IServiceProvider? customServices)
     {
-        IServiceProvider services = customServices ?? IPlatformApplication.Current?.Services ?? throw new InvalidOperationException("Can't load the Service provider");
+        IServiceProvider services = customServices ?? IPlatformApplication.Current?.Services ?? throw new InvalidOperationException(AventusTranslations.Get(AventusMessageKeys.Routes.ServiceProviderUnavailable));
 
         IServiceScopeFactory scopeFactory = services.GetRequiredService<IServiceScopeFactory>();
         using IServiceScope scope = scopeFactory.CreateScope();

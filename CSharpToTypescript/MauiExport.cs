@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using AventusSharp.Localization;
 
 namespace CSharpToTypescript;
 
@@ -16,7 +17,7 @@ internal static class MauiExport
             Type routerConfig = core.GetType("AventusSharp.Routes.RouterConfig", throwOnError: true)!;
             Type middleware = core.GetType("AventusSharp.Routes.RouterMiddleware", throwOnError: true)!;
             Type? program = assembly.GetTypes().FirstOrDefault(type => type.Name == "MauiProgram");
-            if (program is null) throw new InvalidOperationException("MauiProgram was not found.");
+            if (program is null) throw new InvalidOperationException(AventusTranslations.Get(AventusMessageKeys.Converter.MauiProgramMissing));
 
             MethodInfo[] callbacks = program.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public)
                 .SelectMany(type => type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
@@ -26,7 +27,7 @@ internal static class MauiExport
                 .ToArray();
             if (callbacks.Length != 1)
             {
-                throw new InvalidOperationException($"Expected one UseAventusHttp configuration callback in MauiProgram.CreateMauiApp(), found {callbacks.Length}.");
+                throw new InvalidOperationException(AventusTranslations.Get(AventusMessageKeys.Converter.MauiConfigurationCallbackCount, callbacks.Length));
             }
 
             MethodInfo callback = callbacks[0];

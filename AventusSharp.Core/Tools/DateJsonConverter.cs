@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using AventusSharp.Localization;
 using Newtonsoft.Json;
 using SharpDate = AventusSharp.Data.Date;
 using SharpDatetime = AventusSharp.Data.Datetime;
@@ -16,7 +17,7 @@ internal static class DateJsonFormat
     internal static DateTime ReadDate(string text)
     {
         if (!DateTime.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var value))
-            throw new FormatException("Expected an ISO date (YYYY-MM-DD).");
+            throw new FormatException(AventusTranslations.Get(AventusMessageKeys.Validation.IsoDateExpected));
         return value;
     }
 
@@ -24,7 +25,7 @@ internal static class DateJsonFormat
     {
         // .NET DateTime has seven fractional digits (100 ns). Reject excess precision instead of silently losing it.
         if (!Regex.IsMatch(text, @"\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?(?:Z|[+-]\d{2}:\d{2})?\z", RegexOptions.CultureInvariant))
-            throw new FormatException("Expected an ISO date and time with at most seven fractional digits.");
+            throw new FormatException(AventusTranslations.Get(AventusMessageKeys.Validation.IsoDatetimeExpected));
         if (text.EndsWith("Z", StringComparison.Ordinal) || Regex.IsMatch(text, @"[+-]\d{2}:\d{2}\z"))
             return DateTimeOffset.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.None).UtcDateTime;
         return DateTime.SpecifyKind(DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.None), DateTimeKind.Unspecified);
@@ -47,8 +48,8 @@ public sealed class DateJsonConverter : JsonConverter<SharpDate>
         {
             if (reader.TokenType == JsonToken.String) return new SharpDate(DateJsonFormat.ReadDate((string)reader.Value!));
         }
-        catch (FormatException error) { throw new JsonSerializationException("Invalid Aventus Date.", error); }
-        throw new JsonSerializationException("Expected an ISO date string or null.");
+        catch (FormatException error) { throw new JsonSerializationException(AventusTranslations.Get(AventusMessageKeys.Validation.InvalidDate), error); }
+        throw new JsonSerializationException(AventusTranslations.Get(AventusMessageKeys.Validation.IsoDateOrNullExpected));
     }
 }
 
@@ -73,8 +74,8 @@ public sealed class DatetimeJsonConverter : JsonConverter<SharpDatetime>
             if (reader.TokenType == JsonToken.Date && reader.Value is DateTimeOffset offset)
                 return new SharpDatetime(offset.UtcDateTime);
         }
-        catch (FormatException error) { throw new JsonSerializationException("Invalid Aventus Datetime.", error); }
-        throw new JsonSerializationException("Expected an ISO datetime string or null.");
+        catch (FormatException error) { throw new JsonSerializationException(AventusTranslations.Get(AventusMessageKeys.Validation.InvalidDatetime), error); }
+        throw new JsonSerializationException(AventusTranslations.Get(AventusMessageKeys.Validation.IsoDatetimeOrNullExpected));
     }
 }
 
@@ -86,9 +87,9 @@ public sealed class DateSystemJsonConverter : System.Text.Json.Serialization.Jso
 
     public override SharpDate Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
     {
-        if (reader.TokenType != System.Text.Json.JsonTokenType.String) throw new System.Text.Json.JsonException("Expected an ISO date string.");
+        if (reader.TokenType != System.Text.Json.JsonTokenType.String) throw new System.Text.Json.JsonException(AventusTranslations.Get(AventusMessageKeys.Validation.IsoDateStringExpected));
         try { return new SharpDate(DateJsonFormat.ReadDate(reader.GetString()!)); }
-        catch (FormatException error) { throw new System.Text.Json.JsonException("Invalid Aventus Date.", error); }
+        catch (FormatException error) { throw new System.Text.Json.JsonException(AventusTranslations.Get(AventusMessageKeys.Validation.InvalidDate), error); }
     }
 }
 
@@ -100,8 +101,8 @@ public sealed class DatetimeSystemJsonConverter : System.Text.Json.Serialization
 
     public override SharpDatetime Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
     {
-        if (reader.TokenType != System.Text.Json.JsonTokenType.String) throw new System.Text.Json.JsonException("Expected an ISO datetime string.");
+        if (reader.TokenType != System.Text.Json.JsonTokenType.String) throw new System.Text.Json.JsonException(AventusTranslations.Get(AventusMessageKeys.Validation.IsoDatetimeStringExpected));
         try { return new SharpDatetime(DateJsonFormat.ReadDatetime(reader.GetString()!)); }
-        catch (FormatException error) { throw new System.Text.Json.JsonException("Invalid Aventus Datetime.", error); }
+        catch (FormatException error) { throw new System.Text.Json.JsonException(AventusTranslations.Get(AventusMessageKeys.Validation.InvalidDatetime), error); }
     }
 }

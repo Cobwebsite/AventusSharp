@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AventusSharp.Tools;
+using AventusSharp.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace AventusSharp.Data.Manager;
@@ -38,7 +39,7 @@ public abstract class TransactionContext : IAsyncDisposable, IDisposable
         {
             if (isRolledBack)
                 result.Errors.Add(new DataError(DataErrorCode.TransactionAlreadyRolledBack,
-                    "The transaction was rolled back by a nested operation."));
+                    AventusTranslations.Get(AventusMessageKeys.Data.TransactionAlreadyRolledBack)));
             result.Result = false;
             return result;
         }

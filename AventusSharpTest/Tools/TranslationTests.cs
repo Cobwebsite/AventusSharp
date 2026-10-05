@@ -3,10 +3,13 @@ using System.Globalization;
 using System.Resources;
 using System.Text;
 using AventusSharp.Data;
+using AventusSharp.Data.CustomTableMembers;
 using AventusSharp.Localization;
+using AventusSharp.Scheduler.Cron;
 using AventusSharp.Tools;
 using Newtonsoft.Json;
 using NUnit.Framework;
+using SkiaSharp;
 
 namespace AventusSharpTest.Tools;
 
@@ -162,6 +165,31 @@ public class TranslationTests
             .Concat(type.GetNestedTypes().SelectMany(Keys));
         Assert.That(Keys(typeof(AventusMessageKeys)),
             Is.EquivalentTo(catalog.Cast<DictionaryEntry>().Select(entry => (string)entry.Key)));
+    }
+
+    [Test]
+    public void Cron_image_and_date_errors_follow_the_active_culture()
+    {
+        using var root = AventusTranslations.Use(new AventusLocalizer());
+        using (AventusTranslations.UseCulture("fr"))
+        {
+            var field = Assert.Throws<CrontabException>(() => CrontabField.Hours("24"));
+            var schedule = Assert.Throws<CrontabException>(() => CrontabSchedule.Parse("bad"));
+            var scheduleField = Assert.Throws<CrontabException>(() => CrontabSchedule.Parse("60 * * * *"));
+            var image = ImageFile.ConvertTo("unused", SKEncodedImageFormat.Gif).Errors.Single();
+            var date = Assert.Throws<JsonSerializationException>(() =>
+                JsonConvert.DeserializeObject<AventusSharp.Data.Date>("\"bad\""));
+            Assert.Multiple(() =>
+            {
+                Assert.That(field!.Message, Does.Contain("24").And.Contain("Hour").And.Contain("Saisissez"));
+                Assert.That(schedule!.Message, Does.Contain("bad").And.Contain("cinq champs"));
+                Assert.That(scheduleField!.Message, Does.Contain("60 * * * *").And.Contain("Minute").And.Contain("60"));
+                Assert.That(image.Message, Does.Contain("Le format de sortie"));
+                Assert.That(date!.Message, Is.EqualTo("Date Aventus invalide."));
+            });
+        }
+        Assert.That(Assert.Throws<CrontabException>(() => CrontabField.Hours("24"))!.Message,
+            Does.Contain("exceeds the maximum"));
     }
 
     [Test]

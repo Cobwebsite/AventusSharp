@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.IO;
+using AventusSharp.Localization;
 
 namespace AventusSharp.Scheduler.Cron;
 
@@ -234,14 +235,14 @@ public class CrontabField : ICrontabField
     T OnValueAboveMaxError<T>(int value, Func<ExceptionProvider, T> errorSelector) =>
         errorSelector(
             () => new CrontabException(
-                $"{value} is higher than the maximum allowable value for the [{_impl.Kind}] field. " +
-                $"Value must be between {_impl.MinValue} and {_impl.MaxValue} (all inclusive)."));
+                AventusTranslations.Get(AventusMessageKeys.Cron.ValueAboveMaximum,
+                    value, _impl.Kind, _impl.MinValue, _impl.MaxValue)));
 
     T OnValueBelowMinError<T>(int value, Func<ExceptionProvider, T> errorSelector) =>
         errorSelector(
             () => new CrontabException(
-                $"{value} is lower than the minimum allowable value for the [{_impl.Kind}] field. " +
-                $"Value must be between {_impl.MinValue} and {_impl.MaxValue} (all inclusive)."));
+                AventusTranslations.Get(AventusMessageKeys.Cron.ValueBelowMinimum,
+                    value, _impl.Kind, _impl.MinValue, _impl.MaxValue)));
 
     public override string ToString() => ToString(null);
 

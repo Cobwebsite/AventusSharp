@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using AventusSharp.Localization;
 using Debug = System.Diagnostics.Debug;
 using SysEnum = System.Enum;
 
@@ -22,8 +23,8 @@ public delegate Exception ExceptionProvider();
 public class CrontabException : Exception
 {
     public CrontabException() :
-        base("Crontab error.")
-    { } // TODO: Fix message and add it to resource.
+        base(AventusTranslations.Get(AventusMessageKeys.Cron.Error))
+    { }
 
     public CrontabException(string message) :
         base(message)
@@ -58,7 +59,7 @@ public class CrontabFieldImpl
         if (!SysEnum.IsDefined(typeof(CrontabFieldKind), kind))
         {
             var kinds = string.Join(", ", SysEnum.GetNames(typeof(CrontabFieldKind)));
-            throw new ArgumentException($"Invalid crontab field kind. Valid values are {kinds}.", nameof(kind));
+            throw new ArgumentException(AventusTranslations.Get(AventusMessageKeys.Cron.InvalidFieldKind, kinds), nameof(kind));
         }
 
         return FieldByKind[(int)kind];
@@ -199,7 +200,7 @@ public class CrontabFieldImpl
         Debug.Assert(innerException != null);
 
         return errorSelector(
-                   () => new CrontabException($"'{str}' is not a valid [{Kind}] crontab field expression.", innerException));
+                   () => new CrontabException(AventusTranslations.Get(AventusMessageKeys.Cron.InvalidFieldExpression, str, Kind), innerException));
     }
 
     T InternalParse<T>(string str, CrontabFieldAccumulator<T> acc, T success, Func<ExceptionProvider, T> errorSelector)
@@ -208,7 +209,7 @@ public class CrontabFieldImpl
         Debug.Assert(acc != null);
 
         if (str.Length == 0)
-            return errorSelector(() => new CrontabException("A crontab field value cannot be empty."));
+            return errorSelector(() => new CrontabException(AventusTranslations.Get(AventusMessageKeys.Cron.EmptyFieldValue)));
 
         //
         // Next, look for a list of values (e.g. 1,2,3).
@@ -282,7 +283,7 @@ public class CrontabFieldImpl
         Debug.Assert(str != null);
 
         if (str.Length == 0)
-            throw new CrontabException("A crontab field value cannot be empty.");
+            throw new CrontabException(AventusTranslations.Get(AventusMessageKeys.Cron.EmptyFieldValue));
 
         var firstChar = str[0];
 
@@ -291,9 +292,8 @@ public class CrontabFieldImpl
 
         if (_names == null)
         {
-            throw new CrontabException(string.Format(
-                "'{0}' is not a valid [{3}] crontab field value. It must be a numeric value between {1} and {2} (all inclusive).",
-                str, MinValue.ToString(), MaxValue.ToString(), Kind.ToString()));
+            throw new CrontabException(AventusTranslations.Get(AventusMessageKeys.Cron.InvalidNumericValue,
+                str, Kind, MinValue, MaxValue));
         }
 
         for (var i = 0; i < _names.Length; i++)
@@ -303,6 +303,6 @@ public class CrontabFieldImpl
         }
 
         var names = string.Join(", ", _names);
-        throw new CrontabException($"'{str}' is not a known value name. Use one of the following: {names}.");
+        throw new CrontabException(AventusTranslations.Get(AventusMessageKeys.Cron.UnknownValueName, str, names));
     }
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using AventusSharp.Data.Storage.Default.TableMember;
+using AventusSharp.Localization;
 
 namespace AventusSharp.Data.Storage.Relational
 {
@@ -62,7 +63,7 @@ namespace AventusSharp.Data.Storage.Relational
                             contains.Link.TableIntermediateKey1 == null ||
                             contains.Link.TableIntermediateKey2 == null
                         )
-                            throw new NotSupportedException("The many-to-many link has no intermediate table or primary key.");
+                            throw new NotSupportedException(AventusTranslations.Get(AventusMessageKeys.Data.ManyToManyMetadataMissing));
 
                         string table = string.Join(".", contains.Link.TableIntermediateName.Split('.').Select(storage.QuoteIdentifier));
                         string key1 = storage.QuoteIdentifier(contains.Link.TableIntermediateKey1);

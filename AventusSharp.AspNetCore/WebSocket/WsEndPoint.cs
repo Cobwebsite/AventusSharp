@@ -157,8 +157,8 @@ namespace AventusSharp.WebSocket
         /// <returns></returns>
         public async Task Route(WebSocketConnection connection, string path, WebSocketRouterBody body, string uid = "")
         {
-            AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = connection.GetContext();
-            RouterMiddleware.AventusContextScope = new AventusSharp.AspNetCore.Hosting.AventusContext(connection.GetContext());
+            ContextAccessor.Current = connection.GetContext();
+            RouterMiddleware.AventusContextScope = new AventusContext(connection.GetContext());
             try
             {
                 await RouteInternal(connection, path, body, uid);
@@ -246,15 +246,19 @@ namespace AventusSharp.WebSocket
                                         value = connection.GetContext().RequestServices.GetService(parameter.type);
                                         if (value == null)
                                         {
-                                            ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
-                                            if (!bodyPart.Success)
+                                            value = WebSocketMiddleware._externalResolve(parameter.type, connection);
+                                            if (value == null)
                                             {
-                                                await connection.Send(path, bodyPart, uid);
-                                                AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
-                                                RouterMiddleware.AventusContextScope = null;
-                                                return;
+                                                ResultWithWsError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
+                                                if (!bodyPart.Success)
+                                                {
+                                                    await connection.Send(path, bodyPart, uid);
+                                                    AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
+                                                    RouterMiddleware.AventusContextScope = null;
+                                                    return;
+                                                }
+                                                value = bodyPart.Result;
                                             }
-                                            value = bodyPart.Result;
                                         }
                                     }
 
@@ -351,7 +355,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the websocket");
             }
         }
 
@@ -373,7 +377,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the websocket");
             }
         }
 
@@ -414,7 +418,7 @@ namespace AventusSharp.WebSocket
                             {
                                 await conn.Send(dataToSend);
                             }
-                        }, 
+                        },
                         error => AventusLogger.Instance.LogError(error, "Can't send data though the websocket")
                     );
                 }
@@ -453,7 +457,7 @@ namespace AventusSharp.WebSocket
             }
             catch (Exception e)
             {
-                AventusLogger.Instance.LogError(e, "Can't send the event "+eventName+" though the websocket");
+                AventusLogger.Instance.LogError(e, "Can't send the event " + eventName + " though the websocket");
             }
         }
 

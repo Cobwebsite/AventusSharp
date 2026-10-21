@@ -26,6 +26,7 @@ namespace AventusSharp.Routes
         private static bool configLoaded = false;
         internal static RouterConfig config = new RouterConfig();
         private static Dictionary<Type, object> injected = new Dictionary<Type, object>();
+        internal static Func<Type, IAventusContext, object?> _externalResolve = (type, conn) => null;
 
         public static IAventusContext? AventusContextScope
         {
@@ -36,6 +37,11 @@ namespace AventusSharp.Routes
         public static void Configure(Action<RouterConfig> configAction)
         {
             RouterMiddleware.configAction = configAction;
+        }
+
+        public static void ExternalResolve(Func<Type, IAventusContext, object?> resolve)
+        {
+            _externalResolve = resolve;
         }
 
         public static List<RouteInfo> GetAllRoutes()
@@ -188,8 +194,8 @@ namespace AventusSharp.Routes
                                 if (!hasInParam)
                                 {
                                     if (
-                                        parameter.type != typeof(IAventusContext) && 
-                                        !injected.ContainsKey(parameter.type) && 
+                                        parameter.type != typeof(IAventusContext) &&
+                                        !injected.ContainsKey(parameter.type) &&
                                         //context.Services.GetService(parameter.type) == null &&
                                         parameterInfo.GetCustomAttribute<NoExport>() == null
                                     )
@@ -448,35 +454,39 @@ namespace AventusSharp.Routes
                                             value = context.Services.GetService(parameter.type);
                                             if (value == null)
                                             {
-                                                if (body == null)
+                                                value = _externalResolve(parameter.type, context);
+                                                if (value == null)
                                                 {
-                                                    body = new RouterBody(context);
-                                                    VoidWithRouteError resultTemp = await body.Parse();
-                                                    if (!resultTemp.Success)
+                                                    if (body == null)
                                                     {
-                                                        context.Response.StatusCode = 422;
-                                                        await new Json(resultTemp, 422).send(context, routerInfo.router);
-                                                        return null;
+                                                        body = new RouterBody(context);
+                                                        VoidWithRouteError resultTemp = await body.Parse();
+                                                        if (!resultTemp.Success)
+                                                        {
+                                                            context.Response.StatusCode = 422;
+                                                            await new Json(resultTemp, 422).send(context, routerInfo.router);
+                                                            return null;
+                                                        }
                                                     }
-                                                }
-                                                if (parameter.type == typeof(HttpFile))
-                                                {
-                                                    value = body.GetFile(parameter.name);
-                                                }
-                                                else if (parameter.type == typeof(List<HttpFile>))
-                                                {
-                                                    value = body.GetFiles(parameter.name);
-                                                }
-                                                else
-                                                {
-                                                    ResultWithRouteError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
-                                                    if (!bodyPart.Success)
+                                                    if (parameter.type == typeof(HttpFile))
                                                     {
-                                                        context.Response.StatusCode = 422;
-                                                        await new Json(bodyPart, 422).send(context, routerInfo.router);
-                                                        return null;
+                                                        value = body.GetFile(parameter.name);
                                                     }
-                                                    value = bodyPart.Result;
+                                                    else if (parameter.type == typeof(List<HttpFile>))
+                                                    {
+                                                        value = body.GetFiles(parameter.name);
+                                                    }
+                                                    else
+                                                    {
+                                                        ResultWithRouteError<object> bodyPart = body.GetData(parameter.type, parameter.name, parameter.optional);
+                                                        if (!bodyPart.Success)
+                                                        {
+                                                            context.Response.StatusCode = 422;
+                                                            await new Json(bodyPart, 422).send(context, routerInfo.router);
+                                                            return null;
+                                                        }
+                                                        value = bodyPart.Result;
+                                                    }
                                                 }
                                             }
                                         }

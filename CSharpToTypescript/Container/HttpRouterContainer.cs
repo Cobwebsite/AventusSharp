@@ -410,6 +410,10 @@ namespace CSharpToTypescript.Container
 
     internal class HttpRouteContainer
     {
+        private static List<string> knownParameters = new List<string>() {
+                typeof(HttpContext).FullName ?? "",
+                typeof(IAventusContext).FullName ?? "",
+        };
         public IMethodSymbol? methodSymbol;
         public bool canBeAdded = false;
         public string name = "";
@@ -542,34 +546,17 @@ namespace CSharpToTypescript.Container
                 this.name = ((FctName)attr).name;
             }
 
-            List<string> knownParameters = new List<string>() {
-                 typeof(HttpContext).FullName ?? "",
-                 typeof(IAventusContext).FullName ?? "",
-            };
+
             Dictionary<string, ParameterInfo> @params = method.GetParameters().ToDictionary(p => p.Name ?? "", p => p);
             foreach (KeyValuePair<string, ParameterInfo> pair in @params)
             {
-                if (parametersUrlAndType.ContainsKey(pair.Key))
-                {
-                    continue;
-                }
+
 
                 foreach (var parameter in method.GetParameters())
                 {
                     if (parameter.Name == pair.Key)
                     {
-                        if (parameter.ParameterType.ToString()?.StartsWith("Microsoft") == true)
-                        {
-                            continue;
-                        }
-                        if (knownParameters.Contains(parameter.ParameterType.ToString() ?? ""))
-                        {
-                            continue;
-                        }
-                        if (parameter.GetCustomAttribute<NoExport>() != null)
-                        {
-                            continue;
-                        }
+                        if (!UseParameterBody(parameter)) continue;
 
                         if (parameter.ParameterType.IsNullable())
                         {
@@ -700,19 +687,8 @@ namespace CSharpToTypescript.Container
             bool hasBody = false;
             foreach (var parameter in method.GetParameters())
             {
-                if (parameter.ParameterType.ToString()?.StartsWith("Microsoft") == true)
-                {
-                    continue;
-                }
-                if (parameter.GetCustomAttribute<NoExport>() != null)
-                {
-                    continue;
-                }
-                bool hasInParam = new Regex("{.*?}").IsMatch(route);
-                if (!hasInParam)
-                {
-                    hasBody = true;
-                }
+                if (!UseParameterBody(parameter)) continue;
+                hasBody = true;
             }
 
             if (httpMethods.Count == 0)
@@ -722,7 +698,15 @@ namespace CSharpToTypescript.Container
 
         }
 
-
+        private bool UseParameterBody(ParameterInfo? parameter)
+        {
+            if (parameter == null || parameter.Name == null) return false;
+            if (parametersUrlAndType.ContainsKey(parameter.Name)) return false;
+            if (parameter.ParameterType.ToString()?.StartsWith("Microsoft") == true) return false;
+            if (knownParameters.Contains(parameter.ParameterType.ToString() ?? "")) return false;
+            if (parameter.GetCustomAttribute<NoExport>() != null) return false;
+            return true;
+        }
         private void ParseRoute(string? txtRoute, Dictionary<string, ParameterInfo> @params)
         {
             if (txtRoute != null)
@@ -940,7 +924,7 @@ namespace CSharpToTypescript.Container
                     }
                 }
             }
-            else if(node is AnonymousFunctionExpressionSyntax test)
+            else if (node is AnonymousFunctionExpressionSyntax test)
             {
                 // prevent going down to sub function
             }

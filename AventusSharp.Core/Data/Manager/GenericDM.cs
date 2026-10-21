@@ -126,6 +126,8 @@ namespace AventusSharp.Data.Manager
         protected Type? RootType { get; set; }
         protected DataManagerConfig? Config { get; set; }
 
+        public IServiceProvider Services => AventusService.Provider;
+
 #pragma warning disable CS8618 // Un champ non-nullable doit contenir une valeur non-null lors de la fermeture du constructeur. Envisagez de déclarer le champ comme nullable.
         protected GenericDM()
 #pragma warning restore CS8618 // Un champ non-nullable doit contenir une valeur non-null lors de la fermeture du constructeur. Envisagez de déclarer le champ comme nullable.
@@ -1396,7 +1398,7 @@ namespace AventusSharp.Data.Manager
             }
             else
             {
-                 result.Run(options.Validate);
+                result.Run(options.Validate);
             }
             return result.RunAsync(() =>
                 BulkCreateLogic(values, options)
@@ -1411,7 +1413,7 @@ namespace AventusSharp.Data.Manager
             catch (Exception e)
             {
                 VoidWithError result = new();
-                if(e is AventusException aventusException)
+                if (e is AventusException aventusException)
                 {
                     result.Errors.Add(aventusException.Error);
                 }

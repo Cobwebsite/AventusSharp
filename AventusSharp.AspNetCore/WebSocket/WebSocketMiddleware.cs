@@ -26,6 +26,7 @@ namespace AventusSharp.WebSocket
         private static bool configLoaded = false;
         internal static WebSocketConfig config = new WebSocketConfig();
         internal static Dictionary<Type, object> injected = new Dictionary<Type, object>();
+        internal static Func<Type, WebSocketConnection, object?> _externalResolve = (type, conn) => null;
 
         public static Dictionary<WsEndPoint, List<WebSocketRouteInfo>> GetAllRoutes()
         {
@@ -34,7 +35,11 @@ namespace AventusSharp.WebSocket
         public static void Configure(Action<WebSocketConfig> configAction)
         {
             WebSocketMiddleware.configAction = configAction;
+        }
 
+        public static void ExternalResolve(Func<Type, WebSocketConnection, object?> resolve)
+        {
+            _externalResolve = resolve;
         }
 
         public static void Inject(object o)

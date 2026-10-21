@@ -49,6 +49,7 @@ public static class AventusMauiExtension
         ArgumentNullException.ThrowIfNull(assemblies);
         if (IsExportCommand) return app;
         InitializeLogger(app);
+        AddService(app);
 
         IDBStorage? db = app.Services.GetService<IDBStorage>();
         if (config != null)
@@ -81,6 +82,7 @@ public static class AventusMauiExtension
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(assemblies);
         InitializeLogger(app);
+        AddService(app);
 
         if (config is not null)
         {
@@ -105,6 +107,7 @@ public static class AventusMauiExtension
         ArgumentNullException.ThrowIfNull(app);
         ArgumentNullException.ThrowIfNull(assemblies);
         InitializeLogger(app);
+        AddService(app);
 
         SchedulerManager.Configure(options =>
         {
@@ -181,6 +184,11 @@ public static class AventusMauiExtension
     private static void InitializeLogger(MauiApp app)
     {
         AventusLogger.Initialize(app.Services.GetService<ILoggerFactory>(), null);
+    }
+
+    private static void AddService(MauiApp app)
+    {
+        AventusService.Provider = app.Services;
     }
 
     private static void ThrowOnError(VoidWithError result)

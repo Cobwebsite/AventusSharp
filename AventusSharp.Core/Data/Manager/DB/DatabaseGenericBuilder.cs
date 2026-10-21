@@ -418,8 +418,8 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                 .Where(key => path == key || path.StartsWith(key + ".", StringComparison.Ordinal))
                 .OrderByDescending(key => key.Length)
                 .FirstOrDefault();
-            
-            if (subQueryPath != null) 
+
+            if (subQueryPath != null)
                 ExplicitProjectionSubQueries.Add(subQueryPath);
         }
         return path;
@@ -430,10 +430,11 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
     }
     protected string IgnoreGeneric(LambdaExpression lambdaExpression, bool record = true)
     {
-        if (record) {
+        if (record)
+        {
             IgnoredExpressions.Add(lambdaExpression);
         }
-        
+
         LambdaIncludeResult lambdaResult = LambdaInclude(
             lambdaExpression,
             fields: null,
@@ -565,13 +566,13 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
             bool external = ExternalExpressionLoader<T>.RequiresExternal(this, lambdaExpression);
             if (external)
                 ExternalExpressionLoader<T>.Load(this, lambdaExpression);
-            
+
             QueryGroups.Add(lambdaExpression);
             if (external || RequiresPostGroup)
             {
                 if (lambdaExpression.ReturnType != typeof(string) && typeof(System.Collections.IEnumerable).IsAssignableFrom(lambdaExpression.ReturnType))
                     throw new NotSupportedException(AventusTranslations.Get(AventusMessageKeys.Data.ExternalGroupRequiresScalar));
-                
+
                 RequiresPostGroup = true;
                 Groups = null;
                 return;
@@ -629,8 +630,8 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                 .Where(key => relationPath == key || relationPath.StartsWith(key + ".", StringComparison.Ordinal))
                 .OrderByDescending(key => key.Length)
                 .FirstOrDefault();
-                
-            if (subQueryPath != null) 
+
+            if (subQueryPath != null)
                 ExplicitProjectionSubQueries.Add(subQueryPath);
         }
         if (!lambdaResult.IsExternal && InfoByPath.TryGetValue(relationPath, out DatabaseBuilderInfo? relationInfo))
@@ -718,12 +719,15 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
                             {
                                 DatabaseBuilderInfo currentTable = LoadTable(GetTableInfo(lambdaPart.Type), fullPath);
                                 parentInfo.joins[memberInfoWithAlias.Key] = currentTable;
-                                if (addToMembers)
-                                {
-                                    parentInfo.Members.Add(memberInfoWithAlias.Key, new DatabaseBuilderInfoMember(memberInfoWithAlias.Key, memberInfoWithAlias.Value, Storage));
-                                    AllMembersByPath[fullPath] =
-                                        fields == null && i == lambdaParts.Count - 1;
-                                }
+                            }
+                        }
+                        if (addToMembers)
+                        {
+                            KeyValuePair<TableMemberInfoSql?, string> selectedMember = parentInfo.GetTableMemberInfoAndAlias(lambdaPart.Name);
+                            if (selectedMember.Key != null)
+                            {
+                                parentInfo.Members[selectedMember.Key] = new DatabaseBuilderInfoMember(selectedMember.Key, selectedMember.Value, Storage);
+                                AllMembersByPath[fullPath] = fields == null && i == lambdaParts.Count - 1;
                             }
                         }
                         if (addToMembers && fields != null && i == lambdaParts.Count - 1)
@@ -887,7 +891,7 @@ public class DatabaseGenericBuilder<T> : ILambdaTranslatable where T : IStorable
         }
         List<IScope>? scopes = ManualScopes ?? Scopes;
         if (scopes == null) return;
-        
+
         scopes = scopes.ToList();
 
         LambdaTranslator<T> translator = new(this);

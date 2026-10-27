@@ -16,4 +16,10 @@ public sealed class AventusResponseBase : IAventusResponse, IDisposable
     {
         Body.Dispose();
     }
+
+    public void Redirect(string location, bool permanent = false)
+    {
+        StatusCode = permanent ? 301 : 302;
+        Headers["Location"] = [location];
+    }
 }

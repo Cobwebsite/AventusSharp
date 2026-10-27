@@ -34,4 +34,9 @@ public sealed class AventusResponse : IAventusResponse
         this.response = response;
         Headers = new HeaderDictionary(response.Headers);
     }
+
+    public void Redirect(string location, bool permanent = false)
+    {
+        response.Redirect(location, permanent);
+    }
 }

@@ -10,4 +10,6 @@ public interface IAventusResponse
     long? ContentLength { get; set; }
     Stream Body { get; set; }
     IDictionary<string, string[]> Headers { get; }
+
+    void Redirect(string location, bool permanent = false);
 }

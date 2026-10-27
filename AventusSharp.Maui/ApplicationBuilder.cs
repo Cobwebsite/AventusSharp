@@ -11,6 +11,8 @@ using AventusSharp.Scheduler;
 using AventusSharp.Chart;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using AventusSharp.Hosting;
+using AventusSharp.Maui.Routes;
 
 namespace AventusSharp;
 
@@ -89,7 +91,14 @@ public static class AventusMauiExtension
 
         VoidWithError result = RouterMiddleware.Register(assemblies);
         ThrowOnError(result);
+        RouterAdapter.SetRegistered();
 
+        return app;
+    }
+
+    public static MauiApp Use(this MauiApp app, Func<IAventusContext, Func<Task>, Task> middleware)
+    {
+        RouterAdapter.AddMiddleware(middleware);
         return app;
     }
 

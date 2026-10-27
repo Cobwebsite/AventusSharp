@@ -9,6 +9,9 @@ using Microsoft.Maui;
 
 public static class RouterAdapter
 {
+    private static bool Registered { get; set; } = false;
+    private static List<Func<IAventusContext, Func<Task>, Task>> MiddlewareBefore { get; set; } = [];
+    private static List<Func<IAventusContext, Func<Task>, Task>> MiddlewareAfter { get; set; } = [];
 
     [JSInvokable]
     public static Task<AdapterResponse> EmulateRequest(string method, string url, byte[]? body, string? contentType)
@@ -43,15 +46,21 @@ public static class RouterAdapter
         using var response = new AventusResponseBase();
         var context = new AventusContextBase(request, response, scope.ServiceProvider);
 
-        RouterResolve? resolve = await RouterMiddleware.Resolve(context);
-        if (resolve is not null)
+        await ExecuteMiddlewares(context, MiddlewareBefore, async () =>
         {
-            await RouterMiddleware.OnRequest(context, resolve);
-        }
-        else if (context.Response.StatusCode < 400)
-        {
-            context.Response.StatusCode = 404;
-        }
+            RouterResolve? resolve = await RouterMiddleware.Resolve(context);
+
+            if (resolve is not null)
+            {
+                await RouterMiddleware.OnRequest(context, resolve);
+            }
+            else if (context.Response.StatusCode < 400)
+            {
+                context.Response.StatusCode = 404;
+            }
+
+            await ExecuteMiddlewares(context, MiddlewareAfter, () => Task.CompletedTask);
+        });
 
 
         byte[] content;
@@ -70,10 +79,8 @@ public static class RouterAdapter
             content = output.ToArray();
         }
 
-        var headers = response.Headers.ToDictionary(
-            item => item.Key,
-            item => item.Value,
-            StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string[]> headers = response.Headers.ToDictionary(item => item.Key, item => item.Value, StringComparer.OrdinalIgnoreCase);
+
         if (response.ContentType is not null && !headers.ContainsKey("Content-Type"))
         {
             headers["Content-Type"] = [response.ContentType];
@@ -82,6 +89,37 @@ public static class RouterAdapter
         return new AdapterResponse(response.StatusCode, content, headers);
     }
 
+    private static Task ExecuteMiddlewares(IAventusContext context, List<Func<IAventusContext, Func<Task>, Task>> middlewares, Func<Task> finalAction)
+    {
+        Func<Task> next = finalAction;
+
+        for (int i = middlewares.Count - 1; i >= 0; i--)
+        {
+            Func<IAventusContext, Func<Task>, Task> middleware = middlewares[i];
+            Func<Task> currentNext = next;
+
+            next = () => middleware(context, currentNext);
+        }
+
+        return next();
+    }
+
+    internal static void AddMiddleware(Func<IAventusContext, Func<Task>, Task> middleware)
+    {
+        if (Registered)
+        {
+            MiddlewareAfter.Add(middleware);
+        }
+        else
+        {
+            MiddlewareBefore.Add(middleware);
+        }
+    }
+
+    internal static void SetRegistered()
+    {
+        Registered = true;
+    }
 }
 
 public sealed record AdapterResponse(

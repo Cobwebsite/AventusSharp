@@ -88,7 +88,22 @@ export class Maui {
                 );
 
                 const responseHeaders = new Headers(result.headers);
+                if([301, 302].includes(result.status)) {
+                    if(init.redirect != 'manual') {
+                        const location = responseHeaders.get("Location");
+                        if(location) {
+                            const init2 = {
+                                ...init
+                            };
+                            delete init2.body;
+                            return window.fetch(location, init2);
+                        }
+                    }
+                }
+
+
                 const mimeType = responseHeaders.get('content-type') || 'application/octet-stream';
+
 
                 if(this.config.showLog) {
                     console.groupCollapsed(`%c[${method}] ${url.substring(url.indexOf('/api'))} -> Status: ${result.status}`,

@@ -121,6 +121,7 @@ namespace CSharpToTypescript
 
         private bool Build()
         {
+            CleanupOldBuildDirectories();
             string tempOutputDir = Path.Combine(Path.GetTempPath(), "AventusBuild_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempOutputDir);
 
@@ -170,6 +171,33 @@ namespace CSharpToTypescript
             Config.outputDir = tempOutputDir;
             Config.compiledAssembly = Assembly.LoadFrom(outputPath);
             return true;
+        }
+
+        private static void CleanupOldBuildDirectories()
+        {
+            try
+            {
+                DateTime cutoff = DateTime.UtcNow.AddHours(-1);
+                foreach (string path in Directory.EnumerateDirectories(Path.GetTempPath(), "AventusBuild_*", SearchOption.TopDirectoryOnly))
+                {
+                    string name = Path.GetFileName(path);
+                    if (!Regex.IsMatch(name, @"\AAventusBuild_[0-9a-fA-F]{32}\z")) continue;
+
+                    try
+                    {
+                        if (Directory.GetCreationTimeUtc(path) < cutoff)
+                            Directory.Delete(path, recursive: true);
+                    }
+                    catch //(Exception ex)
+                    {
+                        //Console.WriteLine($"Warning: Unable to remove old build directory '{path}': {ex.Message}");
+                    }
+                }
+            }
+            catch //(Exception ex)
+            {
+                //Console.WriteLine($"Warning: Unable to clean old build directories: {ex.Message}");
+            }
         }
 
         private bool IsMauiProject()

@@ -1,7 +1,7 @@
 import type { ResultWithError } from "Aventus@Main:Aventus.package.avt";
 import type { EndPoint } from "./EndPoint.lib.avt";
 import type { SocketSendMessageOptions } from "./ISocket.lib.avt";
-import { Router, type ExtractResponse, type WsRouteSendOptions } from "./Router.lib.avt";
+import { Router, type ExtractResponse, type RouterRoutes, type WsRouteSendOptions } from "./Router.lib.avt";
 import { WsEvent } from "./WsEvent.lib.avt";
 import type { Request } from "../generated/Routes/Request/Request.lib.avt";
 import type { Resource } from "../Routes/Response/Resource.lib.avt";
@@ -9,28 +9,41 @@ import type { Resource } from "../Routes/Response/Resource.lib.avt";
 
 namespace WebSocket {
 
-    export type StorableWsRouter__Routes<T extends Aventus.IData, U extends Request | T = T, R extends Resource | T = T, S extends Resource | T = R> = {
-        GetAll: StorableWsRouter_GetAll<R>,
-        Create: StorableWsRouter_Create<S>,
-        CreateMany: StorableWsRoute_CreateMany<S>,
-        GetById: StorableWsRouter_GetById<S>,
-        GetByIds: StorableWsRouter_GetByIds<S>,
-        Update: StorableWsRouter_Update<S>,
-        UpdateMany: StorableWsRoute_UpdateMany<S>,
-        Delete: StorableWsRouter_Delete,
-        DeleteMany: StorableWsRoute_DeleteMany,
-    };
+    export type StorableWsRouter__Request<T extends Aventus.IData, U extends Request | T | StorableWsRouter__Routes<T>> = 
+        [U] extends [Request] ? U : [U] extends [T] ? U : [U] extends [StorableWsRouter__Routes<T>] ? T : never;
+
+    export type StorableWsRouter__Routes<T extends Aventus.IData, U extends Request | T | RouterRoutes = T, R extends Resource | T = T, S extends Resource | T = R> =
+        U extends RouterRoutes ? U : {
+            GetAll: StorableWsRouter_GetAll<R>,
+            Create: StorableWsRouter_Create<S>,
+            CreateMany: StorableWsRoute_CreateMany<S>,
+            GetById: StorableWsRouter_GetById<S>,
+            GetByIds: StorableWsRouter_GetByIds<S>,
+            Update: StorableWsRouter_Update<S>,
+            UpdateMany: StorableWsRoute_UpdateMany<S>,
+            Delete: StorableWsRouter_Delete,
+            DeleteMany: StorableWsRoute_DeleteMany,
+        };
+
+    // export type ResolveStorableRoute<T extends Aventus.IData, U, R extends Resource | T, S extends Resource | T> = (
+    //     U extends StorableWsRouter__Routes<T>
+    //     ? U
+    //     : U extends Request | T
+    //     ? StorableWsRouter__Routes<T, U, R, S>
+    //     : never
+    // ) & RouterRoutes;
+
+
     export abstract class StorableWsRouter<
         T extends Aventus.IData,
-        U extends Request | T = T,
+        U extends Request | T | StorableWsRouter__Routes<T> = T,
         R extends Resource | T = T,
         S extends Resource | T = R,
         __Route extends StorableWsRouter__Routes<T, U, R, S> = StorableWsRouter__Routes<T, U, R, S>
     > extends Router<__Route> {
 
-        protected override defineEvents(): Partial<__Route> {
+        protected override defineEvents(): __Route {
             return {
-                ...super.defineEvents(),
                 GetAll: new StorableWsRouter_GetAll<R>(this.endpoint, this.getPrefix, this.StorableName),
                 Create: new StorableWsRouter_Create<S>(this.endpoint, this.getPrefix, this.StorableName),
                 CreateMany: new StorableWsRoute_CreateMany<S>(this.endpoint, this.getPrefix, this.StorableName),
@@ -40,7 +53,7 @@ namespace WebSocket {
                 UpdateMany: new StorableWsRoute_UpdateMany<S>(this.endpoint, this.getPrefix, this.StorableName),
                 Delete: new StorableWsRouter_Delete(this.endpoint, this.getPrefix, this.StorableName),
                 DeleteMany: new StorableWsRoute_DeleteMany(this.endpoint, this.getPrefix, this.StorableName),
-            };
+            } as __Route;
         }
 
 
@@ -52,7 +65,7 @@ namespace WebSocket {
             return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRouter_GetAll<R>>>(info);
         }
 
-        public async Create(body: { request: U; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRouter_Create<S>>> {
+        public async Create(body: { request: StorableWsRouter__Request<T, U>; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRouter_Create<S>>> {
             const info: SocketSendMessageOptions = {
                 channel: `${this.getPrefix()}/${this.StorableName()}/Create`,
                 body: body,
@@ -61,7 +74,7 @@ namespace WebSocket {
             return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRouter_Create<S>>>(info);
         }
 
-        public async CreateMany(body: { list: U[]; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_CreateMany<T>>> {
+        public async CreateMany(body: { list: StorableWsRouter__Request<T, U>[]; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_CreateMany<T>>> {
             const info: SocketSendMessageOptions = {
                 channel: `${this.getPrefix()}/${this.StorableName()}/CreateMany`,
                 body: body,
@@ -87,7 +100,7 @@ namespace WebSocket {
             return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRouter_GetByIds<S>>>(info);
         }
 
-        public async Update(id: number, body: { request: U; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRouter_Update<S>>> {
+        public async Update(id: number, body: { request: StorableWsRouter__Request<T, U>; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRouter_Update<S>>> {
             const info: SocketSendMessageOptions = {
                 channel: `${this.getPrefix()}/${this.StorableName()}/${id}/Update`,
                 body: body,
@@ -96,7 +109,7 @@ namespace WebSocket {
             return await this.endpoint.sendMessageAndWait<ExtractResponse<StorableWsRouter_Update<S>>>(info);
         }
 
-        public async UpdateMany(body: { list: U[]; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_UpdateMany<T>>> {
+        public async UpdateMany(body: { list: StorableWsRouter__Request<T, U>[]; }, options: WsRouteSendOptions = {}): Promise<ExtractResponse<StorableWsRoute_UpdateMany<T>>> {
             const info: SocketSendMessageOptions = {
                 channel: `${this.getPrefix()}/${this.StorableName()}/UpdateMany`,
                 body: body,

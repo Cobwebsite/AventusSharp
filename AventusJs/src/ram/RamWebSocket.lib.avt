@@ -2,7 +2,7 @@ import { Storable } from "../Storable.data.avt";
 import { RamCompletor } from "./RamCompletor.lib.avt";
 import type { Request as HttpRequest } from "../generated/Routes/Request/Request.lib.avt";
 import type { Resource } from "../Routes/Response/Resource.lib.avt";
-import type { StorableWsRouter } from "../WebSocket/StorableWsRouter.lib.avt";
+import type { StorableWsRouter, StorableWsRouter__Request, StorableWsRouter__Routes } from "../WebSocket/StorableWsRouter.lib.avt";
 import { ResultWithError, VoidWithError } from "../Tools/ResultWithError.lib.avt";
 import { Ram, RamError, RamErrorCode, uuidv4, type ExtractFromError, type KeysObject, type RamItem, type UriParamsValue } from "Aventus@Main:Aventus.package.avt";
 
@@ -21,7 +21,7 @@ namespace RAM {
         Item extends Storable,
         Request extends HttpRequest | Item = Item,
         ResourceSimple extends Resource | Item = Item,
-        ResourceDetails extends ResourceSimple = ResourceSimple,
+        ResourceDetails extends ResourceSimple = ResourceSimple
     > extends Ram<Item, Request, ResourceSimple, ResourceDetails> {
         protected getAllDone: boolean = false;
         private routes: StorableWsRouter<Item, Request, ResourceSimple, ResourceDetails>;
@@ -212,7 +212,7 @@ namespace RAM {
         protected override async transformCreateRequestListToItem(list: Request[]): Promise<ResultWithError<ResourceDetails[]>> {
             const uid = uuidv4();
             this.otherCreateListLocked[uid] = true;
-            const result = await this.routes.CreateMany({ list });
+            const result = await this.routes.CreateMany({ list: list as StorableWsRouter__Request<Item, Request>[] });
             delete this.otherCreateListLocked[uid];
             return result as ResultWithError<ResourceDetails[]>;
         }
@@ -220,7 +220,7 @@ namespace RAM {
         protected override async transformCreateRequestToItem(item: Request): Promise<ResultWithError<ResourceDetails>> {
             const uid = uuidv4();
             this.otherCreateItemLocked[uid] = true;
-            const result = await this.routes.Create({ request: item });
+            const result = await this.routes.Create({ request: item as StorableWsRouter__Request<Item, Request> });
             delete this.otherCreateItemLocked[uid];
             return result as ResultWithError<ResourceDetails>;
         }
@@ -254,7 +254,7 @@ namespace RAM {
         protected override async transformUpdateRequestListToItem(list: Request[]): Promise<ResultWithError<ResourceDetails[]>> {
             let uid = uuidv4();
             this.otherUpdateListLocked[uid] = true;
-            const result = await this.routes.UpdateMany({ list });
+            const result = await this.routes.UpdateMany({ list: list as StorableWsRouter__Request<Item, Request>[] });
             delete this.otherUpdateListLocked[uid];
             return result as ResultWithError<ResourceDetails[]>;
         }
@@ -264,7 +264,7 @@ namespace RAM {
             if(id === undefined) return result;
             let uid = uuidv4();
             this.otherUpdateItemLocked[uid] = true;
-            const temp = await this.routes.Update(id, { request: item });
+            const temp = await this.routes.Update(id, { request: item as StorableWsRouter__Request<Item, Request> });
             delete this.otherUpdateItemLocked[uid];
             return temp as ResultWithError<ResourceDetails>;
         }

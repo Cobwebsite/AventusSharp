@@ -23,6 +23,8 @@ using AventusSharp.Scheduler;
 using AventusSharp.Localization;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
+using Microsoft.AspNetCore.Http;
+using AventusSharp.AspNetCore.Hosting;
 
 namespace AventusSharp;
 
@@ -96,6 +98,7 @@ public static class AventusExtension
         ArgumentNullException.ThrowIfNull(assemblies);
 
         AddLogger(app);
+        AddService(app);
         IDBStorage? db = app.ApplicationServices.GetService<IDBStorage>();
 
         if (config != null)
@@ -123,6 +126,7 @@ public static class AventusExtension
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         AddLogger(app);
+        AddService(app);
 
         if (config != null)
             Routes.RouterMiddleware.Configure(config);
@@ -131,12 +135,24 @@ public static class AventusExtension
         {
             throw result.Errors[0].GetException();
         }
+
+        Routes.RouterMiddleware.ExternalResolve((type, conn) =>
+        {
+            if (type == typeof(HttpContext) && conn is AventusContext ctx)
+            {
+                return ctx.NativeContext;
+            }
+            return null;
+        });
+        
         app.Use((c, n) =>
             RouterAdapter.OnRequest(c, n)
         );
 
         return app;
     }
+
+
 
     public static IApplicationBuilder UseAventusWebsocket(this IApplicationBuilder app, Action<WebSocketConfig>? config = null)
     {
@@ -147,6 +163,7 @@ public static class AventusExtension
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         AddLogger(app);
+        AddService(app);
 
         if (config != null)
             WebSocketMiddleware.Configure(config);
@@ -161,6 +178,15 @@ public static class AventusExtension
             WebSocketMiddleware.Stop().Wait();
         });
 
+        WebSocketMiddleware.ExternalResolve((type, conn) =>
+        {
+            if (type == typeof(HttpContext))
+            {
+                return conn.GetContext();
+            }
+            return null;
+        });
+
         app.Use(WebSocketMiddleware.OnRequest);
         return app;
     }
@@ -173,6 +199,7 @@ public static class AventusExtension
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         AddLogger(app);
+        AddService(app);
 
         if (config != null)
             SSEMiddleware.Configure(config);
@@ -198,6 +225,7 @@ public static class AventusExtension
     {
         ArgumentNullException.ThrowIfNull(assemblies);
         AddLogger(app);
+        AddService(app);
 
         SchedulerManager.Configure(schedulerConfig =>
         {
@@ -287,5 +315,10 @@ public static class AventusExtension
     private static void AddLogger(IApplicationBuilder app)
     {
         AventusLogger.Initialize(app.ApplicationServices.GetService<ILoggerFactory>(), LoggerFactory.Create(builder => builder.AddConsole()));
+    }
+
+    private static void AddService(IApplicationBuilder app)
+    {
+        AventusService.Provider = app.ApplicationServices;
     }
 }

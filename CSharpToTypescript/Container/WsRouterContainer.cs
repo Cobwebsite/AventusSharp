@@ -354,7 +354,8 @@ namespace CSharpToTypescript.Container
 
             // write events
             string className = GetTypeName(type, 0, true);
-            if (routeEvents.Count > 0)
+            string extensionName = GetExtension();
+            Func<string> addRouteType = () =>
             {
                 string parentName = className;
                 string[] splitted = parentName.Split("<");
@@ -375,49 +376,72 @@ namespace CSharpToTypescript.Container
                 {
                     AddTxtClose("};", result);
                 }
+                AddTxt("", result);
 
-
-                string parentNameNoExtend = GetTypeName(type);
-                string[] splittedNoExtend = parentNameNoExtend.Split("<");
-                splittedNoExtend[0] += "__Routes";
-                string eventListNameNoExtend = string.Join("<", splittedNoExtend);
-
-                if (className.EndsWith(">"))
+                return eventListName;
+            };
+            if (realType.IsAbstract)
+            {
+                if (routeEvents.Count > 0)
                 {
-                    className = className.Substring(0, className.Length - 1);
-                    className += ", __Route extends " + eventListNameNoExtend + " = " + eventListNameNoExtend + ">";
+                    addRouteType();
+
+
+                    string parentNameNoExtend = GetTypeName(type);
+                    string[] splittedNoExtend = parentNameNoExtend.Split("<");
+                    splittedNoExtend[0] += "__Routes";
+                    string eventListNameNoExtend = string.Join("<", splittedNoExtend);
+
+                    if (className.EndsWith(">"))
+                    {
+                        className = className.Substring(0, className.Length - 1);
+                        className += ", __Route extends " + eventListNameNoExtend + " = " + eventListNameNoExtend + ">";
+                    }
+                    else
+                    {
+                        className += "<__Route extends " + eventListNameNoExtend + " = " + eventListNameNoExtend + ">";
+                    }
                 }
                 else
                 {
-                    className += "<__Route extends " + eventListNameNoExtend + " = " + eventListNameNoExtend + ">";
+                    // si pas de route on doit prendre celle du parent
+                    if (className.EndsWith(">"))
+                    {
+                        className = className.Substring(0, className.Length - 1);
+                        className += ", __Route extends " + parentRoute + ">";
+                    }
+                    else
+                    {
+                        className += "<__Route extends " + parentRoute + ">";
+                    }
                 }
-            }
-            else
-            {
-                // si pas de route on doit prendre celle du parent
-                if (className.EndsWith(">"))
+
+                if (extensionName.EndsWith("> "))
                 {
-                    className = className.Substring(0, className.Length - 1);
-                    className += ", __Route extends " + parentRoute + ">";
+                    extensionName = extensionName.Substring(0, extensionName.Length - 2);
+                    extensionName += ", __Route> ";
                 }
                 else
                 {
-                    className += "<__Route extends " + parentRoute + ">";
+                    extensionName = extensionName.Substring(0, extensionName.Length - 1);
+                    extensionName += "<__Route> ";
                 }
             }
-
-            string extensionName = GetExtension();
-            if (extensionName.EndsWith("> "))
+            else if (routeEvents.Count > 0)
             {
-                extensionName = extensionName.Substring(0, extensionName.Length - 2);
-                extensionName += ", __Route> ";
-            }
-            else
-            {
-                extensionName = extensionName.Substring(0, extensionName.Length - 1);
-                extensionName += "<__Route> ";
-            }
+                string eventListName = addRouteType();
 
+                if (extensionName.EndsWith("> "))
+                {
+                    extensionName = extensionName.Substring(0, extensionName.Length - 2);
+                    extensionName += ", " + eventListName + "> ";
+                }
+                else
+                {
+                    extensionName = extensionName.Substring(0, extensionName.Length - 1);
+                    extensionName += "<" + eventListName + "> ";
+                }
+            }
             string documentation = GetDocumentation(type);
             if (documentation.Length > 0)
             {
@@ -474,9 +498,12 @@ namespace CSharpToTypescript.Container
                 if (routeEvents.Count > 0)
                 {
                     AddTxt("", eventList);
-                    AddTxtOpen(" protected override defineEvents(): Partial<__Route> {", eventList);
+                    AddTxtOpen("protected override defineEvents() {", eventList);
                     AddTxtOpen("return {", eventList);
-                    AddTxt("...super.defineEvents(),", eventList);
+                    if (realType.BaseType != typeof(WsRouter))
+                    {
+                        AddTxt("...super.defineEvents(),", eventList);
+                    }
                     foreach (LocalEventInfo routeEvent in routeEvents)
                     {
                         if (routeEvent.functionNeeded.Count == 0)
@@ -751,7 +778,7 @@ namespace CSharpToTypescript.Container
                 {
                     this.name = fctNameAttr.name;
                 }
-                else if(attr is AddFormData addFormDataAttr)
+                else if (attr is AddFormData addFormDataAttr)
                 {
                     addFormData = addFormDataAttr.Value;
                 }

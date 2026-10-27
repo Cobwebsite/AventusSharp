@@ -50,6 +50,29 @@ public sealed class DataRelationshipTests
     }
 
     [Test]
+    public async Task AutoRead_relation_used_by_where_is_fully_loaded()
+    {
+        var parent = await TestProjectionParent.Create(new TestProjectionParent { Name = "Filtered parent" });
+        Assert.That(parent, Is.Not.Null);
+        var wrapper = await TestProjectionWrapper.Create(new TestProjectionWrapper { Parent = parent! });
+        Assert.That(wrapper, Is.Not.Null);
+
+        ((IDatabaseDM)GenericDM.Get<TestProjectionParent>())
+            .RemoveRecordsItems<TestProjectionParent>([parent!.Id]);
+        ((IDatabaseDM)GenericDM.Get<TestProjectionWrapper>())
+            .RemoveRecordsItems<TestProjectionWrapper>([wrapper!.Id]);
+
+        var result = await TestProjectionWrapper.StartQuery()
+            .Where(item => item.Parent.Name == "Filtered parent")
+            .RunWithError();
+
+        Assert.That(result.Success, Is.True, IntegrationEnvironment.ErrorMessages(result.Errors));
+        Assert.That(result.Result, Has.Count.EqualTo(1));
+        Assert.That(result.Result![0].Parent, Is.Not.Null);
+        Assert.That(result.Result[0].Parent.Name, Is.EqualTo("Filtered parent"));
+    }
+
+    [Test]
     public async Task Reverse_query_batches_parent_ids_and_handles_empty_and_duplicate_ids()
     {
         var firstRoom = await TestRoom.Create(new TestRoom { Name = "Batch room one" });

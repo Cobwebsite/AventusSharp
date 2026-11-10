@@ -62,7 +62,7 @@ public static class Binder
             }
             catch (Exception ex)
             {
-                AventusLogger.Instance.LogError(ex, "AutoBinding failed");
+                AventusLogger.Instance.LogError(ex, "AutoBinding failed. Failed converting " + value + " to " + destProp.PropertyType + " on " + destinationType);
             }
         }
     }

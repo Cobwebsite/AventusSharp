@@ -1,7 +1,9 @@
+using AventusSharp.AspNetCore.Hosting;
 using AventusSharp.Localization;
 using AventusSharp.Tools;
 using AventusSharp.Tools.Attributes;
 using AventusSharp.WebSocket.Attributes;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +21,7 @@ namespace AventusSharp.WebSocket.Event
     {
         protected WsEndPoint? endPoint { get; set; }
         protected WebSocketConnection? connection { get; set; }
+        protected List<WebSocketConnection>? connections { get; set; }
         protected string uid { get; private set; } = "";
         protected string basePath { get; set; } = "";
         protected string? path { get; set; } = null;
@@ -55,6 +58,13 @@ namespace AventusSharp.WebSocket.Event
             this.uid = uid;
             this.eventType = ResponseTypeEnum.Single;
             this.connection = connection;
+            return _Emit();
+        }
+        public Task EmitTo(List<WebSocketConnection> connections, string uid = "")
+        {
+            this.uid = uid;
+            this.eventType = ResponseTypeEnum.List;
+            this.connections = connections;
             return _Emit();
         }
         public Task EmitTo(WsEndPoint endPoint, string uid = "")
@@ -124,6 +134,28 @@ namespace AventusSharp.WebSocket.Event
                     throw new WsError(WsErrorCode.NoConnection, AventusTranslations.Get(AventusMessageKeys.WebSocket.ConnectionRequired)).GetException();
                 }
                 await connection.Send(path, o, uid);
+            }
+            else if (eventType == ResponseTypeEnum.List)
+            {
+                if (connections == null)
+                {
+                    throw new WsError(WsErrorCode.NoConnection, AventusTranslations.Get(AventusMessageKeys.WebSocket.ConnectionRequired)).GetException();
+                }
+                await ConcurrentBroadcast.Send(
+                    connections.ToList(),
+                    async conn =>
+                    {
+                        if (conn.GetWebSocket().State != System.Net.WebSockets.WebSocketState.Open)
+                        {
+                            await conn.instance.RemoveInstance(conn);
+                        }
+                        else
+                        {
+                            await conn.Send(path, o, uid);
+                        }
+                    },
+                    error => AventusLogger.Instance.LogError(error, "Can't send data though the websocket")
+                );
             }
             else if (endPoint != null)
             {

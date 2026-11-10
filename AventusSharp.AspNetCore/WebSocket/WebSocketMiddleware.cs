@@ -62,6 +62,13 @@ namespace AventusSharp.WebSocket
             else
                 AventusLogger.Instance.LogError("Can't create " + typeof(U));
         }
+        public static T? GetEndPoint<T>() where T : WsEndPoint
+        {
+            WsEndPoint? endPoint = endPointInstances.Values.FirstOrDefault(p => p.GetType() == typeof(T));
+            if (endPoint == null) return null;
+            if(endPoint is T t) return t;
+            return null;
+        }
         public static WebSocketConnection? GetConnection<T>(string sessionId) where T : WsEndPoint
         {
             WsEndPoint? endPoint = endPointInstances.Values.FirstOrDefault(p => p.GetType() == typeof(T));

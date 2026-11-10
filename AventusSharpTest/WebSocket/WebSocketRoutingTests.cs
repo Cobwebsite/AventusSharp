@@ -281,6 +281,66 @@ public sealed class WebSocketRoutingTests
     }
 
     [Test]
+    public async Task Event_emit_to_list_sends_only_to_selected_connections()
+    {
+        var first = CreateConnection();
+        var second = CreateConnection();
+        var excluded = CreateConnection();
+        var @event = new JsonEvent(new { Value = 42 });
+        @event.Configure("/selected", first.Endpoint, excluded.Connection,
+            "old-uid", ResponseTypeEnum.Single);
+
+        await @event.EmitTo([first.Connection, second.Connection], "list-uid");
+
+        foreach (var socket in new[] { first.Socket, second.Socket })
+        {
+            var message = SingleMessage(socket);
+            Assert.Multiple(() =>
+            {
+                Assert.That(message["channel"]?.Value<string>(), Is.EqualTo("/selected"));
+                Assert.That(message["uid"]?.Value<string>(), Is.EqualTo("list-uid"));
+                Assert.That(JObject.Parse(message["data"]!.Value<string>()!)["Value"]?.Value<int>(), Is.EqualTo(42));
+            });
+        }
+        Assert.That(excluded.Socket.Messages, Is.Empty);
+    }
+
+    [Test]
+    public async Task Event_emit_to_empty_list_sends_nothing()
+    {
+        var existing = CreateConnection();
+        var @event = new EmptyEvent();
+        @event.Configure("/empty", existing.Endpoint, existing.Connection,
+            "old-uid", ResponseTypeEnum.Single);
+
+        await @event.EmitTo([]);
+
+        Assert.That(existing.Socket.Messages, Is.Empty);
+    }
+
+    [Test]
+    public async Task Event_emit_to_list_skips_closed_connection_and_continues()
+    {
+        var closed = CreateConnection();
+        var open = CreateConnection();
+        closed.Socket.Abort();
+        var @event = new EmptyEvent();
+        @event.Configure("/state", open.Endpoint, open.Connection,
+            "", ResponseTypeEnum.Single);
+
+        await @event.EmitTo([closed.Connection, open.Connection], "list-uid")
+            .WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.That(closed.Socket.Messages, Is.Empty);
+        var message = SingleMessage(open.Socket);
+        Assert.Multiple(() =>
+        {
+            Assert.That(message["channel"]?.Value<string>(), Is.EqualTo("/state"));
+            Assert.That(message["uid"]?.Value<string>(), Is.EqualTo("list-uid"));
+        });
+    }
+
+    [Test]
     public async Task Broadcast_removes_closed_connection_and_continues_with_open_ones()
     {
         var closed = CreateConnection();

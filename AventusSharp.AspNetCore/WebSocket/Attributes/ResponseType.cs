@@ -6,6 +6,7 @@ namespace AventusSharp.WebSocket.Attributes
     public enum ResponseTypeEnum
     {
         Single,
+        List,
         Others,
         Broadcast,
         Custom

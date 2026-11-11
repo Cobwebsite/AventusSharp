@@ -6,3 +6,4 @@
 Test/**
 nupkg
 artifacts/
+CSharpExport.TestFixture.Generated/

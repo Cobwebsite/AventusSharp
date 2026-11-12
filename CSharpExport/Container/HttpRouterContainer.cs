@@ -23,10 +23,10 @@ internal sealed class HttpRouterContainer(INamedTypeSymbol type, ClassDeclaratio
         AddTxtOpen("{");
         var parent = config.CreateRouter
             ? "global::" + config.Namespace + "." + config.RouterName
-            : config.Parent == "HttpRouteClient" ? "global::CSharpExport.Http.HttpRouteClient" : config.Parent;
+            : config.Parent == "HttpRouteClient" ? "global::" + RuntimeNamespace + ".Http.HttpRouteClient" : config.Parent;
         var generic = Type.TypeParameters.Length == 0 ? "" :
             "<" + string.Join(", ", Type.TypeParameters.Select(p => p.Name)) + ">";
-        AddTxt("public " + (Type.IsAbstract ? "abstract " : "") + "class " + Type.Name + generic + " : " + parent);
+        AddTxt("public " + (Type.IsAbstract ? "abstract " : "") + "partial class " + Type.Name + generic + " : " + parent);
         AddTxtOpen("{");
         AddTxt("public " + Type.Name + "(global::System.Net.Http.HttpClient? client = null, string? baseUrl = null)");
         AddTxt("    : base(client, baseUrl ?? " + Literal(baseUrl) + ") { }");
@@ -91,7 +91,7 @@ internal sealed class HttpRouterContainer(INamedTypeSymbol type, ClassDeclaratio
                 _ => response.Value.Type
             };
             AddTxt("");
-            AddTxt("public async global::System.Threading.Tasks.Task<global::CSharpExport.Http.HttpResult<" + returnType + ">> " +
+            AddTxt("public async global::System.Threading.Tasks.Task<global::" + RuntimeNamespace + ".Http.HttpResult<" + returnType + ">> " +
                 methodName + methodGeneric + "(" + string.Join(", ", arguments) + ")");
             AddTxtOpen("{");
             var url = Regex.Replace(route, @"\{([^{}]+)\}", match =>
@@ -240,10 +240,10 @@ internal sealed class HttpRouterContainer(INamedTypeSymbol type, ClassDeclaratio
         });
     }
 
-    private static string RenderType(ITypeSymbol type, INamedTypeSymbol? owner = null)
+    private string RenderType(ITypeSymbol type, INamedTypeSymbol? owner = null)
     {
         if (type.ToDisplayString() == "AventusSharp.Routes.Request.HttpFile")
-            return "global::CSharpExport.Http.HttpUpload";
+            return "global::" + RuntimeNamespace + ".Http.HttpUpload";
         if (type is ITypeParameterSymbol parameter && owner != null)
         {
             for (var i = 0; i < owner.TypeParameters.Length; i++)
@@ -261,7 +261,7 @@ internal sealed class HttpRouterContainer(INamedTypeSymbol type, ClassDeclaratio
         return type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
     }
 
-    private static string DefaultValue(IParameterSymbol parameter, INamedTypeSymbol owner)
+    private string DefaultValue(IParameterSymbol parameter, INamedTypeSymbol owner)
     {
         var value = parameter.ExplicitDefaultValue;
         if (value == null) return "null";

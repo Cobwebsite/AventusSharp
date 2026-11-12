@@ -11,6 +11,7 @@ internal sealed class FileToWrite(ProjectConfig config)
 
     public void RegisterType(BaseContainer container)
     {
+        container.RuntimeNamespace = config.RuntimeNamespace;
         var relative = Path.GetRelativePath(Path.GetDirectoryName(config.CsProj)!, container.SourceFile);
         var name = Path.ChangeExtension(relative, ".g.cs");
         if (!files.TryGetValue(name, out var types))
@@ -33,27 +34,31 @@ internal sealed class FileToWrite(ProjectConfig config)
                 string.Join("\n", types.SelectMany(t => t.Usings.Split('\n', StringSplitOptions.RemoveEmptyEntries)).Distinct()) + "\n" +
                 string.Join(Environment.NewLine, types.Select(t => t.Write())));
         WriteGenerated(Path.Combine(config.OutputPath, "HttpUpload.g.cs"),
-            File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Templates", "HttpUpload.cs.txt")));
+            RuntimeTemplate("HttpUpload.cs.txt"));
         if (files.Values.SelectMany(x => x).Any(x => x is HttpRouterContainer))
         {
             WriteGenerated(Path.Combine(config.OutputPath, "HttpRuntime.g.cs"),
-                File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Templates", "HttpRuntime.cs.txt")));
+                RuntimeTemplate("HttpRuntime.cs.txt"));
             if (config.HttpRouter.ParentFile != null)
                 WriteGenerated(Path.Combine(config.OutputPath,
                     Path.GetFileName(config.HttpRouter.ParentFile).EndsWith(".txt", StringComparison.OrdinalIgnoreCase)
                         ? Path.GetFileNameWithoutExtension(config.HttpRouter.ParentFile)
                         : Path.GetFileName(config.HttpRouter.ParentFile)),
-                    File.ReadAllText(config.HttpRouter.ParentFile));
+                    File.ReadAllText(config.HttpRouter.ParentFile)
+                        .Replace("__RUNTIME_NAMESPACE__", config.RuntimeNamespace));
             if (config.HttpRouter.CreateRouter)
             {
                 var parent = config.HttpRouter.Parent == "HttpRouteClient"
-                    ? "global::CSharpExport.Http.HttpRouteClient" : config.HttpRouter.Parent;
+                    ? "global::" + config.RuntimeNamespace + ".Http.HttpRouteClient" : config.HttpRouter.Parent;
                 WriteGenerated(Path.Combine(config.OutputPath, config.HttpRouter.RouterName + ".g.cs"),
                     $"namespace {config.HttpRouter.Namespace};\n" +
                     $"public class {config.HttpRouter.RouterName} : {parent}\n{{\n" +
                     $"    public {config.HttpRouter.RouterName}(global::System.Net.Http.HttpClient? client = null, string? baseUrl = null) : base(client, baseUrl) {{ }}\n}}\n");
             }
         }
+        if (files.Values.SelectMany(x => x).Any(x => x is SseEndPointContainer or SseEventContainer))
+            WriteGenerated(Path.Combine(config.OutputPath, "SseRuntime.g.cs"),
+                RuntimeTemplate("SseRuntime.cs.txt"));
         var projectFile = Path.Combine(config.OutputPath, config.AssemblyName + ".csproj");
         var packages = string.Join(Environment.NewLine, config.Packages.Select(p =>
             $"    <PackageReference Include=\"{SecurityElement.Escape(p.Id)}\" Version=\"{SecurityElement.Escape(p.Version)}\" />"));
@@ -93,4 +98,8 @@ internal sealed class FileToWrite(ProjectConfig config)
             Console.WriteLine($"DLL : {Path.Combine(config.OutputPath, "bin", "Debug", config.TargetFramework!, config.AssemblyName + ".dll")}");
         return build.ExitCode;
     }
+
+    private string RuntimeTemplate(string name) =>
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Templates", name))
+            .Replace("__RUNTIME_NAMESPACE__", config.RuntimeNamespace);
 }

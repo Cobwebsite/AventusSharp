@@ -1,7 +1,7 @@
 using CSharpExport.TestFixture;
 using Newtonsoft.Json;
 using CSharpExport.TestFixture.Routes;
-using CSharpExport.Http;
+using CSharpExport.TestFixture.Generated.Http;
 using System.Net;
 using System.Net.Http;
 using System.Text;

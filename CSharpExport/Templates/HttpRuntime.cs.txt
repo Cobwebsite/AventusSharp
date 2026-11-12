@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Collections;
 using System.Reflection;
 
-namespace CSharpExport.Http;
+namespace __RUNTIME_NAMESPACE__.Http;
 
 public sealed record HttpResult<T>(HttpStatusCode StatusCode, T? Value, string? RawText,
     bool? ServerSuccess = null, JsonElement? Errors = null)

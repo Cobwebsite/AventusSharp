@@ -50,8 +50,13 @@ internal abstract class BaseClassContainer(
 
     public override string Write()
     {
-        if (Type.ContainingType != null)
-            throw new NotSupportedException($"Storable imbriqué non pris en charge : {Type}");
+        var containers = new List<INamedTypeSymbol>();
+        for (var current = Type.ContainingType; current != null; current = current.ContainingType)
+        {
+            if (current.TypeKind != TypeKind.Class)
+                throw new NotSupportedException($"Classe englobante SSE non prise en charge : {current}");
+            containers.Add(current);
+        }
         var properties = PropertySymbols().Select(entry =>
         {
             var (property, owner) = entry;
@@ -75,19 +80,29 @@ internal abstract class BaseClassContainer(
         var exportedClass = declaration.WithBaseList(null).WithConstraintClauses(default)
             .WithAttributeLists(PublicAttributes(Type, Declaration.AttributeLists))
             .WithMembers(SyntaxFactory.List<MemberDeclarationSyntax>(properties))
-            .WithModifiers(SyntaxFactory.TokenList(Declaration.Modifiers.Where(m => !m.IsKind(SyntaxKind.PartialKeyword))));
+            .WithModifiers(SyntaxFactory.TokenList(Declaration.Modifiers
+                .Where(m => !m.IsKind(SyntaxKind.PartialKeyword))
+                .Concat([SyntaxFactory.Token(SyntaxKind.PartialKeyword)])));
         AddTxt("namespace " + Namespace);
         AddTxtOpen("{");
+        foreach (var parent in containers.AsEnumerable().Reverse())
+        {
+            var parameters = parent.TypeParameters.Length == 0 ? "" :
+                "<" + string.Join(", ", parent.TypeParameters.Select(p => p.Name)) + ">";
+            AddTxt("public partial class " + parent.Name + parameters);
+            AddTxtOpen("{");
+        }
         foreach (var line in exportedClass.NormalizeWhitespace(indentation: "\t").ToFullString().Split('\n'))
             AddTxt(line.TrimEnd('\r'));
+        foreach (var _ in containers) AddTxtClose("}");
         AddTxtClose("}");
         return fileWriter.GetContent();
     }
 
-    private static string RenderType(ITypeSymbol type, INamedTypeSymbol owner)
+    private string RenderType(ITypeSymbol type, INamedTypeSymbol owner)
     {
         if (type.ToDisplayString() == "AventusSharp.Routes.Request.HttpFile")
-            return "global::CSharpExport.Http.HttpUpload";
+            return "global::" + RuntimeNamespace + ".Http.HttpUpload";
         if (type is ITypeParameterSymbol parameter)
         {
             for (var i = 0; i < owner.TypeParameters.Length; i++)

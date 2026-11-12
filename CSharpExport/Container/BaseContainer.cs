@@ -14,6 +14,7 @@ internal abstract class BaseContainer(
     protected SemanticModel Model { get; } = model;
     protected INamedTypeSymbol? NoExport { get; } = noExport;
     public string Namespace => Type.ContainingNamespace.ToDisplayString();
+    public string RuntimeNamespace { get; set; } = "CSharpExport.Generated";
     public string SourceFile => Type.Locations.First().SourceTree?.FilePath
         ?? throw new InvalidOperationException($"Fichier source introuvable pour {Type}");
     public virtual string Usings => Root.Usings.ToFullString();

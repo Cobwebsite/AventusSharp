@@ -25,6 +25,48 @@ internal sealed class ProjectManager
         var genericError = compilation.GetTypeByMetadataName("AventusSharp.Tools.IGenericError");
         var withError = compilation.GetTypeByMetadataName("AventusSharp.Tools.IWithError");
         var router = compilation.GetTypeByMetadataName("AventusSharp.Routes.IRouter");
+        var sseEndPoint = compilation.GetTypeByMetadataName("AventusSharp.SSE.ISSEEndPoint");
+        var sseEvent = compilation.GetTypeByMetadataName("AventusSharp.SSE.Event.ISSEEvent");
+        var selectedSseEndPoints = new List<INamedTypeSymbol>();
+        var ssePayloads = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        var visitedSsePayloads = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+        void RegisterSsePayload(ITypeSymbol payload)
+        {
+            if (!visitedSsePayloads.Add(payload)) return;
+            if (payload is IArrayTypeSymbol array)
+            {
+                RegisterSsePayload(array.ElementType);
+                return;
+            }
+            if (payload is not INamedTypeSymbol named) return;
+            foreach (var argument in named.TypeArguments) RegisterSsePayload(argument);
+            if (!SymbolEqualityComparer.Default.Equals(named.ContainingAssembly, compilation.Assembly) ||
+                !named.Locations.Any(location => location.IsInSource)) return;
+            if (HasAttribute(named, noExport))
+                throw new InvalidOperationException($"Le corps SSE {named} porte [NoExport].");
+            ssePayloads.Add(named.OriginalDefinition);
+            foreach (var property in named.GetMembers().OfType<IPropertySymbol>())
+                if (property.DeclaredAccessibility == Accessibility.Public && !HasAttribute(property, noExport))
+                    RegisterSsePayload(property.Type);
+        }
+        foreach (var document in project.Documents)
+        {
+            if (await document.GetSyntaxRootAsync() is not CompilationUnitSyntax scanRoot) continue;
+            var scanModel = compilation.GetSemanticModel(scanRoot.SyntaxTree);
+            foreach (var declaration in scanRoot.DescendantNodes().OfType<ClassDeclarationSyntax>())
+            {
+                if (scanModel.GetDeclaredSymbol(declaration) is not INamedTypeSymbol symbol) continue;
+                if (Implements(symbol, sseEndPoint) && !symbol.IsAbstract && !HasAttribute(symbol, noExport) &&
+                    (config.ExportSseEndPointByDefault || HasAttribute(symbol, export)))
+                    selectedSseEndPoints.Add(symbol);
+                if (Implements(symbol, sseEvent) && !HasAttribute(symbol, noExport) &&
+                    (config.ExportSseEventByDefault || HasAttribute(symbol, export)) &&
+                    SseEventContainer.FindPayloadType(symbol) is { } payload)
+                {
+                    RegisterSsePayload(payload);
+                }
+            }
+        }
         List<CompiledHttpRoute>? compiledRoutes = null;
         var files = new FileToWrite(config);
         foreach (var document in project.Documents)
@@ -35,7 +77,15 @@ internal sealed class ProjectManager
             {
                 if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol symbol) continue;
                 if (HasAttribute(symbol, noExport)) continue;
-                if (Implements(symbol, router) &&
+                if (Implements(symbol, sseEndPoint) &&
+                    (config.ExportSseEndPointByDefault || HasAttribute(symbol, export)))
+                    files.RegisterType(new SseEndPointContainer(symbol, declaration, root, model, noExport,
+                        config.Sse, compilation));
+                else if (Implements(symbol, sseEvent) &&
+                    (config.ExportSseEventByDefault || HasAttribute(symbol, export)))
+                    files.RegisterType(new SseEventContainer(symbol, declaration, root, model, noExport,
+                        compilation, selectedSseEndPoints));
+                else if (Implements(symbol, router) &&
                     (config.ExportHttpRouteByDefault || HasAttribute(symbol, export)))
                 {
                     compiledRoutes ??= await LoadCompiledRoutes(config);
@@ -50,13 +100,14 @@ internal sealed class ProjectManager
                 else if (Implements(symbol, withError) &&
                     (config.ExportErrorsByDefault || HasAttribute(symbol, export)))
                     files.RegisterType(new WithErrorContainer(symbol, declaration, root, model, noExport));
-                else if (HasAttribute(symbol, export))
+                else if (HasAttribute(symbol, export) || ssePayloads.Contains(symbol))
                     files.RegisterType(new NormalClassContainer(symbol, declaration, root, model, noExport));
             }
             foreach (var declaration in root.DescendantNodes().OfType<EnumDeclarationSyntax>())
             {
                 if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol symbol) continue;
-                if (!HasAttribute(symbol, noExport) && (config.ExportEnumByDefault || HasAttribute(symbol, export)))
+                if (!HasAttribute(symbol, noExport) && (config.ExportEnumByDefault || HasAttribute(symbol, export) ||
+                    ssePayloads.Contains(symbol)))
                     files.RegisterType(new EnumContainer(symbol, declaration, root, model, noExport));
             }
         }

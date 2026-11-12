@@ -7,12 +7,16 @@ internal sealed class ProjectConfig
     public required string CsProj { get; set; }
     public required string OutputPath { get; set; }
     public string AssemblyName { get; set; } = "CSharpExport.Generated";
+    public string RuntimeNamespace => AssemblyName;
     public string? TargetFramework { get; set; }
     public List<ExportPackage> Packages { get; set; } = new();
     public bool ExportEnumByDefault { get; set; } = false;
     public bool ExportErrorsByDefault { get; set; } = true;
     public bool ExportHttpRouteByDefault { get; set; } = true;
+    public bool ExportSseEndPointByDefault { get; set; } = true;
+    public bool ExportSseEventByDefault { get; set; } = true;
     public HttpRouterConfig HttpRouter { get; set; } = new();
+    public SseConfig Sse { get; set; } = new();
 
     public void Prepare(string configFile)
     {
@@ -29,6 +33,8 @@ internal sealed class ProjectConfig
             .FirstOrDefault(element => element.Name.LocalName == "TargetFrameworks")?.Value.Split(';')[0].Trim();
         if (string.IsNullOrWhiteSpace(TargetFramework))
             throw new InvalidOperationException("Définir targetFramework dans export.json pour ce projet source.");
+        if (Sse.ReconnectDelayMs < 0)
+            throw new InvalidOperationException("sse.reconnectDelayMs doit être positif ou nul.");
         if (Path.GetDirectoryName(CsProj) == OutputPath)
             throw new InvalidOperationException("La sortie doit être distincte du projet source.");
     }
@@ -59,4 +65,12 @@ internal sealed class CompiledHttpRoute
     public required string Pattern { get; set; }
     public int Method { get; set; }
     public List<string> Params { get; set; } = new();
+}
+
+internal sealed class SseConfig
+{
+    public string? Host { get; set; }
+    public string? Uri { get; set; }
+    public bool AutoReconnect { get; set; } = true;
+    public int ReconnectDelayMs { get; set; } = 1000;
 }

@@ -1,0 +1,18 @@
+[
+  {
+    "ClassName": "CSharpExport.TestFixture.Routes.ApiRouter",
+    "MethodName": "GetPerson",
+    "BaseUrl": "/compiled/{id}",
+    "Pattern": "^/v2/compiled/([^/]+)$",
+    "Method": 0,
+    "Params": ["System.Int32"]
+  },
+  {
+    "ClassName": "CSharpExport.TestFixture.Routes.ApiRouter",
+    "MethodName": "CreatePerson",
+    "BaseUrl": "/compiled/people",
+    "Pattern": "^/compiled/people$",
+    "Method": 1,
+    "Params": ["System.String", "System.Int32"]
+  }
+]

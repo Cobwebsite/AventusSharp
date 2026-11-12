@@ -1,0 +1,18 @@
+{
+  "csProj": "./CSharpExport.TestFixture.csproj",
+  "outputPath": "../CSharpExport.TestFixture.Compiled.Generated",
+  "assemblyName": "CSharpExport.TestFixture.Compiled.Generated",
+  "packages": [
+    {
+      "id": "Newtonsoft.Json",
+      "version": "13.0.4"
+    }
+  ],
+  "httpRouter": {
+    "createRouter": true,
+    "routerName": "GeneratedRouter",
+    "namespace": "CSharpExport.TestFixture.Client",
+    "parent": "global::CSharpExport.TestFixture.Client.ClientBase",
+    "parentFile": "./ClientBase.cs.txt"
+  }
+}

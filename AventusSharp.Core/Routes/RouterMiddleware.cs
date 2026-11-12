@@ -216,7 +216,12 @@ namespace AventusSharp.Routes
                             foreach (MethodType methodType in methodsToUse)
                             {
 
-                                Dictionary<string, RouterParameterInfo> @params = fctParams.ToDictionary(p => p.name, p => p);
+                                Dictionary<string, RouterParameterInfo> @params = fctParams.ToDictionary(p => p.name,
+                                    p => new RouterParameterInfo(p.name, p.type)
+                                    {
+                                        positionCSharp = p.positionCSharp,
+                                        optional = p.optional
+                                    });
                                 string urlPattern = route;
                                 try
                                 {

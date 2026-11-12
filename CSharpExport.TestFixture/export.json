@@ -3,6 +3,10 @@
   "outputPath": "../CSharpExport.TestFixture.Generated",
   "assemblyName": "CSharpExport.TestFixture.Generated",
   "packages": [
-    { "id": "Newtonsoft.Json", "version": "13.0.4" }
-  ]
+    {
+      "id": "Newtonsoft.Json",
+      "version": "13.0.4"
+    }
+  ],
+  "httpRouter": {}
 }

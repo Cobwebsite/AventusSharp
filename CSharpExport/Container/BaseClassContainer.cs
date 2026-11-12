@@ -21,8 +21,16 @@ internal abstract class BaseClassContainer(
     private static bool IsAventusType(ITypeSymbol type) => type switch
     {
         IArrayTypeSymbol array => IsAventusType(array.ElementType),
-        INamedTypeSymbol named => named.ContainingNamespace.ToDisplayString().StartsWith("AventusSharp", StringComparison.Ordinal) ||
+        INamedTypeSymbol named => named.ToDisplayString() != "AventusSharp.Routes.Request.HttpFile" &&
+            named.ContainingNamespace.ToDisplayString().StartsWith("AventusSharp", StringComparison.Ordinal) ||
             named.TypeArguments.Any(IsAventusType),
+        _ => false
+    };
+    private static bool ContainsHttpFile(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => ContainsHttpFile(array.ElementType),
+        INamedTypeSymbol named => named.ToDisplayString() == "AventusSharp.Routes.Request.HttpFile" ||
+            named.TypeArguments.Any(ContainsHttpFile),
         _ => false
     };
 
@@ -52,14 +60,16 @@ internal abstract class BaseClassContainer(
             var p = property.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as PropertyDeclarationSyntax;
             if (p?.AccessorList == null) return null;
             return p.WithInitializer(null).WithExpressionBody(null).WithSemicolonToken(default)
-                .WithType(UsesOwnerTypeParameter(p.Type, owner)
+                .WithType(UsesOwnerTypeParameter(p.Type, owner) || ContainsHttpFile(property.Type)
                     ? SyntaxFactory.ParseTypeName(RenderType(property.Type, owner)) : p.Type)
                 .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.List(
                     (p.AccessorList?.Accessors ?? default).Select(a => a.WithBody(null).WithExpressionBody(null)
                         .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))))))
-                .WithAttributeLists(PublicAttributes(property, p.AttributeLists))
+                .WithAttributeLists(property.ContainingAssembly.Name.StartsWith("AventusSharp", StringComparison.Ordinal)
+                    ? default : PublicAttributes(property, p.AttributeLists))
                 .WithModifiers(SyntaxFactory.TokenList(p.Modifiers.Where(m =>
-                    !m.IsKind(SyntaxKind.OverrideKeyword) && !m.IsKind(SyntaxKind.AbstractKeyword))));
+                    !m.IsKind(SyntaxKind.OverrideKeyword) && !m.IsKind(SyntaxKind.AbstractKeyword) &&
+                    !m.IsKind(SyntaxKind.VirtualKeyword))));
         }).Where(p => p != null).Select(p => p!)
             .ToArray();
         var exportedClass = declaration.WithBaseList(null).WithConstraintClauses(default)
@@ -76,6 +86,8 @@ internal abstract class BaseClassContainer(
 
     private static string RenderType(ITypeSymbol type, INamedTypeSymbol owner)
     {
+        if (type.ToDisplayString() == "AventusSharp.Routes.Request.HttpFile")
+            return "global::CSharpExport.Http.HttpUpload";
         if (type is ITypeParameterSymbol parameter)
         {
             for (var i = 0; i < owner.TypeParameters.Length; i++)

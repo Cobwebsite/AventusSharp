@@ -1,0 +1,7 @@
+namespace CSharpExport.TestFixture.Client;
+
+public class ClientBase : global::CSharpExport.Http.HttpRouteClient
+{
+    public ClientBase(global::System.Net.Http.HttpClient? client = null, string? baseUrl = null)
+        : base(client, baseUrl) { }
+}

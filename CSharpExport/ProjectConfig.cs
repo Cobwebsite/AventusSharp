@@ -15,8 +15,12 @@ internal sealed class ProjectConfig
     public bool ExportHttpRouteByDefault { get; set; } = true;
     public bool ExportSseEndPointByDefault { get; set; } = true;
     public bool ExportSseEventByDefault { get; set; } = true;
+    public bool ExportWsEndPointByDefault { get; set; } = true;
+    public bool ExportWsRouteByDefault { get; set; } = true;
+    public bool ExportWsEventByDefault { get; set; } = true;
     public HttpRouterConfig HttpRouter { get; set; } = new();
     public SseConfig Sse { get; set; } = new();
+    public WsConfig Ws { get; set; } = new();
 
     public void Prepare(string configFile)
     {
@@ -35,6 +39,8 @@ internal sealed class ProjectConfig
             throw new InvalidOperationException("Définir targetFramework dans export.json pour ce projet source.");
         if (Sse.ReconnectDelayMs < 0)
             throw new InvalidOperationException("sse.reconnectDelayMs doit être positif ou nul.");
+        if (Ws.ReconnectDelayMs < 0)
+            throw new InvalidOperationException("ws.reconnectDelayMs doit être positif ou nul.");
         if (Path.GetDirectoryName(CsProj) == OutputPath)
             throw new InvalidOperationException("La sortie doit être distincte du projet source.");
     }
@@ -73,4 +79,25 @@ internal sealed class SseConfig
     public string? Uri { get; set; }
     public bool AutoReconnect { get; set; } = true;
     public int ReconnectDelayMs { get; set; } = 1000;
+}
+
+internal sealed class WsConfig
+{
+    public string? Host { get; set; }
+    public string? Uri { get; set; }
+    public bool AutoReconnect { get; set; } = true;
+    public int ReconnectDelayMs { get; set; } = 1000;
+    public int RequestTimeoutMs { get; set; } = 30000;
+}
+
+internal sealed class CompiledWsRoute
+{
+    public required string ClassName { get; set; }
+    public required string MethodName { get; set; }
+    public required string BaseUrl { get; set; }
+    public required string Pattern { get; set; }
+    public string? EndPointClass { get; set; }
+    public string? EndPointPath { get; set; }
+    public int ResponseType { get; set; }
+    public List<string> Params { get; set; } = new();
 }

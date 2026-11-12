@@ -59,6 +59,9 @@ internal sealed class FileToWrite(ProjectConfig config)
         if (files.Values.SelectMany(x => x).Any(x => x is SseEndPointContainer or SseEventContainer))
             WriteGenerated(Path.Combine(config.OutputPath, "SseRuntime.g.cs"),
                 RuntimeTemplate("SseRuntime.cs.txt"));
+        if (files.Values.SelectMany(x => x).Any(x => x is WsEndPointContainer or WsRouterContainer or WsEventContainer))
+            WriteGenerated(Path.Combine(config.OutputPath, "WsRuntime.g.cs"),
+                RuntimeTemplate("WsRuntime.cs.txt"));
         var projectFile = Path.Combine(config.OutputPath, config.AssemblyName + ".csproj");
         var packages = string.Join(Environment.NewLine, config.Packages.Select(p =>
             $"    <PackageReference Include=\"{SecurityElement.Escape(p.Id)}\" Version=\"{SecurityElement.Escape(p.Version)}\" />"));

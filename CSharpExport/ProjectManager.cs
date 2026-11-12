@@ -27,7 +27,11 @@ internal sealed class ProjectManager
         var router = compilation.GetTypeByMetadataName("AventusSharp.Routes.IRouter");
         var sseEndPoint = compilation.GetTypeByMetadataName("AventusSharp.SSE.ISSEEndPoint");
         var sseEvent = compilation.GetTypeByMetadataName("AventusSharp.SSE.Event.ISSEEvent");
+        var wsEndPoint = compilation.GetTypeByMetadataName("AventusSharp.WebSocket.IWsEndPoint");
+        var wsRouter = compilation.GetTypeByMetadataName("AventusSharp.WebSocket.IWsRouter");
+        var wsEvent = compilation.GetTypeByMetadataName("AventusSharp.WebSocket.Event.IWebSocketEvent");
         var selectedSseEndPoints = new List<INamedTypeSymbol>();
+        var selectedWsEndPoints = new List<INamedTypeSymbol>();
         var ssePayloads = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
         var visitedSsePayloads = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
         void RegisterSsePayload(ITypeSymbol payload)
@@ -59,15 +63,24 @@ internal sealed class ProjectManager
                 if (Implements(symbol, sseEndPoint) && !symbol.IsAbstract && !HasAttribute(symbol, noExport) &&
                     (config.ExportSseEndPointByDefault || HasAttribute(symbol, export)))
                     selectedSseEndPoints.Add(symbol);
+                if (Implements(symbol, wsEndPoint) && !symbol.IsAbstract && !HasAttribute(symbol, noExport) &&
+                    (config.ExportWsEndPointByDefault || HasAttribute(symbol, export)))
+                    selectedWsEndPoints.Add(symbol);
                 if (Implements(symbol, sseEvent) && !HasAttribute(symbol, noExport) &&
                     (config.ExportSseEventByDefault || HasAttribute(symbol, export)) &&
                     SseEventContainer.FindPayloadType(symbol) is { } payload)
                 {
                     RegisterSsePayload(payload);
                 }
+                if (Implements(symbol, wsEvent) && !HasAttribute(symbol, noExport) &&
+                    (config.ExportWsEventByDefault || HasAttribute(symbol, export)) &&
+                    WsEventContainer.FindPayloadType(symbol) is { } wsPayload)
+                    RegisterSsePayload(wsPayload);
             }
         }
         List<CompiledHttpRoute>? compiledRoutes = null;
+        List<CompiledWsRoute>? compiledWsRoutes = null;
+        Task<string>? exportInfo = null;
         var files = new FileToWrite(config);
         foreach (var document in project.Documents)
         {
@@ -77,7 +90,22 @@ internal sealed class ProjectManager
             {
                 if (model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol symbol) continue;
                 if (HasAttribute(symbol, noExport)) continue;
-                if (Implements(symbol, sseEndPoint) &&
+                if (Implements(symbol, wsEndPoint) &&
+                    (config.ExportWsEndPointByDefault || HasAttribute(symbol, export)))
+                    files.RegisterType(new WsEndPointContainer(symbol, declaration, root, model, noExport,
+                        config.Ws, compilation));
+                else if (Implements(symbol, wsRouter) &&
+                    (config.ExportWsRouteByDefault || HasAttribute(symbol, export)))
+                {
+                    compiledWsRoutes ??= LoadCompiledWsRoutes(await (exportInfo ??= RunExportInfo(config)));
+                    files.RegisterType(new WsRouterContainer(symbol, declaration, root, model, noExport,
+                        config.Ws, compiledWsRoutes.Where(r => r.ClassName == symbol.ToDisplayString()).ToList()));
+                }
+                else if (Implements(symbol, wsEvent) &&
+                    (config.ExportWsEventByDefault || HasAttribute(symbol, export)))
+                    files.RegisterType(new WsEventContainer(symbol, declaration, root, model, noExport,
+                        selectedWsEndPoints, compilation));
+                else if (Implements(symbol, sseEndPoint) &&
                     (config.ExportSseEndPointByDefault || HasAttribute(symbol, export)))
                     files.RegisterType(new SseEndPointContainer(symbol, declaration, root, model, noExport,
                         config.Sse, compilation));
@@ -88,7 +116,7 @@ internal sealed class ProjectManager
                 else if (Implements(symbol, router) &&
                     (config.ExportHttpRouteByDefault || HasAttribute(symbol, export)))
                 {
-                    compiledRoutes ??= await LoadCompiledRoutes(config);
+                    compiledRoutes ??= LoadCompiledRoutes(await (exportInfo ??= RunExportInfo(config)));
                     files.RegisterType(new HttpRouterContainer(symbol, declaration, root, model, noExport,
                         config.HttpRouter, compiledRoutes.Where(r => r.ClassName == symbol.ToDisplayString()).ToList()));
                 }
@@ -120,7 +148,7 @@ internal sealed class ProjectManager
     private static bool Implements(INamedTypeSymbol type, INamedTypeSymbol? contract) => contract != null &&
         type.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, contract));
 
-    private static async Task<List<CompiledHttpRoute>> LoadCompiledRoutes(ProjectConfig config)
+    private static async Task<string> RunExportInfo(ProjectConfig config)
     {
         using var process = Process.Start(new ProcessStartInfo("dotnet")
         {
@@ -134,11 +162,25 @@ internal sealed class ProjectManager
         await process.WaitForExitAsync();
         if (process.ExitCode != 0)
             throw new InvalidOperationException("Export des routes compilées impossible : " + await error);
-        var text = await output;
+        return await output;
+    }
+
+    private static List<CompiledHttpRoute> LoadCompiledRoutes(string text)
+    {
         var match = Regex.Match(text, @"--- Routes HTTP ---\s*(.*?)\s*-------------------", RegexOptions.Singleline);
         if (!match.Success)
             throw new InvalidOperationException("Le projet source doit appeler UseAventusExport() apres l enregistrement des routes HTTP.");
         return JsonSerializer.Deserialize<List<CompiledHttpRoute>>(match.Groups[1].Value,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+    }
+
+    private static List<CompiledWsRoute> LoadCompiledWsRoutes(string text)
+    {
+        var match = Regex.Match(text, @"--- Routes WS ---\s*(.*?)\s*-------------------",
+            RegexOptions.Singleline);
+        if (!match.Success)
+            throw new InvalidOperationException("Le projet source doit appeler UseAventusExport() après UseAventusWebsocket().");
+        return JsonSerializer.Deserialize<List<CompiledWsRoute>>(match.Groups[1].Value,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
     }
 }

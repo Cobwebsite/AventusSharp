@@ -143,7 +143,7 @@ internal sealed class HttpRouterContainer(INamedTypeSymbol type, ClassDeclaratio
         return route.BaseUrl;
     }
 
-    private static bool MatchesParameterType(string declared, ITypeSymbol type, INamedTypeSymbol owner)
+    internal static bool MatchesParameterType(string declared, ITypeSymbol type, INamedTypeSymbol owner)
     {
         declared = declared.Trim();
         if (type is ITypeParameterSymbol parameter)

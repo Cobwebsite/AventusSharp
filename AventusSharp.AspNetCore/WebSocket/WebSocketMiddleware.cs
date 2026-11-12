@@ -278,7 +278,12 @@ namespace AventusSharp.WebSocket
 
                     foreach (string route in infoMethod.paths)
                     {
-                        Dictionary<string, WebSocketRouterParameterInfo> @params = fctParams.ToDictionary(p => p.name, p => p);
+                        Dictionary<string, WebSocketRouterParameterInfo> @params = fctParams.ToDictionary(p => p.name,
+                            p => new WebSocketRouterParameterInfo(p.name, p.type)
+                            {
+                                positionCSharp = p.positionCSharp,
+                                optional = p.optional
+                            });
                         string urlPattern = route;
                         string url = transformPattern(urlPattern, @params, routeInstances[t], false);
                         Regex regex = transformPatternIntoRegex(url);
@@ -330,7 +335,10 @@ namespace AventusSharp.WebSocket
                         Pattern = routeInfo.Value.pattern.ToString(),
                         MethodName = routeInfo.Value.action.Name,
                         ClassName = routeInfo.Value.action.ReflectedType!.FullName!,
-                        Params = routeInfo.Value.parameters.Select(p => p.Value.type.FullName!).ToList()
+                        Params = routeInfo.Value.parameters.Select(p => p.Value.type.FullName!).ToList(),
+                        EndPointClass = endpointInfo.Value.GetType().FullName,
+                        EndPointPath = endpointInfo.Value.Path,
+                        ResponseType = (int)routeInfo.Value.eventType
                     });
                 }
             }

@@ -1,6 +1,0 @@
-{
-  "csProj": "./CSharpExport.NoHttpFixture.csproj",
-  "outputPath": "../CSharpExport.NoHttpFixture.Generated",
-  "assemblyName": "CSharpExport.NoHttpFixture.Generated",
-  "exportHttpRouteByDefault": false
-}

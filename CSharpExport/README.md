@@ -3,8 +3,7 @@
 Le générateur exporte les `IStorable`, les classes `[Export]`, les enums, les classes `IGenericError` et les classes `IWithError` dans une bibliothèque indépendante d'AventusSharp. Il conserve leurs noms, namespaces et propriétés publiques, y compris les propriétés héritées comme `Id`. Les attributs AventusSharp (`SqlName`, `Size`, `Primary`, etc.) sont retirés ; les attributs externes sont conservés. `[NoExport]` exclut une classe, une propriété ou une valeur d'enum. Les méthodes, champs, constructeurs et corps des propriétés ne sont pas exportés. Une propriété dont le type dépend d'AventusSharp provoque une erreur explicite.
 
 ```powershell
-dotnet run --project CSharpExport/CSharpExport.csproj -- CSharpExport.TestFixture/export.json
-dotnet run --project CSharpExport.TestConsumer/CSharpExport.TestConsumer.csproj
+dotnet run --project CSharpExport/CSharpExport.csproj -- chemin/vers/export.json
 ```
 
 Le fichier JSON accepte `csProj`, `outputPath`, `assemblyName`, `targetFramework`, `packages`, `exportEnumByDefault`, `exportErrorsByDefault` et `exportHttpRouteByDefault`. Les chemins sont relatifs au JSON. Le framework cible est lu dans le projet source, sauf si `targetFramework` est défini. Les enums sont exportées sur `[Export]` par défaut ; `exportEnumByDefault` permet de toutes les exporter. Les classes d'erreur et les routes HTTP sont exportées par défaut, sauf `[NoExport]`. `packages` contient des entrées `{ "id": "Newtonsoft.Json", "version": "13.0.4" }` qui deviennent des `PackageReference` dans le projet généré. Le générateur écrit les fichiers sous les mêmes chemins relatifs que dans le projet source et compile la DLL dans `outputPath/bin/Debug/<targetFramework>`. Le suffixe `.g.cs` indique simplement un fichier C# généré.
@@ -46,4 +45,20 @@ await foreach (var profile in updates.ListenAsync(cancellationToken))
     Console.WriteLine(profile?.Label);
 ```
 
-L'export des routes WebSocket et des événements WebSocket sera ajouté par étapes.
+## WebSocket
+
+Les classes `IWsEndPoint`, `IWsRouter` et `IWebSocketEvent` sont exportées par défaut, sauf `[NoExport]`. Les options `exportWsEndPointByDefault`, `exportWsRouteByDefault` et `exportWsEventByDefault` contrôlent ces exports. Les classes gardent leurs noms et namespaces. Les routeurs générés utilisent les chemins et endpoints réellement enregistrés par le serveur avec `UseAventusWebsocket()` puis `UseAventusExport()`. Une application qui exporte des routes HTTP et WS n'est lancée qu'une fois pour collecter les deux listes.
+
+Les méthodes de route qui attendent une réponse retournent `Task<WsResult<T>>` : la réponse est associée à la requête par `uid`, et `Success`, `Value`, `Errors`, `RawText` et `Channel` sont disponibles. Les routes `[Others]` et `[Custom]` retournent `Task`, car l'appelant ne reçoit pas nécessairement la diffusion. Les surcharges, les chemins multiples, les paramètres URL/corps, les méthodes héritées, les réponses vides et les réponses `ResultWithError<T>` sont pris en charge. Un routeur peut utiliser plusieurs endpoints ; chaque méthode choisit celui indiqué dans les routes compilées, ou l'endpoint passé en argument. Les types de charge utile des événements sont exportés automatiquement, y compris les classes imbriquées.
+
+La section `ws` de `export.json` accepte `host` (par exemple `ws://localhost:5000`), `uri`, `autoReconnect` (activé par défaut), `reconnectDelayMs` (1 000 ms par défaut) et `requestTimeoutMs` (30 000 ms par défaut). Les constructeurs des endpoints et routeurs permettent de remplacer ces délais avec `reconnectDelay` et `requestTimeout`. Leur argument `configureWebSocket` configure les options de chaque connexion, y compris les en-têtes et cookies du handshake, et s'applique aussi aux reconnexions. Les abonnements `ListenAsync()` se reconnectent après une coupure. Une requête interrompue échoue et n'est pas rejouée automatiquement. Les routeurs et endpoints implémentent `IAsyncDisposable` pour fermer leurs connexions. Le `CancellationToken` arrête les abonnements et les attentes de réponse. Pour un événement `[Path]` contenant `[Segment]`, une méthode qui retourne une constante est résolue à l'export ; sinon le constructeur généré accepte une fonction `Segment` évaluée pour chaque message.
+
+```csharp
+await using var endpoint = new DemoEndPoint();
+var news = new NewsEvent(endpoint);
+await foreach (var item in news.ListenAsync(cancellationToken))
+    Console.WriteLine(item?.Text);
+
+await using var router = new DemoRouter();
+var reply = await router.Echo(7, "hello", cancellationToken: cancellationToken);
+```

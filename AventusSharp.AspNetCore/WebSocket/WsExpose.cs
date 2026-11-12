@@ -10,4 +10,7 @@ public class WsExpose
     public required string MethodName { get; set; }
     public required string ClassName { get; set; }
     public required List<string> Params { get; set; }
+    public string? EndPointClass { get; set; }
+    public string? EndPointPath { get; set; }
+    public int ResponseType { get; set; }
 }

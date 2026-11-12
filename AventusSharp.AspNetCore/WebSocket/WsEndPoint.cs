@@ -317,9 +317,9 @@ namespace AventusSharp.WebSocket
                                 _event = new JsonEvent(o);
                             }
                         }
-                        _event.Configure(path, this, connection, uid, routeInfo.eventType, routeInfo.CustomFct);
-                        await _event._Emit();
                     }
+                    _event.Configure(path, this, connection, uid, routeInfo.eventType, routeInfo.CustomFct);
+                    await _event._Emit();
                 }
             }
             AventusSharp.AspNetCore.Hosting.ContextAccessor.Current = null;
